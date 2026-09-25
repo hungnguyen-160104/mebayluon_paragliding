@@ -1441,6 +1441,10 @@ export default function SelectFlightStep() {
     const packageLabel =
       allPackages.find((pkg) => pkg.key === data.packageKey)?.label || "";
 
+    // Điểm bán gói theo loại bay (Quản Bạ): tên gói đã nói rõ PG hay PPG,
+    // không ghép thêm "Dù lượn - " phía trước (chủ 25/09/2026).
+    if (packagesSplitByFlightType && packageLabel) return packageLabel;
+
     const dayName =
       packageLabel === ui.weekdayFlightTitle
         ? short.weekday
@@ -1460,6 +1464,7 @@ export default function SelectFlightStep() {
     ui.weekdayFlightTitle,
     ui.weekendFlightTitle,
     allPackages,
+    packagesSplitByFlightType,
     lang,
   ]);
 

@@ -1291,12 +1291,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       {
         key: "quan_ba_pg" as PackageKey,
         label: {
-          vi: "Dù lượn (PG) – cất cánh 950 m, bay 10–15 phút",
-          en: "Paragliding (PG) – 950 m take-off, 10–15 min",
-          fr: "Parapente (PG) – décollage à 950 m, 10–15 min",
-          ru: "Параплан (PG) – старт с 950 м, 10–15 мин",
-          zh: "滑翔伞 (PG) – 950 米起飞，10–15 分钟",
-          hi: "पैराग्लाइडिंग (PG) – 950 मी टेक-ऑफ, 10–15 मिनट",
+          vi: "Dù lượn (PG)",
+          en: "Paragliding (PG)",
+          fr: "Parapente (PG)",
+          ru: "Параплан (PG)",
+          zh: "滑翔伞 (PG)",
+          hi: "पैराग्लाइडिंग (PG)",
         },
         subtitle: {
           vi: "Bay đôi cùng phi công, hoàn toàn nhờ sức gió. Cất cánh sườn núi ở độ cao 950 m, hạ cánh trong thung lũng Quản Bạ. Giá đã gồm đón trả 2 chiều trong khu vực Quản Bạ.",
@@ -1371,12 +1371,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       {
         key: "quan_ba_ppg_15" as PackageKey,
         label: {
-          vi: "Dù lượn có động cơ (PPG) – gói cơ bản 15 phút",
-          en: "Powered paragliding (PPG) – basic, 15 min",
-          fr: "Paramoteur (PPG) – formule de base, 15 min",
-          ru: "Парамотор (PPG) – базовый, 15 мин",
-          zh: "动力伞 (PPG) – 基础 15 分钟",
-          hi: "पैरामोटर (PPG) – बेसिक, 15 मिनट",
+          vi: "Dù lượn gắn động cơ cơ bản (PPG) - 15 phút",
+          en: "Powered paragliding basic (PPG) - 15 min",
+          fr: "Paramoteur formule de base (PPG) - 15 min",
+          ru: "Парамотор базовый (PPG) - 15 мин",
+          zh: "动力伞基础 (PPG) - 15 分钟",
+          hi: "पैरामोटर बेसिक (PPG) - 15 मिनट",
         },
         subtitle: {
           vi: "Cất cánh ngay tại thung lũng, ít phụ thuộc gió, chủ động leo cao ngắm toàn cảnh Núi Đôi – Cổng Trời. Giá đã gồm đón trả 2 chiều trong khu vực Quản Bạ.",
@@ -1451,12 +1451,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       {
         key: "quan_ba_ppg_25" as PackageKey,
         label: {
-          vi: "PPG bay lâu 25 phút – săn mây bình minh / hoàng hôn",
-          en: "PPG long flight 25 min – sunrise / sunset cloud-hunting",
-          fr: "PPG vol long 25 min – chasse aux nuages à l'aube / au coucher",
-          ru: "PPG длинный полёт 25 мин – охота за облаками на рассвете / закате",
-          zh: "PPG 长航 25 分钟 – 日出 / 日落追云",
-          hi: "PPG लंबी उड़ान 25 मिनट – सूर्योदय / सूर्यास्त क्लाउड-हंटिंग",
+          vi: "Dù gắn động cơ (PPG) - Nâng cao 25 phút – săn mây / bình minh / hoàng hôn",
+          en: "Powered paragliding (PPG) - Advanced 25 min – cloud-hunting / sunrise / sunset",
+          fr: "Paramoteur (PPG) - Avancé 25 min – chasse aux nuages / aube / coucher du soleil",
+          ru: "Парамотор (PPG) - Расширенный 25 мин – охота за облаками / рассвет / закат",
+          zh: "动力伞 (PPG) - 进阶 25 分钟 – 追云 / 日出 / 日落",
+          hi: "पैरामोटर (PPG) - एडवांस 25 मिनट – क्लाउड-हंटिंग / सूर्योदय / सूर्यास्त",
         },
         subtitle: {
           vi: "Gói cơ bản + 900.000 đ: bay 25 phút vào khung bình minh hoặc hoàng hôn, khi mây còn phủ các thung lũng nhỏ quanh Tam Sơn. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
