@@ -371,22 +371,34 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
       if (!images.length) return null;
 
       const cols = Math.min(4, Math.max(2, Number(data.columns) || 3));
-      const colClass =
-        cols === 2
-          ? "grid-cols-1 sm:grid-cols-2"
-          : cols === 4
-            ? "grid-cols-2 md:grid-cols-4"
-            : "grid-cols-2 md:grid-cols-3";
+      /**
+       * SỐ CỘT ĐÚNG NHƯ ĐÃ CHỌN, KỂ CẢ TRÊN ĐIỆN THOẠI (chủ 25/09): trước đây
+       * điện thoại luôn 2 cột nên thư viện 3 ảnh bị lẻ một ảnh xuống hàng dưới.
+       * Riêng 4 cột vẫn hạ xuống 2 trên máy nhỏ, không thì ảnh bé quá.
+       */
+      const colClass = cols === 2 ? "grid-cols-2" : cols === 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3";
+      /**
+       * TỈ LỆ KHUNG: mặc định 4:3 như cũ để bài cũ không đổi dáng; "auto" giữ
+       * nguyên ảnh (không cắt), hợp với bộ ảnh so sánh chụp sẵn đúng khung.
+       */
+      const ratioClass =
+        data.ratio === "1/1"
+          ? "aspect-square object-cover"
+          : data.ratio === "3/4"
+            ? "aspect-[3/4] object-cover"
+            : data.ratio === "auto"
+              ? "h-auto object-contain"
+              : "aspect-[4/3] object-cover";
 
       return (
-        <div key={key} className={`not-prose grid gap-3 ${colClass}`}>
+        <div key={key} className={`not-prose grid gap-2 md:gap-3 ${colClass}`}>
           {images.map((img, imgIndex) => (
             <figure key={`${img.url}-${imgIndex}`} className="overflow-hidden rounded-lg">
               <img
                 src={img.url}
                 alt={img.caption || `${fallbackAlt} - ${imgIndex + 1}`}
                 loading="lazy"
-                className="aspect-[4/3] w-full object-cover transition-transform duration-300 hover:scale-105"
+                className={`w-full ${ratioClass} transition-transform duration-300 hover:scale-105`}
               />
               {img.caption ? (
                 <figcaption className="mt-1 text-center text-xs italic text-white/70">

@@ -262,7 +262,7 @@ function getDefaultBlock(type: ContentBlockType): ContentBlock {
       return {
         id: createId(),
         type,
-        data: { images: [], columns: 3 },
+        data: { images: [], columns: 3, ratio: "4/3" },
       };
     case "table":
       /** Bảng so sánh: mở sẵn 3 cột × 2 hàng cho người viết điền ngay (chủ 25/09). */
@@ -417,11 +417,17 @@ function blocksToHtml(blocks: ContentBlock[]): string {
           const images = Array.isArray(data.images) ? data.images : [];
           if (!images.length) return "";
           const cols = Number(data.columns) || 3;
+          /** Tỉ lệ khung: "auto" giữ nguyên ảnh, còn lại cắt theo khung đã chọn (chủ 25/09). */
+          const tiLe = String(data.ratio || "4/3");
+          const fit =
+            tiLe === "auto"
+              ? ""
+              : `aspect-ratio:${tiLe === "1/1" ? "1/1" : tiLe === "3/4" ? "3/4" : "4/3"};object-fit:cover;`;
           const items = images
             .map((img: any) => {
               if (!img?.url) return "";
               const cap = escapeHtml(img.caption || "");
-              return `<figure><img src="${img.url}" alt="${cap}" loading="lazy" />${
+              return `<figure><img src="${img.url}" alt="${cap}" loading="lazy" style="width:100%;${fit}" />${
                 cap ? `<figcaption>${cap}</figcaption>` : ""
               }</figure>`;
             })
@@ -1610,6 +1616,35 @@ export default function PostEditor({
                             ))}
                             <span className="ml-auto text-xs text-gray-500">
                               {(block.data.images || []).length} ảnh
+                            </span>
+                          </div>
+
+                          {/* TỈ LỆ KHUNG ẢNH (chủ 25/09) — "Gốc" giữ nguyên ảnh, không cắt rìa. */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm text-gray-600">Tỉ lệ:</span>
+                            {(
+                              [
+                                ["4/3", "4:3"],
+                                ["1/1", "1:1"],
+                                ["3/4", "3:4"],
+                                ["auto", "Gốc"],
+                              ] as Array<["4/3" | "1/1" | "3/4" | "auto", string]>
+                            ).map(([giaTri, nhan]) => (
+                              <button
+                                key={giaTri}
+                                type="button"
+                                onClick={() => updateSharedBlockField(block.id, "ratio", giaTri)}
+                                className={`rounded-md border px-3 py-1 text-sm ${
+                                  (block.data.ratio || "4/3") === giaTri
+                                    ? "border-red-500 bg-red-500 text-white"
+                                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                }`}
+                              >
+                                {nhan}
+                              </button>
+                            ))}
+                            <span className="text-xs text-gray-500">
+                              “Gốc” hiện đủ ảnh, không cắt — chọn khi ảnh đã cắt sẵn đúng khung.
                             </span>
                           </div>
 

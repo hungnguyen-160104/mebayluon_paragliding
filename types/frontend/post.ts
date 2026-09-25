@@ -54,6 +54,13 @@ export type ContentBlock = {
     /** Block thư viện ảnh: danh sách ảnh + số cột hiển thị. */
     images?: { url: string; caption?: string }[];
     columns?: number;
+    /**
+     * TỈ LỆ KHUNG ẢNH của thư viện (chủ 25/09): trước đây mọi ảnh bị ép về
+     * khung ngang 4:3 rồi cắt bớt, ảnh vuông hay ảnh dọc đều mất phần rìa.
+     * "auto" = giữ nguyên ảnh, không cắt. Bài cũ không có trường này nên vẫn
+     * hiểu là "4/3" — không bài nào đổi dáng sau bản này.
+     */
+    ratio?: "4/3" | "1/1" | "3/4" | "auto";
     /** Đoạn văn: căn lề + cỡ chữ (dùng chung 2 ngôn ngữ). */
     align?: "left" | "center" | "right";
     fontSize?: "sm" | "base" | "lg" | "xl";
