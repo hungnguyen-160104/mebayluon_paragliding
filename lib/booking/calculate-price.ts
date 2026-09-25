@@ -1291,12 +1291,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       {
         key: "quan_ba_pg" as PackageKey,
         label: {
-          vi: "Dù lượn (PG)",
-          en: "Paragliding (PG)",
-          fr: "Parapente (PG)",
-          ru: "Параплан (PG)",
-          zh: "滑翔伞 (PG)",
-          hi: "पैराग्लाइडिंग (PG)",
+          vi: "Dù lượn không động cơ (PG)",
+          en: "Paragliding, non-powered (PG)",
+          fr: "Parapente sans moteur (PG)",
+          ru: "Параплан без мотора (PG)",
+          zh: "无动力滑翔伞 (PG)",
+          hi: "बिना मोटर पैराग्लाइडिंग (PG)",
         },
         subtitle: {
           vi: "Bay đôi cùng phi công, hoàn toàn nhờ sức gió. Cất cánh sườn núi ở độ cao 950 m, hạ cánh trong thung lũng Quản Bạ. Giá đã gồm đón trả 2 chiều trong khu vực Quản Bạ.",
