@@ -324,26 +324,21 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyế
     duration: "10 – 25 phút",
     landingPoint: "Thung lũng Quản Bạ (cũng là bãi cất PPG)",
     basePrice: 2290000,
-    image: "/spots/ha-giang/hero.jpeg",
+    image: "/spots/ha-giang/quan-ba-hero.jpg",
     galleryImages: [
-      /**
-       * Ảnh Quản Bạ TẠM (chủ 25/09, chưa có ảnh bay thật): đường lên Cổng
-       * Trời — phạm vi công cộng (Thái Nhi, Wikimedia Commons) nên dùng được
-       * ở bộ sưu tập không có chỗ ghi công. Hai ảnh CC BY (Núi Đôi) chỉ dùng
-       * trong bài blog, nơi caption ghi được tên tác giả.
-       */
-      "/spots/ha-giang/quan-ba-cong-troi.jpg",
-      "/spots/ha-giang/1.jpeg",
-      "/spots/ha-giang/2.jpeg",
-      "/spots/ha-giang/3.jpeg",
-      "/spots/ha-giang/4.jpg",
-      "/spots/ha-giang/5.jpg",
-      "/spots/ha-giang/6.jpg",
+      // Ảnh bay thật của Mebayluon tại Quản Bạ (GoPro, thư mục Drive "Bay Quản Bạ - Hà Giang", 25/09/2026)
+      "/spots/ha-giang/quan-ba-ppg-co-do.jpg",
+      "/spots/ha-giang/quan-ba-thung-lung.jpg",
+      "/spots/ha-giang/quan-ba-ppg-tren-song.jpg",
+      "/spots/ha-giang/quan-ba-thung-lung-doc.jpg",
+      "/spots/ha-giang/quan-ba-ppg-nang.jpg",
+      "/spots/ha-giang/quan-ba-ppg-cat-canh.jpg",
+      "/spots/ha-giang/quan-ba-pg-san-may.jpg",
     ],
     storyImages: [
-      "/spots/ha-giang/so1.jpeg",
-      "/spots/ha-giang/so2.png",
-      "/spots/ha-giang/so3.JPG",
+      "/spots/ha-giang/quan-ba-canh-du.jpg",
+      "/spots/ha-giang/quan-ba-thung-lung-doc.jpg",
+      "/spots/ha-giang/quan-ba-ppg-tren-song.jpg",
     ],
     packages: filterPackages([
       {

@@ -74,7 +74,7 @@ export const SPOTS_LIST: SpotListItem[] = [
     altitude: "950 – 2.000 m",
     duration: "10 – 25'",
     priceVND: 2_290_000,
-    image: "/spots/ha-giang/hero.jpeg",
+    image: "/spots/ha-giang/quan-ba-hero.jpg",
     i18nKey: "vienNam",
   },
   {
