@@ -91,6 +91,7 @@ export const vi: CommonTranslation = {
       vienNam: {
         name: "Quản Bạ",
         location: "Hà Giang",
+        tagline: "Điểm bay Dù lượn & Dù lượn có động cơ",
         duration: "Tour 90 phút",
         highlights: [
           "Checkin Hà Giang từ độ cao hàng ngàn mét",

@@ -94,6 +94,7 @@ export const fr: CommonTranslation = {
       vienNam: {
         name: "Quan Ba",
         location: "Ha Giang",
+        tagline: "Site de parapente & paramoteur",
         duration: "Sortie de 90 minutes",
         highlights: [
           "Photo souvenir à Ha Giang à des milliers de mètres",

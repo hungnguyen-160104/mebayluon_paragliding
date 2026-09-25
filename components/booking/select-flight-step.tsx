@@ -72,6 +72,7 @@ type ServiceMeta = {
     | "da_nang_mountain_shuttle"
     | "da_nang_hotel_pickup"
     | "quan_ba_pickup"
+    | "quan_ba_city_pickup"
     | "sunset"
     | "generic";
   exclusiveGroup?: string;
@@ -861,11 +862,37 @@ function getServiceMeta(
     };
   }
 
+  if (key === "quan_ba_city_pickup") {
+    // Xe 4 chỗ từ TP Hà Giang: qty = số chiều, số xe theo số khách — cùng
+    // công thức với xe Garrya ở Khau Phạ.
+    return {
+      id: "quan_ba_city_pickup",
+      exclusiveGroup: "quan_ba_pickup",
+      requiresInput: true,
+      inputLabel: ui.pickupLocationLabel,
+      showQty: true,
+      maxQty: 2,
+      priceText: `${formatVND(500_000)}/${ui.car4SeatsOneWay}`,
+      lines: descriptionLines.map((text, idx) =>
+        idx === 0
+          ? { text, tone: "red" as const, bold: true }
+          : { text, tone: "dark" as const },
+      ),
+      lineTotalVND: (_base, guests, qty) =>
+        Math.ceil(guests / 4) * Math.max(1, qty) * 500_000,
+      lineTotalUSD: (_base, guests, qty) =>
+        Math.ceil(guests / 4) * Math.max(1, qty) * 20,
+      summaryText: (name, qty) => `${name} (${qty} ${ui.carUnit})`,
+    };
+  }
+
   if (key === "quan_ba_pickup") {
     // Đón trả 2 chiều đã nằm trong giá vé Quản Bạ: tích sẵn, không cộng tiền,
-    // chỉ cần điểm đón. Bỏ tích = tự đến, hiện lời nhắc có mặt trước 15 phút.
+    // chỉ cần điểm đón. Bỏ tích = tự đến, hiện lời nhắc có mặt trước 15 phút
+    // (trừ khi khách đã chọn xe từ TP Hà Giang — xem chỗ vẽ lời nhắc).
     return {
       id: "quan_ba_pickup",
+      exclusiveGroup: "quan_ba_pickup",
       defaultSelected: true,
       requiresInput: true,
       inputLabel: ui.pickupPointLabel,
@@ -2048,7 +2075,14 @@ export default function SelectFlightStep() {
                           </div>
                         ) : null}
 
-                        {meta.warningWhenUnchecked && !active ? (
+                        {meta.warningWhenUnchecked &&
+                        !active &&
+                        // Bỏ đón trong khu vực Quản Bạ vì đã lấy xe từ TP Hà
+                        // Giang thì không phải "tự đến" — khỏi nhắc.
+                        !(
+                          svc.key === "quan_ba_pickup" &&
+                          getServiceState(data, "quan_ba_city_pickup").selected
+                        ) ? (
                           <div className="mt-2 text-[13px] italic leading-6 text-[#FF5E1F] sm:ml-11 sm:text-[14px]">
                             {meta.warningWhenUnchecked}
                           </div>

@@ -94,6 +94,7 @@ export const hi: CommonTranslation = {
       vienNam: {
         name: "क्वान बा",
         location: "Ha Giang",
+        tagline: "पैराग्लाइडिंग और पैरामोटर उड़ान स्थल",
         duration: "90 मिनट का टूर",
         highlights: [
           "हज़ारों मीटर की ऊँचाई से Ha Giang में चेक-इन",

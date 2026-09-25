@@ -58,7 +58,7 @@ export const FOOTER_SPOTS = [
     href: "/spots/tram-tau",
   },
   {
-    name: "Đồng Văn (Hà Giang)",
+    name: "Quản Bạ (Hà Giang)",
     href: "/spots/ha-giang",
   },
   {

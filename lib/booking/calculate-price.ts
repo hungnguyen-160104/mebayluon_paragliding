@@ -1558,6 +1558,37 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         priceVND: 0,
         priceUSD: 0,
         requiresPickupInput: true,
+        exclusiveGroup: "quan_ba_pickup",
+      },
+      {
+        /**
+         * Đón từ TP HÀ GIANG (chủ 25/09/2026): 500.000đ / xe 4 chỗ / 1 chiều,
+         * qty = SỐ CHIỀU (1 hoặc 2), số xe = ceil(khách / 4) — cùng công thức
+         * với xe Garrya ở Khau Phạ (xem meta "quan_ba_city_pickup").
+         * Cùng nhóm với đón trong khu vực: khách ở TP thì xe TP đưa thẳng lên bãi.
+         */
+        key: "quan_ba_city_pickup",
+        label: {
+          vi: "Đón từ TP Hà Giang (xe 4 chỗ, 500.000 đ/chiều)",
+          en: "Pickup from Ha Giang city (4-seat car, 500,000 VND/one way)",
+          fr: "Prise en charge depuis la ville de Ha Giang (voiture 4 places, 500 000 VND/trajet)",
+          ru: "Трансфер из города Хазянг (4-местная машина, 500 000 VND в одну сторону)",
+          zh: "从河江市接送（4 座车，500,000 越南盾/单程）",
+          hi: "हा जियांग शहर से पिकअप (4-सीटर कार, 500,000 VND/एक तरफ़)",
+        },
+        description: {
+          vi: "Nếu đặt 2 chiều vui lòng chọn \"2\".\nXe 4 chỗ đón tại khách sạn trong TP Hà Giang, khoảng 45 km (1 giờ 15 phút) lên Quản Bạ. Trên 4 khách tính thêm xe.",
+          en: "For a round trip, please select \"2\".\n4-seat car from your hotel in Ha Giang city, about 45 km (1 h 15 min) up to Quan Ba. More than 4 guests: extra car.",
+          fr: "Pour un aller-retour, veuillez sélectionner \"2\".\nVoiture 4 places depuis votre hôtel en ville de Ha Giang, environ 45 km (1 h 15) jusqu'à Quan Ba. Plus de 4 personnes : voiture supplémentaire.",
+          ru: "Для поездки туда-обратно выберите \"2\".\n4-местная машина от отеля в городе Хазянг, около 45 км (1 ч 15 мин) до Куан Ба. Более 4 гостей — дополнительная машина.",
+          zh: "如需往返，请选择\"2\"。\n4 座车从河江市酒店出发，约 45 公里（1 小时 15 分钟）到管坝。超过 4 位客人需加车。",
+          hi: "राउंड ट्रिप के लिए कृपया \"2\" चुनें।\nहा जियांग शहर के होटल से 4-सीटर कार, क्वान बा तक लगभग 45 किमी (1 घंटा 15 मिनट)। 4 से अधिक मेहमान: अतिरिक्त कार।",
+        },
+        controlType: "checkbox",
+        priceVND: 500_000,
+        priceUSD: 20,
+        requiresPickupInput: true,
+        exclusiveGroup: "quan_ba_pickup",
       },
     ],
     addons: {

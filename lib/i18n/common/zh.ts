@@ -77,6 +77,7 @@ export const zh: CommonTranslation = {
       vienNam: {
         name: "管坝",
         location: "Ha Giang",
+        tagline: "滑翔伞 & 动力滑翔伞飞行点",
         duration: "行程 90 分钟",
         highlights: ["在数千米高空打卡 Ha Giang", "俯瞰石灰岩高原全景"],
         summary: "在数千米高空欣赏 Ha Giang 壮美的石灰岩高原，全新的视角。",

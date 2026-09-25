@@ -95,6 +95,7 @@ export const ru: CommonTranslation = {
       vienNam: {
         name: "Куанба",
         location: "Ha Giang",
+        tagline: "Полёты на параплане и парамоторе",
         duration: "Тур 90 минут",
         highlights: [
           "Кадр из Ha Giang с высоты в тысячи метров",

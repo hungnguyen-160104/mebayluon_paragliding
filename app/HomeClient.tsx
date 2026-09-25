@@ -55,6 +55,12 @@ type FlyingSpot = {
   image: string;
 };
 
+/**
+ * Thứ tự 6 thẻ "Điểm bay nổi bật" theo chủ (25/09/2026):
+ *   hàng 1: Khau Phạ · Quản Bạ · Đồi Bù | Viên Nam
+ *   hàng 2: Sapa · Phình Hồ · Sơn Trà
+ * (khoá i18n của Quản Bạ vẫn là "vienNam" — tên cũ, nội dung đã là Quản Bạ.)
+ */
 const flyingSpots: FlyingSpot[] = [
   {
     nameKey: "khauPha",
@@ -64,11 +70,11 @@ const flyingSpots: FlyingSpot[] = [
     image: "/mu-cang-chai-yen-bai-1.jpg",
   },
   {
-    nameKey: "sonTra",
-    slug: "son-tra",
-    locationKey: "daNang",
-    price: 2190000,
-    image: "/da-nang.jpg",
+    nameKey: "vienNam",
+    slug: "ha-giang",
+    locationKey: "haGiang",
+    price: 2290000,
+    image: "/spots/ha-giang/quan-ba-hero.jpg",
   },
   {
     nameKey: "doiBu",
@@ -85,18 +91,18 @@ const flyingSpots: FlyingSpot[] = [
     image: "/muong-hoa-sapa.jpg",
   },
   {
-    nameKey: "vienNam",
-    slug: "ha-giang",
-    locationKey: "hoaBinh",
-    price: 2190000,
-    image: "/ha-giang.JPG",
-  },
-  {
     nameKey: "tramTau",
     slug: "tram-tau",
     locationKey: "yenBaiTramTau",
     price: 2590000,
     image: "/tram-tau-yen-bai.jpg",
+  },
+  {
+    nameKey: "sonTra",
+    slug: "son-tra",
+    locationKey: "daNang",
+    price: 2190000,
+    image: "/da-nang.jpg",
   },
 ];
 
