@@ -375,50 +375,50 @@ const SAFETY_FALLBACK: Record<Lang, SafetyCopy> = {
   vi: {
     title: "Cam kết an toàn",
     items: [
-      { title: "Đào tạo chuyên nghiệp", desc: "Tất cả phi công đều có chứng chỉ quốc tế APPI..." },
-      { title: "Thiết bị chuẩn quốc tế", desc: "Sử dụng dù, đai an toàn và mũ bảo hiểm từ các thương hiệu hàng đầu..." },
-      { title: "Bảo hiểm toàn diện", desc: "Mỗi chuyến bay đều bao gồm gói bảo hiểm an toàn bay cho hành khách..." },
+      { title: "Đào tạo chuyên nghiệp", desc: "Tất cả phi công đều có chứng chỉ phi công bay đôi chuyên nghiệp." },
+      { title: "Thiết bị chuẩn quốc tế", desc: "Mọi trang thiết bị bay (vòm dù, đai ngồi, dù phụ, mũ, ...) từ các thương hiệu hàng đầu, kiểm định định kỳ theo tiêu chuẩn quốc tế." },
+      { title: "Bảo hiểm toàn diện", desc: "Mỗi chuyến bay đều bao gồm gói bảo hiểm an toàn bay cho hành khách." },
     ],
   },
   en: {
     title: "Safety Commitment",
     items: [
-      { title: "Professional training", desc: "All pilots hold international APPI certification..." },
-      { title: "International-grade gear", desc: "Using gliders, harnesses, and helmets from top brands..." },
-      { title: "Comprehensive insurance", desc: "Every flight includes a safety insurance package for passengers..." },
+      { title: "Professional training", desc: "All pilots hold a professional tandem pilot certificate." },
+      { title: "International-grade gear", desc: "All flying equipment (wing, harness, reserve parachute, helmet, ...) comes from leading brands and is inspected regularly to international standards." },
+      { title: "Comprehensive insurance", desc: "Every flight includes a flight safety insurance package for passengers." },
     ],
   },
   fr: {
     title: "Engagement sécurité",
     items: [
-      { title: "Formation professionnelle", desc: "Tous les pilotes détiennent la certification internationale APPI..." },
-      { title: "Équipement aux normes internationales", desc: "Utilisation de voiles, sellettes et casques de grandes marques..." },
-      { title: "Assurance complète", desc: "Chaque vol inclut un forfait d'assurance sécurité pour les passagers..." },
+      { title: "Formation professionnelle", desc: "Tous les pilotes détiennent un brevet professionnel de pilote biplace." },
+      { title: "Équipement aux normes internationales", desc: "Tout le matériel de vol (voile, sellette, parachute de secours, casque, ...) provient de grandes marques et est contrôlé régulièrement selon les normes internationales." },
+      { title: "Assurance complète", desc: "Chaque vol inclut une assurance sécurité pour les passagers." },
     ],
   },
   ru: {
     title: "Гарантия безопасности",
     items: [
-      { title: "Профессиональная подготовка", desc: "Все пилоты имеют международную сертификацию APPI..." },
-      { title: "Оборудование международного уровня", desc: "Использование парапланов, подвесок и шлемов от ведущих брендов..." },
-      { title: "Полное страхование", desc: "Каждый полет включает пакет страхования безопасности для пассажиров..." },
+      { title: "Профессиональная подготовка", desc: "Все пилоты имеют профессиональный сертификат пилота тандема." },
+      { title: "Оборудование международного уровня", desc: "Всё лётное снаряжение (купол, подвеска, запасной парашют, шлем и т.д.) от ведущих брендов, регулярно проверяется по международным стандартам." },
+      { title: "Полное страхование", desc: "Каждый полёт включает страховку безопасности полёта для пассажиров." },
     ],
   },
   // ✅ thêm fallback cho zh/hi để khỏi undefined
   zh: {
     title: "安全承诺",
     items: [
-      { title: "专业培训", desc: "所有飞行员均持有国际 APPI 认证..." },
-      { title: "国际标准装备", desc: "使用顶级品牌的伞翼、座袋和头盔..." },
-      { title: "全面保险", desc: "每次飞行均包含乘客安全保险..." },
+      { title: "专业培训", desc: "所有飞行员均持有专业双人飞行员证书。" },
+      { title: "国际标准装备", desc: "所有飞行装备（伞翼、座袋、备用伞、头盔等）均来自顶级品牌，并按国际标准定期检验。" },
+      { title: "全面保险", desc: "每次飞行均包含乘客飞行安全保险。" },
     ],
   },
   hi: {
     title: "सुरक्षा प्रतिबद्धता",
     items: [
-      { title: "प्रोफेशनल ट्रेनिंग", desc: "सभी पायलट अंतरराष्ट्रीय APPI प्रमाणित हैं..." },
-      { title: "इंटरनेशनल ग्रेड गियर", desc: "टॉप ब्रांड के ग्लाइडर, हार्नेस और हेलमेट..." },
-      { title: "कम्प्रीहेंसिव इंश्योरेंस", desc: "हर उड़ान में यात्रियों के लिए सुरक्षा बीमा शामिल..." },
+      { title: "प्रोफेशनल ट्रेनिंग", desc: "सभी पायलटों के पास प्रोफेशनल टैंडम पायलट प्रमाणपत्र है।" },
+      { title: "इंटरनेशनल ग्रेड गियर", desc: "सभी उड़ान उपकरण (विंग, हार्नेस, रिज़र्व पैराशूट, हेलमेट, ...) शीर्ष ब्रांडों के हैं और अंतरराष्ट्रीय मानकों के अनुसार नियमित रूप से जाँचे जाते हैं।" },
+      { title: "कम्प्रीहेंसिव इंश्योरेंस", desc: "हर उड़ान में यात्रियों के लिए उड़ान सुरक्षा बीमा शामिल है।" },
     ],
   },
 };
