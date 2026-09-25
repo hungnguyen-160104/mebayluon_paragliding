@@ -3144,157 +3144,157 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
     vi: [
       {
         id: 1,
-        title: "Bay trên Cổng Trời",
+        title: "Bay trên cao nguyên đá",
         author: "Mebayluon Team",
-        date: "20/10/2025",
+        date: "25/09/2026",
         content:
-          "Cảm giác bay lượn trên những dãy núi đá tai mèo hùng vĩ thật choáng ngợp. Quang cảnh Hà Giang từ trên cao đẹp đến nao lòng.",
+          "Chuyến bay khảo sát Quản Bạ: cất cánh ở 950 m, dưới cánh dù là dãy núi đá tai mèo nối nhau lên tận Cổng Trời. Cửa ngõ Cao nguyên đá Đồng Văn nhìn từ trên không đẹp hơn mọi tấm ảnh chụp từ đèo.",
       },
       {
         id: 2,
-        title: "Mùa hoa tam giác mạch",
+        title: "Thung lũng Quản Bạ dưới cánh dù",
         author: "Mebayluon Team",
-        date: "15/11/2025",
+        date: "25/09/2026",
         content:
-          "Những thảm hoa hồng tím trải dài dưới cánh dù. Bay vào mùa này thực sự là một trải nghiệm thị giác tuyệt vời.",
+          "Ruộng ngô, bản làng, con đường bê tông và dòng sông uốn quanh chân núi trải ra như tấm bản đồ sống. Núi Đôi nằm ngay giữa lòng thung lũng, phi công chỉ tay là khách nhận ra ngay.",
       },
       {
         id: 3,
-        title: "Sông Nho Quế xanh biếc",
+        title: "Săn mây bình minh bằng PPG",
         author: "Mebayluon Team",
-        date: "05/12/2025",
+        date: "25/09/2026",
         content:
-          "Nhìn dòng sông Nho Quế như dải lụa xanh uốn lượn giữa hẻm Tu Sản. Một khung cảnh không thể nào quên.",
+          "Từ 15/10/2026, gói PPG bay lâu 25 phút đưa khách lên cao lúc mặt trời mọc, khi mây còn phủ kín các thung lũng nhỏ quanh Tam Sơn và chỉ những đỉnh đá nhô lên. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
       },
     ],
     en: [
       {
         id: 1,
-        title: "Flying over Heaven's Gate",
+        title: "Flying over the karst plateau",
         author: "Mebayluon Team",
-        date: "2025-10-20",
+        date: "2026-09-25",
         content:
-          "The feeling of soaring over majestic limestone karst mountains is overwhelming. The view of Ha Giang from above is breathtaking.",
+          "Survey flight at Quan Ba: take off at 950 m and the cat-ear limestone ridges run under the wing all the way up to Heaven's Gate. The gateway to the Dong Van karst plateau looks better from the air than from any pass viewpoint.",
       },
       {
         id: 2,
-        title: "Buckwheat flower season",
+        title: "The Quan Ba valley under the wing",
         author: "Mebayluon Team",
-        date: "2025-11-15",
+        date: "2026-09-25",
         content:
-          "Carpets of pink-purple flowers stretch out beneath the wing. Flying in this season is truly a magnificent visual experience.",
+          "Corn fields, villages, a concrete road and a river winding along the foot of the mountains spread out like a living map. The Twin Mountains sit right in the middle of the valley, guests spot them the moment the pilot points.",
       },
       {
         id: 3,
-        title: "Emerald Nho Que River",
+        title: "Sunrise cloud-hunting by PPG",
         author: "Mebayluon Team",
-        date: "2025-12-05",
+        date: "2026-09-25",
         content:
-          "Seeing the Nho Que River like a winding green silk ribbon through Tu San Canyon. An unforgettable scene.",
+          "From 15 October 2026 the 25-minute PPG package takes you up at sunrise, while cloud still fills the small valleys around Tam Son and only the rock peaks show through. Book ahead so we can schedule by the sun.",
       },
     ],
     fr: [
       {
         id: 1,
-        title: "Vol au-dessus de la Porte du Ciel",
+        title: "Vol au-dessus du plateau karstique",
         author: "Équipe Mebayluon",
-        date: "20/10/2025",
+        date: "25/09/2026",
         content:
-          "La sensation de planer au-dessus des majestueuses montagnes karstiques est bouleversante. La vue sur Hà Giang d'en haut est à couper le souffle.",
+          "Vol de reconnaissance à Quản Bạ : décollage à 950 m, et sous l'aile les crêtes calcaires en dents de chat s'enchaînent jusqu'à la Porte du Ciel. La porte d'entrée du plateau karstique de Đồng Văn est plus belle vue du ciel que depuis n'importe quel col.",
       },
       {
         id: 2,
-        title: "Saison des fleurs de sarrasin",
+        title: "La vallée de Quản Bạ sous l'aile",
         author: "Équipe Mebayluon",
-        date: "15/11/2025",
+        date: "25/09/2026",
         content:
-          "Des tapis de fleurs rose-violet s'étendent sous l'aile. Voler en cette saison est vraiment une expérience visuelle magnifique.",
+          "Champs de maïs, villages, route bétonnée et rivière serpentant au pied des montagnes se déploient comme une carte vivante. Les Montagnes Jumelles trônent au milieu de la vallée, on les reconnaît dès que le pilote les montre.",
       },
       {
         id: 3,
-        title: "La rivière Nho Quế émeraude",
+        title: "Chasse aux nuages à l'aube en PPG",
         author: "Équipe Mebayluon",
-        date: "05/12/2025",
+        date: "25/09/2026",
         content:
-          "Voir la rivière Nho Quế comme un ruban de soie vert serpentant à travers le canyon Tu Sản. Une scène inoubliable.",
+          "Dès le 15 octobre 2026, le forfait PPG de 25 minutes vous emmène en altitude au lever du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Sơn et que seuls les pics rocheux émergent. Réservez pour que nous calions l'horaire sur le soleil.",
       },
     ],
     ru: [
       {
         id: 1,
-        title: "Полёт над Небесными вратами",
+        title: "Полёт над каменным плато",
         author: "Команда Mebayluon",
-        date: "20.10.2025",
+        date: "25.09.2026",
         content:
-          "Ощущение парения над величественными карстовыми горами ошеломляет. Вид на Хазянг с высоты захватывает дух.",
+          "Разведочный полёт в Куан Ба: старт с 950 м, и под крылом до самых Небесных врат тянутся известняковые гребни. Ворота каменного плато Донгван с воздуха красивее, чем с любого перевала.",
       },
       {
         id: 2,
-        title: "Сезон цветения гречихи",
+        title: "Долина Куан Ба под крылом",
         author: "Команда Mebayluon",
-        date: "15.11.2025",
+        date: "25.09.2026",
         content:
-          "Ковры розово-фиолетовых цветов расстилаются под крылом. Полёт в этот сезон — поистине великолепное зрелище.",
+          "Кукурузные поля, деревни, бетонная дорога и река, петляющая у подножия гор, раскрываются как живая карта. Горы-близнецы стоят прямо посреди долины, гости узнают их сразу, как только пилот покажет.",
       },
       {
         id: 3,
-        title: "Изумрудная река Нхо Куе",
+        title: "Охота за облаками на рассвете на PPG",
         author: "Команда Mebayluon",
-        date: "05.12.2025",
+        date: "25.09.2026",
         content:
-          "Видеть реку Нхо Куе как извилистую зелёную шёлковую ленту через каньон Ту Сан. Незабываемая картина.",
+          "С 15 октября 2026 года 25-минутный пакет PPG поднимает вас в небо на рассвете, когда облака ещё заполняют маленькие долины вокруг Там Шона и над ними торчат только скальные вершины. Бронируйте заранее, чтобы мы подобрали время по солнцу.",
       },
     ],
     zh: [
       {
         id: 1,
-        title: "飞越天门",
+        title: "飞越石灰岩高原",
         author: "Mebayluon 团队",
-        date: "2025-10-20",
+        date: "2026-09-25",
         content:
-          "翱翔在雄伟的喀斯特石山之上的感觉令人震撼。从高空俯瞰河江的景色美得令人窒息。",
+          "管簿勘察飞行：从 950 米起飞，翼下的猫耳状石灰岩山脊一路延伸到天门。同文岩石高原的门户，从空中看比任何山口观景台都美。",
       },
       {
         id: 2,
-        title: "荞麦花季",
+        title: "翼下的管簿山谷",
         author: "Mebayluon 团队",
-        date: "2025-11-15",
+        date: "2026-09-25",
         content:
-          "粉紫色的花毯在翼下延伸。在这个季节飞行真是一次宏伟的视觉体验。",
+          "玉米田、村庄、水泥路和绕山脚蜿蜒的河流，像一张活地图铺开。双峰山就在山谷正中，飞行员一指，客人马上认出来。",
       },
       {
         id: 3,
-        title: "翠绿的儒桂河",
+        title: "PPG 日出追云",
         author: "Mebayluon 团队",
-        date: "2025-12-05",
+        date: "2026-09-25",
         content:
-          "看着儒桂河像一条蜿蜒的绿丝带穿过杜桑峡谷。令人难忘的景象。",
+          "自 2026 年 10 月 15 日起，25 分钟 PPG 套餐带您在日出时升空，此时云海仍填满三山周围的小山谷，只露出石峰。请提前预订，我们按日出时间安排。",
       },
     ],
     hi: [
       {
         id: 1,
-        title: "स्वर्ग के द्वार के ऊपर उड़ान",
+        title: "पत्थर के पठार के ऊपर उड़ान",
         author: "Mebayluon टीम",
-        date: "2025-10-20",
+        date: "2026-09-25",
         content:
-          "भव्य चूना पत्थर कार्स्ट पहाड़ों के ऊपर उड़ने का एहसास अभिभूत करने वाला है। ऊपर से हा गियांग का नज़ारा लुभावना है।",
+          "क्वान बा सर्वे उड़ान: 950 मीटर से टेक-ऑफ, और पंख के नीचे चूना-पत्थर की नुकीली चोटियाँ स्वर्ग के द्वार तक फैली हैं। डोंग वान पठार का प्रवेश द्वार किसी भी दर्रे से ज़्यादा सुंदर आसमान से दिखता है।",
       },
       {
         id: 2,
-        title: "कुट्टू के फूलों का मौसम",
+        title: "पंख के नीचे क्वान बा घाटी",
         author: "Mebayluon टीम",
-        date: "2025-11-15",
+        date: "2026-09-25",
         content:
-          "पंख के नीचे गुलाबी-बैंगनी फूलों के कालीन बिछे हुए हैं। इस मौसम में उड़ान भरना वास्तव में एक शानदार दृश्य अनुभव है।",
+          "मक्के के खेत, गाँव, पक्की सड़क और पहाड़ों के तल से घुमावदार नदी एक जीवित नक्शे की तरह फैलती है। जुड़वाँ पर्वत घाटी के ठीक बीच में हैं, पायलट के इशारा करते ही मेहमान पहचान लेते हैं।",
       },
       {
         id: 3,
-        title: "पन्ना जैसी न्हो क्यू नदी",
+        title: "PPG से सूर्योदय पर बादलों का पीछा",
         author: "Mebayluon टीम",
-        date: "2025-12-05",
+        date: "2026-09-25",
         content:
-          "तू सैन कैन्यन के माध्यम से न्हो क्यू नदी को एक घुमावदार हरे रेशम रिबन की तरह देखना। एक अविस्मरणीय दृश्य।",
+          "15 अक्टूबर 2026 से 25 मिनट का PPG पैकेज आपको सूर्योदय पर ऊपर ले जाता है, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों को भरे रहते हैं और सिर्फ़ चट्टानी चोटियाँ दिखती हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें।",
       },
     ],
   },

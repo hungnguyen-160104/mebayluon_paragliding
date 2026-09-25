@@ -320,7 +320,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ⏰ Mở cửa 7:00 – 18:00 hàng ngày
 
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyến bay của bạn!`,
-    landscape: "Thung lũng Quản Bạ – Núi Đôi – Cổng Trời – sông Lô",
+    landscape: "Cao nguyên đá – Cổng Trời – Núi Đôi – thung lũng Quản Bạ",
     duration: "10 – 25 phút",
     landingPoint: "Thung lũng Quản Bạ (cũng là bãi cất PPG)",
     basePrice: 2290000,
