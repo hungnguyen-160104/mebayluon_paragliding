@@ -330,7 +330,7 @@ export default function HomePage() {
         "Đèo Khau Phạ (Tú Lệ)",
         "Xuân Mai (Hà Nội)",
         "Sapa (Lào Cai)",
-        "Đồng Văn (Hà Giang)",
+        "Quản Bạ (Hà Giang)",
       ],
     },
     {
