@@ -29,7 +29,13 @@ import { BaobaySetting } from "@/models/BaobaySetting.model";
 import { Booking } from "@/models/Booking.model";
 import { giaDonKhachSanHaNoi, LOCATIONS, type LocationKey } from "@/lib/booking/calculate-price";
 
-/** Điểm bay của trang khách ↔ điểm bay trong app. Điểm nào không có ở đây (Đà Nẵng, Quản Bạ…) thì bỏ qua. */
+/**
+ * Điểm bay của trang khách ↔ điểm bay trong app. Điểm nào không có ở đây (Đà
+ * Nẵng, Quản Bạ…) thì bỏ qua. Quản Bạ mở đặt online 25/09/2026 nhưng app nội bộ
+ * chưa có điểm "ha-giang" (lib/baobay/spots.ts chỉ có 3 điểm; normalizeSpot sẽ
+ * quy về Khau Phạ) — muốn đồng bộ phải thêm điểm vào app trước, đừng chỉ thêm
+ * dòng ở đây.
+ */
 const WEB_LOCATION_BY_SPOT: Record<string, string> = {
   "khau-pha": "khau_pha",
   "ha-noi": "ha_noi",

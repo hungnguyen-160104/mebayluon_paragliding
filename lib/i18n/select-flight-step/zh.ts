@@ -63,7 +63,8 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
         "欣赏岘港城市、海面与韩江的全景风光。",
       ],
       quan_ba: [
-        "从高空俯瞰河江喀斯特高原，体验独特的自由飞行。",
+        "管坝–河江飞行点，Mebayluon 自 2026 年 10 月 15 日起运营：滑翔伞从 950 米起飞，动力伞直接在山谷起飞。",
+        "飞越石灰岩高原：天门、双峰山、龙潭山谷和绕山脚蜿蜒的河流。票价已含管坝地区往返接送。",
       ],
     },
     hanoiMountainWarning:
@@ -75,7 +76,7 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     paramotorNoPickupWarning:
       "注意：该飞行不包含前往飞行点的接送。请于飞行前 15 分钟到达 Mebayluon Clubhouse 办理手续。",
     quanBaPickupWarning:
-      "注意：建议乘客使用上山接送服务，以便更快、更灵活地安排。如果自行前往，请于飞行前 15 分钟到达起飞点。",
+      "注意：票价已含管坝地区往返接送。若取消勾选并自行前往，请提前 15 分钟到达集合点办理手续。",
     selectedFlightLabel: "已选飞行",
     selectedOptionsLabel: "已选服务",
     noOptionalSelected: "尚未选择任何可选服务。",
@@ -105,6 +106,8 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Ngu Ong 神庙 - 查看地图",
     mapSapaTakeoffLabel: "起飞点 - 查看地图",
     mapSapaLandingLabel: "降落点 - 查看地图",
+    mapQuanBaTakeoffLabel: "管坝滑翔伞起飞点（950 米）- 查看地图",
+    mapQuanBaLandingLabel: "降落场 / 动力伞起飞点 - 查看地图",
     temporarilyClosed: "暂时关闭",
   },
   locationCards: {

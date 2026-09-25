@@ -67,7 +67,8 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
         "Da Nang शहर, समुद्र और Han नदी का सुंदर पैनोरमिक दृश्य देखें।",
       ],
       quan_ba: [
-        "Ha Giang के पूरे कार्स्ट पठार को ऊँचाई से देखने का अनोखा अनुभव लें।",
+        "क्वान बा – हा जियांग साइट, Mebayluon द्वारा 15 अक्टूबर 2026 से संचालित: पैराग्लाइडिंग टेक-ऑफ 950 मी से, पैरामोटर सीधे घाटी से उड़ान भरता है।",
+        "पत्थर के पठार के ऊपर उड़ें: स्वर्ग का द्वार, जुड़वाँ पर्वत, लुंग ताम घाटी और पहाड़ों के तल से बहती नदी। क्वान बा क्षेत्र में राउंड-ट्रिप ट्रांसफ़र शामिल है।",
       ],
     },
     hanoiMountainWarning:
@@ -79,7 +80,7 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     paramotorNoPickupWarning:
       "नोट: इस उड़ान में फ्लाइट पॉइंट तक ट्रांसफ़र शामिल नहीं है। कृपया Mebayluon Clubhouse में 15 मिनट पहले पहुँचें।",
     quanBaPickupWarning:
-      "नोट: यात्रियों को तेज़ और लचीली व्यवस्था के लिए पहाड़ ट्रांसपोर्ट सेवा का उपयोग करना चाहिए। यदि आप स्वयं जाते हैं, तो कृपया उड़ान से 15 मिनट पहले पहुँचें।",
+      "नोट: टिकट में क्वान बा क्षेत्र में राउंड-ट्रिप ट्रांसफ़र पहले से शामिल है। यदि आप इसे हटाकर स्वयं आते हैं, तो कृपया मीटिंग पॉइंट पर 15 मिनट पहले पहुँचें।",
     selectedFlightLabel: "चुनी गई उड़ान",
     selectedOptionsLabel: "चुनी गई सेवाएँ",
     noOptionalSelected: "कोई वैकल्पिक सेवा चयनित नहीं है।",
@@ -110,6 +111,8 @@ export const HI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Ngu Ong shrine - मैप देखें",
     mapSapaTakeoffLabel: "टेकऑफ़ पॉइंट - मैप देखें",
     mapSapaLandingLabel: "लैंडिंग पॉइंट - मैप देखें",
+    mapQuanBaTakeoffLabel: "क्वान बा पैराग्लाइडिंग टेक-ऑफ (950 मी) - मैप देखें",
+    mapQuanBaLandingLabel: "लैंडिंग फ़ील्ड / पैरामोटर टेक-ऑफ - मैप देखें",
     temporarilyClosed: "अस्थायी रूप से बंद",
   },
   locationCards: {

@@ -190,24 +190,27 @@ export const flightOptions: FlightOption[] = [
   {
     id: "quan-ba",
     name: "Hà Giang (Quản Bạ)",
-    price: { weekday: 2190000, unit: "VND" },
+    // PG 2.290.000đ đã gồm đón trả 2 chiều; PPG 15' 2.490.000đ; PPG 25' 3.390.000đ
+    // (bảng gói đầy đủ ở lib/booking/calculate-price.ts → quan_ba.packages).
+    price: { weekday: 2290000, unit: "VND" },
     included: [
-      "01 chuyến bay dù lượn",
+      "01 chuyến bay dù lượn (PG) 10–15 phút hoặc dù có động cơ (PPG) 15–25 phút",
+      "Đón trả 2 chiều trong khu vực Quản Bạ",
       "Ảnh & video bằng GoPro",
       "Bảo hiểm dù lượn",
-      "Giấy chứng nhận",
+      "Nước uống, giấy chứng nhận và quà lưu niệm",
     ],
     excluded: ["Bữa ăn"],
     options: [
       {
-        name: "Xe đón/trả 2 chiều trong khu vực Quản Bạ",
-        price: 150000,
+        name: "Xe đón/trả 2 chiều trong khu vực Quản Bạ (đã bao gồm)",
+        price: 0,
         description:
-          "Dịch vụ đón/trả 2 chiều trong khu vực Quản Bạ. Nếu tự di chuyển, khách cần có mặt trước 15 phút.",
+          "Đón trả tại khách sạn/homestay trong khu vực Nậm Đăm, xã Quản Bạ, Lùng Tám, Cán Tỉ. Nếu tự di chuyển, khách cần có mặt trước 15 phút.",
       },
       {
         name: "Flycam (Drone camera)",
-        price: 350000,
+        price: 400000,
         description:
           "Quay chuyến bay bằng Flycam, toàn bộ dữ liệu gốc sẽ gửi cho bạn.",
       },
@@ -219,10 +222,10 @@ export const flightOptions: FlightOption[] = [
       },
     ],
     coordinates: {
-      takeoff: "",
-      landing: "",
+      takeoff: "https://maps.google.com/?q=23.0604025,105.0189508",
+      landing: "https://maps.google.com/?q=23.0612686,105.0388558",
     },
-    image: "/images/anh-demo.jpg",
+    image: "/spots/ha-giang/quan-ba-hero.jpg",
   },
 ];
 

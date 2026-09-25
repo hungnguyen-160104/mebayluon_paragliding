@@ -40,6 +40,12 @@ type NormalizedPackage = {
   subtitle: string;
   priceVND: number | null;
   priceUSD: number | null;
+  /**
+   * Loại bay mà gói này bán, khi gói chỉ có đúng một loại (Quản Bạ: gói PG /
+   * gói PPG). Chọn gói là chọn luôn loại bay — không cần bước chọn riêng như
+   * Khau Phạ, nhưng vé, email và sổ nội bộ vẫn biết khách bay PG hay PPG.
+   */
+  flightTypeKey: FlightTypeKey | undefined;
 };
 
 type TextLine = {
@@ -188,17 +194,15 @@ const LOCATION_CARD_PRICE_META: Record<LocationKey, number> = {
   ha_noi: 1_790_000,
   khau_pha: 2_190_000,
   sapa: 2_190_000,
-  quan_ba: 2_190_000,
+  quan_ba: 2_290_000,
   da_nang: 2_190_000,
 };
 
 // Điểm bay chưa mở lại — thẻ vẫn hiện nhưng không bấm chọn được, kèm nhãn
-// "tạm đóng". Xác nhận 07/09/2026: Sơn Trà (Đà Nẵng) và Quản Bạ (Hà Giang)
-// đều CHƯA mở. Mở lại điểm nào thì bỏ key đó ra khỏi tập này.
-const TEMPORARILY_CLOSED_LOCATIONS = new Set<LocationKey>([
-  "da_nang",
-  "quan_ba",
-]);
+// "tạm đóng". Sơn Trà (Đà Nẵng) CHƯA mở (07/09/2026). Quản Bạ (Hà Giang) mở
+// đặt từ 25/09/2026 cho ngày bay từ 15/10/2026 (chặn ngày ở bước 2). Mở lại
+// điểm nào thì bỏ key đó ra khỏi tập này.
+const TEMPORARILY_CLOSED_LOCATIONS = new Set<LocationKey>(["da_nang"]);
 
 function clampInt(value: unknown, min: number, max: number) {
   const n = typeof value === "number" ? value : Number(value);
@@ -229,6 +233,13 @@ function getOrderedLocations() {
     .map((loc) => loc.key as LocationKey)
     .filter((key) => !ordered.includes(key));
   return [...ordered, ...rest];
+}
+
+/** Gói chỉ bán một loại bay thì trả về loại đó; gói nhiều loại/không khai -> undefined. */
+function singleFlightTypeOf(raw: unknown): FlightTypeKey | undefined {
+  if (!Array.isArray(raw) || raw.length !== 1) return undefined;
+  const key = (raw[0] as { key?: unknown } | undefined)?.key;
+  return key === "paragliding" || key === "paramotor" ? key : undefined;
 }
 
 function normalizePackages(
@@ -265,6 +276,7 @@ function normalizePackages(
             : typeof pkg.pricePerPersonUSD === "number"
               ? pkg.pricePerPersonUSD
               : null,
+        flightTypeKey: singleFlightTypeOf(pkg.flightTypes),
       };
     })
     .filter((item): item is NormalizedPackage => item !== null);
@@ -409,8 +421,32 @@ function getFooterConfig(
   }
 
   if (location === "quan_ba") {
+    // PPG cất cánh ngay tại bãi hạ nên khách PPG chỉ cần một điểm.
+    if (flightType === "paramotor") {
+      return {
+        inlineLinks: [
+          {
+            label: ui.mapQuanBaLandingLabel,
+            url: "https://maps.google.com/?q=23.0612686,105.0388558",
+            tone: "blue",
+          },
+        ],
+        note: "",
+      };
+    }
     return {
-      inlineLinks: [],
+      inlineLinks: [
+        {
+          label: ui.mapQuanBaTakeoffLabel,
+          url: "https://maps.google.com/?q=23.0604025,105.0189508",
+          tone: "red",
+        },
+        {
+          label: ui.mapQuanBaLandingLabel,
+          url: "https://maps.google.com/?q=23.0612686,105.0388558",
+          tone: "blue",
+        },
+      ],
       note: "",
     };
   }
@@ -826,17 +862,19 @@ function getServiceMeta(
   }
 
   if (key === "quan_ba_pickup") {
+    // Đón trả 2 chiều đã nằm trong giá vé Quản Bạ: tích sẵn, không cộng tiền,
+    // chỉ cần điểm đón. Bỏ tích = tự đến, hiện lời nhắc có mặt trước 15 phút.
     return {
       id: "quan_ba_pickup",
+      defaultSelected: true,
       requiresInput: true,
       inputLabel: ui.pickupPointLabel,
-      showQty: true,
-      priceText: `${formatVND(priceVND)}/${ui.pax}`,
+      priceText: ui.includedLabel,
       lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
       warningWhenUnchecked: ui.quanBaPickupWarning,
-      lineTotalVND: (base, _guests, qty) => base * qty,
-      lineTotalUSD: (base, _guests, qty) => base * qty,
-      summaryText: (name, qty) => `${name}${qty > 1 ? ` x${qty}` : ""}`,
+      lineTotalVND: () => 0,
+      lineTotalUSD: () => 0,
+      summaryText: (name) => name,
     };
   }
 
@@ -915,6 +953,13 @@ export default function SelectFlightStep() {
   );
 
   const isKhauPha = selected === "khau_pha";
+  /** Các gói của điểm này chia theo loại bay (có cả gói PG lẫn gói PPG). */
+  const packagesSplitByFlightType = useMemo(
+    () =>
+      new Set(allPackages.map((pkg) => pkg.flightTypeKey).filter(Boolean))
+        .size > 1,
+    [allPackages],
+  );
   const isParagliding = data.flightTypeKey === "paragliding";
   const isParamotor = data.flightTypeKey === "paramotor";
   const khauPhaPackages = useMemo(
@@ -1756,15 +1801,19 @@ export default function SelectFlightStep() {
                           active={data.packageKey === pkg.key}
                           title={pkg.label}
                           price={pkg.priceVND ? formatVND(pkg.priceVND) : ""}
-                          onClick={() =>
+                          onClick={() => {
+                            // Điểm bán gói theo loại bay (Quản Bạ: PG / PPG)
+                            // thì chọn gói là chọn luôn loại bay; điểm chỉ có
+                            // một loại (Hà Nội 650/850) giữ nguyên như cũ.
+                            const nextFlightType = packagesSplitByFlightType
+                              ? pkg.flightTypeKey
+                              : (data.flightTypeKey as FlightTypeKey | undefined);
                             update({
                               packageKey: pkg.key,
-                              services: keepServicesFor(
-                                pkg.key,
-                                data.flightTypeKey as FlightTypeKey | undefined,
-                              ),
-                            })
-                          }
+                              flightTypeKey: nextFlightType,
+                              services: keepServicesFor(pkg.key, nextFlightType),
+                            });
+                          }}
                         />
                       ))}
                     </div>

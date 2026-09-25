@@ -32,7 +32,13 @@ export type PackageKey =
   // đúng nhãn/giá; KHÔNG còn cho khách chọn mới.
   | "khau_pha_paramotor"
   | "ha_noi_850m"
-  | "ha_noi_650m";
+  | "ha_noi_650m"
+  // Quản Bạ (Hà Giang, mở 15/10/2026): PG 2.290.000đ đã gồm đón trả 2 chiều;
+  // PPG gói cơ bản 15' 2.490.000đ; PPG bay lâu 25' săn mây bình minh/hoàng hôn
+  // 3.390.000đ (= cơ bản + 900.000đ).
+  | "quan_ba_pg"
+  | "quan_ba_ppg_15"
+  | "quan_ba_ppg_25";
 
 export type HolidayType = "weekday" | "weekend" | "holiday";
 
@@ -66,6 +72,8 @@ export type FlightTypePriceConfig = {
   weekend?: number;
   holiday?: number;
   fixed?: number;
+  /** Giá USD cố định của loại bay này (getBasePriceUSD đọc); thiếu thì lấy priceUSD của gói. */
+  fixedUSD?: number;
 };
 
 export type PackageConfig = {
@@ -1268,45 +1276,302 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       zh: "河江",
       hi: "हा जियांग",
     },
-    basePriceVND: () => 2_190_000,
-    basePriceUSD: () => 80,
+    /**
+     * QUẢN BẠ — Mebayluon vận hành từ 15/10/2026 (chủ 25/09/2026).
+     * Ba gói, khách chọn PG hay PPG ngay ở bước 1 như Khau Phạ:
+     *  · PG 2.290.000đ (cất cánh 950 m) — ĐÃ GỒM đón trả 2 chiều trong khu vực.
+     *  · PPG cơ bản 15' 2.490.000đ.
+     *  · PPG bay lâu 25' săn mây bình minh/hoàng hôn 3.390.000đ (= cơ bản + 900k).
+     * USD quy theo cùng tỉ giá các gói khác (~26k): 88 / 95 / 129.
+     * Giá cơ sở (chưa chọn gói) = gói PG, khớp con số trên thẻ điểm bay.
+     */
+    basePriceVND: () => 2_290_000,
+    basePriceUSD: () => 88,
+    packages: [
+      {
+        key: "quan_ba_pg" as PackageKey,
+        label: {
+          vi: "Dù lượn (PG) – cất cánh 950 m, bay 10–15 phút",
+          en: "Paragliding (PG) – 950 m take-off, 10–15 min",
+          fr: "Parapente (PG) – décollage à 950 m, 10–15 min",
+          ru: "Параплан (PG) – старт с 950 м, 10–15 мин",
+          zh: "滑翔伞 (PG) – 950 米起飞，10–15 分钟",
+          hi: "पैराग्लाइडिंग (PG) – 950 मी टेक-ऑफ, 10–15 मिनट",
+        },
+        subtitle: {
+          vi: "Bay đôi cùng phi công, hoàn toàn nhờ sức gió. Cất cánh sườn núi ở độ cao 950 m, hạ cánh trong thung lũng Quản Bạ. Giá đã gồm đón trả 2 chiều trong khu vực Quản Bạ.",
+          en: "Tandem flight with a pilot, powered only by the wind. Take off from the 950 m slope, land in the Quan Ba valley. Round-trip transfer within the Quan Ba area included.",
+          fr: "Vol biplace avec un pilote, uniquement porté par le vent. Décollage depuis le versant à 950 m, atterrissage dans la vallée de Quan Ba. Transfert aller-retour dans la zone de Quan Ba inclus.",
+          ru: "Полёт в тандеме с пилотом, только на силе ветра. Старт со склона на 950 м, посадка в долине Куан Ба. Трансфер туда-обратно в районе Куан Ба включён.",
+          zh: "与飞行员双人飞行，完全依靠风力。从 950 米山坡起飞，在管坝山谷降落。含管坝地区往返接送。",
+          hi: "पायलट के साथ टैंडम उड़ान, केवल हवा के सहारे। 950 मी ढलान से टेक-ऑफ, क्वान बा घाटी में लैंडिंग। क्वान बा क्षेत्र में राउंड-ट्रिप ट्रांसफ़र शामिल।",
+        },
+        priceVND: 2_290_000,
+        priceUSD: 88,
+        included: {
+          vi: [
+            "01 chuyến bay dù lượn (PG) 10–15 phút, cất cánh ở độ cao 950 m (tuỳ gió)",
+            "Đón trả 2 chiều trong khu vực Quản Bạ (Nậm Đăm, xã Quản Bạ, Lùng Tám, Cán Tỉ)",
+            "Ảnh & video bằng GoPro",
+            "Bảo hiểm dù lượn",
+            "Nước uống, giấy chứng nhận và quà lưu niệm",
+          ],
+          en: [
+            "One paragliding (PG) flight of 10–15 minutes from the 950 m take-off (weather dependent)",
+            "Round-trip transfer within the Quan Ba area (Nam Dam, Quan Ba commune, Lung Tam, Can Ti)",
+            "GoPro photos & video",
+            "Paragliding insurance",
+            "Drinking water, certificate and souvenir",
+          ],
+          fr: [
+            "Un vol en parapente (PG) de 10 à 15 minutes depuis le décollage à 950 m (selon le vent)",
+            "Transfert aller-retour dans la zone de Quan Ba (Nam Dam, commune de Quan Ba, Lung Tam, Can Ti)",
+            "Photos & vidéo GoPro",
+            "Assurance parapente",
+            "Eau, certificat et souvenir",
+          ],
+          ru: [
+            "Один полёт на параплане (PG) 10–15 минут со старта на 950 м (по погоде)",
+            "Трансфер туда-обратно в районе Куан Ба (Нам Дам, коммуна Куан Ба, Лунг Там, Кан Ти)",
+            "Фото и видео GoPro",
+            "Страховка парапланериста",
+            "Вода, сертификат и сувенир",
+          ],
+          zh: [
+            "一次滑翔伞 (PG) 飞行 10–15 分钟，从 950 米起飞点出发（视风况而定）",
+            "管坝地区往返接送（南丹、管坝乡、龙潭、干池）",
+            "GoPro 照片与视频",
+            "滑翔伞保险",
+            "饮用水、证书与纪念品",
+          ],
+          hi: [
+            "950 मी टेक-ऑफ से एक पैराग्लाइडिंग (PG) उड़ान 10–15 मिनट (मौसम पर निर्भर)",
+            "क्वान बा क्षेत्र में राउंड-ट्रिप ट्रांसफ़र (नाम दाम, क्वान बा कम्यून, लुंग ताम, कान ती)",
+            "GoPro फ़ोटो व वीडियो",
+            "पैराग्लाइडिंग बीमा",
+            "पानी, प्रमाणपत्र और स्मृति-चिह्न",
+          ],
+        },
+        flightTypes: [
+          {
+            key: "paragliding" as FlightTypeKey,
+            label: {
+              vi: "Bay dù không động cơ",
+              en: "Paragliding",
+              fr: "Parapente",
+              ru: "Параплан",
+              zh: "无动力滑翔伞",
+              hi: "पैराग्लाइडिंग",
+            },
+            fixed: 2_290_000,
+            fixedUSD: 88,
+          },
+        ],
+      },
+      {
+        key: "quan_ba_ppg_15" as PackageKey,
+        label: {
+          vi: "Dù lượn có động cơ (PPG) – gói cơ bản 15 phút",
+          en: "Powered paragliding (PPG) – basic, 15 min",
+          fr: "Paramoteur (PPG) – formule de base, 15 min",
+          ru: "Парамотор (PPG) – базовый, 15 мин",
+          zh: "动力伞 (PPG) – 基础 15 分钟",
+          hi: "पैरामोटर (PPG) – बेसिक, 15 मिनट",
+        },
+        subtitle: {
+          vi: "Cất cánh ngay tại thung lũng, ít phụ thuộc gió, chủ động leo cao ngắm toàn cảnh Núi Đôi – Cổng Trời. Giá đã gồm đón trả 2 chiều trong khu vực Quản Bạ.",
+          en: "Take off right in the valley, less wind-dependent, climb at will for the full view of the Twin Mountains and Heaven's Gate. Round-trip transfer within the Quan Ba area included.",
+          fr: "Décollage directement dans la vallée, moins dépendant du vent, montée à volonté pour la vue complète sur les Montagnes Jumelles et la Porte du Ciel. Transfert aller-retour inclus.",
+          ru: "Старт прямо в долине, меньше зависит от ветра, свободный набор высоты с видом на Горы-близнецы и Небесные врата. Трансфер туда-обратно включён.",
+          zh: "直接在山谷起飞，受风力影响小，可自由爬升，尽览双峰山与天门。含往返接送。",
+          hi: "सीधे घाटी से टेक-ऑफ, हवा पर कम निर्भर, जुड़वाँ पर्वत और स्वर्ग के द्वार के पूरे दृश्य के लिए ऊँचाई पर चढ़ें। राउंड-ट्रिप ट्रांसफ़र शामिल।",
+        },
+        priceVND: 2_490_000,
+        priceUSD: 95,
+        included: {
+          vi: [
+            "01 chuyến bay dù lượn có động cơ (PPG) 15 phút, cất cánh ngay tại thung lũng Quản Bạ",
+            "Đón trả 2 chiều trong khu vực Quản Bạ (Nậm Đăm, xã Quản Bạ, Lùng Tám, Cán Tỉ)",
+            "Ảnh & video bằng GoPro",
+            "Bảo hiểm dù lượn",
+            "Nước uống, giấy chứng nhận và quà lưu niệm",
+          ],
+          en: [
+            "One powered paragliding (PPG) flight of 15 minutes, taking off right in the Quan Ba valley",
+            "Round-trip transfer within the Quan Ba area (Nam Dam, Quan Ba commune, Lung Tam, Can Ti)",
+            "GoPro photos & video",
+            "Paragliding insurance",
+            "Drinking water, certificate and souvenir",
+          ],
+          fr: [
+            "Un vol en paramoteur (PPG) de 15 minutes, décollage directement dans la vallée de Quan Ba",
+            "Transfert aller-retour dans la zone de Quan Ba (Nam Dam, commune de Quan Ba, Lung Tam, Can Ti)",
+            "Photos & vidéo GoPro",
+            "Assurance parapente",
+            "Eau, certificat et souvenir",
+          ],
+          ru: [
+            "Один полёт на парамоторе (PPG) 15 минут, старт прямо в долине Куан Ба",
+            "Трансфер туда-обратно в районе Куан Ба (Нам Дам, коммуна Куан Ба, Лунг Там, Кан Ти)",
+            "Фото и видео GoPro",
+            "Страховка парапланериста",
+            "Вода, сертификат и сувенир",
+          ],
+          zh: [
+            "一次动力伞 (PPG) 飞行 15 分钟，直接在管坝山谷起飞",
+            "管坝地区往返接送（南丹、管坝乡、龙潭、干池）",
+            "GoPro 照片与视频",
+            "滑翔伞保险",
+            "饮用水、证书与纪念品",
+          ],
+          hi: [
+            "एक पैरामोटर (PPG) उड़ान 15 मिनट, सीधे क्वान बा घाटी से टेक-ऑफ",
+            "क्वान बा क्षेत्र में राउंड-ट्रिप ट्रांसफ़र (नाम दाम, क्वान बा कम्यून, लुंग ताम, कान ती)",
+            "GoPro फ़ोटो व वीडियो",
+            "पैराग्लाइडिंग बीमा",
+            "पानी, प्रमाणपत्र और स्मृति-चिह्न",
+          ],
+        },
+        flightTypes: [
+          {
+            key: "paramotor" as FlightTypeKey,
+            label: {
+              vi: "Bay dù lượn có động cơ",
+              en: "Powered paragliding",
+              fr: "Paramoteur",
+              ru: "Парамотор",
+              zh: "动力伞",
+              hi: "पैरामोटर",
+            },
+            fixed: 2_490_000,
+            fixedUSD: 95,
+          },
+        ],
+      },
+      {
+        key: "quan_ba_ppg_25" as PackageKey,
+        label: {
+          vi: "PPG bay lâu 25 phút – săn mây bình minh / hoàng hôn",
+          en: "PPG long flight 25 min – sunrise / sunset cloud-hunting",
+          fr: "PPG vol long 25 min – chasse aux nuages à l'aube / au coucher",
+          ru: "PPG длинный полёт 25 мин – охота за облаками на рассвете / закате",
+          zh: "PPG 长航 25 分钟 – 日出 / 日落追云",
+          hi: "PPG लंबी उड़ान 25 मिनट – सूर्योदय / सूर्यास्त क्लाउड-हंटिंग",
+        },
+        subtitle: {
+          vi: "Gói cơ bản + 900.000 đ: bay 25 phút vào khung bình minh hoặc hoàng hôn, khi mây còn phủ các thung lũng nhỏ quanh Tam Sơn. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
+          en: "Basic package + 900,000 VND: a 25-minute flight at sunrise or sunset, while cloud still fills the small valleys around Tam Son. Book ahead so we can schedule by the sun.",
+          fr: "Formule de base + 900 000 VND : vol de 25 minutes à l'aube ou au coucher du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Son. Réservez à l'avance pour un horaire calé sur le soleil.",
+          ru: "Базовый пакет + 900 000 VND: полёт 25 минут на рассвете или закате, пока облака ещё заполняют маленькие долины вокруг Там Шона. Бронируйте заранее, чтобы мы подобрали время по солнцу.",
+          zh: "基础套餐 + 900,000 越南盾：日出或日落时段 25 分钟飞行，此时云海仍填满三山周围的小山谷。请提前预订，我们按日出日落时间安排。",
+          hi: "बेसिक पैकेज + 900,000 VND: सूर्योदय या सूर्यास्त पर 25 मिनट की उड़ान, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों में भरे रहते हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें।",
+        },
+        priceVND: 3_390_000,
+        priceUSD: 129,
+        included: {
+          vi: [
+            "01 chuyến bay PPG 25 phút trong khung bình minh hoặc hoàng hôn — bay săn mây trên cao nguyên đá",
+            "Đón trả 2 chiều trong khu vực Quản Bạ (Nậm Đăm, xã Quản Bạ, Lùng Tám, Cán Tỉ)",
+            "Ảnh & video bằng GoPro",
+            "Bảo hiểm dù lượn",
+            "Nước uống, giấy chứng nhận và quà lưu niệm",
+          ],
+          en: [
+            "One 25-minute PPG flight at sunrise or sunset — cloud-hunting over the karst plateau",
+            "Round-trip transfer within the Quan Ba area (Nam Dam, Quan Ba commune, Lung Tam, Can Ti)",
+            "GoPro photos & video",
+            "Paragliding insurance",
+            "Drinking water, certificate and souvenir",
+          ],
+          fr: [
+            "Un vol PPG de 25 minutes à l'aube ou au coucher du soleil — chasse aux nuages au-dessus du plateau karstique",
+            "Transfert aller-retour dans la zone de Quan Ba (Nam Dam, commune de Quan Ba, Lung Tam, Can Ti)",
+            "Photos & vidéo GoPro",
+            "Assurance parapente",
+            "Eau, certificat et souvenir",
+          ],
+          ru: [
+            "Один полёт на PPG 25 минут на рассвете или закате — охота за облаками над каменным плато",
+            "Трансфер туда-обратно в районе Куан Ба (Нам Дам, коммуна Куан Ба, Лунг Там, Кан Ти)",
+            "Фото и видео GoPro",
+            "Страховка парапланериста",
+            "Вода, сертификат и сувенир",
+          ],
+          zh: [
+            "一次 25 分钟 PPG 飞行，日出或日落时段——在石灰岩高原上追云",
+            "管坝地区往返接送（南丹、管坝乡、龙潭、干池）",
+            "GoPro 照片与视频",
+            "滑翔伞保险",
+            "饮用水、证书与纪念品",
+          ],
+          hi: [
+            "सूर्योदय या सूर्यास्त पर एक 25 मिनट की PPG उड़ान — पत्थर के पठार पर क्लाउड-हंटिंग",
+            "क्वान बा क्षेत्र में राउंड-ट्रिप ट्रांसफ़र (नाम दाम, क्वान बा कम्यून, लुंग ताम, कान ती)",
+            "GoPro फ़ोटो व वीडियो",
+            "पैराग्लाइडिंग बीमा",
+            "पानी, प्रमाणपत्र और स्मृति-चिह्न",
+          ],
+        },
+        flightTypes: [
+          {
+            key: "paramotor" as FlightTypeKey,
+            label: {
+              vi: "Bay dù lượn có động cơ",
+              en: "Powered paragliding",
+              fr: "Paramoteur",
+              ru: "Парамотор",
+              zh: "动力伞",
+              hi: "पैरामोटर",
+            },
+            fixed: 3_390_000,
+            fixedUSD: 129,
+          },
+        ],
+      },
+    ],
     services: [
       {
+        /**
+         * Đón trả 2 chiều ĐÃ NẰM TRONG GIÁ VÉ (cả PG lẫn PPG) nên giá 0 và tích
+         * sẵn; vẫn bắt nhập điểm đón để quầy biết đến đâu. Khách tự đến thì bỏ
+         * tích — khi đó hiện lời nhắc có mặt trước 15 phút.
+         */
         key: "quan_ba_pickup",
         label: {
-          vi: "Xe đón trả 2 chiều trong khu vực xã Quản Bạ",
-          en: "Round-trip pickup in Quan Ba commune",
-          fr: "Prise en charge aller-retour dans la commune de Quan Ba",
-          ru: "Трансфер туда-обратно в коммуне Куан Ба",
-          zh: "管坝社区域往返接送",
-          hi: "Quan Ba कम्यून क्षेत्र में राउंड-ट्रिप पिकअप",
+          vi: "Xe đón trả 2 chiều trong khu vực Quản Bạ (đã bao gồm)",
+          en: "Round-trip pickup within the Quan Ba area (included)",
+          fr: "Prise en charge aller-retour dans la zone de Quan Ba (incluse)",
+          ru: "Трансфер туда-обратно в районе Куан Ба (включён)",
+          zh: "管坝地区往返接送（已包含）",
+          hi: "क्वान बा क्षेत्र में राउंड-ट्रिप पिकअप (शामिल)",
         },
         description: {
-          vi: "Xe trung chuyển đón trả 2 chiều từ khách sạn trong khu vực Quản Bạ.\nPhí đón có thể thay đổi tùy vị trí khách sạn và số lượng khách bay.",
-          en: "Round-trip shuttle pickup from hotels within Quan Ba area.\nPickup cost may vary depending on the hotel location and number of flying guests.",
-          fr: "Navette aller-retour depuis les hôtels de la zone de Quan Ba.\nLe coût de la prise en charge peut varier selon l’emplacement de l’hôtel et le nombre de participants.",
-          ru: "Трансфер туда-обратно от отелей в районе Куан Ба.\nСтоимость трансфера может меняться в зависимости от расположения отеля и числа гостей.",
-          zh: "从管坝地区的酒店提供往返接送。\n接送费用可能因酒店位置和飞行人数而有所不同。",
-          hi: "क्वान बा क्षेत्र के होटलों से राउंड-ट्रिप शटल पिकअप।\nपिकअप लागत होटल के स्थान और उड़ान भरने वाले मेहमानों की संख्या के अनुसार भिन्न हो सकती है।",
+          vi: "Đón trả tại khách sạn/homestay trong khu vực Quản Bạ: Nậm Đăm, xã Quản Bạ (thị trấn Tam Sơn cũ), Lùng Tám và Cán Tỉ.\nVui lòng ghi tên và địa chỉ nơi đón.",
+          en: "Pickup and drop-off at hotels/homestays within the Quan Ba area: Nam Dam, Quan Ba commune (former Tam Son town), Lung Tam and Can Ti.\nPlease enter the name and address of your pickup point.",
+          fr: "Prise en charge et retour à l'hôtel/homestay dans la zone de Quan Ba : Nam Dam, commune de Quan Ba (ancienne ville de Tam Son), Lung Tam et Can Ti.\nIndiquez le nom et l'adresse du lieu de prise en charge.",
+          ru: "Трансфер от отеля/хоумстея и обратно в районе Куан Ба: Нам Дам, коммуна Куан Ба (бывший город Там Шон), Лунг Там и Кан Ти.\nУкажите название и адрес места посадки.",
+          zh: "在管坝地区的酒店/民宿接送：南丹、管坝乡（原三山镇）、龙潭和干池。\n请填写接送地点的名称和地址。",
+          hi: "क्वान बा क्षेत्र के होटल/होमस्टे से पिकअप और ड्रॉप: नाम दाम, क्वान बा कम्यून (पूर्व ताम सोन कस्बा), लुंग ताम और कान ती।\nकृपया पिकअप स्थान का नाम और पता लिखें।",
         },
-        controlType: "counter",
-        priceVND: 150_000,
-        priceUSD: 6,
+        controlType: "checkbox",
+        defaultSelected: true,
+        priceVND: 0,
+        priceUSD: 0,
         requiresPickupInput: true,
       },
     ],
     addons: {
       pickup: {
         label: {
-          vi: "Xe đón trả 2 chiều trong khu vực xã Quản Bạ",
-          en: "Round-trip pickup in Quan Ba commune",
-          fr: "Prise en charge aller-retour dans la commune de Quan Ba",
-          ru: "Трансфер туда-обратно в коммуне Куан Ба",
-          zh: "管坝社区域往返接送",
-          hi: "Quan Ba कम्यून क्षेत्र में राउंड-ट्रिप पिकअप",
+          vi: "Xe đón trả 2 chiều trong khu vực Quản Bạ (đã bao gồm)",
+          en: "Round-trip pickup within the Quan Ba area (included)",
+          fr: "Prise en charge aller-retour dans la zone de Quan Ba (incluse)",
+          ru: "Трансфер туда-обратно в районе Куан Ба (включён)",
+          zh: "管坝地区往返接送（已包含）",
+          hi: "क्वान बा क्षेत्र में राउंड-ट्रिप पिकअप (शामिल)",
         },
-        pricePerPersonVND: 150_000,
-        pricePerPersonUSD: 6,
+        pricePerPersonVND: 0,
+        pricePerPersonUSD: 0,
       },
       flycam: {
         label: {
@@ -1333,58 +1598,57 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         pricePerPersonUSD: 20,
       },
     },
+    /** Dự phòng khi chưa chọn gói — bản đầy đủ nằm trong từng gói ở trên. */
     included: {
       vi: [
-        "01 chuyến bay dù lượn 8-15 phút (tuỳ gió)",
+        "01 chuyến bay dù lượn (PG) 10–15 phút, cất cánh ở độ cao 950 m (tuỳ gió)",
+        "Đón trả 2 chiều trong khu vực Quản Bạ (Nậm Đăm, xã Quản Bạ, Lùng Tám, Cán Tỉ)",
         "Ảnh & video bằng GoPro",
-        "Nước uống tại điểm bay",
         "Bảo hiểm dù lượn",
-        "Xe lên/xuống núi",
-        "Giấy chứng nhận",
+        "Nước uống, giấy chứng nhận và quà lưu niệm",
       ],
       en: [
-        "One paragliding flight 8-15 minutes (weather dependent)",
+        "One paragliding (PG) flight of 10–15 minutes from the 950 m take-off (weather dependent)",
+        "Round-trip transfer within the Quan Ba area (Nam Dam, Quan Ba commune, Lung Tam, Can Ti)",
         "GoPro photos & video",
-        "Drinking water at flight site",
         "Paragliding insurance",
-        "Mountain shuttle up/down",
-        "Certificate",
+        "Drinking water, certificate and souvenir",
       ],
       fr: [
-        "Un vol en parapente de 8 à 15 minutes (selon le vent)",
+        "Un vol en parapente (PG) de 10 à 15 minutes depuis le décollage à 950 m (selon le vent)",
+        "Transfert aller-retour dans la zone de Quan Ba (Nam Dam, commune de Quan Ba, Lung Tam, Can Ti)",
         "Photos & vidéo GoPro",
-        "Eau potable sur le site de vol",
         "Assurance parapente",
-        "Navette montée/descente",
-        "Certificat",
+        "Eau, certificat et souvenir",
       ],
       ru: [
-        "Один полет на параплане 8-15 минут (по погоде)",
+        "Один полёт на параплане (PG) 10–15 минут со старта на 950 м (по погоде)",
+        "Трансфер туда-обратно в районе Куан Ба (Нам Дам, коммуна Куан Ба, Лунг Там, Кан Ти)",
         "Фото и видео GoPro",
-        "Питьевая вода на месте старта",
         "Страховка парапланериста",
-        "Трансфер вверх/вниз по горе",
-        "Сертификат",
+        "Вода, сертификат и сувенир",
       ],
       zh: [
-        "一次滑翔伞飞行 8-15 分钟（视风况而定）",
+        "一次滑翔伞 (PG) 飞行 10–15 分钟，从 950 米起飞点出发（视风况而定）",
+        "管坝地区往返接送（南丹、管坝乡、龙潭、干池）",
         "GoPro 照片与视频",
-        "飞行点饮用水",
         "滑翔伞保险",
-        "上下山接送车",
-        "证书",
+        "饮用水、证书与纪念品",
       ],
       hi: [
-        "एक पैराग्लाइडिंग उड़ान 8-15 मिनट (हवा पर निर्भर)",
+        "950 मी टेक-ऑफ से एक पैराग्लाइडिंग (PG) उड़ान 10–15 मिनट (मौसम पर निर्भर)",
+        "क्वान बा क्षेत्र में राउंड-ट्रिप ट्रांसफ़र (नाम दाम, क्वान बा कम्यून, लुंग ताम, कान ती)",
         "GoPro फ़ोटो व वीडियो",
-        "उड़ान स्थल पर पीने का पानी",
         "पैराग्लाइडिंग बीमा",
-        "पहाड़ ऊपर/नीचे शटल",
-        "प्रमाणपत्र",
+        "पानी, प्रमाणपत्र और स्मृति-चिह्न",
       ],
     },
     excluded: { vi: [], en: [], fr: [], ru: [], zh: [], hi: [] },
-    coordinates: {},
+    coordinates: {
+      // Bãi cất PG (950 m) và bãi hạ — cũng là bãi cất PPG (450 m).
+      takeoff: "https://maps.google.com/?q=23.0604025,105.0189508",
+      landing: "https://maps.google.com/?q=23.0612686,105.0388558",
+    },
   },
 };
 

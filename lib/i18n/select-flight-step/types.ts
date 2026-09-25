@@ -77,6 +77,8 @@ export type SelectFlightStepUiText = {
   mapDaNangLandingLabel: string;
   mapSapaTakeoffLabel: string;
   mapSapaLandingLabel: string;
+  mapQuanBaTakeoffLabel: string;
+  mapQuanBaLandingLabel: string;
   temporarilyClosed: string;
 };
 

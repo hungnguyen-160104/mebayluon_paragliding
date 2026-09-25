@@ -63,8 +63,8 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
         "Enjoy a full panoramic view of Da Nang City, the sea below, and the Han River winding through the city.",
       ],
       quan_ba: [
-        "Enjoy the unique sensation of free flight and admire the entire Ha Giang Karst Plateau from high above.",
-        "A truly impressive sky experience in Ha Giang.",
+        "Quan Ba – Ha Giang site, operated by Mebayluon from 15 October 2026: paragliding take-off at 950 m, powered paragliding takes off right in the valley.",
+        "Fly over the karst plateau: Heaven's Gate, the Twin Mountains, the Lung Tam valley and the river winding along the mountains. Round-trip transfer within the Quan Ba area is included.",
       ],
     },
     hanoiMountainWarning:
@@ -76,7 +76,7 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     paramotorNoPickupWarning:
       "NOTE: The flight does not include the transfer to the flying point. Please arrive at Mebayluon Clubhouse 15 minutes before your flight for check-in.",
     quanBaPickupWarning:
-      "Note: Guests should use the transport service to the mountain for the fastest and most flexible arrangement. If traveling by yourself, please arrive at the take-off point 15 minutes early for check-in.",
+      "Note: the ticket already includes round-trip transfer within the Quan Ba area. If you untick it and travel by yourself, please arrive at the meeting point 15 minutes early for check-in.",
     selectedFlightLabel: "Selected flight",
     selectedOptionsLabel: "Selected services",
     noOptionalSelected: "No optional service selected.",
@@ -106,6 +106,8 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Ngu Ong shrine - View map",
     mapSapaTakeoffLabel: "Take-off point - View map",
     mapSapaLandingLabel: "Landing point - View map",
+    mapQuanBaTakeoffLabel: "Quan Ba paragliding take-off (950 m) - View map",
+    mapQuanBaLandingLabel: "Landing field / powered paragliding take-off - View map",
     temporarilyClosed: "Temporarily closed",
   },
   locationCards: {

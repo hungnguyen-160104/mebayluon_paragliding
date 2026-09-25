@@ -68,7 +68,8 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
         "Profitez d’une vue panoramique sur Da Nang, la mer et la rivière Han.",
       ],
       quan_ba: [
-        "Profitez d’une sensation unique de vol libre et admirez l’ensemble du plateau karstique de Ha Giang.",
+        "Site de Quan Ba – Ha Giang, exploité par Mebayluon à partir du 15 octobre 2026 : décollage en parapente à 950 m, le paramoteur décolle directement dans la vallée.",
+        "Survolez le plateau karstique : la Porte du Ciel, les Montagnes Jumelles, la vallée de Lung Tam et la rivière au pied des montagnes. Transfert aller-retour dans la zone de Quan Ba inclus.",
       ],
     },
     hanoiMountainWarning:
@@ -80,7 +81,7 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     paramotorNoPickupWarning:
       "REMARQUE : Le vol ne comprend pas le transport jusqu’au point de vol. Veuillez arriver au Clubhouse Mebayluon 15 minutes avant le vol.",
     quanBaPickupWarning:
-      "Remarque : les passagers devraient utiliser le service de transport vers la montagne pour une organisation plus rapide et plus flexible. Si vous vous déplacez par vos propres moyens, veuillez arriver 15 minutes avant le vol.",
+      "Remarque : le billet inclut déjà le transfert aller-retour dans la zone de Quan Ba. Si vous le décochez et venez par vos propres moyens, merci d'arriver au point de rendez-vous 15 minutes avant.",
     selectedFlightLabel: "Vol sélectionné",
     selectedOptionsLabel: "Services sélectionnés",
     noOptionalSelected: "Aucun service optionnel sélectionné.",
@@ -111,6 +112,8 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     mapDaNangLandingLabel: "Sanctuaire Ngu Ong - Voir la carte",
     mapSapaTakeoffLabel: "Point de décollage - Voir la carte",
     mapSapaLandingLabel: "Point d’atterrissage - Voir la carte",
+    mapQuanBaTakeoffLabel: "Décollage parapente Quan Ba (950 m) - Voir la carte",
+    mapQuanBaLandingLabel: "Terrain d'atterrissage / décollage paramoteur - Voir la carte",
     temporarilyClosed: "Temporairement fermé",
   },
   locationCards: {
