@@ -68,8 +68,8 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
         "Profitez d’une vue panoramique sur Da Nang, la mer et la rivière Han.",
       ],
       quan_ba: [
-        "Site de Quan Ba – Ha Giang, exploité par Mebayluon à partir du 15 octobre 2026 : décollage en parapente à 950 m, le paramoteur décolle directement dans la vallée.",
-        "Survolez le plateau karstique : la Porte du Ciel, les Montagnes Jumelles, la vallée de Lung Tam et la rivière au pied des montagnes. Transfert aller-retour dans la zone de Quan Ba inclus.",
+        "Survolez le plateau karstique de Ha Giang à des milliers de mètres d'altitude. Le parapente décolle de 1 000 m, le paramoteur décolle de la vallée de Quan Ba.",
+        "Admirez la Porte du Ciel, les Montagnes Jumelles, la vallée de Lung Tam et la rivière au pied des montagnes. Transfert aller-retour dans la zone de Quan Ba inclus.",
       ],
     },
     hanoiMountainWarning:

@@ -63,8 +63,8 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
         "Trải nghiệm ngắm trọn TP Đà Nẵng với mặt biển bên dưới và phía trước là toàn cảnh thành phố cùng dòng sông Hàn uốn lượn. Đà Nẵng được đánh giá là điểm bay biển đẹp nhất Việt Nam.",
       ],
       quan_ba: [
-        "Điểm bay Quản Bạ – Hà Giang, Mebayluon vận hành từ 15/10/2026: cất cánh dù lượn ở độ cao 950 m, dù lượn có động cơ cất cánh ngay trong thung lũng.",
-        "Bay trên cao nguyên đá: Cổng Trời, Núi Đôi, thung lũng Lùng Tám và dòng sông uốn quanh chân núi. Giá vé đã gồm đón trả 2 chiều trong khu vực Quản Bạ.",
+        "Bay trên Cao Nguyên Đá Hà Giang với độ cao hàng ngàn mét. Cất cánh dù lượn từ độ cao 1.000 m, dù lượn có động cơ cất cánh từ thung lũng Quản Bạ.",
+        "Ngắm Cổng Trời, Núi Đôi, thung lũng Lùng Tám và dòng sông uốn quanh chân núi. Giá vé đã gồm đón trả 2 chiều trong khu vực Quản Bạ.",
       ],
     },
     hanoiMountainWarning:

@@ -63,8 +63,8 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
         "Enjoy a full panoramic view of Da Nang City, the sea below, and the Han River winding through the city.",
       ],
       quan_ba: [
-        "Quan Ba – Ha Giang site, operated by Mebayluon from 15 October 2026: paragliding take-off at 950 m, powered paragliding takes off right in the valley.",
-        "Fly over the karst plateau: Heaven's Gate, the Twin Mountains, the Lung Tam valley and the river winding along the mountains. Round-trip transfer within the Quan Ba area is included.",
+        "Fly over the Ha Giang Karst Plateau thousands of metres up. Paragliding takes off from 1,000 m, powered paragliding takes off from the Quan Ba valley.",
+        "See Heaven's Gate, the Twin Mountains, the Lung Tam valley and the river winding along the mountains. Round-trip transfer within the Quan Ba area is included.",
       ],
     },
     hanoiMountainWarning:
