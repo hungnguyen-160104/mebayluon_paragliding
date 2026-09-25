@@ -326,6 +326,13 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyế
     basePrice: 2290000,
     image: "/spots/ha-giang/hero.jpeg",
     galleryImages: [
+      /**
+       * Ảnh Quản Bạ TẠM (chủ 25/09, chưa có ảnh bay thật): đường lên Cổng
+       * Trời — phạm vi công cộng (Thái Nhi, Wikimedia Commons) nên dùng được
+       * ở bộ sưu tập không có chỗ ghi công. Hai ảnh CC BY (Núi Đôi) chỉ dùng
+       * trong bài blog, nơi caption ghi được tên tác giả.
+       */
+      "/spots/ha-giang/quan-ba-cong-troi.jpg",
       "/spots/ha-giang/1.jpeg",
       "/spots/ha-giang/2.jpeg",
       "/spots/ha-giang/3.jpeg",
