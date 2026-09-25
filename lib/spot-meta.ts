@@ -136,12 +136,13 @@ const SEO_TITLE: Record<string, Record<Locale, string>> = {
     hi: "दा नांग पैराग्लाइडिंग – सोन ट्रा प्रायद्वीप: क़ीमत",
   },
   "ha-giang": {
-    vi: "Bay Dù Lượn Hà Giang – Quản Bạ, Bắc Sum: Giá & Mùa Đẹp",
-    en: "Ha Giang Paragliding – Quan Ba, Bac Sum: Prices",
-    fr: "Parapente à Ha Giang – Quan Ba & Bac Sum : prix & saison",
-    ru: "Параплан в Хазянге – Куанба и Бакшум: цены и сезон",
-    zh: "河江滑翔伞 – 管坝、北森坡：价格与最佳季节",
-    hi: "हा जियांग पैराग्लाइडिंग – क्वान बा, बाक सुम: क़ीमत",
+    // Chủ 25/09: bỏ dốc Bắc Sum khỏi mọi nhan đề, điểm bay là QUẢN BẠ.
+    vi: "Dù Lượn Hà Giang – Quản Bạ: PG & PPG, Giá Vé, Giờ Bay",
+    en: "Ha Giang Paragliding – Quan Ba: PG & PPG, Prices, Hours",
+    fr: "Parapente à Ha Giang – Quan Ba : PG & PPG, prix et horaires",
+    ru: "Параплан в Хазянге – Куанба: PG и PPG, цены и часы",
+    zh: "河江滑翔伞 – 管坝：PG 与 PPG、价格与飞行时段",
+    hi: "हा जियांग पैराग्लाइडिंग – क्वान बा: PG और PPG, क़ीमत",
   },
   "tram-tau": {
     vi: "Bay Dù Lượn Trạm Tấu – Phình Hồ: Săn Mây & Bảng Giá",
@@ -196,12 +197,12 @@ const HIGHLIGHT: Record<string, Record<Locale, string>> = {
     hi: "सोन ट्रा प्रायद्वीप, प्राचीन वन और माई खे समुद्र तट",
   },
   "ha-giang": {
-    vi: "cao nguyên đá Đồng Văn, dốc Bắc Sum và Quản Bạ",
-    en: "the Dong Van karst plateau, Bac Sum slope and Quan Ba",
-    fr: "le plateau karstique de Dong Van, la côte de Bac Sum et Quan Ba",
-    ru: "каменное плато Донгван, склон Бакшум и Куанба",
-    zh: "同文岩石高原、北森坡与管坝",
-    hi: "डोंग वान चट्टानी पठार, बाक सुम ढलान और क्वान बा",
+    vi: "thung lũng Quản Bạ, Núi Đôi, Cổng Trời và cao nguyên đá Đồng Văn",
+    en: "the Quan Ba valley, Twin Mountains, Heaven's Gate and the Dong Van karst plateau",
+    fr: "la vallée de Quan Ba, les Montagnes Jumelles, la Porte du Ciel et le plateau karstique de Dong Van",
+    ru: "долину Куанба, гору Близнецы, Небесные врата и каменное плато Донгван",
+    zh: "管坝山谷、双子山、天门与同文岩石高原",
+    hi: "क्वान बा घाटी, ट्विन माउंटेन, हेवन्स गेट और डोंग वान चट्टानी पठार",
   },
   "tram-tau": {
     vi: "Phình Hồ – Trạm Tấu, săn mây trên đồi núi trùng điệp",

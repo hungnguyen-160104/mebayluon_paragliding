@@ -89,7 +89,7 @@ export const en: CommonTranslation = {
           "The site sits right next to Nghia Lo, with the whole Muong Lo field spread out below. The area is famous for its seas of cloud.",
       },
       vienNam: {
-        name: "Bac Sum | Quan Ba",
+        name: "Quan Ba",
         location: "Ha Giang",
         duration: "90-minute tour",
         highlights: [

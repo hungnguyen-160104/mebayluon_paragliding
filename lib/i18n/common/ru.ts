@@ -93,7 +93,7 @@ export const ru: CommonTranslation = {
           "Место находится совсем рядом с Nghia Lo, всё поле Muong Lo раскинулось внизу. Район знаменит своими морями облаков.",
       },
       vienNam: {
-        name: "Bac Sum | Quan Ba",
+        name: "Куанба",
         location: "Ha Giang",
         duration: "Тур 90 минут",
         highlights: [

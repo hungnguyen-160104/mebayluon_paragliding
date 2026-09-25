@@ -92,7 +92,7 @@ export const fr: CommonTranslation = {
           "Le site se trouve juste à côté de Nghia Lo, avec toute la plaine de Muong Lo en contrebas. La région est réputée pour ses mers de nuages.",
       },
       vienNam: {
-        name: "Bac Sum | Quan Ba",
+        name: "Quan Ba",
         location: "Ha Giang",
         duration: "Sortie de 90 minutes",
         highlights: [

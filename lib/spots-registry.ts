@@ -68,11 +68,12 @@ export const SPOTS_LIST: SpotListItem[] = [
   },
   {
     slug: "ha-giang",
-    name: "Bắc Sum | Quản Bạ",
+    // Chủ 25/09: bỏ dốc Bắc Sum, điểm bay của Mebayluon là QUẢN BẠ (mở 15/10/2026).
+    name: "Quản Bạ",
     province: "Hà Giang",
-    altitude: "1.000 – 1.200 m",
-    duration: "10 – 15'",
-    priceVND: 2_190_000,
+    altitude: "950 – 2.000 m",
+    duration: "10 – 25'",
+    priceVND: 2_290_000,
     image: "/spots/ha-giang/hero.jpeg",
     i18nKey: "vienNam",
   },

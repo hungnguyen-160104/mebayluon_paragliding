@@ -288,7 +288,7 @@ export function ThoiTietCard({
           {NHAN[ngayDangXem.muc]}
         </div>
         <div className="text-xs leading-tight text-slate-700">
-          {/* Tên chỗ cất chỉ ghi thêm khi KHÁC tên điểm — "Quản Bạ · Bắc Sum – Quản Bạ" là lặp (chủ 17/09). */}
+          {/* Tên chỗ cất chỉ ghi thêm khi KHÁC tên điểm — "Quản Bạ · Quản Bạ" là lặp (chủ 17/09). */}
           <div className="font-bold text-slate-900">
             {tenDiemThoiTiet(spot)}
             {du.toaDo.ten && du.toaDo.ten !== tenDiemThoiTiet(spot) && !du.toaDo.ten.includes(tenDiemThoiTiet(spot))

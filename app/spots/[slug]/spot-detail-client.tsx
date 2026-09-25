@@ -191,7 +191,8 @@ const resolveSpotKey = (spotName: string): SpotKey => {
   if (/tram tau/.test(key)) return "tram-tau";
   if (/vien nam/.test(key)) return "vien-nam";
   if (/doi bu/.test(key)) return "doi-bu";
-  if (/ha giang|hagiang|bac sum|doc bac sum/.test(key)) return "ha-giang";
+  // Điểm bay Hà Giang nay là Quản Bạ; giữ "bac sum" để tên cũ đã lưu vẫn tra ra đúng điểm.
+  if (/ha giang|hagiang|quan ba|bac sum|doc bac sum/.test(key)) return "ha-giang";
   return "generic";
 };
 
@@ -1757,194 +1758,238 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 
   "ha-giang": {
     vi: {
-      name: "Hà Giang",
-      title: "Bay Trên Cung Đèo Dốc Bắc Sum",
-      altitude: "800 – 1.200 m",
+      name: "Quản Bạ - Hà Giang",
+      title: "Bay Trên Thung Lũng Quản Bạ - Cổng Trời Hà Giang",
+      altitude: "950 – 2.000 m",
       description:
-        `Bay dù lượn tại Hà Giang - trên cung đèo Dốc Bắc Sum là con đèo dài khoảng 7km, nằm trên quốc lộ 4C nối xã Minh Tân (Vị Xuyên) với xã Quyết Tiến (Quản Bạ) ở Hà Giang, có nhiều khúc cua tay áo đẹp ngoạn mục, cảnh quan núi rừng hùng vĩ, ngắm ruộng bậc thang. Cung đèo này là cửa ngõ dẫn lên Cao nguyên đá Đồng Văn.
+        `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Lô uốn quanh chân núi.
+
+🎉 KHAI TRƯƠNG 15/10/2026 — Mebayluon vận hành
 
 📦 GÓI DỊCH VỤ BAO GỒM:
-✅ Xe lên núi
+✅ Đón trả 2 chiều trong khu vực Quản Bạ (Nậm Đăm, xã Quản Bạ – thị trấn Tam Sơn cũ, Lùng Tám, Cán Tỉ)
 ✅ Chứng nhận tham gia
 ✅ Nước uống, quà lưu niệm
 ✅ Ảnh & video GoPro toàn bộ chuyến bay (do chúng tôi cung cấp)
 ✅ Bảo hiểm
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
+🪂 DÙ LƯỢN (PG) — từ 2.290.000 đ/khách
++ Bay đôi cùng phi công, 10–15 phút tuỳ điều kiện thời tiết
++ Cất cánh sườn núi ở 950 m, hạ cánh tại thung lũng Quản Bạ
+
+🚁 DÙ LƯỢN CÓ ĐỘNG CƠ (PPG) — từ 2.490.000 đ/khách
++ Gói cơ bản: bay 15 phút
++ Gói bay lâu: 25 phút, bay săn mây — bình minh / hoàng hôn, cộng thêm 900.000 đ
++ Cất cánh ngay tại thung lũng, leo cao hàng ngàn mét ngắm toàn cảnh
+
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
-🚐 Đón trả 2 chiều từ khách sạn
 
 📌 THÔNG TIN THÊM:
-🎥 Miễn phí ảnh/video bay dù từ GoPro
-🕒 Thời gian bay trải nghiệm: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
-⏳ Tổng hành trình khoảng 40~60 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
-💳 Thanh toán tiền mặt (tại điểm bay)
+💳 Thanh toán tiền mặt (tại điểm bay) hoặc chuyển khoản
 
-⏰ Mở cửa từ 7:00 sáng – 18:00 hàng ngày
+⏰ Mở cửa 7:00 – 18:00 hàng ngày
 
-Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
-      landscape: "Đèo núi – ruộng bậc thang – Cao nguyên đá",
-      duration: "10 – 15 phút",
+Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyến bay của bạn!`,
+      landscape: "Thung lũng Quản Bạ – Núi Đôi – Cổng Trời – sông Lô",
+      duration: "10 – 25 phút",
     },
     en: {
-      name: "Ha Giang",
-      title: "Fly Over Bac Sum Pass",
-      altitude: "800–1,200 m",
+      name: "Quan Ba - Ha Giang",
+      title: "Fly Over Quan Ba Valley - Ha Giang Heaven's Gate",
+      altitude: "950 – 2.000 m",
       description:
-        `Paragliding in Ha Giang - over Bac Sum Pass, a 7km mountain pass on National Road 4C connecting Minh Tan commune (Vi Xuyen) with Quyet Tien commune (Quan Ba). Features spectacular hairpin turns, majestic mountain scenery, and terraced rice fields. This pass is the gateway to the Dong Van Stone Plateau.
+        `Paragliding at QUẢN BẠ – the gateway to the Đồng Văn Karst Plateau. Take off at 950 m and soar over the whole Quản Bạ valley, taking in the Quản Bạ Twin Mountains, Heaven's Gate, the Lùng Tám valley and the Lô River winding around the foot of the mountains.
+
+🎉 OPENING 15/10/2026 — operated by Mebayluon
 
 📦 PACKAGE INCLUDES:
-✅ Transport to the mountain
+✅ Round-trip transfers within the Quản Bạ area (Nậm Đăm, Quản Bạ commune – former Tam Sơn town, Lùng Tám, Cán Tỉ)
 ✅ Participation certificate
 ✅ Drinking water, souvenir gift
 ✅ Full-flight GoPro photos & videos (provided by us)
 ✅ Insurance
 ✅ Professional pilot & safety equipment
 
+🪂 PARAGLIDING (PG) — from 2.290.000 VND/guest
++ Tandem flight with a pilot, 10–15 minutes depending on the weather
++ Mountain-slope take-off at 950 m, landing in the Quản Bạ valley
+
+🚁 POWERED PARAGLIDING (PPG) — from 2.490.000 VND/guest
++ Basic package: 15-minute flight
++ Extended package: 25 minutes, cloud-chasing flight — sunrise / sunset, plus 900.000 VND
++ Take off right in the valley and climb thousands of metres for the full panorama
+
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
-🚐 Round-trip hotel transfers
 
 📌 ADDITIONAL INFO:
-🎥 Free GoPro flight photos & video
-🕒 Flight duration: 10–15 minutes (pilot may extend depending on weather)
-⏳ Total trip time: approximately 40–60 minutes
 🔄 Free reschedule/cancellation due to weather
-💳 Cash payment (at flying site)
+💳 Cash payment (at the flying site) or bank transfer
 
-⏰ Open daily from 7:00 AM – 6:00 PM
+⏰ Open daily 7:00 – 18:00
 
-Please book in advance so we can best arrange your paragliding experience!`,
-      landscape: "Mountain pass – terraced fields – Stone Plateau",
-      duration: "10–15 minutes",
+Please book in advance so we can arrange your flight in the best possible way!`,
+      landscape: "Quản Bạ valley – Twin Mountains – Heaven's Gate – Lô River",
+      duration: "10 – 25 minutes",
     },
     fr: {
-      name: "Hà Giang",
-      title: "Survol du col de Bắc Sum",
-      altitude: "800–1 200 m",
+      name: "Quản Bạ - Hà Giang",
+      title: "Vol au-dessus de la vallée de Quản Bạ - la Porte du Ciel de Hà Giang",
+      altitude: "950 – 2.000 m",
       description:
-        `Parapente à Hà Giang - au-dessus du col de Bắc Sum, un col de montagne de 7 km sur la route nationale 4C reliant la commune de Minh Tân (Vị Xuyên) à la commune de Quyết Tiến (Quản Bạ). Des virages en épingle spectaculaires, des paysages montagneux majestueux et des rizières en terrasses. Ce col est la porte d'entrée du plateau calcaire de Đồng Văn.
+        `Parapente à QUẢN BẠ – la porte d'entrée du plateau calcaire de Đồng Văn. Décollage à 950 m d'altitude et survol de toute la vallée de Quản Bạ : les Montagnes Jumelles de Quản Bạ, la Porte du Ciel, la vallée de Lùng Tám et la rivière Lô qui serpente au pied des montagnes.
 
-📦 FORFAIT INCLUS :
-✅ Transport jusqu'à la montagne
+🎉 OUVERTURE LE 15/10/2026 — exploité par Mebayluon
+
+📦 LE FORFAIT COMPREND :
+✅ Transferts aller-retour dans la zone de Quản Bạ (Nậm Đăm, commune de Quản Bạ – ancien bourg de Tam Sơn, Lùng Tám, Cán Tỉ)
 ✅ Certificat de participation
 ✅ Eau potable, cadeau souvenir
-✅ Photos & vidéos GoPro du vol complet (fournies par nous)
+✅ Photos & vidéos GoPro de tout le vol (fournies par nous)
 ✅ Assurance
 ✅ Pilote professionnel & équipement de sécurité
 
+🪂 PARAPENTE (PG) — à partir de 2.290.000 VND/personne
++ Vol biplace avec un pilote, 10–15 minutes selon les conditions météo
++ Décollage à flanc de montagne à 950 m, atterrissage dans la vallée de Quản Bạ
+
+🚁 PARAMOTEUR (PPG) — à partir de 2.490.000 VND/personne
++ Forfait de base : vol de 15 minutes
++ Forfait longue durée : 25 minutes, vol à la chasse aux nuages — lever / coucher du soleil, supplément de 900.000 VND
++ Décollage directement dans la vallée et montée de plusieurs milliers de mètres pour un panorama complet
+
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
-🚐 Transferts aller-retour depuis l’hôtel
 
 📌 INFOS SUPPLÉMENTAIRES :
-🎥 Photos & vidéo GoPro du vol offertes
-🕒 Durée du vol : 10–15 minutes (le pilote peut prolonger selon la météo)
-⏳ Durée totale du trajet : environ 40–60 minutes
 🔄 Report/annulation gratuit en cas de mauvais temps
-💳 Paiement en espèces (sur le site de vol)
+💳 Paiement en espèces (sur le site de vol) ou par virement bancaire
 
 ⏰ Ouvert tous les jours de 7h00 à 18h00
 
-Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre expérience de parapente !`,
-      landscape: "Col de montagne – rizières en terrasses – Plateau calcaire",
-      duration: "10–15 minutes",
+Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre vol !`,
+      landscape: "Vallée de Quản Bạ – Montagnes Jumelles – Porte du Ciel – rivière Lô",
+      duration: "10 – 25 minutes",
     },
     ru: {
-      name: "Ха Зянг",
-      title: "Полёт над перевалом Бак Сум",
-      altitude: "800–1 200 м",
+      name: "Quản Bạ - Ха Зянг",
+      title: "Полёт над долиной Quản Bạ — Небесные Врата Ха Зянга",
+      altitude: "950 – 2.000 м",
       description:
-        `Полёт на параплане в Ха Зянге - над перевалом Бак Сум, горным перевалом длиной 7 км на национальной дороге 4C, соединяющей коммуну Минь Тан (Ви Суен) с коммуной Куйет Тиен (Куан Ба). Впечатляющие серпантины, величественные горные пейзажи и рисовые террасы. Этот перевал — ворота на каменное плато Донг Ван.
+        `Полёт на параплане в QUẢN BẠ – воротах каменного плато Đồng Văn. Старт на высоте 950 м и полёт над всей долиной Quản Bạ: горы-близнецы Núi Đôi, Небесные Врата (Cổng Trời), долина Lùng Tám и река Lô, огибающая подножие гор.
+
+🎉 ОТКРЫТИЕ 15/10/2026 — оператор Mebayluon
 
 📦 В СТОИМОСТЬ ВХОДИТ:
-✅ Транспорт до горы
+✅ Трансфер туда и обратно в пределах района Quản Bạ (Nậm Đăm, община Quản Bạ – бывший посёлок Tam Sơn, Lùng Tám, Cán Tỉ)
 ✅ Сертификат участника
 ✅ Питьевая вода, сувенир
 ✅ Фото и видео GoPro всего полёта (предоставляем мы)
 ✅ Страховка
 ✅ Профессиональный пилот и защитное снаряжение
 
+🪂 ПАРАПЛАН (PG) — от 2.290.000 VND с человека
++ Полёт в тандеме с пилотом, 10–15 минут в зависимости от погоды
++ Старт со склона горы на высоте 950 м, посадка в долине Quản Bạ
+
+🚁 ПАРАМОТОР (PPG) — от 2.490.000 VND с человека
++ Базовый пакет: полёт 15 минут
++ Расширенный пакет: 25 минут, полёт за облаками — рассвет / закат, доплата 900.000 VND
++ Взлёт прямо в долине и набор высоты в несколько тысяч метров ради полной панорамы
+
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
-🚐 Трансфер от отеля и обратно
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
-🎥 Фото и видео полёта с GoPro бесплатно
-🕒 Продолжительность полёта: 10–15 минут (пилот может продлить в зависимости от погоды)
-⏳ Общее время поездки: около 40–60 минут
 🔄 Бесплатный перенос/отмена из-за погоды
-💳 Оплата наличными (на месте старта)
+💳 Оплата наличными (на месте старта) или банковским переводом
 
-⏰ Работаем ежедневно с 7:00 до 18:00`,
-      landscape: "Горный перевал – рисовые террасы – Каменное плато",
-      duration: "10–15 minutes",
+⏰ Работаем ежедневно с 7:00 до 18:00
+
+Пожалуйста, бронируйте заранее, чтобы мы могли организовать ваш полёт наилучшим образом!`,
+      landscape: "Долина Quản Bạ – горы Núi Đôi – Небесные Врата – река Lô",
+      duration: "10 – 25 минут",
     },
     zh: {
-      name: "河江",
-      title: "飞越北森山口",
-      altitude: "800–1,200 米",
+      name: "Quản Bạ（管坝）- 河江",
+      title: "飞越 Quản Bạ 山谷 - 河江天门",
+      altitude: "950 – 2.000 米",
       description:
-        `河江滑翔伞飞行 - 北森山口是一条约7公里长的山口，位于4C国道上，连接明新社（渭川）和决进社（管坝）。这里有壮观的发夹弯道、雄伟的山景和层层梯田。这个山口是通往同文石高原的门户。
+        `在 QUẢN BẠ（管坝）滑翔伞飞行 – 同文岩石高原的门户。从海拔 950 米起飞，翱翔于整个 Quản Bạ 山谷之上，俯瞰 Núi Đôi 双子山、天门（Cổng Trời）、Lùng Tám 山谷，以及绕山脚蜿蜒而过的 Lô 江。
+
+🎉 2026年10月15日开业 — 由 Mebayluon 运营
 
 📦 套餐包含：
-✅ 上山交通
+✅ Quản Bạ 地区内往返接送（Nậm Đăm、Quản Bạ 社 – 原 Tam Sơn 镇、Lùng Tám、Cán Tỉ）
 ✅ 参与证书
 ✅ 饮用水、纪念品
-✅ 全程GoPro照片和视频（由我们提供）
+✅ 全程 GoPro 照片和视频（由我们提供）
 ✅ 保险
 ✅ 专业飞行员和安全装备
 
+🪂 滑翔伞（PG）— 每位 2.290.000 VND 起
++ 与飞行员双人飞行，10–15 分钟，视天气条件而定
++ 在海拔 950 米的山坡起飞，降落于 Quản Bạ 山谷
+
+🚁 动力滑翔伞（PPG）— 每位 2.490.000 VND 起
++ 基础套餐：飞行 15 分钟
++ 加长套餐：25 分钟，日出／日落追云飞行，加收 900.000 VND
++ 直接在山谷起飞，爬升数千米俯瞰全景
+
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
-🚐 酒店往返接送
 
 📌 更多信息：
-🎥 免费赠送 GoPro 飞行照片与视频
-🕒 飞行时长：10–15分钟（飞行员可根据天气延长）
-⏳ 总行程时间：约40–60分钟
 🔄 因天气原因可免费改期/取消
-💳 现金支付（在飞行点）
+💳 现金支付（在飞行点）或银行转账
 
 ⏰ 每日营业时间：7:00 – 18:00
 
-请提前预订，让我们为您安排最佳的滑翔伞体验！`,
-      landscape: "山口 – 梯田 – 石高原",
-      duration: "10–15 分钟",
+请提前预订，让我们为您的飞行做出最好的安排！`,
+      landscape: "Quản Bạ 山谷 – 双子山 – 天门 – Lô 江",
+      duration: "10 – 25 分钟",
     },
     hi: {
-      name: "हा जियांग",
-      title: "बैक सम दर्रे के ऊपर उड़ान",
-      altitude: "800–1,200 मी",
+      name: "Quản Bạ - हा जियांग",
+      title: "Quản Bạ घाटी के ऊपर उड़ान - हा जियांग का स्वर्ग द्वार",
+      altitude: "950 – 2.000 मी",
       description:
-        `हा जियांग में पैराग्लाइडिंग - बैक सम दर्रे पर, जो 4C राष्ट्रीय राजमार्ग पर 7 किमी लंबा पर्वत दर्रा है, मिन्ह तान कम्यून (वी सुयेन) को क्वेत तिएन कम्यून (क्वान बा) से जोड़ता है। शानदार हेयरपिन मोड़, भव्य पर्वत दृश्य और सीढ़ीदार खेत। यह दर्रा डोंग वान स्टोन प्लेटू का प्रवेश द्वार है।
+        `QUẢN BẠ में पैराग्लाइडिंग – Đồng Văn स्टोन प्लेटू का प्रवेश द्वार। 950 मीटर की ऊँचाई से टेक-ऑफ़ करें और पूरी Quản Bạ घाटी के ऊपर उड़ें — Núi Đôi जुड़वाँ पहाड़, स्वर्ग द्वार (Cổng Trời), Lùng Tám घाटी और पहाड़ों की तलहटी में बल खाती Lô नदी।
+
+🎉 उद्घाटन 15/10/2026 — संचालन Mebayluon द्वारा
 
 📦 पैकेज में शामिल:
-✅ पहाड़ तक परिवहन
+✅ Quản Bạ क्षेत्र में दोनों तरफ़ की गाड़ी (Nậm Đăm, Quản Bạ कम्यून – पूर्व Tam Sơn कस्बा, Lùng Tám, Cán Tỉ)
 ✅ भागीदारी प्रमाण पत्र
 ✅ पीने का पानी, स्मारिका उपहार
 ✅ पूरी उड़ान की GoPro फोटो और वीडियो (हमारे द्वारा प्रदान)
 ✅ बीमा
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
+🪂 पैराग्लाइडिंग (PG) — 2.290.000 VND प्रति व्यक्ति से
++ पायलट के साथ टेंडम उड़ान, मौसम के अनुसार 10–15 मिनट
++ 950 मीटर पर पहाड़ी ढलान से टेक-ऑफ़, Quản Bạ घाटी में लैंडिंग
+
+🚁 पावर्ड पैराग्लाइडिंग (PPG) — 2.490.000 VND प्रति व्यक्ति से
++ बेसिक पैकेज: 15 मिनट की उड़ान
++ लंबी उड़ान पैकेज: 25 मिनट, बादलों का पीछा — सूर्योदय / सूर्यास्त, अतिरिक्त 900.000 VND
++ घाटी से ही टेक-ऑफ़ और हज़ारों मीटर ऊपर चढ़कर पूरा नज़ारा
+
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
-🚐 होटल से दोनों तरफ़ की गाड़ी
 
 📌 अतिरिक्त जानकारी:
-🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त
-🕒 उड़ान अवधि: 10–15 मिनट (मौसम के अनुसार पायलट बढ़ा सकते हैं)
-⏳ कुल यात्रा समय: लगभग 40–60 मिनट
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
-💳 नकद भुगतान (फ्लाइंग साइट पर)
+💳 नकद भुगतान (फ्लाइंग साइट पर) या बैंक ट्रांसफ़र
 
-⏰ प्रतिदिन सुबह 7:00 बजे – शाम 6:00 बजे तक खुला
+⏰ प्रतिदिन 7:00 – 18:00 तक खुला
 
-कृपया पहले से बुक करें ताकि हम आपके पैराग्लाइडिंग अनुभव की बेहतरीन व्यवस्था कर सकें!`,
-      landscape: "पर्वत दर्रा – सीढ़ीदार खेत – स्टोन प्लेटू",
-      duration: "10–15 मिनट",
+कृपया पहले से बुक करें ताकि हम आपकी उड़ान की बेहतरीन व्यवस्था कर सकें!`,
+      landscape: "Quản Bạ घाटी – जुड़वाँ पहाड़ – स्वर्ग द्वार – Lô नदी",
+      duration: "10 – 25 मिनट",
     },
   },
 

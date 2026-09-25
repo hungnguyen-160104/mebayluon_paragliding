@@ -75,7 +75,7 @@ export const zh: CommonTranslation = {
         summary: "飞行点紧邻 Nghia Lo，整片 Muong Lo 平原尽在脚下。这一带以云海闻名。",
       },
       vienNam: {
-        name: "Bac Sum | Quan Ba",
+        name: "管坝",
         location: "Ha Giang",
         duration: "行程 90 分钟",
         highlights: ["在数千米高空打卡 Ha Giang", "俯瞰石灰岩高原全景"],

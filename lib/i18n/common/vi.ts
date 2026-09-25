@@ -89,7 +89,7 @@ export const vi: CommonTranslation = {
           "Điểm bay nằm ngay gần Nghĩa Lộ, ngắm toàn cảnh cánh đồng Mường Lò. Nơi đây rất nổi tiếng với biển mây.",
       },
       vienNam: {
-        name: "Bắc Sum | Quản Bạ",
+        name: "Quản Bạ",
         location: "Hà Giang",
         duration: "Tour 90 phút",
         highlights: [

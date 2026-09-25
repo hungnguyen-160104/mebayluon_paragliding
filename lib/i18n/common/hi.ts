@@ -92,7 +92,7 @@ export const hi: CommonTranslation = {
           "यह स्थल Nghia Lo के बिल्कुल पास है, नीचे पूरा Muong Lo मैदान फैला रहता है। यह इलाक़ा बादलों के समुद्र के लिए बहुत मशहूर है।",
       },
       vienNam: {
-        name: "Bac Sum | Quan Ba",
+        name: "क्वान बा",
         location: "Ha Giang",
         duration: "90 मिनट का टूर",
         highlights: [

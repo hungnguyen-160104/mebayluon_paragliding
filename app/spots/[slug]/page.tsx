@@ -285,14 +285,45 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
   },
 
   "ha-giang": {
-    name: "Hà Giang",
-    title: "Bay Trên Cao Nguyên Đá Hà Giang",
-    altitude: "1.000 – 1.200 m",
-    description: "Ngắm nhìn cao nguyên đá Đồng Văn hùng vĩ từ trên cao. Trải nghiệm bay đôi cùng phi công chuyên nghiệp tại Quản Bạ, Hà Giang.",
-    landscape: "Cao nguyên đá – núi non hùng vĩ",
-    duration: "10 – 15 phút",
-    landingPoint: "Thung lũng Quản Bạ",
-    basePrice: 2190000,
+    name: "Quản Bạ - Hà Giang",
+    title: "Bay Trên Thung Lũng Quản Bạ - Cổng Trời Hà Giang",
+    altitude: "950 – 2.000 m",
+    description:
+      `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Lô uốn quanh chân núi.
+
+🎉 KHAI TRƯƠNG 15/10/2026 — Mebayluon vận hành
+
+📦 GÓI DỊCH VỤ BAO GỒM:
+✅ Đón trả 2 chiều trong khu vực Quản Bạ (Nậm Đăm, xã Quản Bạ – thị trấn Tam Sơn cũ, Lùng Tám, Cán Tỉ)
+✅ Chứng nhận tham gia
+✅ Nước uống, quà lưu niệm
+✅ Ảnh & video GoPro toàn bộ chuyến bay (do chúng tôi cung cấp)
+✅ Bảo hiểm
+✅ Phi công chuyên nghiệp & trang thiết bị an toàn
+
+🪂 DÙ LƯỢN (PG) — từ 2.290.000 đ/khách
++ Bay đôi cùng phi công, 10–15 phút tuỳ điều kiện thời tiết
++ Cất cánh sườn núi ở 950 m, hạ cánh tại thung lũng Quản Bạ
+
+🚁 DÙ LƯỢN CÓ ĐỘNG CƠ (PPG) — từ 2.490.000 đ/khách
++ Gói cơ bản: bay 15 phút
++ Gói bay lâu: 25 phút, bay săn mây — bình minh / hoàng hôn, cộng thêm 900.000 đ
++ Cất cánh ngay tại thung lũng, leo cao hàng ngàn mét ngắm toàn cảnh
+
+📸 DỊCH VỤ TÙY CHỌN:
+🚁 Quay Flycam/Drone và Quay camera 360°
+
+📌 THÔNG TIN THÊM:
+🔄 Miễn phí đổi/hủy lịch do thời tiết
+💳 Thanh toán tiền mặt (tại điểm bay) hoặc chuyển khoản
+
+⏰ Mở cửa 7:00 – 18:00 hàng ngày
+
+Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyến bay của bạn!`,
+    landscape: "Thung lũng Quản Bạ – Núi Đôi – Cổng Trời – sông Lô",
+    duration: "10 – 25 phút",
+    landingPoint: "Thung lũng Quản Bạ (cũng là bãi cất PPG)",
+    basePrice: 2290000,
     image: "/spots/ha-giang/hero.jpeg",
     galleryImages: [
       "/spots/ha-giang/1.jpeg",
@@ -309,10 +340,37 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     ],
     packages: filterPackages([
       {
-        name: "Tiêu chuẩn",
-        price: 2190000,
-        description: "Trải nghiệm cơ bản",
-        features: ["Phi công kinh nghiệm", "Ảnh chụp nhanh"],
+        name: "Dù lượn (PG)",
+        price: 2290000,
+        description: "Bay đôi 10–15 phút, cất cánh 950 m",
+        features: [
+          "Đón trả 2 chiều trong khu vực Quản Bạ",
+          "Phi công kinh nghiệm & trang bị an toàn",
+          "Ảnh & video GoPro toàn chuyến bay",
+          "Bảo hiểm · chứng nhận tham gia",
+        ],
+      },
+      {
+        name: "Dù lượn có động cơ (PPG) — cơ bản",
+        price: 2490000,
+        description: "Bay 15 phút, cất cánh từ thung lũng",
+        features: [
+          "Đón trả 2 chiều trong khu vực Quản Bạ",
+          "Leo cao ngắm toàn cảnh thung lũng Quản Bạ",
+          "Ảnh & video GoPro toàn chuyến bay",
+          "Bảo hiểm · chứng nhận tham gia",
+        ],
+      },
+      {
+        name: "PPG bay lâu — săn mây / bình minh / hoàng hôn",
+        price: 3390000,
+        description: "Bay 25 phút (gói cơ bản + 900.000 đ)",
+        features: [
+          "Bay 25 phút, săn mây",
+          "Khung giờ bình minh hoặc hoàng hôn",
+          "Đón trả 2 chiều trong khu vực Quản Bạ",
+          "Ảnh & video GoPro toàn chuyến bay",
+        ],
       },
     ]),
   },

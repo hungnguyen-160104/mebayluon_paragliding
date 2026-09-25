@@ -100,17 +100,20 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
   /** Bãi cất 16°07'04.4"N 108°16'24.9"E (chủ 17/09). */
   { slug: "son-tra", ten: "Bán đảo Sơn Trà", tinh: "Đà Nẵng", lat: 16.117889, lon: 108.273583, alt: 600, altHa: 0 },
   /**
-   * QUẢN BẠ (số chủ 17/09): bãi cất 23.060488, 105.019054 cao 950 m; bãi hạ
-   * 23°03'40.5"N 105°02'19.9"E (23.06125, 105.038861) cao 450 m. Gió Tây, Tây
-   * Bắc, Tây Nam là GIÓ SAU: dự báo mạnh hơn 3 m/s là không bay — khai bằng
-   * trần tốc độ theo hướng (dưới 3 m/s vẫn cất được).
+   * QUẢN BẠ — điểm bay Mebayluon vận hành từ 15/10/2026 (chủ 25/09; bỏ hẳn
+   * dốc Bắc Sum). Toạ độ chủ gửi 25/09:
+   *  · Bãi cất PG: 23.0604025, 105.0189508 — cao 950 m.
+   *  · Bãi hạ 23.0612686, 105.0388558 — cao 450 m, CŨNG là bãi cất của PPG
+   *    (dù máy cất từ thung lũng rồi leo cao).
+   * Gió Tây, Tây Bắc, Tây Nam là GIÓ SAU: dự báo mạnh hơn 3 m/s là không bay —
+   * khai bằng trần tốc độ theo hướng (dưới 3 m/s vẫn cất được).
    */
   {
     slug: "ha-giang",
-    ten: "Bắc Sum – Quản Bạ",
+    ten: "Quản Bạ",
     tinh: "Hà Giang",
-    lat: 23.060488,
-    lon: 105.019054,
+    lat: 23.0604025,
+    lon: 105.0189508,
     alt: 950,
     altHa: 450,
     luatHuong: { capToc: [{ tam: [225, 270, 315], max: 3, ten: "Tây/Tây Bắc/Tây Nam (gió sau)" }] },
