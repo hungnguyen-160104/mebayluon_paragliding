@@ -198,6 +198,15 @@ type PeriodConfig = {
   note: string;
 };
 
+/**
+ * ĐỢT BAY CÒN MỞ ĐĂNG KÝ (chủ 25/09: "lễ hội mùa vàng đã qua, giờ chỉ hiện để
+ * phi công đăng ký bay ngày thường 100k/ngày").
+ *
+ * Giữ nguyên cấu hình hai đợt lễ hội để hồ sơ cũ vẫn đọc được và mùa sau chỉ
+ * cần thêm khoá vào mảng này là mở lại; trang đăng ký chỉ bày những đợt ở đây.
+ */
+export const PERIODS_MO: PeriodKey[] = ["ngay_thuong"];
+
 export const PERIODS: Record<PeriodKey, PeriodConfig> = {
   mua_vang: {
     key: "mua_vang",

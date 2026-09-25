@@ -22,6 +22,7 @@ import {
   OPENING_BY_PERIOD,
   MUA_VANG_ZALO_GROUP,
   PERIODS,
+  PERIODS_MO,
   SITE_FEE_PER_DAY,
   SITE_FEE_PER_MONTH,
   computePilotFee,
@@ -263,7 +264,15 @@ export default function PilotEventClient() {
   const [wantShirt, setWantShirt] = useState(false);
   const [openingFlagFlight, setOpeningFlagFlight] = useState(false);
 
-  const [period, setPeriod] = useState<PeriodKey | "">("");
+  /**
+   * ĐỢT BAY: chỉ còn những đợt đang mở (chủ 25/09 — hai lễ hội đã qua). Còn
+   * đúng một đợt thì chọn sẵn luôn, phi công khỏi phải bấm; bước "chọn đợt
+   * bay" và mọi mục riêng của lễ hội (combo, áo, suất ăn, gala) ẩn hết.
+   */
+  const dotMo = PERIODS_MO;
+  const motDot = dotMo.length === 1 ? dotMo[0] : null;
+  const laLeHoi = dotMo.some((k) => k !== "ngay_thuong");
+  const [period, setPeriod] = useState<PeriodKey | "">(motDot ?? "");
   const [dates, setDates] = useState<string[]>([]);
   const [viewMonth, setViewMonth] = useState({ year: 2026, month: 7 }); // tháng 8/2026
 
@@ -890,8 +899,9 @@ export default function PilotEventClient() {
             className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm"
           >
             {[
-              { icon: "🌾", text: T.chipFestival },
-              { icon: "🍚", text: T.chipCom },
+              /* Hai chip lễ hội chỉ hiện khi đợt ấy còn mở đăng ký (chủ 25/09). */
+              ...(dotMo.includes("mua_vang") ? [{ icon: "🌾", text: T.chipFestival }] : []),
+              ...(dotMo.includes("le_hoi_com") ? [{ icon: "🍚", text: T.chipCom }] : []),
               { icon: "⛰️", text: T.chipAltitude },
             ].map((chip) => (
               <span
@@ -936,7 +946,7 @@ export default function PilotEventClient() {
             {T.periodsSubtitle}
           </p>
 
-          <div className="mt-9 grid gap-4 md:grid-cols-3">
+          <div className={"mt-9 grid gap-4 " + (dotMo.length > 1 ? "md:grid-cols-3" : "mx-auto max-w-xl")}>
             {[
               {
                 key: "mua_vang" as const,
@@ -968,7 +978,10 @@ export default function PilotEventClient() {
                   T.normalLines[1],
                 ],
               },
-            ].map((card, i) => (
+            ]
+              /* Chỉ giới thiệu đợt CÒN MỞ ĐĂNG KÝ (chủ 25/09) — lễ hội đã qua thì không bày nữa. */
+              .filter((card) => dotMo.includes(card.key))
+              .map((card, i) => (
               <motion.div
                 key={card.key}
                 initial={{ opacity: 0, y: 24 }}
@@ -1037,7 +1050,8 @@ export default function PilotEventClient() {
             </span>
           </motion.div>
 
-          {/* Combo Mùa Vàng gồm gì */}
+          {/* Combo Mùa Vàng gồm gì — chỉ khi còn đợt lễ hội mở (chủ 25/09) */}
+          {laLeHoi && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1059,6 +1073,7 @@ export default function PilotEventClient() {
               ))}
             </div>
           </motion.div>
+          )}
         </div>
       </section>
 
@@ -1363,6 +1378,7 @@ export default function PilotEventClient() {
                     bước 3 — nằm DƯỚI khối này. Nếu để hiện theo điều kiện thì
                     ô mới nhảy ra ở chỗ phi công vừa cuộn qua và gần như chắc
                     chắn bị bỏ sót. Điều kiện nói rõ ở dòng chú thích. */}
+                {laLeHoi && (
                 <div className="sm:col-span-2">
                   {/* HỎI CÓ/KHÔNG trước — CÓ mới hỏi cỡ. Sau 17/8 áo 400k, không ngoại lệ. */}
                   <Field label={T.fShirtAsk} hint={T.fShirtHint} error={errors.shirtSize}>
@@ -1416,6 +1432,7 @@ export default function PilotEventClient() {
                     )}
                   </Field>
                 </div>
+                )}
 
                 <div className="sm:col-span-2">
                   <Field label={T.fRequest} hint={T.fRequestHint}>
@@ -1434,7 +1451,8 @@ export default function PilotEventClient() {
               </div>
             </div>
 
-            {/* --- 3. đợt bay --- */}
+            {/* --- 3. đợt bay — chỉ hỏi khi còn nhiều hơn một đợt mở (chủ 25/09) --- */}
+            {!motDot && (
             <div
               className="mt-9 scroll-mt-24"
               ref={(el) => {
@@ -1443,7 +1461,7 @@ export default function PilotEventClient() {
             >
               <SectionTitle step={3} title={T.step3} />
               <div className="grid gap-3">
-                {(["mua_vang", "le_hoi_com", "ngay_thuong"] as PeriodKey[]).map((k) => (
+                {dotMo.map((k) => (
                   <ChoiceCard
                     key={k}
                     active={period === k}
@@ -1465,6 +1483,7 @@ export default function PilotEventClient() {
                 <p className="mt-2 text-sm text-red-400">{errors.period}</p>
               ) : null}
             </div>
+            )}
 
             {/* Giờ khai mạc: mốc phi công phải có mặt, nên đặt ngay sau khi
                 chọn đợt chứ không giấu trong danh sách combo. */}
