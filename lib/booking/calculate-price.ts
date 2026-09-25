@@ -1371,12 +1371,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       {
         key: "quan_ba_ppg_15" as PackageKey,
         label: {
-          vi: "Dù lượn gắn động cơ cơ bản (PPG) - 15 phút",
-          en: "Powered paragliding basic (PPG) - 15 min",
-          fr: "Paramoteur formule de base (PPG) - 15 min",
-          ru: "Парамотор базовый (PPG) - 15 мин",
-          zh: "动力伞基础 (PPG) - 15 分钟",
-          hi: "पैरामोटर बेसिक (PPG) - 15 मिनट",
+          vi: "Dù lượn gắn động cơ (PPG) - gói cơ bản 15 phút",
+          en: "Powered paragliding (PPG) - basic package, 15 min",
+          fr: "Paramoteur (PPG) - formule de base, 15 min",
+          ru: "Парамотор (PPG) - базовый пакет, 15 мин",
+          zh: "动力伞 (PPG) - 基础套餐 15 分钟",
+          hi: "पैरामोटर (PPG) - बेसिक पैकेज, 15 मिनट",
         },
         subtitle: {
           vi: "Cất cánh ngay tại thung lũng, ít phụ thuộc gió, chủ động leo cao ngắm toàn cảnh Núi Đôi – Cổng Trời. Giá đã gồm đón trả 2 chiều trong khu vực Quản Bạ.",
@@ -1451,12 +1451,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       {
         key: "quan_ba_ppg_25" as PackageKey,
         label: {
-          vi: "Dù gắn động cơ (PPG) - Nâng cao 25 phút – săn mây / bình minh / hoàng hôn",
-          en: "Powered paragliding (PPG) - Advanced 25 min – cloud-hunting / sunrise / sunset",
-          fr: "Paramoteur (PPG) - Avancé 25 min – chasse aux nuages / aube / coucher du soleil",
-          ru: "Парамотор (PPG) - Расширенный 25 мин – охота за облаками / рассвет / закат",
-          zh: "动力伞 (PPG) - 进阶 25 分钟 – 追云 / 日出 / 日落",
-          hi: "पैरामोटर (PPG) - एडवांस 25 मिनट – क्लाउड-हंटिंग / सूर्योदय / सूर्यास्त",
+          vi: "Dù lượn gắn động cơ (PPG) - gói nâng cao 25 phút – săn mây / bình minh / hoàng hôn",
+          en: "Powered paragliding (PPG) - advanced package, 25 min – cloud-hunting / sunrise / sunset",
+          fr: "Paramoteur (PPG) - formule avancée, 25 min – chasse aux nuages / aube / coucher du soleil",
+          ru: "Парамотор (PPG) - расширенный пакет, 25 мин – охота за облаками / рассвет / закат",
+          zh: "动力伞 (PPG) - 进阶套餐 25 分钟 – 追云 / 日出 / 日落",
+          hi: "पैरामोटर (PPG) - एडवांस पैकेज, 25 मिनट – क्लाउड-हंटिंग / सूर्योदय / सूर्यास्त",
         },
         subtitle: {
           vi: "Gói cơ bản + 900.000 đ: bay 25 phút vào khung bình minh hoặc hoàng hôn, khi mây còn phủ các thung lũng nhỏ quanh Tam Sơn. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
