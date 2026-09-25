@@ -73,6 +73,8 @@ type ServiceMeta = {
     | "da_nang_hotel_pickup"
     | "quan_ba_pickup"
     | "quan_ba_city_pickup"
+    | "quan_ba_flycam"
+    | "quan_ba_camera360"
     | "sunset"
     | "generic";
   exclusiveGroup?: string;
@@ -859,6 +861,19 @@ function getServiceMeta(
       lineTotalVND: (base, guests) => base * guests,
       lineTotalUSD: (base, guests) => base * guests,
       summaryText: (name) => name,
+    };
+  }
+
+  if (key === "quan_ba_flycam" || key === "quan_ba_camera360") {
+    // Đếm theo khách như Khau Phạ; combo flycam + 360 trừ 100k ở tổng.
+    return {
+      id: key,
+      showQty: true,
+      priceText: `${formatVND(priceVND)}/${ui.pax}`,
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
+      lineTotalVND: (base, _guests, qty) => base * qty,
+      lineTotalUSD: (base, _guests, qty) => base * qty,
+      summaryText: (name, qty) => `${name}${qty > 1 ? ` x${qty}` : ""}`,
     };
   }
 

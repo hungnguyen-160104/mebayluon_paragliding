@@ -216,9 +216,9 @@ export const flightOptions: FlightOption[] = [
       },
       {
         name: "Camera 360",
-        price: 500000,
+        price: 400000,
         description:
-          "Phi công sử dụng camera 360 quay toàn bộ chuyến bay và edit dữ liệu cho bạn.",
+          "Phi công sử dụng camera 360 quay toàn bộ chuyến bay và edit dữ liệu cho bạn. Đặt cả flycam + 360 chỉ 700.000 đ.",
       },
     ],
     coordinates: {

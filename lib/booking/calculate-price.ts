@@ -1590,6 +1590,55 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         requiresPickupInput: true,
         exclusiveGroup: "quan_ba_pickup",
       },
+      /**
+       * Flycam và camera 360° là DỊCH VỤ (không phải addon) để hưởng giảm combo
+       * flycam + 360 = 700k như Khau Phạ (lib/booking/image-combo.ts chỉ đếm
+       * services). Giá 400k mỗi thứ theo chủ 25/09/2026.
+       */
+      {
+        key: "quan_ba_flycam",
+        label: {
+          vi: "Flycam (drone camera)",
+          en: "Flycam (drone camera)",
+          fr: "Flycam (drone)",
+          ru: "Flycam (дрон)",
+          zh: "航拍（无人机）",
+          hi: "फ्लाईकैम (ड्रोन कैमरा)",
+        },
+        description: {
+          vi: "Quay toàn cảnh thung lũng và hành trình bay, video gốc sẽ được gửi ngay sau chuyến bay. Đặt cả flycam và camera 360° chỉ 700.000 đ/khách.",
+          en: "Panoramic view of the valley and flight journey, original video sent right after the flight. Flycam + 360° camera together: 700,000 VND/guest.",
+          fr: "Vue panoramique de la vallée et du vol, vidéo originale envoyée juste après le vol. Flycam + caméra 360° ensemble : 700 000 VND/personne.",
+          ru: "Панорамная съёмка долины и всего полёта, исходное видео сразу после полёта. Flycam + камера 360° вместе: 700 000 VND с человека.",
+          zh: "山谷与飞行全程的全景拍摄，原始视频于飞行后立即发送。航拍 + 360° 相机合购仅 700,000 越南盾/人。",
+          hi: "घाटी और उड़ान यात्रा का विहंगम दृश्य, मूल वीडियो उड़ान के तुरंत बाद। फ्लाईकैम + 360° कैमरा साथ में: 700,000 VND/मेहमान।",
+        },
+        controlType: "counter",
+        priceVND: 400_000,
+        priceUSD: 16,
+      },
+      {
+        key: "quan_ba_camera360",
+        label: {
+          vi: "360 camera",
+          en: "360 camera",
+          fr: "Caméra 360",
+          ru: "Камера 360",
+          zh: "360相机",
+          hi: "360 कैमरा",
+        },
+        description: {
+          vi: "Quay toàn cảnh chuyến bay ấn tượng, video được edit và sẽ gửi trong vòng 24h",
+          en: "Impressive panoramic flight video, edited and sent within 24h",
+          fr: "Vidéo panoramique de vol impressionnante, montée et envoyée sous 24 h",
+          ru: "Впечатляющее панорамное видео полёта, смонтированное и отправленное в течение 24 часов",
+          zh: "震撼的全景飞行视频，剪辑后 24 小时内发送",
+          hi: "प्रभावशाली विहंगम उड़ान वीडियो, एडिट करके 24 घंटे के भीतर भेजा जाता है",
+        },
+        controlType: "counter",
+        priceVND: 400_000,
+        priceUSD: 16,
+      },
     ],
     addons: {
       pickup: {
@@ -1604,30 +1653,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         pricePerPersonVND: 0,
         pricePerPersonUSD: 0,
       },
-      flycam: {
-        label: {
-          vi: "Flycam (Drone camera)",
-          en: "Flycam (Drone camera)",
-          fr: "Flycam (drone)",
-          ru: "Flycam (дрон)",
-          zh: "航拍（无人机）",
-          hi: "फ्लाईकैम (ड्रोन कैमरा)",
-        },
-        pricePerPersonVND: 400_000,
-        pricePerPersonUSD: 16,
-      },
-      camera360: {
-        label: {
-          vi: "Camera toàn cảnh 360",
-          en: "360° camera",
-          fr: "Caméra 360°",
-          ru: "Камера 360°",
-          zh: "360°全景相机",
-          hi: "360° कैमरा",
-        },
-        pricePerPersonVND: 500_000,
-        pricePerPersonUSD: 20,
-      },
+      // flycam / camera360: xem services ở trên (để được giảm combo 700k).
     },
     /** Dự phòng khi chưa chọn gói — bản đầy đủ nằm trong từng gói ở trên. */
     included: {
