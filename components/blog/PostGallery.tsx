@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * Thư viện ảnh + ảnh đơn trong bài viết, BẤM VÀO LÀ PHÓNG TO.
@@ -9,6 +10,12 @@ import { useCallback, useEffect, useState } from "react";
  * so sánh GoPro / Camera 360 / Flycam. Thay vì phá bố cục lưới, giữ nguyên lưới
  * và mở ảnh gốc kín màn hình khi bấm: có nút qua ảnh kế, phím ← → Esc, bấm ra
  * ngoài để đóng. Ảnh trong hộp phóng to là ảnh gốc, không cắt theo tỉ lệ khung.
+ *
+ * Hộp ảnh PHẢI gắn thẳng vào <body> (portal): thẻ bài viết có backdrop-blur, mà
+ * backdrop-filter biến phần tử cha thành "containing block" của position:fixed
+ * — hộp ảnh khi đó chỉ phủ đúng thẻ bài viết dài cả trang, ảnh nằm ở giữa thẻ
+ * (ngoài màn hình) còn thân trang bị khoá cuộn, khách chỉ thấy một màn đen
+ * (chủ báo 25/09/2026).
  */
 
 export type PostGalleryImage = { url: string; caption?: string };
@@ -40,17 +47,17 @@ function Lightbox({ images, index, onClose, onMove }: LightboxProps) {
     };
   }, [index, total, onClose, onMove]);
 
-  if (!img) return null;
+  if (!img || typeof document === "undefined") return null;
 
   const btn =
     "absolute top-1/2 -translate-y-1/2 rounded-full bg-white/15 p-2 text-white backdrop-blur hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/70";
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={img.caption || "Ảnh phóng to"}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/92 p-3 sm:p-6"
+      className="not-prose fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-3 sm:p-6"
       onClick={onClose}
     >
       <button
@@ -114,7 +121,8 @@ function Lightbox({ images, index, onClose, onMove }: LightboxProps) {
           ) : null}
         </figcaption>
       </figure>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
