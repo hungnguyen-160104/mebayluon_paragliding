@@ -320,20 +320,21 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ⏰ Mở cửa 7:00 – 18:00 hàng ngày
 
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyến bay của bạn!`,
-    landscape: "Cao nguyên đá – Cổng Trời – Núi Đôi – thung lũng Quản Bạ",
+    landscape: "Cao Nguyên Đá – Núi Đôi Quản Bạ – Cổng Trời – sông Lô",
     duration: "10 – 25 phút",
     landingPoint: "Thung lũng Quản Bạ (cũng là bãi cất PPG)",
     basePrice: 2290000,
-    image: "/spots/ha-giang/quan-ba-hero.jpg",
+    // Ảnh nền riêng của Quản Bạ do chủ chọn 25/09/2026: dù lượn trên thung lũng sông (ảnh điện thoại 912×1620, dọc).
+    image: "/spots/ha-giang/quan-ba-nen.jpg",
     galleryImages: [
       // Ảnh bay thật của Mebayluon tại Quản Bạ (GoPro, thư mục Drive "Bay Quản Bạ - Hà Giang", 25/09/2026)
+      "/spots/ha-giang/quan-ba-hero.jpg",
       "/spots/ha-giang/quan-ba-ppg-co-do.jpg",
       "/spots/ha-giang/quan-ba-thung-lung.jpg",
       "/spots/ha-giang/quan-ba-ppg-tren-song.jpg",
       "/spots/ha-giang/quan-ba-thung-lung-doc.jpg",
       "/spots/ha-giang/quan-ba-ppg-nang.jpg",
       "/spots/ha-giang/quan-ba-ppg-cat-canh.jpg",
-      "/spots/ha-giang/quan-ba-pg-san-may.jpg",
     ],
     storyImages: [
       "/spots/ha-giang/quan-ba-canh-du.jpg",

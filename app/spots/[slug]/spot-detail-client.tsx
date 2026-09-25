@@ -1793,7 +1793,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 ⏰ Mở cửa 7:00 – 18:00 hàng ngày
 
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyến bay của bạn!`,
-      landscape: "Thung lũng Quản Bạ – Núi Đôi – Cổng Trời – sông Lô",
+      landscape: "Cao Nguyên Đá – Núi Đôi Quản Bạ – Cổng Trời – sông Lô",
       duration: "10 – 25 phút",
     },
     en: {
@@ -1832,7 +1832,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyế
 ⏰ Open daily 7:00 – 18:00
 
 Please book in advance so we can arrange your flight in the best possible way!`,
-      landscape: "Quản Bạ valley – Twin Mountains – Heaven's Gate – Lô River",
+      landscape: "Karst Plateau – Quản Bạ Twin Mountains – Heaven's Gate – Lô River",
       duration: "10 – 25 minutes",
     },
     fr: {
@@ -1871,7 +1871,7 @@ Please book in advance so we can arrange your flight in the best possible way!`,
 ⏰ Ouvert tous les jours de 7h00 à 18h00
 
 Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre vol !`,
-      landscape: "Vallée de Quản Bạ – Montagnes Jumelles – Porte du Ciel – rivière Lô",
+      landscape: "Plateau karstique – Montagnes Jumelles de Quản Bạ – Porte du Ciel – rivière Lô",
       duration: "10 – 25 minutes",
     },
     ru: {
@@ -1910,7 +1910,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ⏰ Работаем ежедневно с 7:00 до 18:00
 
 Пожалуйста, бронируйте заранее, чтобы мы могли организовать ваш полёт наилучшим образом!`,
-      landscape: "Долина Quản Bạ – горы Núi Đôi – Небесные Врата – река Lô",
+      landscape: "Каменное плато – Горы-близнецы Куан Ба – Небесные Врата – река Ло",
       duration: "10 – 25 минут",
     },
     zh: {
@@ -1949,7 +1949,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ⏰ 每日营业时间：7:00 – 18:00
 
 请提前预订，让我们为您的飞行做出最好的安排！`,
-      landscape: "Quản Bạ 山谷 – 双子山 – 天门 – Lô 江",
+      landscape: "石灰岩高原 – 管簿双子山 – 天门 – 泸江",
       duration: "10 – 25 分钟",
     },
     hi: {
@@ -1988,7 +1988,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ⏰ प्रतिदिन 7:00 – 18:00 तक खुला
 
 कृपया पहले से बुक करें ताकि हम आपकी उड़ान की बेहतरीन व्यवस्था कर सकें!`,
-      landscape: "Quản Bạ घाटी – जुड़वाँ पहाड़ – स्वर्ग द्वार – Lô नदी",
+      landscape: "पत्थर का पठार – क्वान बा जुड़वाँ पहाड़ – स्वर्ग द्वार – लो नदी",
       duration: "10 – 25 मिनट",
     },
   },
