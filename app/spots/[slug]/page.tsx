@@ -334,7 +334,6 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyế
       "/spots/ha-giang/quan-ba-ppg-tren-song.jpg",
       "/spots/ha-giang/quan-ba-thung-lung-doc.jpg",
       "/spots/ha-giang/quan-ba-ppg-nang.jpg",
-      "/spots/ha-giang/quan-ba-ppg-cat-canh.jpg",
     ],
     storyImages: [
       "/spots/ha-giang/quan-ba-canh-du.jpg",
