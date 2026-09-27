@@ -1764,6 +1764,9 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
       description:
         `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Lô uốn quanh chân núi.
 
+🏍️ TRÊN CUNG HÀ GIANG LOOP
+Quản Bạ là chặng đầu tiên của Hà Giang Loop – cung đường vòng nổi tiếng Hà Giang – Quản Bạ – Yên Minh – Đồng Văn – Mèo Vạc, cách TP Hà Giang khoảng 45 km. Dừng chân bay dù lượn ngay dưới Cổng Trời Quản Bạ, ngắm trọn cao nguyên đá từ trên cao rồi đi tiếp hành trình. Xem thêm lịch bay và kinh nghiệm tại hagiangparagliding.com.
+
 🎉 KHAI TRƯƠNG 15/10/2026 — Mebayluon vận hành
 
 📦 GÓI DỊCH VỤ BAO GỒM:
@@ -1802,6 +1805,9 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyế
       altitude: "950 – 2.000 m",
       description:
         `Paragliding at QUẢN BẠ – the gateway to the Đồng Văn Karst Plateau. Take off at 950 m and soar over the whole Quản Bạ valley, taking in the Quản Bạ Twin Mountains, Heaven's Gate, the Lùng Tám valley and the Lô River winding around the foot of the mountains.
+
+🏍️ ON THE HA GIANG LOOP
+Quan Ba is the first stop of the Ha Giang Loop – the famous circuit Ha Giang – Quan Ba – Yen Minh – Dong Van – Meo Vac, about 45 km from Ha Giang city. Stop to paraglide right below Quan Ba Heaven's Gate, see the whole karst plateau from above, then ride on. More flight times and tips at hagiangparagliding.com.
 
 🎉 OPENING 15/10/2026 — operated by Mebayluon
 
@@ -1842,6 +1848,9 @@ Please book in advance so we can arrange your flight in the best possible way!`,
       description:
         `Parapente à QUẢN BẠ – la porte d'entrée du plateau calcaire de Đồng Văn. Décollage à 950 m d'altitude et survol de toute la vallée de Quản Bạ : les Montagnes Jumelles de Quản Bạ, la Porte du Ciel, la vallée de Lùng Tám et la rivière Lô qui serpente au pied des montagnes.
 
+🏍️ SUR LA BOUCLE DE HA GIANG
+Quan Ba est la première étape de la Ha Giang Loop – le célèbre circuit Ha Giang – Quan Ba – Yen Minh – Dong Van – Meo Vac, à environ 45 km de la ville de Ha Giang. Faites une pause parapente juste sous la Porte du Ciel de Quan Ba, admirez tout le plateau karstique d'en haut, puis reprenez la route. Horaires et conseils sur hagiangparagliding.com.
+
 🎉 OUVERTURE LE 15/10/2026 — exploité par Mebayluon
 
 📦 LE FORFAIT COMPREND :
@@ -1880,6 +1889,9 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
       altitude: "950 – 2.000 м",
       description:
         `Полёт на параплане в QUẢN BẠ – воротах каменного плато Đồng Văn. Старт на высоте 950 м и полёт над всей долиной Quản Bạ: горы-близнецы Núi Đôi, Небесные Врата (Cổng Trời), долина Lùng Tám и река Lô, огибающая подножие гор.
+
+🏍️ НА ПЕТЛЕ ХАЗЯНГ
+Куан Ба — первая остановка Ha Giang Loop, знаменитого маршрута Хазянг – Куан Ба – Йенминь – Донгван – Мео Вак, примерно в 45 км от города Хазянг. Остановитесь полетать на параплане прямо под Небесными вратами Куан Ба, окиньте взглядом всё каменное плато и продолжайте путь. Расписание и советы на hagiangparagliding.com.
 
 🎉 ОТКРЫТИЕ 15/10/2026 — оператор Mebayluon
 
@@ -1920,6 +1932,9 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
       description:
         `在 QUẢN BẠ（管坝）滑翔伞飞行 – 同文岩石高原的门户。从海拔 950 米起飞，翱翔于整个 Quản Bạ 山谷之上，俯瞰 Núi Đôi 双子山、天门（Cổng Trời）、Lùng Tám 山谷，以及绕山脚蜿蜒而过的 Lô 江。
 
+🏍️ 河江环线上的一站
+管簿是河江环线（Ha Giang Loop）的第一站——著名环线河江 – 管簿 – 安明 – 同文 – 苗旺，距河江市约 45 公里。在管簿天门下停下来飞一趟滑翔伞，从高空俯瞰整片石灰岩高原，再继续旅程。更多飞行时间与攻略见 hagiangparagliding.com。
+
 🎉 2026年10月15日开业 — 由 Mebayluon 运营
 
 📦 套餐包含：
@@ -1958,6 +1973,9 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
       altitude: "950 – 2.000 मी",
       description:
         `QUẢN BẠ में पैराग्लाइडिंग – Đồng Văn स्टोन प्लेटू का प्रवेश द्वार। 950 मीटर की ऊँचाई से टेक-ऑफ़ करें और पूरी Quản Bạ घाटी के ऊपर उड़ें — Núi Đôi जुड़वाँ पहाड़, स्वर्ग द्वार (Cổng Trời), Lùng Tám घाटी और पहाड़ों की तलहटी में बल खाती Lô नदी।
+
+🏍️ हा जियांग लूप पर
+क्वान बा, हा जियांग लूप का पहला पड़ाव है – मशहूर रास्ता हा जियांग – क्वान बा – येन मिन्ह – डोंग वान – मेओ वाक, हा जियांग शहर से लगभग 45 किमी। क्वान बा के स्वर्ग द्वार के ठीक नीचे रुककर पैराग्लाइडिंग करें, ऊपर से पूरा पत्थर का पठार देखें, फिर सफ़र जारी रखें। उड़ान समय और सुझाव hagiangparagliding.com पर।
 
 🎉 उद्घाटन 15/10/2026 — संचालन Mebayluon द्वारा
 
@@ -3710,6 +3728,36 @@ export function SpotDetailClient({
                   <div className="text-left space-y-4">
                     {copy.description.split('\n\n').map((block, blockIndex) => {
                       const lines = block.split('\n').filter(line => line.trim());
+
+                      // Khối Hà Giang Loop (Quản Bạ, chủ 27/09/2026): tiêu đề + đoạn văn,
+                      // chữ "hagiangparagliding.com" thành backlink sang web Hà Giang.
+                      if (block.startsWith('🏍️')) {
+                        const [head, ...rest] = lines;
+                        const body = rest.join(' ');
+                        const LINK = 'hagiangparagliding.com';
+                        const cut = body.indexOf(LINK);
+                        return (
+                          <div key={blockIndex} className="rounded-xl border border-amber-400/25 bg-amber-500/10 p-4">
+                            <p className="mb-1.5 text-sm font-bold uppercase tracking-wide text-amber-200">{head}</p>
+                            <p className={`leading-relaxed text-stone-200 ${SPOT_BODY}`}>
+                              {cut < 0 ? body : (
+                                <>
+                                  {body.slice(0, cut)}
+                                  <a
+                                    href="https://hagiangparagliding.com/"
+                                    target="_blank"
+                                    rel="noopener"
+                                    className="font-semibold text-amber-300 underline underline-offset-2 hover:text-amber-200"
+                                  >
+                                    {LINK}
+                                  </a>
+                                  {body.slice(cut + LINK.length)}
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        );
+                      }
 
                       // First block is the intro paragraph
                       if (blockIndex === 0) {
