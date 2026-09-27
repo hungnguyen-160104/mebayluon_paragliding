@@ -25,6 +25,7 @@ import {
 } from "@/components/spots/section-heading";
 import { SPOTS_LIST } from "@/lib/spots-registry";
 import { HA_GIANG_SITE_URL } from "@/lib/ha-giang-site";
+import { HaGiangLoopMap } from "@/components/spots/HaGiangLoopMap";
 
 /* =========================
    Types
@@ -3762,6 +3763,8 @@ export function SpotDetailClient({
                                 </>
                               )}
                             </p>
+                            {/* Bản đồ vòng loop — mỗi điểm dừng là backlink sang web Hà Giang */}
+                            <HaGiangLoopMap className="mt-4" />
                           </div>
                         );
                       }

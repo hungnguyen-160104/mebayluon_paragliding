@@ -223,3 +223,44 @@
     drop-shadow(0 1px 0 #34302b)
     drop-shadow(0 8px 14px rgba(0, 0, 0, 0.85));
 }
+
+/*
+ * .hg-loop — bản đồ Hà Giang Loop chép từ web Hà Giang Paragliding (27/09/2026).
+ * Web gốc có CSS riêng không tải được, đây là bản viết lại theo đúng cấu trúc:
+ * mỗi <li> đặt tâm điểm dừng theo left/top %, ghim (pin) căn giữa tâm, bảng tên
+ * (plaque) treo trên/dưới/trái/phải theo lớp tiện ích sẵn trong HTML.
+ */
+.hg-loop .loop-map { width: 100%; }
+.hg-loop .loop-map ol { list-style: none; margin: 0; padding: 0; }
+.hg-loop .loop-map__title {
+  position: absolute; left: 0; top: 0; margin: 0;
+  font-family: var(--font-serif, Georgia, serif); font-weight: 700;
+  font-size: clamp(1.1rem, 3.2vw, 2rem); color: #fbf8f2; opacity: 0.92;
+  letter-spacing: 0.01em;
+}
+.hg-loop .loop-map__canopy { display: none; }
+.hg-loop .loop-map__river-flow { animation: hg-river 6s linear infinite; }
+@keyframes hg-river { to { stroke-dashoffset: -72; } }
+.hg-loop .loop-stop {
+  position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
+  display: block; text-decoration: none;
+  animation: hg-pop 0.5s ease-out both;
+}
+@keyframes hg-pop { from { opacity: 0; transform: translate(-50%, -30%) scale(0.85); } }
+.hg-loop .loop-stop__pin {
+  display: flex; flex-direction: column; align-items: center;
+  transition: transform 0.2s ease;
+}
+.hg-loop .loop-stop:hover .loop-stop__pin,
+.hg-loop .loop-stop:focus-visible .loop-stop__pin { transform: translateY(-3px) scale(1.08); }
+.hg-loop .loop-stop__stone { width: clamp(22px, 4vw, 36px); height: auto; display: block; }
+.hg-loop .loop-stop__glyph { width: clamp(28px, 5.5vw, 48px); height: auto; margin-bottom: -4px; }
+.hg-loop .loop-stop--town .loop-stop__stone { width: clamp(26px, 4.6vw, 42px); }
+.hg-loop .loop-stop__plaque { z-index: 1; text-shadow: 0 1px 3px rgba(0,0,0,0.85); pointer-events: none; }
+.hg-loop .loop-stop:focus-visible { outline: 2px solid #f2a65a; outline-offset: 4px; border-radius: 6px; }
+@media (max-width: 639px) {
+  .hg-loop .loop-stop__plaque .font-serif { font-size: 0.68rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hg-loop .loop-map__river-flow, .hg-loop .loop-stop { animation: none; }
+}
