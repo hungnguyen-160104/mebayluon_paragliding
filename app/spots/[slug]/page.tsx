@@ -286,7 +286,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 
   "ha-giang": {
     name: "Quản Bạ - Hà Giang",
-    title: "Bay Trên Thung Lũng Quản Bạ - Cổng Trời Hà Giang",
+    title: "Bay Trên Cao Nguyên Đá - Cổng Trời Hà Giang",
     altitude: "950 – 2.000 m",
     description:
       `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Lô uốn quanh chân núi.

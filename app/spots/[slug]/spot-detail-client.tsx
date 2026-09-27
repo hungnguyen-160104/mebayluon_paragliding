@@ -1759,7 +1759,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
   "ha-giang": {
     vi: {
       name: "Quản Bạ - Hà Giang",
-      title: "Bay Trên Thung Lũng Quản Bạ - Cổng Trời Hà Giang",
+      title: "Bay Trên Cao Nguyên Đá - Cổng Trời Hà Giang",
       altitude: "950 – 2.000 m",
       description:
         `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Lô uốn quanh chân núi.
@@ -1798,7 +1798,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyế
     },
     en: {
       name: "Quan Ba - Ha Giang",
-      title: "Fly Over Quan Ba Valley - Ha Giang Heaven's Gate",
+      title: "Fly Over the Karst Plateau - Ha Giang Heaven's Gate",
       altitude: "950 – 2.000 m",
       description:
         `Paragliding at QUẢN BẠ – the gateway to the Đồng Văn Karst Plateau. Take off at 950 m and soar over the whole Quản Bạ valley, taking in the Quản Bạ Twin Mountains, Heaven's Gate, the Lùng Tám valley and the Lô River winding around the foot of the mountains.
@@ -1837,7 +1837,7 @@ Please book in advance so we can arrange your flight in the best possible way!`,
     },
     fr: {
       name: "Quản Bạ - Hà Giang",
-      title: "Vol au-dessus de la vallée de Quản Bạ - la Porte du Ciel de Hà Giang",
+      title: "Vol au-dessus du plateau karstique - la Porte du Ciel de Hà Giang",
       altitude: "950 – 2.000 m",
       description:
         `Parapente à QUẢN BẠ – la porte d'entrée du plateau calcaire de Đồng Văn. Décollage à 950 m d'altitude et survol de toute la vallée de Quản Bạ : les Montagnes Jumelles de Quản Bạ, la Porte du Ciel, la vallée de Lùng Tám et la rivière Lô qui serpente au pied des montagnes.
@@ -1876,7 +1876,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
     },
     ru: {
       name: "Quản Bạ - Ха Зянг",
-      title: "Полёт над долиной Quản Bạ — Небесные Врата Ха Зянга",
+      title: "Полёт над каменным плато - Небесные Врата Ха Зянга",
       altitude: "950 – 2.000 м",
       description:
         `Полёт на параплане в QUẢN BẠ – воротах каменного плато Đồng Văn. Старт на высоте 950 м и полёт над всей долиной Quản Bạ: горы-близнецы Núi Đôi, Небесные Врата (Cổng Trời), долина Lùng Tám и река Lô, огибающая подножие гор.
@@ -1915,7 +1915,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
     },
     zh: {
       name: "Quản Bạ（管坝）- 河江",
-      title: "飞越 Quản Bạ 山谷 - 河江天门",
+      title: "飞越石灰岩高原 - 河江天门",
       altitude: "950 – 2.000 米",
       description:
         `在 QUẢN BẠ（管坝）滑翔伞飞行 – 同文岩石高原的门户。从海拔 950 米起飞，翱翔于整个 Quản Bạ 山谷之上，俯瞰 Núi Đôi 双子山、天门（Cổng Trời）、Lùng Tám 山谷，以及绕山脚蜿蜒而过的 Lô 江。
@@ -1954,7 +1954,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
     },
     hi: {
       name: "Quản Bạ - हा जियांग",
-      title: "Quản Bạ घाटी के ऊपर उड़ान - हा जियांग का स्वर्ग द्वार",
+      title: "पत्थर के पठार के ऊपर उड़ान - हा जियांग का स्वर्ग द्वार",
       altitude: "950 – 2.000 मी",
       description:
         `QUẢN BẠ में पैराग्लाइडिंग – Đồng Văn स्टोन प्लेटू का प्रवेश द्वार। 950 मीटर की ऊँचाई से टेक-ऑफ़ करें और पूरी Quản Bạ घाटी के ऊपर उड़ें — Núi Đôi जुड़वाँ पहाड़, स्वर्ग द्वार (Cổng Trời), Lùng Tám घाटी और पहाड़ों की तलहटी में बल खाती Lô नदी।
@@ -3560,7 +3560,16 @@ export function SpotDetailClient({
               Bình") rộng 324px, vừa bề ngang 343px của màn 375px. */}
           <h2 className="text-[1.75rem]/[1.15] sm:text-5xl md:text-7xl font-bold mb-6 font-serif">
             {copy.title.split(" - ").map((part, i) => (
-              <span key={i} className="block">
+              <span
+                key={i}
+                // Quản Bạ: vế đầu "Bay trên cao nguyên đá" dùng chữ vân đá
+                // nổi khối 3D (chủ 27/09/2026) — xem .text-stone-3d ở globals.css.
+                className={
+                  spotSlug === "ha-giang" && i === 0
+                    ? "text-stone-3d block pb-2"
+                    : "block"
+                }
+              >
                 {part}
               </span>
             ))}

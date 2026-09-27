@@ -35,7 +35,8 @@ export function SpotTagline({
 
   const sizeClass =
     size === "lg"
-      ? "px-5 py-2 text-base md:text-lg ring-2"
+      // Hero trang chi tiết: vừa MỘT dòng kể cả điện thoại 375px (chủ 27/09).
+      ? "whitespace-nowrap px-3.5 py-1.5 text-[11px] tracking-normal sm:px-4 sm:text-sm sm:tracking-wide md:text-base ring-2"
       : "px-3 py-1 text-[11px] sm:text-xs ring-1";
 
   return (
@@ -49,7 +50,7 @@ export function SpotTagline({
       `}
       style={{ textShadow: "none" }}
     >
-      <Sparkles size={size === "lg" ? 18 : 13} strokeWidth={2.5} />
+      <Sparkles size={size === "lg" ? 15 : 13} strokeWidth={2.5} className="shrink-0" />
       {text}
     </span>
   );
