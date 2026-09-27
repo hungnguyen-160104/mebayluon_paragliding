@@ -198,6 +198,27 @@ export default function PilotReportPage() {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  /**
+   * GÕ MÃ VÉ LÀ SỐ CHUYẾN TỰ NHẢY (chủ 28/09/2026): thêm/bớt bao nhiêu mã hợp lệ
+   * thì ô số chuyến cộng/trừ đúng bấy nhiêu. Cộng theo CHÊNH LỆCH chứ không gán
+   * bằng số mã, để phần phi công tự sửa tay (chuyến không vé) và phần vé QR đã
+   * cộng vào tổng vẫn giữ nguyên — ô số chuyến vẫn sửa tay được bình thường.
+   */
+  const setCodes = (
+    textKey: "ticketCodesText" | "ppgCodesText",
+    countKey: "flightCount" | "ppgFlights",
+    text: string,
+  ) =>
+    setForm((prev) => {
+      const truoc = parseTicketCodeList(prev[textKey]).codes.length;
+      const sau = parseTicketCodeList(text).codes.length;
+      return {
+        ...prev,
+        [textKey]: text,
+        [countKey]: Math.max(0, prev[countKey] + (sau - truoc)),
+      };
+    });
+
   /** Đọc mã vé ngay khi gõ để phi công thấy số mã có khớp số chuyến hay không. */
   const parsedCodes = useMemo(() => parseTicketCodeList(form.ticketCodesText), [form.ticketCodesText]);
   const parsed360 = useMemo(() => parseTicketCodeList(form.video360CodesText), [form.video360CodesText]);
@@ -617,7 +638,7 @@ export default function PilotReportPage() {
             >
               <TextArea
                 value={form.ticketCodesText}
-                onChange={(e) => set("ticketCodesText", e.target.value)}
+                onChange={(e) => setCodes("ticketCodesText", "flightCount", e.target.value)}
                 placeholder="MBL0001, MBL0002 — gõ tắt: 0001 0002"
                 autoCapitalize="characters"
                 spellCheck={false}
@@ -848,7 +869,7 @@ export default function PilotReportPage() {
               >
                 <TextInput
                   value={form.ppgCodesText}
-                  onChange={(e) => set("ppgCodesText", e.target.value.toUpperCase())}
+                  onChange={(e) => setCodes("ppgCodesText", "ppgFlights", e.target.value.toUpperCase())}
                   placeholder="MBL1234, MBL1235 — không có vé thì để trống và đếm vào ô 'không vé'"
                   autoCapitalize="characters"
                   spellCheck={false}
