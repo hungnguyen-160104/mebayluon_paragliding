@@ -119,24 +119,34 @@ export function thuDuBao(
   const tim = (d: DiemDuBaoMail, k: string) => d.ngay.find((n) => n.ngay === k);
 
   /* ---- Bảng tóm tắt ---- */
-  const oTomTat = (n: NgayThoiTiet | undefined) =>
-    n
-      ? `<td style="padding:8px 10px;border:1px solid #e2e8f0;background:${NEN_MUC[n.muc]};font:700 13px/1.35 ${F};color:${MAU_MUC[n.muc]}">${NHAN_MUC[n.muc]}` +
-        `<div style="font:400 12px/1.4 ${F};color:#334155">${n.khungDep ? `Giờ đẹp ${n.khungDep}` : "Không có giờ đẹp"}</div></td>`
-      : `<td style="padding:8px 10px;border:1px solid #e2e8f0;color:#94a3b8">—</td>`;
+  /** Kết luận hiển thị: bảng bay đơn nếu có, không thì nhãn chung của app. */
+  const ketLuanCua = (d: DiemDuBaoMail, n: NgayThoiTiet) => {
+    const kl = chiTiet[`${d.slug}|${n.ngay}`]?.phiCong?.ketLuan;
+    return kl ? { nhan: kl.nhan, muc: kl.mau as MucDo } : { nhan: NHAN_MUC[n.muc], muc: n.muc };
+  };
+  const gioDepCua = (d: DiemDuBaoMail, n: NgayThoiTiet) =>
+    chiTiet[`${d.slug}|${n.ngay}`]?.phiCong?.dong.find((r) => r.nhan === "Giờ đẹp nhất")?.giaTri ?? (n.khungDep ? `Giờ đẹp ${n.khungDep}` : "Không có giờ đẹp");
+  const oTomTat = (d: DiemDuBaoMail, n: NgayThoiTiet | undefined) => {
+    if (!n) return `<td style="padding:8px 10px;border:1px solid #e2e8f0;color:#94a3b8">—</td>`;
+    const kl = ketLuanCua(d, n);
+    return (
+      `<td style="padding:8px 10px;border:1px solid #e2e8f0;background:${NEN_MUC[kl.muc]};font:700 13px/1.35 ${F};color:${MAU_MUC[kl.muc]}">${kl.nhan}` +
+      `<div style="font:400 12px/1.4 ${F};color:#334155">${gioDepCua(d, n)}</div></td>`
+    );
+  };
   khoi.push(
     `<table role="presentation" cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;margin:6px 0 4px">` +
       `<tr><th style="padding:6px 10px;border:1px solid #e2e8f0;background:#f1f5f9;font:700 12px ${F};color:#475569;text-align:left">Ngày</th>` +
       diem.map((d) => `<th style="padding:6px 10px;border:1px solid #e2e8f0;background:#f1f5f9;font:700 12px ${F};color:#475569;text-align:left">${d.ten}</th>`).join("") +
       `</tr>` +
       ngayCanGui
-        .map((k) => `<tr><td style="padding:8px 10px;border:1px solid #e2e8f0;font:700 13px ${F};color:#0f172a;white-space:nowrap">${nhanNgayVN(k)}</td>${diem.map((d) => oTomTat(tim(d, k))).join("")}</tr>`)
+        .map((k) => `<tr><td style="padding:8px 10px;border:1px solid #e2e8f0;font:700 13px ${F};color:#0f172a;white-space:nowrap">${nhanNgayVN(k)}</td>${diem.map((d) => oTomTat(d, tim(d, k))).join("")}</tr>`)
         .join("") +
       `</table>`,
   );
   dong.push("TÓM TẮT");
   for (const k of ngayCanGui) {
-    dong.push(`- ${nhanNgayVN(k)}: ${diem.map((d) => { const n = tim(d, k); return `${d.ten} ${n ? NHAN_MUC[n.muc] : "—"}`; }).join(" · ")}`);
+    dong.push(`- ${nhanNgayVN(k)}: ${diem.map((d) => { const n = tim(d, k); const gd = n ? gioDepCua(d, n) : ""; return `${d.ten} ${n ? `${ketLuanCua(d, n).nhan}${gd.startsWith("không") ? "" : ` (${gd})`}` : "—"}`; }).join(" · ")}`);
   }
 
   /* ---- Từng ngày ---- */
@@ -150,14 +160,15 @@ export function thuDuBao(
       const { tomTat } = loiKhuyen(n);
       const pc = ct.phiCong;
       const sk = pc?.skewT;
+      const kl = ketLuanCua(d, n);
 
       khoi.push(
-        `<div style="margin:12px 0 0;padding:12px;border:1px solid #e2e8f0;border-left:5px solid ${MAU_MUC[n.muc]};border-radius:10px;background:#ffffff">` +
+        `<div style="margin:12px 0 0;padding:12px;border:1px solid #e2e8f0;border-left:5px solid ${MAU_MUC[kl.muc]};border-radius:10px;background:#ffffff">` +
           `<div style="font:700 15px/1.35 ${F};color:#0f172a">${d.ten}` +
           `<span style="font-weight:400;color:#64748b"> — ${d.tinh}` +
           (d.toaDo.alt ? ` · cất ${d.toaDo.alt}m${d.toaDo.altHa !== undefined ? ` → hạ ${d.toaDo.altHa}m` : ""}` : "") +
           `</span></div>` +
-          `<div style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:${NEN_MUC[n.muc]};font:700 13px ${F};color:${MAU_MUC[n.muc]}">${NHAN_MUC[n.muc]}</div>` +
+          `<div style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:${NEN_MUC[kl.muc]};font:700 13px ${F};color:${MAU_MUC[kl.muc]}">${kl.nhan}</div>` +
           (tomTat ? `<div style="margin-top:4px;font:600 13px/1.5 ${F};color:#334155">${tomTat}</div>` : "") +
           (pc
             ? `<table role="presentation" cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;margin-top:8px">` +
@@ -182,7 +193,7 @@ export function thuDuBao(
           `</div>`,
       );
 
-      dong.push("", `## ${d.ten} (${d.tinh}) — ${NHAN_MUC[n.muc]}`);
+      dong.push("", `## ${d.ten} (${d.tinh}) — ${kl.nhan}`);
       if (tomTat) dong.push(tomTat);
       if (pc) for (const r of pc.dong) dong.push(`  ${r.muc === "xau" ? "!!" : r.muc === "chuY" ? "! " : "  "} ${r.nhan}: ${r.giaTri}`);
       else dong.push(dongSo(n).text);

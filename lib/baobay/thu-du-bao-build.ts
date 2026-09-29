@@ -60,7 +60,7 @@ export async function dungThuDuBao() {
         } catch (e) {
           console.error("thoi-tiet-mail: thám không lỗi", d.slug, k, e);
         }
-        const ct: ChiTietNgay = { phiCong: phanTichPhiCong(n, tk, alt) };
+        const ct: ChiTietNgay = { phiCong: phanTichPhiCong(n, tk, alt, d.slug) };
         chiTiet[`${d.slug}|${k}`] = ct;
         try {
           const cid = `gio-${d.slug}-${k}@mebayluon`;

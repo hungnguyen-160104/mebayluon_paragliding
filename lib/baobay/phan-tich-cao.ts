@@ -13,6 +13,7 @@
 import { dayMay, duongBotKhi, lopNghichNhiet, tranBotKhi, type MucSkewT, type ThamKhong } from "./skew-t";
 import { huongDayDuVi, type GioThoiTiet, type NgayThoiTiet } from "./thoi-tiet";
 import { NHAN_MUC_THERMAL, type TiemNangThermal } from "./thermal";
+import { coLuatBayDon, hangHuong, NHAN_HANG, sucGio, tenHuong16, type HangHuong } from "./huong-bay-don";
 
 /** Khung giờ bay dùng để phân tích (giờ Việt Nam, tính cả hai đầu). */
 export const GIO_PHAN_TICH: [number, number] = [8, 16];
@@ -241,6 +242,8 @@ export type DongPhiCong = { nhan: string; giaTri: string; muc: MucDong };
 export type PhanTichPhiCong = {
   dong: DongPhiCong[];
   skewT: PhanTichSkewT | null;
+  /** Kết luận cho phi công bay đơn — thay nhãn bay đôi ở đầu khối và bảng tóm tắt. */
+  ketLuan: { nhan: string; mau: "xanh" | "vang" | "do" };
 };
 
 const gioCua = (s: string) => Number(s.slice(11, 13));
@@ -258,11 +261,11 @@ function uv(v: number, d: number): [number, number] {
  * Chia giờ bay thành các quãng cùng hướng (8 hướng) để nói "8–11h ĐÔNG BẮC
  * 1–2 m/s · 12–16h ĐÔNG 2–3 m/s" — phi công cần biết gió XOAY lúc nào.
  */
-function huongTheoQuang(gio: GioThoiTiet[]): string {
+function huongTheoQuang(gio: GioThoiTiet[], slug: string): string {
   const ds = gio.filter((g) => trongGioBay(g.gio));
   const quang: Array<{ tu: number; den: number; ten: string; min: number; max: number }> = [];
   for (const g of ds) {
-    const ten = g.gio10m < 0.8 ? "lặng" : huongDayDuVi(g.huong).toUpperCase();
+    const ten = g.gio10m < 0.8 ? "lặng" : (coLuatBayDon(slug) ? tenHuong16(g.huong) : huongDayDuVi(g.huong)).toUpperCase();
     const h = gioCua(g.gio);
     const q = quang[quang.length - 1];
     if (q && q.ten === ten) {
@@ -271,10 +274,59 @@ function huongTheoQuang(gio: GioThoiTiet[]): string {
       q.max = Math.max(q.max, g.gio10m);
     } else quang.push({ tu: h, den: h, ten, min: g.gio10m, max: g.gio10m });
   }
-  /** Quãng lẻ 1 giờ kẹp giữa hai quãng cùng hướng là nhiễu — gộp cho gọn. */
+  /** Ghi chú địa hình (vd "thermal bị đẩy ra bãi hạ") chỉ nói lần đầu trong dòng. */
+  const daNoi = new Set<string>();
   return quang
-    .map((q) => `${q.tu === q.den ? `${q.tu}h` : `${q.tu}–${q.den}h`} ${q.ten}${q.ten === "lặng" ? "" : ` ${khoang(q.min, q.max)} m/s`}`)
+    .map((q) => {
+      const khung = q.tu === q.den ? `${q.tu}h` : `${q.tu}–${q.den}h`;
+      if (q.ten === "lặng") return `${khung} lặng`;
+      let dg = coLuatBayDon(slug) ? danhGiaQuang(slug, ds, q.tu, q.den) : "";
+      const [nhan, ghiChu] = dg.split(" — ");
+      if (ghiChu) {
+        if (daNoi.has(ghiChu)) dg = nhan;
+        else daNoi.add(ghiChu);
+      }
+      return `${khung} ${q.ten} ${khoang(q.min, q.max)} m/s${dg ? ` (${dg})` : ""}`;
+    })
     .join(" · ");
+}
+
+/** Nhãn hướng của một quãng giờ theo bảng bay đơn, kèm ghi chú địa hình nếu có. */
+function danhGiaQuang(slug: string, ds: GioThoiTiet[], tu: number, den: number): string {
+  const g = ds.find((x) => gioCua(x.gio) >= tu && gioCua(x.gio) <= den && x.gio10m >= 0.8);
+  if (!g) return "";
+  const { hang, ghiChu } = hangHuong(slug, g.huong);
+  return NHAN_HANG[hang] + (ghiChu ? ` — ${ghiChu}` : "");
+}
+
+/**
+ * GIỜ ĐẸP NHẤT cho bay đơn: chấm từng giờ 8h–16h theo HƯỚNG (bảng của chủ),
+ * SỨC GIÓ chính (3–4 m/s lý tưởng), mưa, giật và gió xiết; rồi lấy quãng giờ
+ * liền nhau có điểm trung bình tốt nhất. Điểm càng THẤP càng đẹp.
+ */
+function gioDepBayDon(slug: string, gio: GioThoiTiet[], gioXiet: number[]) {
+  const cham = gio
+    .filter((g) => trongGioBay(g.gio))
+    .map((g) => {
+      const h = gioCua(g.gio);
+      const { hang } = hangHuong(slug, g.huong);
+      const suc = sucGio(g.gio10m);
+      const bay =
+        hang <= 4 && g.gio10m >= 1.5 && g.gio10m <= 6 && (g.mua ?? 0) < 0.8 && !gioXiet.includes(h);
+      const diem = hang + suc.diem + ((g.giat ?? 0) - g.gio10m >= 5 ? 1 : 0);
+      return { h, hang, v: g.gio10m, huong: g.huong, bay, diem };
+    });
+  let tot: { tu: number; den: number; tb: number; ds: typeof cham } | null = null;
+  for (let i = 0; i < cham.length; i++) {
+    if (!cham[i].bay) continue;
+    let j = i;
+    while (j + 1 < cham.length && cham[j + 1].bay && cham[j + 1].h === cham[j].h + 1) j++;
+    const ds = cham.slice(i, j + 1);
+    const tb = ds.reduce((a, b) => a + b.diem, 0) / ds.length - Math.min(0.6, (ds.length - 1) * 0.15);
+    if (!tot || tb < tot.tb) tot = { tu: cham[i].h, den: cham[j].h, tb, ds };
+    i = j;
+  }
+  return tot;
 }
 
 /**
@@ -343,7 +395,7 @@ function dinhMay(muc: MucSkewT[], dayMayCao: number | null): number | null {
   return dinh;
 }
 
-export function phanTichPhiCong(n: NgayThoiTiet, tk: ThamKhong[] | null, altCat: number): PhanTichPhiCong {
+export function phanTichPhiCong(n: NgayThoiTiet, tk: ThamKhong[] | null, altCat: number, slug = ""): PhanTichPhiCong {
   const dong: DongPhiCong[] = [];
   const ds = n.gio.filter((g) => trongGioBay(g.gio));
   const g12 = tk?.find((g) => g.gio.endsWith("T12:00")) ?? null;
@@ -351,7 +403,14 @@ export function phanTichPhiCong(n: NgayThoiTiet, tk: ThamKhong[] | null, altCat:
   const tang = tk ? tangDutGioXiet(tk, altCat) : null;
 
   /* 1. Hướng gió */
-  dong.push({ nhan: "Hướng gió", giaTri: huongTheoQuang(n.gio) || "—", muc: "tot" });
+  const coBang = coLuatBayDon(slug);
+  const tot = coBang ? gioDepBayDon(slug, n.gio, tang?.cacGioXiet ?? []) : null;
+  const hangTot = tot ? (Math.min(...tot.ds.map((x) => x.hang)) as HangHuong) : null;
+  dong.push({
+    nhan: "Hướng gió",
+    giaTri: huongTheoQuang(n.gio, slug) || "—",
+    muc: !coBang ? "tot" : hangTot === null ? "xau" : hangTot <= 2 ? "tot" : "chuY",
+  });
 
   /* 2. Thermal */
   const th = n.thermal as TiemNangThermal | undefined;
@@ -491,8 +550,34 @@ export function phanTichPhiCong(n: NgayThoiTiet, tk: ThamKhong[] | null, altCat:
     }
   }
 
-  /* 10. Giờ đẹp nhất */
-  dong.push({ nhan: "Giờ đẹp nhất", giaTri: n.khungDep ?? "không có khung nào đủ tốt", muc: n.khungDep ? "tot" : "xau" });
+  /* 10. Giờ đẹp nhất — theo bảng hướng bay đơn của chủ (nếu bãi có bảng) */
+  let ketLuan: PhanTichPhiCong["ketLuan"];
+  if (coBang) {
+    if (tot) {
+      const vMin = Math.min(...tot.ds.map((x) => x.v));
+      const vMax = Math.max(...tot.ds.map((x) => x.v));
+      const cucDep = slug === "doi-bu" && hangTot === 1 && tot.ds.every((x) => x.hang === 1 && x.v >= 3 && x.v <= 4);
+      const huong = tenHuong16(tot.ds[Math.floor(tot.ds.length / 2)].huong).toUpperCase();
+      const nhanHang = cucDep ? "CỰC ĐẸP" : NHAN_HANG[hangTot as HangHuong].toUpperCase();
+      dong.push({
+        nhan: "Giờ đẹp nhất",
+        giaTri: `${tot.tu}–${tot.den + 1}h: gió ${huong} ${khoang(vMin, vMax)} m/s — ${nhanHang}`,
+        muc: (hangTot as number) <= 2 ? "tot" : "chuY",
+      });
+      ketLuan = cucDep
+        ? { nhan: "BAY CỰC ĐẸP", mau: "xanh" }
+        : (hangTot as number) <= 2
+          ? { nhan: (hangTot as number) === 1 ? "BAY RẤT ĐẸP" : "BAY ĐẸP", mau: "xanh" }
+          : { nhan: (hangTot as number) === 3 ? "BAY KHÁ ĐẸP" : "BAY ĐƯỢC", mau: "vang" };
+    } else {
+      dong.push({ nhan: "Giờ đẹp nhất", giaTri: "không có giờ nào hợp bãi (hướng, sức gió, mưa hoặc gió xiết)", muc: "xau" });
+      ketLuan = { nhan: "KHÔNG ĐẸP", mau: "do" };
+    }
+    if (n.xacSuatDongMax >= 60 && ketLuan.mau !== "do") ketLuan = { nhan: `${ketLuan.nhan} · DÔNG CHIỀU`, mau: "vang" };
+  } else {
+    dong.push({ nhan: "Giờ đẹp nhất", giaTri: n.khungDep ?? "không có khung nào đủ tốt", muc: n.khungDep ? "tot" : "xau" });
+    ketLuan = { nhan: n.muc === "xanh" ? "BAY TỐT" : n.muc === "vang" ? "CÂN NHẮC" : "NÊN NGHỈ", mau: n.muc };
+  }
 
-  return { dong, skewT };
+  return { dong, skewT, ketLuan };
 }
