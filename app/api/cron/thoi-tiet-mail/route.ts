@@ -15,7 +15,7 @@ export const maxDuration = 60;
  *
  * Gửi Viên Nam + Đồi Bù, HAI NGÀY TỚI (mai và ngày kia) — chủ dặn "không gửi
  * quá nhiều ngày vào email". Người nhận chính `vntqtoan@gmail.com`, cc
- * `dangvm@gmail.com`.
+ * `dangky.mebayluon@gmail.com`.
  *
  * Lịch chạy khai trong `vercel.json`: 13:00 UTC = 20:00 giờ Việt Nam.
  *
@@ -33,7 +33,8 @@ export const maxDuration = 60;
  * không đụng tới người nhận thật.
  */
 const NHAN_CHINH = "vntqtoan@gmail.com";
-const NHAN_CC = "dangvm@gmail.com";
+/** CC hộp đăng ký (chủ 29/09/2026) — KHÔNG cc dangvm@gmail.com vì hộp đó đầy thư rác. */
+const NHAN_CC = "dangky.mebayluon@gmail.com";
 const DIEM = ["vien-nam", "doi-bu"] as const;
 
 export async function GET(req: Request) {
