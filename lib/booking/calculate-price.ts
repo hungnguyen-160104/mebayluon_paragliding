@@ -1169,6 +1169,25 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         priceVND: 700_000,
         priceUSD: 28,
       },
+      {
+        /**
+         * BAY KÉO CỜ ở Hà Nội (29/09/2026) — sổ Hà Nội tính 150k từ 11/09
+         * (lib/baobay/flight-price.ts) mà web chưa cho đặt. Khoá chứa
+         * "flag_flight" để bộ đồng bộ đổ vào ô `flagFlight`, giống Khau Phạ.
+         */
+        key: "ha_noi_flag_flight",
+        label: {
+          vi: "Bay kéo cờ đỏ / cờ sinh nhật",
+          en: "Flight towing a flag (national or birthday)",
+          fr: "Vol avec drapeau remorqué (national ou d'anniversaire)",
+          ru: "Полёт с буксируемым флагом (государственный или на день рождения)",
+          zh: "拖曳旗帜飞行（国旗或生日旗）",
+          hi: "झंडा खींचकर उड़ान (राष्ट्रीय या जन्मदिन का झंडा)",
+        },
+        controlType: "counter",
+        priceVND: 150_000,
+        priceUSD: 6,
+      },
     ],
     addons: {
       pickup: {
