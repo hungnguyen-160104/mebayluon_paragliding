@@ -1,3 +1,4 @@
+import { chonTieuDe, chonTomTat } from "@/lib/post-translation";
 import { PageBackground } from "@/components/page-background";
 export const dynamic = "force-dynamic";
 
@@ -41,33 +42,12 @@ function getSafeLang(v: unknown): Lang {
   return (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(l) ? l : "vi";
 }
 
-function stripHtml(html: string) {
-  return String(html || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+function pickTitle(post: Post, lang: string) {
+  return chonTieuDe(post, lang);
 }
 
-function normalizeInlineText(text: string) {
-  return String(text || "").replace(/\s+/g, " ").trim();
-}
-
-function pickTitle(post: Post, isVietnamese: boolean) {
-  return isVietnamese
-    ? post.titleVi || post.title || ""
-    : post.title || post.titleVi || "";
-}
-
-function pickExcerpt(post: Post, isVietnamese: boolean) {
-  if (isVietnamese) {
-    if (post.excerptVi?.trim()) return normalizeInlineText(post.excerptVi);
-    const text = stripHtml(post.contentVi || post.content || "");
-    return text.length > 140 ? `${text.slice(0, 140).trim()}…` : text;
-  }
-
-  if (post.excerpt?.trim()) return normalizeInlineText(post.excerpt);
-  const text = stripHtml(post.content || post.contentVi || "");
-  return text.length > 140 ? `${text.slice(0, 140).trim()}…` : text;
+function pickExcerpt(post: Post, lang: string) {
+  return chonTomTat(post, lang);
 }
 
 const LOCALE_BY_LANG: Record<Lang, string> = {
@@ -228,7 +208,6 @@ export default async function BlogPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const lang = getSafeLang(await getRequestLang());
-  const isVietnamese = lang === "vi";
   const ui = UI[lang];
   const locale = LOCALE_BY_LANG[lang];
 
@@ -299,7 +278,7 @@ export default async function BlogPage({
                         <div className="relative aspect-16/10 w-full overflow-hidden">
                           <Image
                             src={cover}
-                            alt={pickTitle(post, isVietnamese)}
+                            alt={pickTitle(post, lang)}
                             fill
                             sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
                             className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -308,10 +287,10 @@ export default async function BlogPage({
 
                         <div className="flex grow flex-col gap-1.5 p-4">
                           <p className="line-clamp-2 text-base font-semibold leading-snug group-hover:text-red-300">
-                            {pickTitle(post, isVietnamese)}
+                            {pickTitle(post, lang)}
                           </p>
                           <p className="line-clamp-3 grow text-xs text-white/75">
-                            {pickExcerpt(post, isVietnamese)}
+                            {pickExcerpt(post, lang)}
                           </p>
                           <span className="text-xs text-white/55">
                             {formatDate(date)}
@@ -348,18 +327,18 @@ export default async function BlogPage({
                         trống dưới chữ — ảnh cũng đỡ bị cắt cụt. */}
                     <Link href={`/blog/${featured.slug}`} className="group flex flex-col overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20 hover:shadow-2xl">
                       <div className="relative min-h-96 flex-1 overflow-hidden">
-                        <Image src={featuredCover} alt={pickTitle(featured, isVietnamese)} fill className="object-cover transition-transform duration-500 group-hover:scale-105" priority />
+                        <Image src={featuredCover} alt={pickTitle(featured, lang)} fill className="object-cover transition-transform duration-500 group-hover:scale-105" priority />
                       </div>
                       <div className="shrink-0 p-5">
                         <h2 className="mb-2 line-clamp-2 text-2xl font-bold leading-tight text-white group-hover:text-red-300">
-                          {pickTitle(featured, isVietnamese)}
+                          {pickTitle(featured, lang)}
                         </h2>
                         <div className="mb-2 flex items-center gap-4 text-sm text-white/60">
                           <span>{formatDate(featuredDate)}</span>
                           <span>{ui.views(Number(featured.views || 0))}</span>
                         </div>
                         <p className="line-clamp-2 text-sm text-white/80">
-                          {pickExcerpt(featured, isVietnamese)}
+                          {pickExcerpt(featured, lang)}
                         </p>
                       </div>
                     </Link>
@@ -372,14 +351,14 @@ export default async function BlogPage({
                         return (
                           <Link key={post._id || post.slug} href={`/blog/${post.slug}`} className="group flex gap-3 rounded-lg border border-white/15 bg-white/10 p-3 backdrop-blur-md transition-all hover:bg-white/20">
                             <div className="relative h-19 w-28 shrink-0 overflow-hidden rounded-md">
-                              <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover" />
+                              <Image src={cover} alt={pickTitle(post, lang)} fill className="object-cover" />
                             </div>
                             <div className="flex min-w-0 flex-col justify-center gap-1">
                               <p className="line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
-                                {pickTitle(post, isVietnamese)}
+                                {pickTitle(post, lang)}
                               </p>
                               <p className="line-clamp-2 text-xs text-white/70">
-                                {pickExcerpt(post, isVietnamese)}
+                                {pickExcerpt(post, lang)}
                               </p>
                               <span className="text-xs text-white/55">{formatDate(date)}</span>
                             </div>
@@ -398,14 +377,14 @@ export default async function BlogPage({
                         return (
                           <Link key={post._id || post.slug} href={`/blog/${post.slug}`} className="group overflow-hidden rounded-lg border border-white/15 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20">
                             <div className="relative aspect-video overflow-hidden">
-                              <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                              <Image src={cover} alt={pickTitle(post, lang)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                             </div>
                             <div className="p-3">
                               <p className="mb-1 line-clamp-2 text-base md:text-lg font-semibold leading-snug group-hover:text-red-300">
-                                {pickTitle(post, isVietnamese)}
+                                {pickTitle(post, lang)}
                               </p>
                               <p className="mb-1.5 line-clamp-2 text-xs text-white/70">
-                                {pickExcerpt(post, isVietnamese)}
+                                {pickExcerpt(post, lang)}
                               </p>
                               <span className="text-xs text-white/55">{formatDate(date)}</span>
                             </div>
@@ -422,14 +401,14 @@ export default async function BlogPage({
                   {/* Featured: large card */}
                   <Link href={`/blog/${featured.slug}`} className="group overflow-hidden rounded-xl border border-white/20 bg-white/10 backdrop-blur-md transition-all hover:bg-white/20">
                     <div className="relative h-52 w-full overflow-hidden sm:h-64">
-                      <Image src={featuredCover} alt={pickTitle(featured, isVietnamese)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" priority />
+                      <Image src={featuredCover} alt={pickTitle(featured, lang)} fill className="object-cover transition-transform duration-300 group-hover:scale-105" priority />
                     </div>
                     <div className="p-4">
                       <h3 className="mb-1.5 line-clamp-3 text-xl font-bold leading-snug group-hover:text-red-300">
-                        {pickTitle(featured, isVietnamese)}
+                        {pickTitle(featured, lang)}
                       </h3>
                       <p className="mb-1.5 line-clamp-2 text-sm text-white/75">
-                        {pickExcerpt(featured, isVietnamese)}
+                        {pickExcerpt(featured, lang)}
                       </p>
                       <div className="flex items-center gap-3 text-xs text-white/60">
                         <span>{formatDate(featuredDate)}</span>
@@ -447,14 +426,14 @@ export default async function BlogPage({
                         <li key={post._id || post.slug}>
                           <Link href={`/blog/${post.slug}`} className="group flex gap-3 rounded-lg border border-white/15 bg-white/10 p-3 backdrop-blur-md transition-all hover:bg-white/20">
                             <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md">
-                              <Image src={cover} alt={pickTitle(post, isVietnamese)} fill className="object-cover" />
+                              <Image src={cover} alt={pickTitle(post, lang)} fill className="object-cover" />
                             </div>
                             <div className="flex min-w-0 flex-col justify-center gap-1">
                               <p className="line-clamp-2 text-base font-semibold leading-snug group-hover:text-red-300">
-                                {pickTitle(post, isVietnamese)}
+                                {pickTitle(post, lang)}
                               </p>
                               <p className="line-clamp-2 text-xs text-white/70">
-                                {pickExcerpt(post, isVietnamese)}
+                                {pickExcerpt(post, lang)}
                               </p>
                               <span className="text-xs text-white/55">{formatDate(date)}</span>
                             </div>

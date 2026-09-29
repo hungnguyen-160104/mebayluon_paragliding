@@ -265,21 +265,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         category: { $ne: "knowledge" },
         $or: [{ category: "news" }, { type: "blog" }],
       })
-        .select("slug title titleVi translatedLangs publishedAt updatedAt createdAt")
+        .select("slug title titleVi translatedLangs translations publishedAt updatedAt createdAt")
         .lean(),
 
       PostModel.find({
         isPublished: true,
         category: "knowledge",
       })
-        .select("slug title titleVi translatedLangs publishedAt updatedAt createdAt")
+        .select("slug title titleVi translatedLangs translations publishedAt updatedAt createdAt")
         .lean(),
 
       PostModel.find({
         isPublished: true,
         type: "product",
       })
-        .select("slug storeCategory title titleVi translatedLangs publishedAt updatedAt createdAt")
+        .select("slug storeCategory title titleVi translatedLangs translations publishedAt updatedAt createdAt")
         .lean(),
 
       loadVideosBySlug(),

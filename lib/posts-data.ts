@@ -92,6 +92,26 @@ function normalizeBlocks(value: unknown): ContentBlock[] {
     }));
 }
 
+/** Chuẩn hoá ô `translations` — giữ đúng 4 ngôn ngữ, khối qua normalizeBlocks. */
+function normalizeTranslations(value: unknown): Post["translations"] {
+  if (!value || typeof value !== "object") return {};
+  const out: NonNullable<Post["translations"]> = {};
+  for (const lang of ["fr", "zh", "ru", "hi"] as const) {
+    const t = (value as Record<string, any>)[lang];
+    if (!t || typeof t !== "object") continue;
+    out[lang] = {
+      title: String(t.title ?? ""),
+      excerpt: String(t.excerpt ?? ""),
+      contentBlocks: normalizeBlocks(t.contentBlocks),
+      content: String(t.content ?? ""),
+      published: Boolean(t.published),
+      nguon: t.nguon === "nguoi" ? "nguoi" : "ai",
+      updatedAt: toIsoString(t.updatedAt) ?? undefined,
+    };
+  }
+  return out;
+}
+
 function normalizePostRecord(raw: RawPostLike): Post {
   const createdAt = toIsoString(raw?.createdAt) || new Date(0).toISOString();
   const updatedAt = toIsoString(raw?.updatedAt) || createdAt;
@@ -115,6 +135,8 @@ function normalizePostRecord(raw: RawPostLike): Post {
     translatedLangs: Array.isArray(raw?.translatedLangs)
       ? raw.translatedLangs.map((x: unknown) => String(x))
       : [],
+
+    translations: normalizeTranslations(raw?.translations),
 
     // Bài ghim đầu trang (tick trong admin) + thời điểm tick (quyết định thứ tự)
     fixed: Boolean(raw?.fixed),

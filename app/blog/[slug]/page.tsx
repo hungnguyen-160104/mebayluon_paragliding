@@ -1,3 +1,4 @@
+import { chonKhoi, chonNoiDung, chonTieuDe, chonTomTat } from "@/lib/post-translation";
 import { PageBackground } from "@/components/page-background";
 import { PostGallery, PostImage } from "@/components/blog/PostGallery";
 export const dynamic = "force-dynamic";
@@ -36,17 +37,6 @@ function isPreviewRequested(searchParams?: SearchParams) {
   const raw = searchParams?.preview;
   const value = Array.isArray(raw) ? raw[0] : raw;
   return value === "1" || value === "true";
-}
-
-function stripHtml(html: string) {
-  return String(html || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeInlineText(text: string) {
-  return String(text || "").replace(/\s+/g, " ").trim();
 }
 
 function detectEmbedType(url: string): EmbedType {
@@ -122,36 +112,20 @@ function getYouTubeEmbedUrl(rawUrl: string): string | null {
   }
 }
 
-function pickTitle(post: Post, isVietnamese: boolean) {
-  return isVietnamese
-    ? post.titleVi || post.title || ""
-    : post.title || post.titleVi || "";
+function pickTitle(post: Post, lang: string) {
+  return chonTieuDe(post, lang);
 }
 
-function pickExcerpt(post: Post, isVietnamese: boolean) {
-  if (isVietnamese) {
-    if (post.excerptVi?.trim()) return normalizeInlineText(post.excerptVi);
-    const text = stripHtml(post.contentVi || post.content || "");
-    return text.length > 180 ? `${text.slice(0, 180).trim()}…` : text;
-  }
-
-  if (post.excerpt?.trim()) return normalizeInlineText(post.excerpt);
-  const text = stripHtml(post.content || post.contentVi || "");
-  return text.length > 180 ? `${text.slice(0, 180).trim()}…` : text;
+function pickExcerpt(post: Post, lang: string) {
+  return chonTomTat(post, lang);
 }
 
-function pickContent(post: Post, isVietnamese: boolean) {
-  return isVietnamese
-    ? post.contentVi || post.content || ""
-    : post.content || post.contentVi || "";
+function pickContent(post: Post, lang: string) {
+  return chonNoiDung(post, lang);
 }
 
-function pickBlocks(post: Post, isVietnamese: boolean): ContentBlock[] {
-  const blocks = isVietnamese
-    ? post.contentBlocksVi || post.contentBlocks || []
-    : post.contentBlocks || post.contentBlocksVi || [];
-
-  return Array.isArray(blocks) ? blocks : [];
+function pickBlocks(post: Post, lang: string): ContentBlock[] {
+  return chonKhoi(post, lang);
 }
 
 /**
@@ -698,7 +672,6 @@ export async function generateMetadata({
   const previewParams = searchParams ? await searchParams : undefined;
   const isPreview = isPreviewRequested(previewParams);
   const lang = await getCurrentLang();
-  const isVietnamese = lang === "vi";
 
   const post = (await getPostBySlug(slug, { publishedOnly: !isPreview })) as Post | null;
 
@@ -711,8 +684,8 @@ export async function generateMetadata({
     };
   }
 
-  const title = pickTitle(post, isVietnamese);
-  const description = pickExcerpt(post, isVietnamese);
+  const title = pickTitle(post, lang);
+  const description = pickExcerpt(post, lang);
   // Dùng slug thật trong DB (không phải slug trên URL) để canonical luôn chuẩn
   const basePath = `/blog/${post.slug || slug}`;
   const urlLocale = await getUrlLocale();
@@ -781,7 +754,6 @@ export default async function BlogPostPage({
   const isPreview = isPreviewRequested(previewParams);
 
   const lang = await getCurrentLang();
-  const isVietnamese = lang === "vi";
   const ui = UI[lang];
   const locale = LOCALE_BY_LANG[lang];
 
@@ -859,10 +831,10 @@ export default async function BlogPostPage({
   if (cut < 0) cut = sorted.length;
   const relatedPosts = [...sorted.slice(cut), ...sorted.slice(0, cut)];
 
-  const title = pickTitle(post, isVietnamese);
-  const excerpt = pickExcerpt(post, isVietnamese);
-  const content = pickContent(post, isVietnamese);
-  const blocks = pickBlocks(post, isVietnamese);
+  const title = pickTitle(post, lang);
+  const excerpt = pickExcerpt(post, lang);
+  const content = pickContent(post, lang);
+  const blocks = pickBlocks(post, lang);
   const canRenderBlocks = blocks.length > 0 && hasVisibleBlockData(blocks);
   const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
   const backUrl = post.category === "knowledge" ? "/knowledge" : "/blog";
@@ -881,7 +853,7 @@ export default async function BlogPostPage({
     const itemDate = item.publishedAt || item.createdAt;
     return {
       slug: String(item.slug),
-      title: pickTitle(item, isVietnamese),
+      title: pickTitle(item, lang),
       cover: item.coverImage || item.thumbnail || "/images/mebayluon.jpg",
       dateLabel: itemDate
         ? new Date(itemDate).toLocaleDateString(locale)

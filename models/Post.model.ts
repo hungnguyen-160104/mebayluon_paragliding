@@ -74,6 +74,17 @@ export interface IPost {
    */
   translatedLangs?: string[];
 
+  /** Bản dịch fr/zh/ru/hi — xem lib/post-translation.ts. */
+  translations?: Record<string, {
+    title: string;
+    excerpt?: string;
+    contentBlocks?: Array<Record<string, unknown>>;
+    content?: string;
+    published?: boolean;
+    nguon?: "ai" | "nguoi";
+    updatedAt?: Date | string;
+  }>;
+
   coverImage?: string;
   thumbnail?: string;
 
@@ -159,6 +170,13 @@ const PostSchema = new Schema<IPost>(
       type: [String],
       default: [],
     },
+
+    /**
+     * Bản dịch ngoài vi + en: { fr: { title, excerpt, contentBlocks, content,
+     * published, nguon, updatedAt }, zh: {...} }. Mixed vì cấu trúc khối tự do
+     * như contentBlocks. Chỉ bản `published` mới ra ngoài.
+     */
+    translations: { type: Schema.Types.Mixed, default: {} },
 
     coverImage: { type: String, default: "" },
     thumbnail: { type: String, default: "" },

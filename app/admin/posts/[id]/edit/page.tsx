@@ -128,6 +128,14 @@ export default function AdminEditPostPage() {
               Cập nhật nội dung song ngữ Việt / Anh
             </p>
           </div>
+
+          {/* Bản dịch fr / zh / ru / hi — trang riêng (29/09/2026) */}
+          <Link
+            href={`/admin/posts/${postId}/ban-dich`}
+            className="ml-auto rounded-md border border-sky-300 bg-sky-50 px-3 py-1.5 text-sm font-semibold text-sky-700 hover:bg-sky-100"
+          >
+            🌐 Bản dịch FR · ZH · RU · HI
+          </Link>
         </div>
       </header>
 

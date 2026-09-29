@@ -74,6 +74,20 @@ export type ContentBlock = {
   };
 };
 
+/** Một bản dịch của bài viết — xem lib/post-translation.ts. */
+export type PostTranslation = {
+  title: string;
+  excerpt?: string;
+  contentBlocks?: ContentBlock[];
+  /** Bài soạn dạng HTML thì bản dịch cũng là HTML. */
+  content?: string;
+  /** Đã có người biết tiếng duyệt — chỉ khi true mới hiện ra ngoài. */
+  published?: boolean;
+  /** Ai/gì dịch: "ai" (máy, chờ duyệt) · "nguoi" (người dịch). */
+  nguon?: "ai" | "nguoi";
+  updatedAt?: string;
+};
+
 export type Post = {
   _id: string;
   title: string;
@@ -92,6 +106,13 @@ export type Post = {
   excerptVi?: string;
   /** Ngôn ngữ đã dịch tay ngoài vi + en, ví dụ ["fr"]. */
   translatedLangs?: string[];
+  /**
+   * BẢN DỊCH NGOÀI vi + en (29/09/2026): mỗi ngôn ngữ một bản — tiêu đề, tóm
+   * tắt, khối nội dung (cùng cấu trúc bản tiếng Anh). CHỈ bản có
+   * `published: true` (người biết tiếng đã duyệt) mới hiện, mới khai hreflang
+   * và vào sitemap — xem lib/post-translation.ts.
+   */
+  translations?: Partial<Record<"fr" | "zh" | "ru" | "hi", PostTranslation>>;
 
   coverImage?: string;
   thumbnail?: string;

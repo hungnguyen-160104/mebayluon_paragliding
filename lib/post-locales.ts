@@ -19,7 +19,8 @@
  * riêng bài này — không phải sửa code.
  */
 
-import { LOCALES, type Locale } from "@/lib/site-config";
+import { type Locale } from "@/lib/site-config";
+import { ngonNguDaDich } from "@/lib/post-translation";
 
 type PostLike = {
   title?: unknown;
@@ -27,6 +28,7 @@ type PostLike = {
   content?: unknown;
   contentVi?: unknown;
   translatedLangs?: unknown;
+  translations?: unknown;
 };
 
 const hasText = (v: unknown) => typeof v === "string" && v.trim().length > 0;
@@ -46,17 +48,13 @@ export function postLocales(post: PostLike | null | undefined): Locale[] {
   // Bản tiếng Anh nằm ở cột không hậu tố
   if (hasText(post.title) || hasText(post.content)) out.push("en");
 
-  // Các ngôn ngữ được đánh dấu đã dịch tay
-  if (Array.isArray(post.translatedLangs)) {
-    for (const raw of post.translatedLangs) {
-      const code = String(raw).slice(0, 2).toLowerCase();
-      if (
-        (LOCALES as readonly string[]).includes(code) &&
-        !out.includes(code as Locale)
-      ) {
-        out.push(code as Locale);
-      }
-    }
+  /**
+   * Các ngôn ngữ ĐÃ DỊCH VÀ ĐÃ DUYỆT (29/09/2026): tính từ nội dung thật trong
+   * `translations`, không tin cờ `translatedLangs` nữa — cờ đó bật mà chưa có
+   * nội dung thì /fr/blog/x khai là bản riêng trong khi vẫn hiện tiếng Anh.
+   */
+  for (const code of ngonNguDaDich(post as Parameters<typeof ngonNguDaDich>[0])) {
+    if (!out.includes(code as Locale)) out.push(code as Locale);
   }
 
   return out.length > 0 ? out : ["vi"];
