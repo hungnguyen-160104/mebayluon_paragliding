@@ -132,3 +132,6 @@ media-inbox/
 .next-buildcheck/
 .next-verify/
 .og-cards-tmp/
+
+# Kiến thức dù lượn đọc từ sách của chủ (bản quyền sách — chỉ lưu trên máy, không đưa lên git)
+kien-thuc-du-luon/
