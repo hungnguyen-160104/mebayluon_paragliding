@@ -1,3 +1,5 @@
+import { HaGiangLoopMap } from "@/components/spots/HaGiangLoopMap";
+import { HA_GIANG_SITE_URL } from "@/lib/ha-giang-site";
 import { chonKhoi, chonNoiDung, chonTieuDe, chonTomTat } from "@/lib/post-translation";
 import { PageBackground } from "@/components/page-background";
 import { PostGallery, PostImage } from "@/components/blog/PostGallery";
@@ -539,6 +541,22 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
             </div>
             {data.caption ? (
               <figcaption className="text-sm text-white/70">{data.caption}</figcaption>
+            ) : null}
+          </figure>
+        );
+      }
+
+      if (embedType === "haGiangLoop") {
+        return (
+          <figure key={key} className="not-prose space-y-3">
+            <HaGiangLoopMap />
+            {data.caption ? (
+              <figcaption className="text-sm text-white/70">
+                {data.caption}{" "}
+                <a href={HA_GIANG_SITE_URL} target="_blank" rel="noopener" className="font-semibold text-amber-300 underline underline-offset-2 hover:text-amber-200">
+                  Ha Giang Paragliding
+                </a>
+              </figcaption>
             ) : null}
           </figure>
         );

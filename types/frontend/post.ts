@@ -18,7 +18,12 @@ export type PostCategory = "news" | "knowledge" | "store";
 export type PostType = "blog" | "product";
 export type SupportedLocale = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
-export type EmbedType = "youtube" | "googleMaps" | "unknown";
+/**
+ * "haGiangLoop": bản đồ Hà Giang Loop của web Hà Giang mới (components/spots/
+ * HaGiangLoopMap) — 9 điểm dừng là backlink sang web đó. Khối embed để `url`
+ * trỏ về HA_GIANG_SITE_URL, `caption` là dòng chữ dưới bản đồ.
+ */
+export type EmbedType = "youtube" | "googleMaps" | "haGiangLoop" | "unknown";
 
 export type ContentBlockType =
   | "heading"
