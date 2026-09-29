@@ -1,6 +1,6 @@
 // components/news/FeaturedLocations.tsx
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { headers, cookies } from "next/headers";
 
 type FixedPost = {

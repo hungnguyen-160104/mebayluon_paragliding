@@ -197,7 +197,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "yearly",
       priority: 0.3,
-      alternates: alts(`${BASE}/terms`),
+      // Điều khoản chỉ có tiếng Việt (app/terms/layout.tsx) — không khai bản dịch
+      alternates: alts(`${BASE}/terms`, ["vi"]),
     },
   ];
 

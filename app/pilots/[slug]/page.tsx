@@ -26,9 +26,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const locale = await getUrlLocale();
 
+  /** Hồ sơ phi công đã dịch đủ 6 thứ tiếng — tiêu đề, mô tả theo ngôn ngữ URL (SEO 29/09/2026). */
+  const role = (pilot.role as Record<string, string>)[locale] || pilot.role.vi;
+  const bio = (pilot.bio as Record<string, string>)[locale] || pilot.bio.vi;
+
   return buildMetadata({
-    title: `${pilot.name} - ${pilot.role.vi} | Mebayluon`,
-    description: `${pilot.bio.vi.slice(0, 155)}…`,
+    title: `${pilot.name} - ${role} | Mebayluon`,
+    description: `${bio.slice(0, 155)}…`,
     image: pilot.avatar,
     url: `/pilots/${slug}`,
     type: "website",

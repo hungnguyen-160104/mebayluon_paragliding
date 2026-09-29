@@ -8,7 +8,7 @@ import { CheckCircle2, Shirt, PackageCheck, Ban, Ticket, ArrowRight } from "luci
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
 import Image from "next/image" // Import Image để tối ưu
-import Link from "next/link"
+import Link from "@/components/locale-link";
 
 /**
  * Bài viết mô tả tuần tự các bước của một chuyến bay dù lượn (có mặt tại điểm

@@ -10,7 +10,7 @@
  */
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import Image from "next/image";
 
 const INITIAL_COUNT = 8;

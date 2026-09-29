@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
     locale,
   });
 }
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { getPosts } from "@/lib/posts-data";
 import { LazyPostCards } from "@/components/lazy-post-cards";
 import type { Post, SupportedLocale } from "@/types/frontend/post";

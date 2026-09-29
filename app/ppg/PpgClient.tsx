@@ -10,7 +10,7 @@
 // Nội dung/bản dịch ở lib/i18n/ppg.ts; link OTA lọc từ lib/spot-partner-links.
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { motion } from "framer-motion";
 import {
   MapPin,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { SpotDetailClient } from "./spot-detail-client";
 import { SpotReviewBadges } from "@/components/reviews/SpotReviewBadges";
 import { getSpotReview } from "@/lib/google-reviews";

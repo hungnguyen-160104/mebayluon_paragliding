@@ -1,7 +1,7 @@
 // components/knowledge/KnowledgeTabs.tsx
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import clsx from "clsx";
 import { useLanguage } from "@/contexts/language-context";
 

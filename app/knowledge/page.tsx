@@ -1,7 +1,7 @@
 // app/knowledge/page.tsx (Server Component)
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { getPosts } from "@/lib/posts-data";
 import { KnowledgeTabs } from "./KnowledgeTabs";
 import { LazyPostCards } from "@/components/lazy-post-cards";

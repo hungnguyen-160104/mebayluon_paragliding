@@ -2,7 +2,7 @@
 import { PageBackground } from "@/components/page-background";
 import { LazyVideo } from "@/components/lazy-video";
 
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useState } from "react";

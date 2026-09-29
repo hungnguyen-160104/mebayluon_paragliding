@@ -7,7 +7,7 @@ import { motion } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { getActivePilots, Pilot } from "@/lib/pilots-data"
-import Link from "next/link"
+import Link from "@/components/locale-link";
 import { ShareButtons } from "@/components/share-buttons"
 import { useLanguage, type Language } from "@/contexts/language-context"
 

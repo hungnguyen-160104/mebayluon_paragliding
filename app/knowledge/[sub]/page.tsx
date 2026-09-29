@@ -1,6 +1,7 @@
 // app/knowledge/[sub]/page.tsx
+import { getPosts } from "@/lib/posts-data";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { notFound } from "next/navigation";
 import KnowledgeTabs, { KnowledgeSub } from "@/components/knowledge/KnowledgeTabs";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
@@ -130,17 +131,30 @@ function pickExcerpt(post: Item, isVietnamese: boolean) {
   return text.length > 140 ? `${text.slice(0, 140).trim()}…` : text;
 }
 
-async function getData(sub: KnowledgeSub): Promise<Item[]> {
-  const subLabel = SUB_MAP[sub];
-  const url =
-    `/api/posts?isPublished=true&category=knowledge&subCategory=${encodeURIComponent(
-      subLabel
-    )}&sort=-publishedAt,-createdAt&limit=24`;
+/**
+ * Đọc thẳng DB như /knowledge/all (29/09/2026). Trước đây fetch("/api/posts…")
+ * bằng đường dẫn tương đối — phía máy chủ không phân giải được, trang ném
+ * "Failed to parse URL" và Google nhận trang lỗi (mã 200, không H1, không bài).
+ */
+/** Mã mục con lưu trong DB (lib/knowledge.ts) — URL dùng mã tiếng Anh. */
+const SUB_DB: Record<KnowledgeSub, string> = {
+  basic: "can-ban",
+  advanced: "nang-cao",
+  thermal: "thermal",
+  xc: "xc",
+  weather: "khi-tuong",
+};
 
-  const res = await fetch(url, { next: { revalidate: 120 } });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return Array.isArray(data.items) ? data.items : [];
+async function getData(sub: KnowledgeSub): Promise<Item[]> {
+  const data = await getPosts({
+    forList: true,
+    category: "knowledge",
+    subCategory: SUB_DB[sub],
+    isPublished: true,
+    sort: "-publishedAt,-createdAt",
+    limit: 24,
+  });
+  return (data?.items || []) as unknown as Item[];
 }
 
 export default async function KnowledgeSubPage({

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useLanguage } from "@/contexts/language-context";

@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 
 import { PageBackground } from "@/components/page-background";
 import { NgayGon } from "@/components/ui/ngay-gon";

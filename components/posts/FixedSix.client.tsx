@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { useLanguage } from "@/contexts/language-context";
 
 type PostLite = {

@@ -6,7 +6,7 @@ import { computePriceByLang, LOCATIONS } from "@/lib/booking/calculate-price";
 import { spotPageForBooking } from "@/lib/booking/spot-to-location";
 import { useBookingText, useLangCode } from "@/lib/booking/translations-booking";
 import BookingTicket from "@/components/booking/BookingTicket";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import Image from "next/image";
 import { CONTACT_WHATSAPP } from "@/lib/contact-channels";
 

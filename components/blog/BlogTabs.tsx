@@ -4,7 +4,7 @@
 // Thanh lọc chuyên mục ở trang /blog. Cố ý dùng lại đúng kiểu dáng thanh tab
 // của trang /knowledge để hai trang danh sách bài nhìn cùng một hệ.
 
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { useMemo } from "react";
 
 import { useLanguage } from "@/contexts/language-context";

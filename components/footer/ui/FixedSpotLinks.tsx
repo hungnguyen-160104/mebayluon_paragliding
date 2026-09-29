@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import Link from "@/components/locale-link";
 
 // Định nghĩa Interface rõ ràng cho Item để tránh lỗi implicit 'any'
 interface FixedSpotItem {

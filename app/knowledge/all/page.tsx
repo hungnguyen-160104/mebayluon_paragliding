@@ -1,7 +1,7 @@
 import { PageBackground } from "@/components/page-background";
 // app/knowledge/all/page.tsx
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { KnowledgeTabs } from "../KnowledgeTabs";
 import { getPosts } from "@/lib/posts-data";
 import type { Metadata } from "next";
@@ -21,10 +21,20 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getUrlLocale();
 
+  /** Tiêu đề, mô tả theo ngôn ngữ URL — trước đây bản /en, /fr… vẫn tiêu đề tiếng Việt (SEO 29/09/2026). */
+  const META: Record<string, { title: string; description: string }> = {
+    vi: { title: "Tất Cả Bài Viết Kiến Thức Dù Lượn | Mebayluon", description: "Toàn bộ bài viết kiến thức dù lượn của Mebayluon — từ căn bản, nâng cao, bay thermal, bay XC đến khí tượng bay." },
+    en: { title: "All Paragliding Knowledge Articles | Mebayluon", description: "Every paragliding knowledge article from Mebayluon — from the basics and advanced skills to thermal flying, XC and flying weather." },
+    fr: { title: "Tous les articles sur le parapente | Mebayluon", description: "Tous les articles de Mebayluon sur le parapente — des bases aux techniques avancées, du vol en thermique au cross et à la météo du vol." },
+    ru: { title: "Все статьи о парапланеризме | Mebayluon", description: "Все статьи Mebayluon о парапланеризме — от основ и продвинутых навыков до полётов в термиках, маршрутных полётов и авиаметеорологии." },
+    zh: { title: "全部滑翔伞知识文章 | Mebayluon", description: "Mebayluon 全部滑翔伞知识文章——从入门、进阶到热气流飞行、越野飞行和飞行气象。" },
+    hi: { title: "पैराग्लाइडिंग ज्ञान के सभी लेख | Mebayluon", description: "Mebayluon के पैराग्लाइडिंग ज्ञान के सभी लेख — बुनियादी और उन्नत कौशल से लेकर थर्मल फ़्लाइंग, XC और उड़ान मौसम तक।" },
+  };
+  const meta = META[locale] ?? META.vi;
+
   return buildMetadata({
-    title: "Tất Cả Bài Viết Kiến Thức Dù Lượn | Mebayluon",
-    description:
-      "Toàn bộ bài viết kiến thức dù lượn của Mebayluon — từ căn bản, nâng cao, bay thermal, bay XC đến khí tượng bay.",
+    title: meta.title,
+    description: meta.description,
     image: "/knowledge.jpg",
     url: "/knowledge/all",
     author: "Mebayluon",

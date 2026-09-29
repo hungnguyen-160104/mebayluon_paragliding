@@ -2,7 +2,7 @@
 import { PageBackground } from "@/components/page-background";
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { useMemo } from "react";
 import {
   Phone,

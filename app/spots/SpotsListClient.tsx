@@ -6,7 +6,7 @@ import { PageBackground } from "@/components/page-background";
 // "Điểm bay nổi bật" trên trang chủ, nhưng liệt kê đủ 8 điểm.
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { MapPin, Mountain, Clock } from "lucide-react";
 
 import { useLanguage } from "@/contexts/language-context";

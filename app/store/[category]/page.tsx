@@ -1,9 +1,10 @@
-import Link from "next/link";
+import Link from "@/components/locale-link";
 
 import { PageBackground } from "@/components/page-background";
 // mbl-paragliding/app/store/[category]/page.tsx
-import type { StoreCategory } from "@/types/frontend/post";
-import { listProductsByCategory } from "@/lib/product-api";
+import type { Post, StoreCategory } from "@/types/frontend/post";
+import { connectDB } from "@/lib/mongodb";
+import { listProducts } from "@/services/product.service";
 import ProductCard from "@/app/store/components/ProductCard";
 import { buildMetadata } from "@/lib/metadata-builder";
 import { getUrlLocale } from "@/lib/locale";
@@ -80,7 +81,19 @@ const OTHER_CATEGORIES_LABEL: Record<StoreLang, string> = {
 export default async function StoreCategoryPage({ params }: Props) {
   const { category } = await params;
   const lang = toStoreLang(await getUrlLocale());
-  const { items } = await listProductsByCategory({ category, limit: 30 });
+  /**
+   * Đọc thẳng DB (29/09/2026). Trước đây gọi HTTP sang /api/products qua địa chỉ
+   * Vercel — bị chặn/lỗi thì cả trang danh mục vỡ thành trang lỗi (mã vẫn 200,
+   * không H1, không sản phẩm), Google thấy trang trống.
+   */
+  await connectDB();
+  const { items: raw } = await listProducts({
+    published: "true",
+    limit: 30,
+    sort: "-fixed,featuredAt,-createdAt",
+    ...(category ? { storeCategory: category } : {}),
+  });
+  const items: Post[] = JSON.parse(JSON.stringify(raw));
 
   // ItemList giúp Google hiểu đây là trang danh mục sản phẩm, giống cách
   // trang /spots khai danh sách điểm bay.

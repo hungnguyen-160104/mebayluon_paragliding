@@ -1,7 +1,7 @@
 "use client";
 
 // /components/footer/Footer.tsx
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { TRUST_LINKS, BRAND_BUTTON_CLASS } from "@/lib/partner-links";
 import { Dancing_Script } from "next/font/google";
 import { usePathname } from "next/navigation";

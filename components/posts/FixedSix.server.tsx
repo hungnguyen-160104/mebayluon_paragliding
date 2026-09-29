@@ -1,6 +1,6 @@
 // components/posts/FixedSix.server.tsx
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { cookies } from "next/headers";
 
 type PostLite = {

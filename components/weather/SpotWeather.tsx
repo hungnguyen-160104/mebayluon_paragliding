@@ -19,7 +19,7 @@ import { BONG_CHU, LOP_TAG, NEN_TAG } from "./tag-muc";
 import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
 import { gioTaiDoCao } from "@/lib/baobay/nhan-dinh";
 import { SkewT } from "./SkewT";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy, huongDayDu, huongTheoNgonNgu, type ThoiTietCopy } from "@/lib/i18n/thoi-tiet";

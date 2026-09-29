@@ -1,7 +1,7 @@
 import { PageBackground } from "@/components/page-background";
 // app/store/[category]/[slug]/page.tsx
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/mongodb";
 import { getProductBySlug } from "@/services/product.service";

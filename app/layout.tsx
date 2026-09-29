@@ -10,7 +10,8 @@ import {
   type Language,
 } from "@/contexts/language-context";
 
-import { getRequestLang } from "@/lib/locale";
+import { getRequestLang, getUrlLocale } from "@/lib/locale";
+import { UrlLocaleProvider } from "@/components/locale-link";
 
 import { Navigation } from "@/components/navigation";
 import { FloatingSocial } from "@/components/floating-social";
@@ -153,6 +154,8 @@ export default async function RootLayout({
    * theo cookie như cũ. Logic nằm trong lib/locale.ts.
    */
   const lang = (await getRequestLang()) as Language;
+  /** Ngôn ngữ THEO URL — link nội bộ gắn tiền tố theo cái này (components/locale-link). */
+  const urlLocale = await getUrlLocale();
 
   /**
    * Website sử dụng tiếng Trung giản thể.
@@ -189,6 +192,7 @@ export default async function RootLayout({
         suppressHydrationWarning
       >
         <LanguageProvider initialLang={lang}>
+          <UrlLocaleProvider initial={urlLocale}>
           <Suspense fallback={null}>
             <Navigation />
 
@@ -196,6 +200,7 @@ export default async function RootLayout({
 
             <FloatingSocial />
           </Suspense>
+          </UrlLocaleProvider>
         </LanguageProvider>
 
         <Analytics />

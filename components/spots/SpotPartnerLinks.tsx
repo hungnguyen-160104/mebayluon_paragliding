@@ -5,7 +5,7 @@
 // cánh và các trang bán tour trên OTA của riêng điểm bay đang xem.
 // Dữ liệu ở lib/spot-partner-links.ts, màu nút ở lib/partner-links.ts.
 
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { MapPin, ExternalLink, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 

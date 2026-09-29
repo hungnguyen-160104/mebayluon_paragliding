@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import Image from "next/image";
 import type { Post } from "@/types/frontend/post";
 import { useLanguage } from "@/contexts/language-context";

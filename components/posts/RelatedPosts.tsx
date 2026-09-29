@@ -1,6 +1,6 @@
 // components/posts/RelatedPosts.tsx
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { headers } from "next/headers";
 
 /** Kiểu rút gọn để render */

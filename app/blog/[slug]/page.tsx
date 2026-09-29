@@ -6,7 +6,7 @@ import { PostGallery, PostImage } from "@/components/blog/PostGallery";
 export const dynamic = "force-dynamic";
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/locale-link";
 import { linkifyPhones, linkifyPhonesInHtml } from "@/lib/phone-link";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -150,6 +150,16 @@ function slugifyHeading(text: string): string {
     .slice(0, 60);
 }
 
+/**
+ * Link tuyệt đối về chính mebayluon.com → đường dẫn nội bộ, để đi qua <Link>
+ * (components/locale-link) và giữ tiền tố ngôn ngữ trên trang /en, /fr…
+ * (SEO 29/09/2026). Link ngoài và neo "#" giữ nguyên.
+ */
+function veDuongDanNoiBo(href: string): string {
+  const m = /^https?:\/\/(?:www\.)?mebayluon\.com(\/[^\s]*)?$/i.exec(href);
+  return m ? m[1] || "/" : href;
+}
+
 function isExternalHref(href: string): boolean {
   return (
     /^https?:\/\//i.test(href) &&
@@ -184,7 +194,7 @@ function renderInlineFormat(text: string): React.ReactNode[] {
   return parts.map((part, i) => {
     const link = linkRe.exec(part);
     if (link) {
-      const href = link[2];
+      const href = veDuongDanNoiBo(link[2]);
       const external = isExternalHref(href);
       const cls = "font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200";
       /**
@@ -487,8 +497,19 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
       return <hr key={key} className="border-white/15" />;
 
     case "cta": {
-      const ctaHref = String(data.link || "#");
+      const ctaHref = veDuongDanNoiBo(String(data.link || "#"));
       const ctaExternal = isExternalHref(ctaHref);
+      const ctaCls =
+        "cta-btn rounded-full bg-red-600 px-6 py-3 text-lg font-semibold text-orange-50 transition hover:bg-red-700";
+      if (data.text && ctaHref.startsWith("/") && !ctaHref.startsWith("//")) {
+        return (
+          <p key={key} className="not-prose">
+            <Link href={ctaHref} className={ctaCls}>
+              {data.text}
+            </Link>
+          </p>
+        );
+      }
       return data.text ? (
         <p key={key} className="not-prose">
           <a
