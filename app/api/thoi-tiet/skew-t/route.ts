@@ -4,8 +4,7 @@ import { NextResponse } from "next/server";
 import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
 import { TOA_DO_MAC_DINH } from "@/lib/baobay/thoi-tiet";
 import { normalizeSpot } from "@/lib/baobay/spots";
-import { caoTheoAp, MUC_AP, type ThamKhong } from "@/lib/baobay/skew-t";
-import { moHinhTheoMa, MO_HINH_MAC_DINH } from "@/lib/baobay/mo-hinh";
+import { layThamKhong } from "@/lib/baobay/tham-khong-api";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -20,15 +19,6 @@ export const maxDuration = 30;
  * GET /api/thoi-tiet/skew-t?spot=doi-bu&date=2026-09-12[&model=ecmwf_ifs04]
  */
 const CACHE_HEADER = "public, s-maxage=1800, stale-while-revalidate=3600";
-
-/** Mực nào cũng cần bốn trường; ghép sẵn để khỏi lặp. */
-const TRUONG = MUC_AP.flatMap((p) => [
-  `temperature_${p}hPa`,
-  `dew_point_${p}hPa`,
-  `wind_speed_${p}hPa`,
-  `wind_direction_${p}hPa`,
-  `geopotential_height_${p}hPa`,
-]).join(",");
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -51,45 +41,10 @@ export async function GET(req: Request) {
   }
 
   try {
-    const mh = moHinhTheoMa(model ?? MO_HINH_MAC_DINH);
-    const q = new URLSearchParams({
-      latitude: String(lat),
-      longitude: String(lon),
-      hourly: TRUONG,
-      start_date: date,
-      end_date: date,
-      timezone: "Asia/Bangkok",
-      wind_speed_unit: "ms",
-    });
-    if (mh.id) q.set("models", mh.id);
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?${q}`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(12_000),
-    });
-    if (!res.ok) throw new Error(`Open-Meteo trả ${res.status}`);
-    const js = (await res.json()) as { hourly?: Record<string, Array<number | null>> & { time?: string[] } };
-    const h = js.hourly;
-    if (!h?.time?.length) throw new Error("Mô hình không trả giờ nào");
-
-    const so = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
-    const gio: ThamKhong[] = h.time.map((t, i) => ({
-      gio: t,
-      muc: MUC_AP.map((ap) => {
-        const nhiet = so(h[`temperature_${ap}hPa`]?.[i]);
-        const suong = so(h[`dew_point_${ap}hPa`]?.[i]);
-        return {
-          ap,
-          cao: so(h[`geopotential_height_${ap}hPa`]?.[i]) ?? caoTheoAp(ap),
-          nhiet: nhiet ?? NaN,
-          suong: suong ?? NaN,
-          gio: so(h[`wind_speed_${ap}hPa`]?.[i]),
-          huong: so(h[`wind_direction_${ap}hPa`]?.[i]),
-        };
-      }).filter((m) => Number.isFinite(m.nhiet)),
-    }));
+    const { moHinh, gio } = await layThamKhong({ lat, lon, ngay: date, model });
 
     return NextResponse.json(
-      { slug, ten, lat, lon, alt: diem ? undefined : noiBo?.alt, ngay: date, moHinh: mh.ten, gio },
+      { slug, ten, lat, lon, alt: diem ? undefined : noiBo?.alt, ngay: date, moHinh, gio },
       { headers: { "Cache-Control": CACHE_HEADER } },
     );
   } catch (err) {

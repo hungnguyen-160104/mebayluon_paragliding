@@ -11,6 +11,14 @@ const nextConfig = {
   // breaks module resolution/caching and triggers webpack "reading 'call'" errors.
   outputFileTracingRoot: __dirname,
 
+  /**
+   * Font vẽ ảnh biểu đồ gió / Skew-T trong thư dự báo 20h (lib/fonts, ~270 KB) —
+   * hàm đọc bằng fs nên phải khai để Vercel đóng gói kèm.
+   */
+  outputFileTracingIncludes: {
+    '/api/cron/thoi-tiet-mail': ['./lib/fonts/**'],
+  },
+
   // Cho phép build ra thư mục khác để không giẫm lên .next mà `next dev` đang
   // dùng — build đè lúc dev đang chạy làm hỏng CSS/JS của bản xem thử.
   //   NEXT_DIST_DIR=.next-buildcheck npx next build
