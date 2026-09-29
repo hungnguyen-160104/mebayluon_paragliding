@@ -1,5 +1,6 @@
 "use client";
 
+import { anhDaiDienBiTrung } from "@/lib/post-cover";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Eye,
@@ -1079,6 +1080,15 @@ export default function PostEditor({
       if (mode === "publish" && (form.price === "" || Number(form.price) < 0)) {
         nextErrors.price = "Cần nhập giá hợp lệ";
       }
+    }
+
+    // Ảnh đại diện đã hiện ở đầu bài — không cho lặp lại trong thân bài (chủ 29/09/2026)
+    if (
+      form.coverImage.trim() &&
+      anhDaiDienBiTrung(form.coverImage, htmlMode ? [] : [blocksVi, blocksEn], htmlMode ? [htmlVi, htmlEn] : [])
+    ) {
+      nextErrors.coverImage =
+        "Ảnh đại diện đang trùng với một ảnh trong thân bài — chọn ảnh đại diện khác hoặc thay ảnh trong bài";
     }
 
     if (!previewSlug) {
