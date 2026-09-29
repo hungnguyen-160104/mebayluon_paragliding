@@ -187,6 +187,8 @@ export function phanTichSkewT(muc: MucSkewT[], gio: string, altCat: number, xacS
   if (ra.dayMayCao !== null) {
     if (ra.dayMayCao <= altCat + 100) {
       ra.canhBao.push(`Đáy mây ~${cv(ra.dayMayCao)} — ngang hoặc thấp hơn bãi cất ${cv(altCat)}: bãi dễ bị mây phủ, không thấy bãi hạ.`);
+    } else if (ra.dayMayCao <= altCat + 300) {
+      ra.canhBao.push(`Đáy mây thấp ~${cv(ra.dayMayCao)} — chỉ cao hơn bãi cất ${cv(ra.dayMayCao - altCat)}: không lên cao được, dễ bị hút vào mây khi có thermal; canh mây trước khi cất.`);
     } else {
       ra.nhanXet.push(`Đáy mây ~${cv(ra.dayMayCao)} (cao hơn bãi cất ${cv(ra.dayMayCao - altCat)}).`);
     }

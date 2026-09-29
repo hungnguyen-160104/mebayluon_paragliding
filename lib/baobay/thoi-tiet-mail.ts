@@ -28,6 +28,9 @@ const NHAN_MUC: Record<MucDo, string> = { xanh: "BAY TỐT", vang: "CÂN NHẮC"
 const MAU_MUC: Record<MucDo, string> = { xanh: "#047857", vang: "#b45309", do: "#be123c" };
 const NEN_MUC: Record<MucDo, string> = { xanh: "#ecfdf5", vang: "#fffbeb", do: "#fff1f2" };
 
+/** Số thập phân kiểu Việt: 2,2 thay cho 2.2 — cùng cách viết với phần gió trên cao. */
+const vn = (x: number) => x.toFixed(1).replace(".", ",");
+
 /** "2026-09-13" → "Thứ 7, 13/09". */
 export function nhanNgayVN(ngay: string): string {
   const THU = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
@@ -47,8 +50,8 @@ function dongSo(n: NgayThoiTiet): { html: string; text: string } {
   const gioHtml =
     `Gió ` +
     (tenHuong ? `<b style="color:#b91c1c;background:#fee2e2;padding:0 4px;border-radius:4px">${tenHuong.toUpperCase()}</b> ` : "") +
-    `${n.gioMax.toFixed(1)} m/s · giật ${n.giatMax.toFixed(1)}`;
-  const gioText = `Gió ${tenHuong ? `${tenHuong.toUpperCase()} ` : ""}${n.gioMax.toFixed(1)} m/s · giật ${n.giatMax.toFixed(1)}`;
+    `${vn(n.gioMax)} m/s · giật ${vn(n.giatMax)}`;
+  const gioText = `Gió ${tenHuong ? `${tenHuong.toUpperCase()} ` : ""}${vn(n.gioMax)} m/s · giật ${vn(n.giatMax)}`;
   const phan: string[] = [];
   if (n.khungDep) phan.push(`Giờ đẹp ${n.khungDep}`);
   if (th) {
@@ -56,7 +59,7 @@ function dongSo(n: NgayThoiTiet): { html: string; text: string } {
       `Thermal ${NHAN_MUC_THERMAL[th.muc]} ${th.diem}/100` + (th.khung && th.diem >= 25 ? ` (mạnh nhất ${th.khung})` : ""),
     );
   }
-  if (n.gioMua > 0) phan.push(`Mưa ${n.gioMua} giờ${n.khungMua ? ` ${n.khungMua}` : ""} · ${n.muaTongThat.toFixed(1)}mm`);
+  if (n.gioMua > 0) phan.push(`Mưa ${n.gioMua} giờ${n.khungMua ? ` ${n.khungMua}` : ""} · ${vn(n.muaTongThat)} mm`);
   else if (n.gioMuaBay > 0) phan.push("Mưa bay — bay vẫn bay");
   else phan.push("Không mưa");
   if (n.xacSuatDongMax >= 20) phan.push(`Dông ${n.xacSuatDongMax}%`);
