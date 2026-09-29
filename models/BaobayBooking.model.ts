@@ -145,6 +145,12 @@ export interface IBaobayBooking {
   insuranceMaxRows?: number;
   /** Trạng thái bên trang khách lúc đồng bộ gần nhất. */
   webStatus?: string;
+  /**
+   * KHÁCH YÊU CẦU HUỶ TRÊN WEB (30/09/2026): khách bấm ở /booking/sua. App hiện
+   * cảnh báo đỏ tới khi nhân viên bấm Xác nhận (đi đường Huỷ bay có hoàn tiền)
+   * hoặc Từ chối (kèm lý do, email khách).
+   */
+  yeuCauHuyWeb?: { at: Date; lyDo?: string; xuLy?: "" | "xac-nhan" | "tu-choi"; xuLyLuc?: Date; xuLyBoi?: string; ghiChu?: string };
   syncedAt?: Date;
   /** Loại hình bay — quyết định đơn giá: "pg" dù lượn · "ppg" có động cơ. */
   flightKind: "pg" | "ppg" | "m650" | "m850";
@@ -573,6 +579,10 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     insuranceSheetError: String,
     insuranceMaxRows: { type: Number, default: 0 },
     webStatus: String,
+    yeuCauHuyWeb: {
+      type: { at: Date, lyDo: String, xuLy: String, xuLyLuc: Date, xuLyBoi: String, ghiChu: String, _id: false },
+      default: undefined,
+    },
     syncedAt: Date,
     flightKind: { type: String, enum: ["pg", "ppg", "m650", "m850"], default: "pg" },
     ppgGuests: { type: Number, default: 0, min: 0 },

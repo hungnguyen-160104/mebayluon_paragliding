@@ -108,6 +108,7 @@ import type {
 import { AccountantDailyClose } from "@/models/AccountantDailyClose.model";
 import { BaobayAccount, type IBaobayAccount } from "@/models/BaobayAccount.model";
 import { BaobayBooking, type BookingStatus } from "@/models/BaobayBooking.model";
+import { sauKhiHuy, tuChoiYeuCauHuy } from "@/services/yeu-cau-huy.service";
 import { BaobayCollect } from "@/models/BaobayCollect.model";
 import { BaobayServiceChange } from "@/models/BaobayServiceChange.model";
 import { BaobayHandover } from "@/models/BaobayHandover.model";
@@ -9508,6 +9509,15 @@ export async function updateBookingStatus(
     if (action === "move") await pushQueueNoToWeb(doc.webBookingId, doc.daySeq, doc.flightDate);
     else if (action === "cancel") await clearQueueNoOnWeb(doc.webBookingId);
   }
+  /**
+   * Huỷ xong: yêu cầu huỷ của khách (nếu có) thành "đã xác nhận", booking web
+   * sang "cancelled", email khách (30/09/2026). Lỗi ở đây không làm hỏng lệnh huỷ.
+   */
+  if (action === "cancel") {
+    await sauKhiHuy(doc, { username: session.username, name: session.name }, refundNow).catch((e) =>
+      console.error("sauKhiHuy lỗi", e),
+    );
+  }
 
   // Dời thành công thì số cũ trả về kho ngày cũ — booking mới của ngày ấy nhận lại.
   // TRỪ khi đã cấp MÃ VÉ QR: "22/12 #3" đang in trên vé khách cầm, cấp lại số 3
@@ -9840,6 +9850,16 @@ function veQrToDTO(v: any): BookingDTO["veQr"] {
 
 export function toBookingDTO(doc: any): BookingDTO {
   return {
+    yeuCauHuyWeb: doc.yeuCauHuyWeb?.at
+      ? {
+          at: new Date(doc.yeuCauHuyWeb.at).toISOString(),
+          lyDo: doc.yeuCauHuyWeb.lyDo || "",
+          xuLy: doc.yeuCauHuyWeb.xuLy || "",
+          xuLyLuc: doc.yeuCauHuyWeb.xuLyLuc ? new Date(doc.yeuCauHuyWeb.xuLyLuc).toISOString() : undefined,
+          xuLyBoi: doc.yeuCauHuyWeb.xuLyBoi || undefined,
+          ghiChu: doc.yeuCauHuyWeb.ghiChu || undefined,
+        }
+      : undefined,
     daySeq: Number(doc.daySeq) || 0,
     locked: Boolean(doc.lockedAt),
     lockedBy: doc.lockedBy || undefined,
@@ -14519,4 +14539,18 @@ export function bangTienCuaRieng(board: MoneyBoard, username: string): MoneyBoar
     dayRevenue: { collected: 0, totalValue: 0, remaining: 0 },
     agencyDebts: [],
   };
+}
+
+
+/** Nhân viên TỪ CHỐI yêu cầu huỷ khách gửi trên web (30/09/2026) — xem services/yeu-cau-huy.service.ts. */
+export async function tuChoiHuyWeb(session: BaobaySession, spotRaw: string, id: string, lyDo: string): Promise<BookingDTO> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new BaobayError("Booking không hợp lệ", 400);
+  try {
+    const doc = await tuChoiYeuCauHuy({ spot, id, lyDo, nguoi: { username: session.username, name: session.name } });
+    return toBookingDTO(doc);
+  } catch (e: any) {
+    throw new BaobayError(e?.message || "Không từ chối được", e?.status || 400);
+  }
 }

@@ -11,7 +11,7 @@ import { resolveSpot } from "@/lib/baobay/request-spot";
 import { wearsRole } from "@/lib/baobay/roles";
 import { bookingSchema, firstZodMessage } from "@/lib/baobay/validation";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import {
+import { tuChoiHuyWeb,
   lastAgencyBank,
   cancelBookingGuests,
   BaobayError,
@@ -402,6 +402,10 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ booking: await assignBooking(auth, spot, id, assignee) });
     }
     // HOÀN TÁC: bấm nhầm "đã bay" / "huỷ" thì trả về chờ bay
+    /** Từ chối yêu cầu huỷ khách gửi trên web (30/09/2026). Xác nhận = đi đường "cancel" như thường. */
+    if (action === "tu-choi-huy-web") {
+      return NextResponse.json({ booking: await tuChoiHuyWeb(auth, spot, id, String(body?.lyDo ?? "")) });
+    }
     if (action === "restore") {
       return NextResponse.json({ booking: await restoreBooking(auth, spot, id) });
     }

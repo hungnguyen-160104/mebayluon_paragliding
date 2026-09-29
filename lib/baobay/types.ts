@@ -395,6 +395,8 @@ export type CollectDTO = {
 /** Booking đặt trước — khách chốt hôm nay, bay ngày khác. */
 export type BookingDTO = {
   id: string;
+  /** Khách yêu cầu huỷ trên web — chờ nhân viên Xác nhận / Từ chối (xem model). */
+  yeuCauHuyWeb?: { at: string; lyDo?: string; xuLy?: "" | "xac-nhan" | "tu-choi"; xuLyLuc?: string; xuLyBoi?: string; ghiChu?: string };
   spot: string;
   /** Số thứ tự khách trong ngày (cấp theo lúc đặt, không đổi; dời ngày thì cấp số mới). */
   daySeq: number;

@@ -89,6 +89,68 @@ type NghiTrung = {
  */
 const PanelGroupContext = createContext<{ openId: string | null; setOpenId: (id: string | null) => void } | null>(null);
 
+/** Sự kiện nhờ các danh sách booking tải lại (sau khi xử lý yêu cầu huỷ ngay trong cảnh báo). */
+const REFRESH_EVENT = "baobay:booking-refresh";
+
+/**
+ * CẢNH BÁO: KHÁCH YÊU CẦU HUỶ TRÊN WEB (30/09/2026). Hiện tới khi nhân viên:
+ *  - bấm "✕ Huỷ booking" ngay trong cảnh báo — đúng khung huỷ bay của app
+ *    (hoàn tiền, mã vé thu hồi); huỷ xong máy tự đánh dấu "đã xác nhận",
+ *    đổi booking web sang huỷ và email khách;
+ *  - hoặc "Từ chối" — bắt ghi lý do, booking giữ nguyên, email khách lý do.
+ * Đã xử lý thì còn một dòng nhỏ ghi ai xử lý, lúc nào.
+ */
+function YeuCauHuyWebBanner({ b }: { b: BookingDTO }) {
+  const y = b.yeuCauHuyWeb;
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  if (!y) return null;
+  const luc = new Date(y.at).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+  if (y.xuLy) {
+    return (
+      <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
+        Khách yêu cầu huỷ trên web lúc {luc} — {y.xuLy === "xac-nhan" ? "✓ đã huỷ" : "✕ đã từ chối"}
+        {y.xuLyBoi ? ` bởi ${y.xuLyBoi}` : ""}
+        {y.ghiChu ? ` · ${y.ghiChu}` : ""}
+      </div>
+    );
+  }
+  const refresh = (m: string) => {
+    setMsg(m);
+    window.dispatchEvent(new Event(REFRESH_EVENT));
+  };
+  async function tuChoi() {
+    const lyDo = window.prompt("Lý do TỪ CHỐI huỷ (sẽ gửi email cho khách):", "");
+    if (lyDo === null) return;
+    if (!lyDo.trim()) return setMsg("Phải ghi lý do từ chối");
+    setBusy(true);
+    try {
+      await apiPatch(`/api/baocao/booking?spot=${b.spot}`, { id: b.id, action: "tu-choi-huy-web", lyDo });
+      refresh("✓ Đã từ chối và email khách");
+    } catch (e: unknown) {
+      setMsg(e instanceof Error ? e.message : "Không từ chối được");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mt-1 rounded-lg border-2 border-red-400 bg-red-50 px-2 py-1.5 text-xs text-red-900">
+      <div className="font-bold">
+        🛑 KHÁCH YÊU CẦU HUỶ trên web lúc {luc}
+        {y.lyDo ? <span className="font-normal"> — lý do: {y.lyDo}</span> : null}
+      </div>
+      <div className="mt-0.5 text-[11px]">Gọi khách xác nhận, rồi huỷ (nhập hoàn tiền nếu có) hoặc từ chối.</div>
+      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+        <CancelBookingControl spot={b.spot} booking={b} onDone={(m) => refresh(m)} />
+        <Button type="button" variant="ghost" disabled={busy} onClick={tuChoi} className="h-7 border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700">
+          ✕ Từ chối huỷ
+        </Button>
+        {msg ? <span className="text-[11px] font-semibold">{msg}</span> : null}
+      </div>
+    </div>
+  );
+}
+
 function PanelGroup({ children }: { children: ReactNode }) {
   const [openId, setOpenId] = useState<string | null>(null);
   return <PanelGroupContext.Provider value={{ openId, setOpenId }}>{children}</PanelGroupContext.Provider>;
@@ -4454,6 +4516,7 @@ function BookingDayTable({
                     tự cao lên — max-w chỉ giữ bề ngang cột, break-words bẻ dòng. */}
                 <td className="max-w-[220px] border-b border-slate-100 px-2 py-1">
                   <div className="break-words font-semibold text-slate-900">{b.contactName || "—"}</div>
+                  <YeuCauHuyWebBanner b={b} />
                   {b.phone && (
                     <div className="whitespace-nowrap text-[10px] tabular-nums text-slate-500"><GoiSdt sdt={b.phone}>📞 {b.phone}</GoiSdt></div>
                   )}
@@ -5021,7 +5084,12 @@ export function BookingTodayBanner({
     load();
     // Booking đồng nghiệp vừa nhập cũng hiện trong vòng nửa phút
     const timer = setInterval(load, 30_000);
-    return () => clearInterval(timer);
+    // Xử lý yêu cầu huỷ ngay trong cảnh báo đỏ thì tải lại liền
+    window.addEventListener(REFRESH_EVENT, load);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener(REFRESH_EVENT, load);
+    };
   }, [load]);
 
   /**
@@ -6487,6 +6555,7 @@ export function BookingTodayBanner({
               </>
             )}
             <BookingSummary b={b} dim={b.status === "done" || b.locked} />
+            <YeuCauHuyWebBanner b={b} />
             {/* Dải ⋯ Thêm xổ ngay dưới thẻ — nền vàng nhạt như dòng xổ của bảng */}
             {closedMoreId === b.id && (
               <div className="clear-both mt-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5">
@@ -7561,6 +7630,8 @@ export function BookingCard({
 
   useEffect(() => {
     load();
+    window.addEventListener(REFRESH_EVENT, load);
+    return () => window.removeEventListener(REFRESH_EVENT, load);
   }, [load]);
 
   /** Nhận lệnh "Sửa" từ banner booking hôm nay: mở thẻ, nạp form, cuộn tới. */
@@ -9192,6 +9263,14 @@ export function BookingCard({
             </span>
           )}
         </div>
+        {(() => {
+          const cho = upcoming.filter((b) => b.yeuCauHuyWeb && !b.yeuCauHuyWeb.xuLy);
+          return cho.length ? (
+            <p className="mb-1.5 rounded-lg border-2 border-red-400 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-800">
+              🛑 {cho.length} khách YÊU CẦU HUỶ trên web đang chờ xử lý: {cho.map((b) => `${b.contactName || "khách"} (${formatDateKeyVN(b.flightDate)})`).join(", ")} — xem dòng đỏ bên dưới
+            </p>
+          ) : null;
+        })()}
         {upcoming.length === 0 ? (
           <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-400">
             {listSpots.length === 0 ? "Chưa chọn điểm nào để hiện — bấm tên điểm ở trên." : "Chưa có booking nào sắp tới."}
@@ -9256,6 +9335,7 @@ export function BookingCard({
                   </span>
                 )}
                 <BookingSummary b={b} withDate dim={b.locked} />
+                <YeuCauHuyWebBanner b={b} />
                 <AssignedBadge b={b} />
                 <span className="ml-1 text-xs text-slate-400">
                   — nhập {stampVN(b.createdAt)} bởi {b.createdByName}

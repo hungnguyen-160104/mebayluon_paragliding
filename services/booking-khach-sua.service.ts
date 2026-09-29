@@ -37,6 +37,7 @@ import { pushQueueNoToWeb } from "@/lib/baobay/web-queue";
 import { sendTelegramToAll } from "@/services/telegram.service";
 import { sendSmtpMail } from "@/lib/mailer";
 import { customerEmailHtml, customerEmailSubject } from "@/lib/email/customer-booking";
+import { thuNhanVien } from "@/services/yeu-cau-huy.service";
 
 export class LoiKhachSua extends Error {
   constructor(message: string, public status = 400) {
@@ -419,7 +420,16 @@ export async function khachYeuCauHuy(input: { the: unknown; lyDo?: unknown }) {
   await Booking.updateOne({ _id: b._id }, { $set: { yeuCauHuy: { at, lyDo } } });
   if (ops) {
     const dong = `[KHÁCH YÊU CẦU HUỶ trên web ${new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 16).replace("T", " ")}]${lyDo ? ` Lý do: ${lyDo}` : ""}`;
-    await BaobayBooking.updateOne({ _id: ops._id }, { $set: { note: [String(ops.note || "").trim(), dong].filter(Boolean).join("\n") } });
+    await BaobayBooking.updateOne(
+      { _id: ops._id },
+      {
+        $set: {
+          note: [String(ops.note || "").trim(), dong].filter(Boolean).join("\n"),
+          /** App hiện cảnh báo đỏ tới khi nhân viên Xác nhận / Từ chối. */
+          yeuCauHuyWeb: { at, lyDo, xuLy: "" },
+        },
+      },
+    );
     await BaobayBookingLog.create({
       bookingId: ops._id,
       spot: ops.spot,
@@ -457,6 +467,11 @@ async function baoTin(b: any, vet: Array<{ truong: string; cu: string; moi: stri
     ...dong,
   ].join("\n");
   await sendTelegramToAll(text, true).catch(() => {});
+  /** Telegram chập chờn (chủ 30/09) — EMAIL nhân viên là kênh chính. */
+  await thuNhanVien(
+    kieu === "huy" ? `🛑 KHÁCH YÊU CẦU HUỶ — ${ma} · ${b.locationName || ""} · ${ngayVN(b.dateISO || "")}` : `✏️ Khách tự sửa booking — ${ma} · ${b.locationName || ""} · ${ngayVN(b.dateISO || "")}`,
+    text.split("\n").slice(1).map((l) => l.replace(/<[^>]+>/g, "")),
+  );
 
   const to = String(b.contact?.email || "").trim();
   if (!to) return;
