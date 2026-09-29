@@ -19,9 +19,15 @@ export const maxDuration = 60;
  *
  * Lịch chạy khai trong `vercel.json`: 13:00 UTC = 20:00 giờ Việt Nam.
  *
- * AI ĐƯỢC GỌI: Vercel Cron tự gửi header `x-vercel-cron`. Gọi tay thì phải
- * kèm `?key=<CRON_SECRET>` — nếu không, bất kỳ ai biết đường dẫn cũng bắt máy
- * chủ gửi thư được.
+ * AI ĐƯỢC GỌI (sửa 29/09/2026 — từ 12/09 tới nay CHƯA GỬI ĐƯỢC THƯ NÀO: code
+ * cũ chờ header `x-vercel-cron` mà Vercel không hề gửi, nên tối nào lịch cũng
+ * bị 401). Theo tài liệu Vercel, lời gọi của Cron mang:
+ *  - `Authorization: Bearer <CRON_SECRET>` — khi dự án có khai CRON_SECRET;
+ *  - `x-vercel-cron-schedule: <biểu thức lịch>` — luôn có.
+ * Có CRON_SECRET thì BẮT BUỘC Bearer (hoặc `?key=` khi gọi tay); chưa khai
+ * thì nhận header lịch. Tham số `to`/`demo` (gửi địa chỉ khác) chỉ nhận khi
+ * gọi tay kèm `?key=` — người ngoài giả header cũng chỉ gửi được thư dự báo
+ * thật cho đúng anh Toản, không biến máy chủ thành chỗ gửi thư lung tung.
  *
  * Thử trước khi bật lịch: `?key=…&to=ai@đó&demo=1` gửi CHỈ cho địa chỉ ấy,
  * không đụng tới người nhận thật.
@@ -32,15 +38,18 @@ const DIEM = ["vien-nam", "doi-bu"] as const;
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const laCron = req.headers.get("x-vercel-cron") !== null;
   const key = url.searchParams.get("key") ?? "";
-  const secret = process.env.CRON_SECRET ?? "";
-  if (!laCron && (!secret || key !== secret)) {
+  const secret = (process.env.CRON_SECRET ?? "").trim();
+  const goiTay = !!secret && key === secret;
+  const laCron = secret
+    ? req.headers.get("authorization") === `Bearer ${secret}`
+    : req.headers.get("x-vercel-cron-schedule") !== null;
+  if (!laCron && !goiTay) {
     return NextResponse.json({ message: "Không có quyền" }, { status: 401 });
   }
 
-  const demo = url.searchParams.get("demo") === "1";
-  const toParam = url.searchParams.get("to");
+  const demo = goiTay && url.searchParams.get("demo") === "1";
+  const toParam = goiTay ? url.searchParams.get("to") : null;
 
   try {
     /** Hai ngày TỚI: mai và ngày kia — hôm nay coi như đã biết rồi. */
