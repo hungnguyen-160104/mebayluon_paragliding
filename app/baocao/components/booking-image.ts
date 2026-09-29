@@ -196,8 +196,6 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
  * được PNG. Ảnh tải từ miền khác thì trình duyệt chặn luôn canvas.toBlob().
  */
 async function loadPayQr(amount: number, note: string): Promise<HTMLImageElement | null> {
-  // Chưa có tài khoản đứng tên công ty (lib/vietqr.ts) → phiếu không in QR/số TK.
-  if (!PAY_ACCOUNT) return null;
   try {
     const QRCode = (await import("qrcode")).default;
     const payload = buildVietQrPayload({
@@ -641,7 +639,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   }
 
   /* ---- Khối QUÉT QR TRẢ TIỀN — chỉ khi còn phải thu ------------------ */
-  if (payQr && PAY_ACCOUNT) {
+  if (payQr) {
     g.font = f(13, "bold");
     g.fillStyle = C.sky;
     g.fillText(nn(sn, "QUÉT QR ĐỂ THANH TOÁN", "SCAN QR TO PAY"), pad, y);

@@ -4,13 +4,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import {
-  buildVietQrPayload,
-  COMPANY_BANK_ACCOUNT,
-  NO_COMPANY_ACCOUNT_TEXT,
-  toAsciiNote,
-  type BankAccount,
-} from "@/lib/vietqr";
+import { buildVietQrPayload, toAsciiNote, BANK_BIN } from "@/lib/vietqr";
 import { formatVND } from "@/lib/pricing";
 
 /**
@@ -23,36 +17,17 @@ import { formatVND } from "@/lib/pricing";
  * vào là thấy mã QR đúng số tiền, quét luôn bằng app ngân hàng.
  *
  * Trang chỉ đọc tham số trên URL rồi vẽ mã — không đụng cơ sở dữ liệu, không
- * lộ thông tin gì ngoài số tài khoản nhận tiền của CÔNG TY (thứ vốn phải đưa khách).
+ * lộ thông tin gì ngoài số tài khoản nhận tiền (thứ vốn phải đưa khách).
  */
 
-/**
- * Tài khoản nhận lấy từ COMPANY_BANK_ACCOUNT (lib/vietqr.ts) — PHẢI đứng tên
- * công ty. Còn null thì trang KHÔNG vẽ QR, không hiện số tài khoản, chỉ báo
- * nhân viên sẽ gửi thông tin chuyển khoản của công ty.
- */
+const PAY = {
+  bankBin: BANK_BIN.bidv,
+  bankName: "BIDV",
+  accountNumber: "8875639685",
+  accountName: "Đặng Thị Thuỷ",
+};
+
 export function QrClient() {
-  if (!COMPANY_BANK_ACCOUNT) return <NoCompanyAccount />;
-  return <QrView pay={COMPANY_BANK_ACCOUNT} />;
-}
-
-function NoCompanyAccount() {
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-4 py-6 text-center">
-      <h1 className="text-lg font-bold text-slate-900">MEBAYLUON — Thanh toán</h1>
-      <p className="mt-3 text-sm leading-relaxed text-slate-700">{NO_COMPANY_ACCOUNT_TEXT.vi}</p>
-      <p className="mt-2 text-sm leading-relaxed text-slate-500">{NO_COMPANY_ACCOUNT_TEXT.en}</p>
-      <p className="mt-4 text-sm text-slate-600">
-        Hotline:{" "}
-        <a href="tel:+84964073555" className="font-semibold text-sky-700">
-          0964 073 555
-        </a>
-      </p>
-    </main>
-  );
-}
-
-function QrView({ pay: PAY }: { pay: BankAccount }) {
   const params = useSearchParams();
   const amount = Math.max(0, Math.round(Number(params.get("a")) || 0));
   const note = toAsciiNote(params.get("n") || "") || "MEBAYLUON";
@@ -84,7 +59,7 @@ function QrView({ pay: PAY }: { pay: BankAccount }) {
     return () => {
       alive = false;
     };
-  }, [amount, note, PAY.bankBin, PAY.accountNumber]);
+  }, [amount, note]);
 
   async function copyAccount() {
     try {
@@ -94,6 +69,21 @@ function QrView({ pay: PAY }: { pay: BankAccount }) {
     } catch {
       /* Máy không cho chép thì khách đọc số bên trên. */
     }
+  }
+
+  /**
+   * CHỈ HIỆN KHI MỞ TỪ LINK NHÂN VIÊN GỬI (chủ 30/09/2026: không để lộ tài
+   * khoản cá nhân trên web). Link từ /baocao luôn có số tiền `a` và nội dung
+   * `n`; ai gõ thẳng /thanh-toan thì không thấy số tài khoản.
+   */
+  if (!amount || !params.get("n")) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-4 py-6 text-center">
+        <h1 className="text-lg font-bold text-slate-900">MEBAYLUON — Thanh toán</h1>
+        <p className="mt-2 text-sm text-slate-600">Vui lòng mở đúng liên kết thanh toán nhân viên đã gửi cho bạn.</p>
+        <p className="mt-1 text-sm text-slate-500">Please open the payment link our staff sent you.</p>
+      </main>
+    );
   }
 
   return (

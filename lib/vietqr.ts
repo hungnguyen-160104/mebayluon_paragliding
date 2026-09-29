@@ -23,48 +23,16 @@ export const BANK_BIN = {
  * và các trang báo cáo dựng ở máy chủ. Nhét vào một tệp "use client" là mã máy
  * chủ nhập vào sẽ vỡ.
  *
- * TÁCH HAI TÀI KHOẢN LÀ CỐ Ý: tiền bay và tiền quầy/phòng do hai bộ phận giữ và
+ * TÁCH HAI TÀI KHOẢN LÀ CỐ Ý: tiền bay và tiền quầy/phòng do hai người giữ và
  * hai bộ sổ đối soát khác nhau. Gộp một tài khoản thì sao kê trộn lẫn, không
  * bóc được doanh thu quầy.
  */
-export type BankAccount = {
-  bankBin: string;
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
-};
-
-/**
- * TÀI KHOẢN NHẬN TIỀN BAY — PHẢI là tài khoản đứng tên CÔNG TY.
- *
- * Chủ chốt 30/09/2026: tuyệt đối không công khai tài khoản CÁ NHÂN trên web
- * (QR ở /thanh-toan, ảnh QR/phiếu booking gửi khách, câu chia sẻ Zalo…). Tài
- * khoản cá nhân dùng trước đây đã xoá khỏi mã nguồn.
- *
- * null = CHƯA có tài khoản công ty → mọi nơi KHÔNG hiện QR / số tài khoản, thay
- * bằng câu NO_COMPANY_ACCOUNT_TEXT ("nhân viên sẽ gửi thông tin chuyển khoản").
- *
- * ĐIỀN TÀI KHOẢN ĐỨNG TÊN "CÔNG TY CP DU LỊCH VÀ THỂ THAO VIÊN NAM" vào đây, ví dụ:
- *   { bankBin: BANK_BIN.bidv, bankName: "BIDV", accountNumber: "…",
- *     accountName: "CONG TY CP DU LICH VA THE THAO VIEN NAM" }
- */
-export const COMPANY_BANK_ACCOUNT: BankAccount | null = null;
-
-/** Tên cũ — giữ cho các nơi đang nhập. Nay trỏ về tài khoản công ty. */
-export const PAY_ACCOUNT_FLIGHT: BankAccount | null = COMPANY_BANK_ACCOUNT;
-
-/** Câu thay cho QR / số tài khoản khi COMPANY_BANK_ACCOUNT còn null. */
-export const NO_COMPANY_ACCOUNT_TEXT: Record<
-  "vi" | "en" | "fr" | "ru" | "zh" | "hi",
-  string
-> = {
-  vi: "Nhân viên sẽ gửi thông tin chuyển khoản của công ty khi xác nhận đặt chỗ.",
-  en: "Our staff will send you the company’s bank transfer details when confirming your booking.",
-  fr: "Notre équipe vous enverra les coordonnées bancaires de l’entreprise lors de la confirmation de votre réservation.",
-  ru: "Наши сотрудники отправят вам банковские реквизиты компании при подтверждении бронирования.",
-  zh: "工作人员将在确认预订时向您发送公司的银行转账信息。",
-  hi: "बुकिंग की पुष्टि करते समय हमारा स्टाफ़ आपको कंपनी के बैंक ट्रांसफ़र विवरण भेजेगा।",
-};
+export const PAY_ACCOUNT_FLIGHT = {
+  bankBin: BANK_BIN.bidv,
+  bankName: "BIDV",
+  accountNumber: "8875639685",
+  accountName: "Đặng Thị Thuỷ",
+} as const;
 
 /** Quầy cafe + homestay — bảng QR đặt tại quầy (chủ gửi ảnh 06/09). */
 export const PAY_ACCOUNT_CAFE_HOMESTAY = {
