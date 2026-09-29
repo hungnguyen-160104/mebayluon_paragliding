@@ -14,7 +14,7 @@
 
 import { NHAN_MUC_THERMAL, type TiemNangThermal } from "./thermal";
 import { huongDayDuVi, huongTroiNgay, type MucDo, type NgayThoiTiet } from "./thoi-tiet";
-import type { PhanTichGioCao, PhanTichSkewT } from "./phan-tich-cao";
+import type { MucDong, PhanTichPhiCong } from "./phan-tich-cao";
 
 export type DiemDuBaoMail = {
   ten: string;
@@ -84,10 +84,16 @@ export type ThuThoiTiet = { subject: string; html: string; text: string };
  * phần nào thì thư bỏ qua phần đó — ảnh vẽ lỗi vẫn gửi được chữ.
  */
 export type ChiTietNgay = {
-  gioCao?: PhanTichGioCao;
-  skewT?: PhanTichSkewT;
+  /** Bảng 10 mục cho phi công bay đơn + đọc Skew-T 12h. */
+  phiCong?: PhanTichPhiCong;
   cidGio?: string;
   cidSkewT?: string;
+};
+
+const MAU_DONG: Record<MucDong, { chu: string; nen: string }> = {
+  tot: { chu: "#0f172a", nen: "#ffffff" },
+  chuY: { chu: "#92400e", nen: "#fffbeb" },
+  xau: { chu: "#9f1239", nen: "#fff1f2" },
 };
 
 const F = "system-ui,-apple-system,Segoe UI,Roboto,sans-serif";
@@ -141,8 +147,9 @@ export function thuDuBao(
       const n = tim(d, k);
       if (!n) continue;
       const ct = chiTiet[`${d.slug}|${k}`] ?? {};
-      const { tomTat, khuyenCao } = loiKhuyen(n);
-      const canhBao = [...(ct.gioCao?.canhBao ?? []), ...(ct.skewT?.canhBao ?? [])];
+      const { tomTat } = loiKhuyen(n);
+      const pc = ct.phiCong;
+      const sk = pc?.skewT;
 
       khoi.push(
         `<div style="margin:12px 0 0;padding:12px;border:1px solid #e2e8f0;border-left:5px solid ${MAU_MUC[n.muc]};border-radius:10px;background:#ffffff">` +
@@ -151,35 +158,39 @@ export function thuDuBao(
           (d.toaDo.alt ? ` · cất ${d.toaDo.alt}m${d.toaDo.altHa !== undefined ? ` → hạ ${d.toaDo.altHa}m` : ""}` : "") +
           `</span></div>` +
           `<div style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:${NEN_MUC[n.muc]};font:700 13px ${F};color:${MAU_MUC[n.muc]}">${NHAN_MUC[n.muc]}</div>` +
-          `<div style="margin-top:6px;font:400 13px/1.55 ${F};color:#0f172a">${dongSo(n).html}</div>` +
           (tomTat ? `<div style="margin-top:4px;font:600 13px/1.5 ${F};color:#334155">${tomTat}</div>` : "") +
-          (khuyenCao.length
-            ? `<ul style="margin:4px 0 0;padding-left:18px;font:400 12px/1.55 ${F};color:#475569">${khuyenCao.map((x) => `<li>${x}</li>`).join("")}</ul>`
-            : "") +
-          (ct.gioCao?.nhanXet.length
-            ? `<div style="margin-top:10px;font:700 13px ${F};color:#0f172a">Gió trên cao (8h–16h)</div>` +
-              `<ul style="margin:4px 0 0;padding-left:18px;font:400 13px/1.55 ${F};color:#1e293b">${ct.gioCao.nhanXet.map((x) => `<li>${x}</li>`).join("")}</ul>`
-            : "") +
-          (canhBao.length
-            ? `<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#fff1f2;border:1px solid #fecdd3">` +
-              `<div style="font:700 13px ${F};color:#be123c">⚠ Cảnh báo</div>` +
-              `<ul style="margin:4px 0 0;padding-left:18px;font:400 13px/1.55 ${F};color:#881337">${canhBao.map((x) => `<li>${x}</li>`).join("")}</ul></div>`
-            : "") +
+          (pc
+            ? `<table role="presentation" cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;margin-top:8px">` +
+              pc.dong
+                .map(
+                  (r) =>
+                    `<tr><td style="padding:6px 8px;border-top:1px solid #e2e8f0;width:34%;vertical-align:top;font:700 12px/1.45 ${F};color:#475569">${r.nhan}</td>` +
+                    `<td style="padding:6px 8px;border-top:1px solid #e2e8f0;vertical-align:top;background:${MAU_DONG[r.muc].nen};font:${r.muc === "tot" ? 400 : 700} 13px/1.45 ${F};color:${MAU_DONG[r.muc].chu}">${r.giaTri}</td></tr>`,
+                )
+                .join("") +
+              `</table>`
+            : `<div style="margin-top:6px;font:400 13px/1.55 ${F};color:#0f172a">${dongSo(n).html}</div>`) +
           (ct.cidGio ? anh(ct.cidGio, `Biểu đồ gió theo độ cao ${d.ten} ${nhanNgayVN(k)}`) : "") +
           (ct.cidSkewT ? anh(ct.cidSkewT, `Skew-T 12h ${d.ten} ${nhanNgayVN(k)}`) : "") +
-          (ct.skewT?.nhanXet.length
-            ? `<div style="margin-top:8px;font:700 13px ${F};color:#0f172a">Đọc Skew-T ${ct.skewT.gio}</div>` +
-              `<ul style="margin:4px 0 0;padding-left:18px;font:400 13px/1.55 ${F};color:#1e293b">${ct.skewT.nhanXet.map((x) => `<li>${x}</li>`).join("")}</ul>`
+          (sk && (sk.nhanXet.length || sk.canhBao.length)
+            ? `<div style="margin-top:8px;font:700 13px ${F};color:#0f172a">Phân tích Skew-T ${sk.gio}</div>` +
+              `<ul style="margin:4px 0 0;padding-left:18px;font:400 13px/1.55 ${F};color:#1e293b">` +
+              sk.canhBao.map((x) => `<li style="color:#9f1239;font-weight:700">⚠ ${x}</li>`).join("") +
+              sk.nhanXet.map((x) => `<li>${x}</li>`).join("") +
+              `</ul>`
             : "") +
           `</div>`,
       );
 
-      dong.push("", `## ${d.ten} (${d.tinh}) — ${NHAN_MUC[n.muc]}`, dongSo(n).text);
+      dong.push("", `## ${d.ten} (${d.tinh}) — ${NHAN_MUC[n.muc]}`);
       if (tomTat) dong.push(tomTat);
-      for (const x of khuyenCao) dong.push(`  • ${x}`);
-      if (ct.gioCao?.nhanXet.length) { dong.push("Gió trên cao:"); for (const x of ct.gioCao.nhanXet) dong.push(`  • ${x}`); }
-      if (canhBao.length) { dong.push("⚠ CẢNH BÁO:"); for (const x of canhBao) dong.push(`  ! ${x}`); }
-      if (ct.skewT?.nhanXet.length) { dong.push(`Skew-T ${ct.skewT.gio}:`); for (const x of ct.skewT.nhanXet) dong.push(`  • ${x}`); }
+      if (pc) for (const r of pc.dong) dong.push(`  ${r.muc === "xau" ? "!!" : r.muc === "chuY" ? "! " : "  "} ${r.nhan}: ${r.giaTri}`);
+      else dong.push(dongSo(n).text);
+      if (sk && (sk.nhanXet.length || sk.canhBao.length)) {
+        dong.push(`Phân tích Skew-T ${sk.gio}:`);
+        for (const x of sk.canhBao) dong.push(`  ⚠ ${x}`);
+        for (const x of sk.nhanXet) dong.push(`  • ${x}`);
+      }
     }
   }
 
@@ -188,10 +199,11 @@ export function thuDuBao(
     `<div style="max-width:640px;margin:0 auto;padding:12px;background:#f8fafc">` +
     `<h1 style="margin:0 0 2px;font:700 19px/1.3 ${F};color:#0f172a">Dự báo thời tiết bay</h1>` +
     `<p style="margin:0 0 8px;font:400 12px/1.5 ${F};color:#64748b">` +
-    `Hai ngày tới, gửi tự động lúc 20h. Mô hình ECMWF cho đúng toạ độ bãi cất cánh.</p>` +
+    `Dành cho phi công bay đơn · hai ngày tới, gửi tự động lúc 20h · mô hình ECMWF cho đúng toạ độ bãi cất. Số liệu phân tích trong khung 8h–16h.</p>` +
     khoi.join("") +
     `<p style="margin:16px 0 0;font:400 12px/1.6 ${F};color:#64748b">` +
-    `Cách đọc biểu đồ gió: mỗi ô là một giờ ở một tầng, mũi tên chỉ hướng gió thổi tới, màu càng đỏ gió càng mạnh.<br>` +
+    `Hệ số nhiễu 0–10 gộp độ giật, đứt gió giữa các tầng và sức thermal. Đứt gió tính bằng độ chênh gió giữa hai tầng liền nhau (m/s mỗi km): từ 5 là nhiễu động đáng kể, từ 8 là mạnh.<br>` +
+    `Biểu đồ gió: mỗi ô là một giờ ở một tầng, mũi tên chỉ hướng gió thổi tới, màu càng đỏ gió càng mạnh.<br>` +
     `Skew-T: đường đỏ là nhiệt độ, xanh là điểm sương, cam đứt nét là bọt khí bốc lên từ bãi cất; hai đường đỏ – xanh sát nhau là ẩm, dễ có mây.<br>` +
     `Xem đủ 10 ngày và giản đồ từng giờ: <a href="${trang}" style="color:#0369a1">${trang}</a><br>` +
     `Dự báo chỉ để tham khảo — quyết định bay là của phi công tại bãi.</p>` +

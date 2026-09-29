@@ -10,8 +10,9 @@
  * Mực áp suất đổi ra độ cao cho người đọc: 925 hPa ≈ 800 m, 850 hPa ≈ 1.500 m,
  * 700 hPa ≈ 3.000 m (mô hình cấp độ cao thật thì dùng số thật).
  */
-import { dayMay, duongBotKhi, lopNghichNhiet, tranBotKhi, type MucSkewT } from "./skew-t";
-import { huongDayDuVi, type GioThoiTiet } from "./thoi-tiet";
+import { dayMay, duongBotKhi, lopNghichNhiet, tranBotKhi, type MucSkewT, type ThamKhong } from "./skew-t";
+import { huongDayDuVi, type GioThoiTiet, type NgayThoiTiet } from "./thoi-tiet";
+import { NHAN_MUC_THERMAL, type TiemNangThermal } from "./thermal";
 
 /** Khung giờ bay dùng để phân tích (giờ Việt Nam, tính cả hai đầu). */
 export const GIO_PHAN_TICH: [number, number] = [8, 16];
@@ -218,7 +219,254 @@ export function phanTichSkewT(muc: MucSkewT[], gio: string, altCat: number, xacS
   /** Tầng giữa ẩm (850 hPa: nhiệt − điểm sương ≤ 2°C) → mây dày. */
   const t850 = m.find((x) => x.ap === 850);
   if (t850 && t850.nhiet - t850.suong <= 2) {
-    ra.nhanXet.push("Tầng ~1.500 m rất ẩm — trời nhiều mây, nắng yếu.");
+    ra.nhanXet.push("Tầng ~1.500 m gần bão hoà (nhiệt độ sát điểm sương) — mây tích hình thành quanh độ cao này.");
   }
   return ra;
+}
+
+/* ================================================================== */
+/* BẢNG CHO PHI CÔNG BAY ĐƠN (chủ 29/09/2026)                          */
+/* ================================================================== */
+/**
+ * Thư gửi anh Toản là thư cho PHI CÔNG BAY ĐƠN, không phải thư vận hành bay
+ * đôi. Chủ liệt kê đúng thứ họ cần, theo thứ tự: hướng gió · thermal (nhẹ /
+ * vừa / mạnh) · hệ số nhiễu · mây phủ · trần mây và đỉnh mây · đứt gió ở tầng
+ * nào · gió xiết ở tầng nào · mưa · dông · giờ đẹp nhất — rồi Skew-T và phân
+ * tích. Mỗi mục một dòng, kèm mức (tốt / chú ý / xấu) để tô màu.
+ */
+
+export type MucDong = "tot" | "chuY" | "xau";
+export type DongPhiCong = { nhan: string; giaTri: string; muc: MucDong };
+
+export type PhanTichPhiCong = {
+  dong: DongPhiCong[];
+  skewT: PhanTichSkewT | null;
+};
+
+const gioCua = (s: string) => Number(s.slice(11, 13));
+const trongGioBay = (s: string) => gioCua(s) >= GIO_PHAN_TICH[0] && gioCua(s) <= GIO_PHAN_TICH[1];
+const v1 = (n: number) => (Math.round(n * 10) / 10).toLocaleString("vi-VN");
+const m50 = (n: number) => `${(Math.round(n / 50) * 50).toLocaleString("vi-VN")} m`;
+
+/** Vectơ gió (u, v) từ tốc độ và hướng gió TỚI TỪ. */
+function uv(v: number, d: number): [number, number] {
+  const r = (d * Math.PI) / 180;
+  return [-v * Math.sin(r), -v * Math.cos(r)];
+}
+
+/**
+ * Chia giờ bay thành các quãng cùng hướng (8 hướng) để nói "8–11h ĐÔNG BẮC
+ * 1–2 m/s · 12–16h ĐÔNG 2–3 m/s" — phi công cần biết gió XOAY lúc nào.
+ */
+function huongTheoQuang(gio: GioThoiTiet[]): string {
+  const ds = gio.filter((g) => trongGioBay(g.gio));
+  const quang: Array<{ tu: number; den: number; ten: string; min: number; max: number }> = [];
+  for (const g of ds) {
+    const ten = g.gio10m < 0.8 ? "lặng" : huongDayDuVi(g.huong).toUpperCase();
+    const h = gioCua(g.gio);
+    const q = quang[quang.length - 1];
+    if (q && q.ten === ten) {
+      q.den = h;
+      q.min = Math.min(q.min, g.gio10m);
+      q.max = Math.max(q.max, g.gio10m);
+    } else quang.push({ tu: h, den: h, ten, min: g.gio10m, max: g.gio10m });
+  }
+  /** Quãng lẻ 1 giờ kẹp giữa hai quãng cùng hướng là nhiễu — gộp cho gọn. */
+  return quang
+    .map((q) => `${q.tu === q.den ? `${q.tu}h` : `${q.tu}–${q.den}h`} ${q.ten}${q.ten === "lặng" ? "" : ` ${khoang(q.min, q.max)} m/s`}`)
+    .join(" · ");
+}
+
+/**
+ * ĐỨT GIÓ và GIÓ XIẾT theo tầng, đọc từ thám không từng giờ trong khung bay,
+ * chỉ xét từ bãi cất lên 4.000 m.
+ *  - Đứt gió: độ chênh vectơ gió giữa hai mực liền nhau chia độ dày (m/s mỗi
+ *    km). ≥ 5 là nhiễu động đáng kể, ≥ 8 là mạnh.
+ *  - Gió xiết: mực có gió ≥ 8 m/s VÀ mạnh hơn cả mực trên lẫn mực dưới (luồng
+ *    xiết tầng thấp), hoặc bất kỳ mực nào ≥ 10 m/s.
+ */
+function tangDutGioXiet(tk: ThamKhong[], altCat: number) {
+  let dut: { tu: number; den: number; tri: number; gio: number } | null = null;
+  let xiet: { cao: number; v: number; ten: string; gio: number } | null = null;
+  const dutCacTang = new Map<string, { tu: number; den: number; tri: number; gio: number }>();
+  for (const h of tk) {
+    if (!trongGioBay(h.gio)) continue;
+    const m = h.muc
+      .filter((x) => x.gio !== null && x.huong !== null && x.cao >= altCat - 100 && x.cao <= 4000)
+      .sort((a, b) => a.cao - b.cao);
+    for (let i = 1; i < m.length; i++) {
+      const a = m[i - 1];
+      const b = m[i];
+      const dz = (b.cao - a.cao) / 1000;
+      if (dz <= 0.05) continue;
+      const [ua, va] = uv(a.gio as number, a.huong as number);
+      const [ub, vb] = uv(b.gio as number, b.huong as number);
+      const tri = Math.hypot(ub - ua, vb - va) / dz;
+      const k = `${a.ap}-${b.ap}`;
+      const cu = dutCacTang.get(k);
+      if (!cu || tri > cu.tri) dutCacTang.set(k, { tu: a.cao, den: b.cao, tri, gio: gioCua(h.gio) });
+      if (!dut || tri > dut.tri) dut = { tu: a.cao, den: b.cao, tri, gio: gioCua(h.gio) };
+    }
+    for (let i = 0; i < m.length; i++) {
+      const v = m[i].gio as number;
+      const tren = m[i + 1]?.gio ?? 0;
+      const duoi = m[i - 1]?.gio ?? 0;
+      const laXiet = (v >= 8 && v > (tren as number) && v > (duoi as number)) || v >= 10;
+      if (laXiet && (!xiet || v > xiet.v)) xiet = { cao: m[i].cao, v, ten: huongDayDuVi(m[i].huong as number).toUpperCase(), gio: gioCua(h.gio) };
+    }
+  }
+  const cacTangDut = [...dutCacTang.values()].filter((x) => x.tri >= 5).sort((a, b) => b.tri - a.tri);
+  return { dut, cacTangDut, xiet };
+}
+
+/** Đỉnh mây: từ đáy mây đi lên, lớp còn gần bão hoà (T − Td ≤ 3°C) liền mạch. */
+function dinhMay(muc: MucSkewT[], dayMayCao: number | null): number | null {
+  if (dayMayCao === null) return null;
+  const m = muc.filter((x) => Number.isFinite(x.suong)).sort((a, b) => a.cao - b.cao);
+  let dinh: number | null = null;
+  for (const x of m) {
+    if (x.cao < dayMayCao - 200) continue;
+    if (x.nhiet - x.suong <= 3) dinh = x.cao;
+    else if (dinh !== null) break;
+  }
+  return dinh;
+}
+
+export function phanTichPhiCong(n: NgayThoiTiet, tk: ThamKhong[] | null, altCat: number): PhanTichPhiCong {
+  const dong: DongPhiCong[] = [];
+  const ds = n.gio.filter((g) => trongGioBay(g.gio));
+  const g12 = tk?.find((g) => g.gio.endsWith("T12:00")) ?? null;
+  const skewT = g12 ? phanTichSkewT(g12.muc, g12.gio, altCat, n.xacSuatDongMax) : null;
+  const tang = tk ? tangDutGioXiet(tk, altCat) : null;
+
+  /* 1. Hướng gió */
+  dong.push({ nhan: "Hướng gió", giaTri: huongTheoQuang(n.gio) || "—", muc: "tot" });
+
+  /* 2. Thermal */
+  const th = n.thermal as TiemNangThermal | undefined;
+  const tran = skewT?.tranThermal ?? null;
+  if (th) {
+    const muc: MucDong = th.muc === "gat" ? "xau" : th.muc === "manh" ? "chuY" : "tot";
+    dong.push({
+      nhan: "Thermal",
+      giaTri:
+        `${NHAN_MUC_THERMAL[th.muc].toUpperCase()} (${th.diem}/100)` +
+        (th.khung ? `, mạnh nhất ${th.khung}` : "") +
+        (tran !== null && tran > altCat + 200 ? `, trần ~${m50(tran)}` : ""),
+      muc,
+    });
+  }
+
+  /* 3. Hệ số nhiễu (0–10): giật chênh + đứt gió + thermal gắt */
+  const giatChenh = ds.length ? Math.max(...ds.map((g) => (g.giat ?? 0) - g.gio10m)) : 0;
+  const dutMax = tang?.dut?.tri ?? 0;
+  const thDiem = th ? (th.muc === "gat" ? 3 : th.muc === "manh" ? 2 : th.muc === "vua" ? 1 : 0) : 0;
+  const diemNhieu = Math.min(10, Math.round(Math.min(4, giatChenh * 0.7) + Math.min(4, dutMax * 0.45) + thDiem));
+  const lyDo: string[] = [`giật chênh gió nền ${v1(giatChenh)} m/s`];
+  if (tang?.dut) lyDo.push(`đứt gió mạnh nhất ${v1(dutMax)} m/s/km`);
+  if (thDiem >= 2) lyDo.push(`thermal ${NHAN_MUC_THERMAL[th!.muc]}`);
+  dong.push({
+    nhan: "Hệ số nhiễu",
+    giaTri: `${diemNhieu}/10 — ${diemNhieu >= 7 ? "CAO" : diemNhieu >= 4 ? "VỪA" : "THẤP"} (${lyDo.join(", ")})`,
+    muc: diemNhieu >= 7 ? "xau" : diemNhieu >= 4 ? "chuY" : "tot",
+  });
+
+  /* 4. Mây phủ */
+  if (ds.length) {
+    const tb = (k: "may" | "mayThap" | "mayGiua" | "mayCao") => {
+      const v = ds.map((g) => g[k]).filter((x): x is number => typeof x === "number");
+      return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
+    };
+    /** Mây tổng không thể ít hơn mây một tầng — số tổng của mô hình đã qua xử lý (bỏ mây ti), nên lấy số lớn nhất cho khỏi vô lý. */
+    const tong = Math.max(tb("may") ?? 0, tb("mayThap") ?? 0, tb("mayGiua") ?? 0, tb("mayCao") ?? 0);
+    const phan = [["thấp", tb("mayThap")], ["giữa", tb("mayGiua")], ["cao", tb("mayCao")]]
+      .filter(([, v]) => v !== null)
+      .map(([t, v]) => `${t} ${v}%`)
+      .join(", ");
+    const chiMayCao = (tb("mayThap") ?? 0) < 20 && (tb("mayGiua") ?? 0) < 20 && (tb("mayCao") ?? 0) >= 40;
+    dong.push({
+      nhan: "Mây phủ",
+      giaTri: `${tong}%${phan ? ` (${phan})` : ""}${chiMayCao ? " — chủ yếu mây ti tầng cao, vẫn có nắng" : ""}`,
+      muc: (tb("mayThap") ?? 0) >= 70 ? "xau" : tong >= 85 ? "chuY" : "tot",
+    });
+  }
+
+  /* 5. Trần mây, đỉnh mây */
+  if (skewT?.dayMayCao != null) {
+    const dinh = g12 ? dinhMay(g12.muc, skewT.dayMayCao) : null;
+    const tren = skewT.dayMayCao - altCat;
+    dong.push({
+      nhan: "Trần mây · đỉnh mây",
+      giaTri: `đáy ~${m50(skewT.dayMayCao)} (cao hơn bãi ${m50(Math.max(0, tren))})` + (dinh !== null && dinh > skewT.dayMayCao ? ` · đỉnh ~${m50(dinh)}` : " · mây mỏng/không thành lớp") + " — lúc 12h",
+      muc: tren <= 300 ? "xau" : tren <= 700 ? "chuY" : "tot",
+    });
+  }
+
+  /* 6. Đứt gió, nhiễu động theo tầng */
+  if (tang) {
+    dong.push({
+      nhan: "Đứt gió / nhiễu động",
+      giaTri: tang.cacTangDut.length
+        ? tang.cacTangDut
+            .slice(0, 2)
+            .map((x) => `${m50(x.tu)}–${m50(x.den)}: ${v1(x.tri)} m/s mỗi km (${x.gio}h)`)
+            .join(" · ")
+        : "không có tầng đứt gió đáng kể (dưới 5 m/s mỗi km)",
+      muc: tang.cacTangDut.some((x) => x.tri >= 8) ? "xau" : tang.cacTangDut.length ? "chuY" : "tot",
+    });
+    /* 7. Gió xiết */
+    dong.push({
+      nhan: "Gió xiết",
+      giaTri: tang.xiet ? `~${m50(tang.xiet.cao)}: ${tang.xiet.ten} ${v1(tang.xiet.v)} m/s (${tang.xiet.gio}h)` : "không có luồng gió xiết dưới 4.000 m",
+      muc: tang.xiet ? (tang.xiet.v >= 12 ? "xau" : "chuY") : "tot",
+    });
+  }
+
+  /* 8. Mưa */
+  dong.push({
+    nhan: "Mưa",
+    giaTri:
+      n.gioMua > 0
+        ? `${n.gioMua} giờ${n.khungMua ? ` (${n.khungMua})` : ""}, ${v1(n.muaTongThat)} mm`
+        : n.gioMuaBay > 0
+          ? `mưa bay${n.khungMuaBay ? ` ${n.khungMuaBay}` : ""}`
+          : "không mưa",
+    muc: n.gioMua >= 2 ? "xau" : n.gioMua > 0 || n.gioMuaBay > 0 ? "chuY" : "tot",
+  });
+
+  /* 9. Dông */
+  const cape = ds.length ? Math.max(...ds.map((g) => g.cape ?? 0)) : 0;
+  const li = ds.map((g) => g.chiSoNang).filter((x): x is number => typeof x === "number");
+  dong.push({
+    nhan: "Dông",
+    giaTri: `${n.xacSuatDongMax}%` + (cape > 0 ? ` · CAPE ${Math.round(cape).toLocaleString("vi-VN")} J/kg` : "") + (li.length ? ` · LI ${v1(Math.min(...li))}` : ""),
+    muc: n.xacSuatDongMax >= 60 ? "xau" : n.xacSuatDongMax >= 30 ? "chuY" : "tot",
+  });
+
+  /* Phân tích Skew-T: bỏ câu đáy mây (đã có trong bảng), thêm độ bất ổn và độ dày mây. */
+  if (skewT) {
+    skewT.nhanXet = skewT.nhanXet.filter((x) => !x.startsWith("Đáy mây"));
+    const liMin = li.length ? Math.min(...li) : null;
+    if (cape >= 1500 || (liMin !== null && liMin <= -4)) {
+      skewT.nhanXet.unshift(
+        `Khí quyển RẤT BẤT ỔN (CAPE ${Math.round(cape).toLocaleString("vi-VN")} J/kg${liMin !== null ? `, LI ${v1(liMin)}` : ""}): thermal lên nhanh và gắt, mây tích có thể dựng thành mây dông sau trưa — bay sáng, canh đỉnh mây, hạ cánh sớm.`,
+      );
+    } else if (cape >= 500 || (liMin !== null && liMin <= -1)) {
+      skewT.nhanXet.unshift(`Khí quyển bất ổn vừa (CAPE ${Math.round(cape).toLocaleString("vi-VN")} J/kg): thermal tốt, mây tích phát triển vừa phải.`);
+    } else {
+      skewT.nhanXet.unshift("Khí quyển khá ổn định: thermal yếu đến vừa, ít nguy cơ mây phát triển thành dông.");
+    }
+    const dinh = g12 && skewT.dayMayCao !== null ? dinhMay(g12.muc, skewT.dayMayCao) : null;
+    if (dinh !== null && skewT.dayMayCao !== null && dinh - skewT.dayMayCao >= 1500) {
+      skewT.nhanXet.push(`Lớp ẩm dày ${m50(dinh - skewT.dayMayCao)} trên đáy mây — mây tích phát triển cao, dễ thành mây đối lưu.`);
+    }
+    if (!skewT.nhanXet.some((x) => x.startsWith("Lớp nghịch nhiệt"))) {
+      skewT.nhanXet.push("Không có lớp nghịch nhiệt chặn thermal dưới 3.500 m.");
+    }
+  }
+
+  /* 10. Giờ đẹp nhất */
+  dong.push({ nhan: "Giờ đẹp nhất", giaTri: n.khungDep ?? "không có khung nào đủ tốt", muc: n.khungDep ? "tot" : "xau" });
+
+  return { dong, skewT };
 }

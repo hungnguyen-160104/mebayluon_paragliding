@@ -6,7 +6,7 @@
  */
 import { nhanNgayVN, thuDuBao, type ChiTietNgay, type DiemDuBaoMail } from "@/lib/baobay/thoi-tiet-mail";
 import { layThamKhong } from "@/lib/baobay/tham-khong-api";
-import { phanTichGioCao, phanTichSkewT } from "@/lib/baobay/phan-tich-cao";
+import { phanTichPhiCong } from "@/lib/baobay/phan-tich-cao";
 import { anhBieuDoGio, anhSkewT } from "@/lib/baobay/thoi-tiet-anh";
 import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
 import { shiftDateKey, todayInVN } from "@/lib/baobay/date";
@@ -51,9 +51,17 @@ export async function dungThuDuBao() {
         const n = d.ngay.find((x) => x.ngay === k);
         if (!n) return;
         const alt = d.toaDo.alt ?? 0;
-        const ct: ChiTietNgay = { gioCao: phanTichGioCao(n.gio, alt) };
-        chiTiet[`${d.slug}|${k}`] = ct;
         const nhan = nhanNgayVN(k);
+        /** Thám không cả ngày: dùng cho đứt gió / gió xiết theo tầng và Skew-T 12h. */
+        let tk: Awaited<ReturnType<typeof layThamKhong>>["gio"] | null = null;
+        try {
+          const toa = diemThoiTietTheoSlug(d.slug);
+          if (toa) tk = (await layThamKhong({ lat: toa.lat, lon: toa.lon, ngay: k })).gio;
+        } catch (e) {
+          console.error("thoi-tiet-mail: thám không lỗi", d.slug, k, e);
+        }
+        const ct: ChiTietNgay = { phiCong: phanTichPhiCong(n, tk, alt) };
+        chiTiet[`${d.slug}|${k}`] = ct;
         try {
           const cid = `gio-${d.slug}-${k}@mebayluon`;
           attachments.push({ filename: `gio-${d.slug}-${k}.png`, content: await anhBieuDoGio({ ten: d.ten, nhanNgay: nhan, gio: n.gio, altCat: alt }), contentType: "image/png", cid });
@@ -61,23 +69,20 @@ export async function dungThuDuBao() {
         } catch (e) {
           console.error("thoi-tiet-mail: biểu đồ gió lỗi", d.slug, k, e);
         }
-        try {
-          const toa = diemThoiTietTheoSlug(d.slug);
-          if (!toa) return;
-          const tk = await layThamKhong({ lat: toa.lat, lon: toa.lon, ngay: k });
-          const g12 = tk.gio.find((g) => g.gio.endsWith("T12:00")) ?? tk.gio[Math.floor(tk.gio.length / 2)];
-          if (!g12) return;
-          ct.skewT = phanTichSkewT(g12.muc, g12.gio, alt, n.xacSuatDongMax);
-          const cid = `skewt-${d.slug}-${k}@mebayluon`;
-          attachments.push({
-            filename: `skewt-${d.slug}-${k}.png`,
-            content: await anhSkewT({ ten: d.ten, nhanNgay: nhan, gio: g12.gio.slice(11, 16), muc: g12.muc, altCat: alt, altHa: d.toaDo.altHa }),
-            contentType: "image/png",
-            cid,
-          });
-          ct.cidSkewT = cid;
-        } catch (e) {
-          console.error("thoi-tiet-mail: Skew-T lỗi", d.slug, k, e);
+        const g12 = tk?.find((g) => g.gio.endsWith("T12:00"));
+        if (g12) {
+          try {
+            const cid = `skewt-${d.slug}-${k}@mebayluon`;
+            attachments.push({
+              filename: `skewt-${d.slug}-${k}.png`,
+              content: await anhSkewT({ ten: d.ten, nhanNgay: nhan, gio: "12:00", muc: g12.muc, altCat: alt, altHa: d.toaDo.altHa }),
+              contentType: "image/png",
+              cid,
+            });
+            ct.cidSkewT = cid;
+          } catch (e) {
+            console.error("thoi-tiet-mail: Skew-T lỗi", d.slug, k, e);
+          }
         }
       }),
     ),
