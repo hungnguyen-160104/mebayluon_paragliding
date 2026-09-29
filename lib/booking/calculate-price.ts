@@ -638,8 +638,11 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
          *
          * Khác "Bay dù cờ đỏ sao vàng": cái kia là CÁNH DÙ in cờ (300k, chỉ
          * PG vì không có cánh dù ấy cho loại gắn động cơ); cái này là lá cờ
-         * KÉO SAU dù — cờ Tổ quốc hoặc cờ sinh nhật khách mang theo — nên
-         * không kén cánh dù, gói nào và loại hình nào cũng bay được.
+         * KÉO SAU dù — cờ Tổ quốc hoặc cờ sinh nhật khách mang theo.
+         *
+         * CHỈ DÙ LƯỢN THƯỜNG (PG) — chủ 30/09/2026: PPG không kéo cờ được (khớp
+         * DV_CAM_VOI_PPG trong lib/baobay/ve-qr.ts). Quản Bạ không có dịch vụ
+         * kéo cờ nên không cần chặn thêm; mở kéo cờ ở đó thì cũng chỉ cho PG.
          */
         key: "khau_pha_flag_flight",
         label: {
@@ -654,12 +657,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         priceVND: 150_000,
         priceUSD: 6,
         /**
-         * Hiện cùng lứa với flycam/360 — mọi gói và cả hai loại hình. Không
-         * khai hai dòng này thì dịch vụ bày ra NGAY KHI khách chưa chọn gói,
-         * đứng một mình giữa chỗ trống (đo trên trang thật 11/09).
+         * Chỉ các gói PG. Không khai hai dòng này thì dịch vụ bày ra NGAY KHI
+         * khách chưa chọn gói, đứng một mình giữa chỗ trống (đo trên trang
+         * thật 11/09). Phiếu vé chỉ xét GÓI nên phải bỏ gói PPG ở đây.
          */
-        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2", "khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
-        visibleForFlightTypes: ["paragliding", "paramotor"],
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
+        visibleForFlightTypes: ["paragliding"],
       },
       {
         key: "khau_pha_paramotor_2000m",
