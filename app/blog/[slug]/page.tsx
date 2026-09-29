@@ -441,7 +441,7 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
                             key={cIndex}
                             className="block pb-2 text-[15px] font-bold text-white sm:table-cell sm:border-b sm:border-white/10 sm:px-3 sm:py-2 sm:text-sm sm:font-semibold"
                           >
-                            {cell}
+                            {renderInlineFormat(String(cell ?? ""))}
                           </td>
                         );
                       }
@@ -451,7 +451,7 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
                           data-label={h}
                           className="block border-t border-white/10 py-1.5 leading-relaxed before:mr-2 before:font-semibold before:text-amber-300/90 before:content-[attr(data-label)_':'] sm:table-cell sm:border-t-0 sm:border-b sm:border-white/10 sm:px-3 sm:py-2 sm:before:content-none"
                         >
-                          {cell}
+                          {renderInlineFormat(String(cell ?? ""))}
                         </td>
                       );
                     })}
@@ -473,7 +473,7 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
           key={key}
           className="rounded-xl border-l-4 border-red-400/80 bg-white/5 px-5 py-4"
         >
-          <p className="text-lg italic text-white">{linkifyPhones(data.text || "")}</p>
+          <p className="text-lg italic text-white">{renderInlineFormat(data.text || "")}</p>
           {data.author ? <cite className="mt-2 block text-sm text-white/70">— {data.author}</cite> : null}
         </blockquote>
       );
@@ -487,7 +487,7 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
       return (
         <ul key={key} className="list-disc space-y-2 pl-6 text-white/95">
           {items.map((item, itemIndex) => (
-            <li key={`${key}-item-${itemIndex}`}>{linkifyPhones(item)}</li>
+            <li key={`${key}-item-${itemIndex}`}>{renderInlineFormat(item)}</li>
           ))}
         </ul>
       );

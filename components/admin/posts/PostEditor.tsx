@@ -365,6 +365,13 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** **đậm** / *nghiêng* → thẻ HTML, dùng chung cho đoạn văn, danh sách, bảng, trích dẫn (escape trước). */
+function inlineHtml(text: string): string {
+  return escapeHtml(text || "")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+}
+
 function blocksToHtml(blocks: ContentBlock[]): string {
   return blocks
     .map((block) => {
@@ -401,14 +408,14 @@ function blocksToHtml(blocks: ContentBlock[]): string {
         case "quote":
           return `
             <blockquote>
-              <p>${escapeHtml(data.text || "")}</p>
+              <p>${inlineHtml(data.text || "")}</p>
               ${data.author ? `<cite>${escapeHtml(data.author)}</cite>` : ""}
             </blockquote>
           `;
 
         case "bulletList":
           return `<ul>${(data.items || [])
-            .map((item: string) => `<li>${escapeHtml(item)}</li>`)
+            .map((item: string) => `<li>${inlineHtml(item)}</li>`)
             .join("")}</ul>`;
 
         case "divider":
@@ -446,7 +453,7 @@ function blocksToHtml(blocks: ContentBlock[]): string {
             .map(
               (r: string[]) =>
                 `<tr>${headers
-                  .map((h: string, i: number) => `<td data-label="${escapeHtml(h || "")}">${escapeHtml(r[i] || "")}</td>`)
+                  .map((h: string, i: number) => `<td data-label="${escapeHtml(h || "")}">${inlineHtml(r[i] || "")}</td>`)
                   .join("")}</tr>`,
             )
             .join("");
