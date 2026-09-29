@@ -994,10 +994,23 @@ export function chamGio(
    * thấy mây tích dựng cao, đáy tối là dừng — chứ không phải nghỉ cả ngày vì
    * một con số phần trăm.
    */
+  /**
+   * 29/09/2026 (chủ): DỰ BÁO DÔNG KHÔNG PHẢI THỨ ĐỂ CHẤM NGÀY XẤU. Xác suất
+   * dông tính từ CAPE — ngày dông thì CAPE cao từ sáng, nên hạ vàng theo con
+   * số ấy là kéo cả buổi sáng đẹp (thermal mạnh) xuống "cân nhắc". Giờ chỉ hạ
+   * vàng khi mô hình có MƯA DÔNG THẬT (mưa rào/đối lưu) ngay trong giờ đó;
+   * còn lại chỉ ghi chú để người trực canh trời.
+   */
   const cs = chiSoBay(g);
-  if (cs.xacSuatDong >= 40) {
-    lyDo.push(`nguy cơ dông ${cs.xacSuatDong}% — canh mây tích, dừng khi đáy mây tối`);
+  const muaDong = g.muaRao ?? 0;
+  if (laDongTo(g)) {
+    /** Chủ 29/09: DÔNG TO mới cân nhắc — đúng khung giờ ấy; mưa rào nhỏ không đáng ngại. */
+    lyDo.push(`DÔNG TO (mưa dông ${muaDong.toFixed(1)} mm/giờ) — cân nhắc, hạ cánh trước khi ổ dông tới`);
     len("vang");
+  } else if (cs.xacSuatDong >= 40 && muaDong >= MUA_BAY) {
+    lyDo.push(`mưa rào dông nhỏ ${muaDong.toFixed(1)} mm — không đáng ngại, canh mây phía đầu gió`);
+  } else if (cs.xacSuatDong >= 40) {
+    lyDo.push(`nguy cơ dông ${cs.xacSuatDong}% — thermal mạnh; canh mây phía đầu gió, hạ cánh trước dông`);
   } else if (cs.xacSuatDong >= 20) {
     /** Dưới 40% chỉ ghi chú, không hạ màu: mức này là "chiều có thể có ổ dông lẻ". */
     lyDo.push(`có thể có dông (${cs.xacSuatDong}%)`);
@@ -1121,6 +1134,16 @@ export const GIO_BAY_DEN = 17;
  * ngày rả rích 4mm thành "mưa 11 tiếng" — đúng chữ nhưng sai ý.
  */
 export const MUA_BAY = 0.4;
+
+/**
+ * DÔNG TO (chủ 29/09/2026): xác suất dông ≥ 40% VÀ mưa dông (mưa rào đối lưu)
+ * ≥ 2 mm/giờ trong giờ đó. Chỉ dông to mới hạ giờ xuống "cân nhắc"; mưa rào
+ * dông nhỏ hơn không đáng ngại, chỉ ghi chú.
+ */
+export const DONG_TO_MM = 2;
+export function laDongTo(g: GioThoiTiet): boolean {
+  return chiSoBay(g).xacSuatDong >= 40 && (g.muaRao ?? 0) >= DONG_TO_MM;
+}
 export const MUA_DANG_KE = 0.8;
 
 /** Mô tả cường độ mưa cả ngày theo TỔNG lượng — "nhỏ" 4mm khác hẳn "to" 30mm. */

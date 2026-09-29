@@ -20,6 +20,7 @@
 
 import {
   chiSoBay,
+  laDongTo,
   GIO_BAY_DEN,
   GIO_BAY_TU,
   huongChu,
@@ -854,6 +855,15 @@ export function nhanDinhNgay(
         ngan: `dông ${dongMax}%`,
         tong: "chuY",
       });
+      /** Dông to (≥ 2 mm/giờ mưa dông): nói rõ CÂN NHẮC từ giờ nào tới giờ nào (chủ 29/09/2026). */
+      const dongTo = gio.filter((g) => laDongTo(g));
+      if (dongTo.length)
+        khuyenCao.push(`DÔNG TO ${khungCua(dongTo)} — cân nhắc trong khung ấy, hạ cánh trước ${gioCua(dongTo[0])}.`);
+      /** Lời dặn của chủ (29/09/2026) cho ngày có dông. */
+      if (dongMax >= 40)
+        khuyenCao.push(
+          "Ngày có dông thường thermal mạnh: bay sớm và HẠ CÁNH TRƯỚC KHI DÔNG TỚI. Nghe tiếng sấm là hạ cánh ngay — mưa đã ở rất gần. Canh phía đầu gió: thấy mây đen, màn mưa là mưa dông sẽ lan tới rất nhanh, gió thốc mạnh tới trước cả mưa.",
+        );
     }
   }
 

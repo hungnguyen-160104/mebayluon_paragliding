@@ -573,7 +573,8 @@ export function phanTichPhiCong(n: NgayThoiTiet, tk: ThamKhong[] | null, altCat:
       dong.push({ nhan: "Giờ đẹp nhất", giaTri: "không có giờ nào hợp bãi (hướng, sức gió, mưa hoặc gió xiết)", muc: "xau" });
       ketLuan = { nhan: "KHÔNG ĐẸP", mau: "do" };
     }
-    if (n.xacSuatDongMax >= 60 && ketLuan.mau !== "do") ketLuan = { nhan: `${ketLuan.nhan} · DÔNG CHIỀU`, mau: "vang" };
+    /** Dông chỉ là ghi chú, không kéo màu ngày (chủ 29/09/2026: ngày dông thường thermal mạnh). */
+    if (n.xacSuatDongMax >= 60 && ketLuan.mau !== "do") ketLuan = { nhan: `${ketLuan.nhan} · DÔNG CHIỀU`, mau: ketLuan.mau };
   } else {
     dong.push({ nhan: "Giờ đẹp nhất", giaTri: n.khungDep ?? "không có khung nào đủ tốt", muc: n.khungDep ? "tot" : "xau" });
     ketLuan = { nhan: n.muc === "xanh" ? "BAY TỐT" : n.muc === "vang" ? "CÂN NHẮC" : "NÊN NGHỈ", mau: n.muc };

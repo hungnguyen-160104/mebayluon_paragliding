@@ -33,6 +33,7 @@ import {
   huongChu,
   lechGoc,
   MUA_BAY,
+  DONG_TO_MM,
   tranMay,
   trongCung,
   xacSuatMuaThat,
@@ -323,14 +324,13 @@ export function danhGiaGio(
      * chỉ là cảnh báo — và ngày có dông thường thermal mạnh. Thứ chặn bay là
      * mưa (ở trên) và gió, không phải một con số phần trăm dông.
      */
-    if (cs.xacSuatDong >= 60) {
-      diem = Math.min(diem, 45);
-      ghi.push(`dông ${cs.xacSuatDong}%`);
-    } else if (cs.xacSuatDong >= 40) {
+    /** 29/09/2026: chỉ trừ mạnh khi có MƯA DÔNG THẬT trong giờ; xác suất dông đơn thuần chỉ trừ nhẹ. */
+    const coMuaDong = (g.muaRao ?? 0) >= DONG_TO_MM;
+    if (cs.xacSuatDong >= 40 && coMuaDong) {
       diem = Math.min(diem, 60);
-      ghi.push(`dông ${cs.xacSuatDong}%`);
+      ghi.push(`mưa dông, dông ${cs.xacSuatDong}%`);
     } else if (cs.xacSuatDong >= 20) {
-      diem = Math.min(diem, 75);
+      diem = Math.min(diem, 90);
       ghi.push(`dông ${cs.xacSuatDong}%`);
     }
     them({ ma: "mua", ten: "Mưa / dông", trongSo: 15, diem, ghiChu: ghi.join(", ") || "không mưa, không dông", nguyHiem: nguy });
