@@ -1,3 +1,4 @@
+import { taoMaBooking } from "@/lib/booking/ma-booking";
 import { NextRequest, NextResponse } from "next/server";
 import spots from "@/data/spots.json";
 import { connectDB } from "@/lib/mongodb";
@@ -448,8 +449,16 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      /**
+       * MÃ BOOKING cho khách (30/09/2026) — khách dùng mã này + số điện thoại
+       * để vào /booking/sua tự sửa booking. Trùng (rất hiếm) thì sinh lại.
+       */
+      let maBooking = taoMaBooking();
+      for (let lan = 0; lan < 5 && (await Booking.exists({ maBooking })); lan++) maBooking = taoMaBooking();
+
       // Tạo Booking mới
       const booking = await Booking.create({
+        maBooking,
         customerId: customer._id,
         location: normalized.location,
         locationName: normalized.locationName,
@@ -501,7 +510,9 @@ export async function POST(req: NextRequest) {
       const notifyPayload = {
         ...normalized,
         ticketImageBase64,
-        bookingId: bookingCode,
+        /** Mã khách thấy trong email / Telegram là MÃ BOOKING mới (dùng để tự sửa). */
+        bookingId: maBooking,
+        maBooking,
         bookingObjectId,
         serviceName: normalized.locationName,
       };
@@ -526,7 +537,8 @@ export async function POST(req: NextRequest) {
         {
           ok: true,
           message: "Đã gửi yêu cầu đặt bay. Chúng tôi sẽ liên hệ sớm!",
-          bookingId: bookingCode,
+          bookingId: maBooking,
+          maBooking,
           bookingObjectId,
           customerId: customer._id.toString(),
           telegram: results.map((r) => ({
@@ -535,6 +547,7 @@ export async function POST(req: NextRequest) {
           })),
           booking: {
             bookingCode,
+            maBooking,
             _id: bookingObjectId,
             customerId: customer._id.toString(),
             location: booking.location,

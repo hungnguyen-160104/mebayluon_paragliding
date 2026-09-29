@@ -79,6 +79,17 @@ export interface IBooking {
    * lịch là nhận số mới của ngày mới.
    */
   queueNo?: number;
+  /**
+   * MÃ BOOKING cho khách (30/09/2026): 9 ký tự "MBL" + 6 ký tự ngẫu nhiên, ví
+   * dụ MBL7K3Q9P. Khách dùng MÃ NÀY + SỐ ĐIỆN THOẠI để vào /booking/sua tự
+   * sửa booking. Sổ nội bộ ghi "Web" + mã này (WebMBL7K3Q9P) nên quầy và khách
+   * nói cùng một mã. Booking cũ không có — tra bằng mã sổ WebMBL<6 ký tự cuối id>.
+   */
+  maBooking?: string;
+  /** Mỗi lần KHÁCH tự sửa trên web: lúc nào, đổi gì (trước → sau). */
+  lichSuSua?: Array<{ at: Date; thayDoi: Array<{ truong: string; cu: string; moi: string }> }>;
+  /** Khách bấm "yêu cầu huỷ" — quầy xử lý (cọc, hoàn tiền), không tự huỷ. */
+  yeuCauHuy?: { at: Date; lyDo?: string };
   queueDate?: string; // "YYYY-MM-DD"
   queueUpdatedAt?: Date;
 
@@ -212,6 +223,19 @@ const BookingSchema = new Schema<IBooking>(
     queueNo: { type: Number },
     queueDate: { type: String, trim: true },
     queueUpdatedAt: { type: Date },
+
+    maBooking: { type: String, trim: true, uppercase: true },
+    lichSuSua: {
+      type: [
+        {
+          at: { type: Date, default: Date.now },
+          thayDoi: [{ truong: String, cu: String, moi: String, _id: false }],
+          _id: false,
+        },
+      ],
+      default: undefined,
+    },
+    yeuCauHuy: { type: { at: Date, lyDo: String, _id: false }, default: undefined },
   },
   { timestamps: true }
 );
@@ -221,6 +245,7 @@ BookingSchema.index({ customerId: 1, createdAt: -1 });
 BookingSchema.index({ status: 1, createdAt: -1 });
 BookingSchema.index({ location: 1, dateISO: 1 });
 BookingSchema.index({ createdAt: -1 });
+BookingSchema.index({ maBooking: 1 }, { unique: true, sparse: true });
 
 // Prevent model recompilation in Next.js
 export const Booking =

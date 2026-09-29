@@ -47,6 +47,9 @@ const UI_TEXT: Record<
     spotMore: string;
     readyTitle: string;
     queueTitle: string;
+    maTitle: string;
+    maHint: string;
+    maNut: string;
     queueHint: string;
     queueWaiting: string;
     flightAtLabel: string;
@@ -82,6 +85,9 @@ const UI_TEXT: Record<
     guideSteps: "Các bước khi đi bay dù lượn",
     spotMore: "Xem thêm thông tin về điểm bay",
     readyTitle: "Đặt lịch thành công — Sẵn sàng bay!",
+    maTitle: "Mã booking của bạn",
+    maHint: "Cần đổi ngày, giờ, số khách hay thông tin? Vào mebayluon.com/booking/sua, nhập mã này và số điện thoại.",
+    maNut: "Sửa booking",
     queueTitle: "Số thứ tự bay của bạn",
     queueHint: "Số nhỏ được bay trước — khách đặt trước giữ số nhỏ hơn.",
     queueWaiting: "Đang cấp số… số thứ tự sẽ hiện ở đây trong giây lát.",
@@ -122,6 +128,9 @@ const UI_TEXT: Record<
     guideSteps: "How a paragliding flight goes",
     spotMore: "More about this flying site",
     readyTitle: "Booking confirmed — ready to fly!",
+    maTitle: "Your booking code",
+    maHint: "Need to change the date, time, guests or details? Go to mebayluon.com/booking/sua and enter this code with your phone number.",
+    maNut: "Edit booking",
     queueTitle: "Your flight queue number",
     queueHint: "Lower number flies first — earlier bookings get lower numbers.",
     queueWaiting: "Assigning your number… it will appear here in a moment.",
@@ -162,6 +171,9 @@ const UI_TEXT: Record<
     guideSteps: "Comment se déroule un vol",
     spotMore: "En savoir plus sur le site de vol",
     readyTitle: "Réservation confirmée — prêts à voler !",
+    maTitle: "Votre code de réservation",
+    maHint: "Besoin de changer la date, l’heure, le nombre de passagers ou vos coordonnées ? Rendez-vous sur mebayluon.com/booking/sua avec ce code et votre numéro de téléphone.",
+    maNut: "Modifier la réservation",
     queueTitle: "Votre numéro d\u2019ordre de vol",
     queueHint: "Le plus petit numéro vole en premier — les réservations les plus anciennes ont les plus petits numéros.",
     queueWaiting: "Attribution du numéro… il apparaîtra ici dans un instant.",
@@ -202,6 +214,9 @@ const UI_TEXT: Record<
     guideSteps: "Как проходит полёт",
     spotMore: "Подробнее о площадке",
     readyTitle: "Бронирование принято — готовы к полёту!",
+    maTitle: "Ваш код бронирования",
+    maHint: "Нужно изменить дату, время, число гостей или данные? Откройте mebayluon.com/booking/sua и введите этот код и номер телефона.",
+    maNut: "Изменить бронирование",
     queueTitle: "Ваш номер очереди на полёт",
     queueHint: "Меньший номер летит раньше — кто забронировал раньше, получает меньший номер.",
     queueWaiting: "Номер присваивается… он появится здесь через мгновение.",
@@ -242,6 +257,9 @@ const UI_TEXT: Record<
     guideSteps: "उड़ान कैसे होती है",
     spotMore: "उड़ान स्थल के बारे में और जानें",
     readyTitle: "बुकिंग सफल — उड़ान के लिए तैयार!",
+    maTitle: "आपका बुकिंग कोड",
+    maHint: "तारीख, समय, मेहमान या जानकारी बदलनी है? mebayluon.com/booking/sua पर जाएँ और यह कोड व अपना फ़ोन नंबर डालें।",
+    maNut: "बुकिंग बदलें",
     queueTitle: "आपका उड़ान क्रमांक",
     queueHint: "छोटा नंबर पहले उड़ता है — पहले बुक करने वालों को छोटा नंबर मिलता है।",
     queueWaiting: "नंबर दिया जा रहा है… यह कुछ ही क्षण में यहाँ दिखेगा।",
@@ -282,6 +300,9 @@ const UI_TEXT: Record<
     guideSteps: "一次飞行是怎样进行的",
     spotMore: "了解更多飞行点信息",
     readyTitle: "预订成功——准备起飞！",
+    maTitle: "您的预订编号",
+    maHint: "需要更改日期、时间、人数或信息？请访问 mebayluon.com/booking/sua，输入此编号和您的电话号码。",
+    maNut: "修改预订",
     queueTitle: "您的飞行排队号",
     queueHint: "号码越小越先飞——预订越早，号码越小。",
     queueWaiting: "正在分配号码……稍后将显示在这里。",
@@ -642,6 +663,21 @@ export default function SuccessStep() {
           {/* SỐ THỨ TỰ BAY: số nhỏ bay trước, nên khách hỏi ngay khi đặt xong.
               Chưa có số thì báo "đang cấp"; hết nhịp hỏi mà vẫn chưa có thì ẩn
               hẳn khối này — thà không nói còn hơn để một ô trống lơ lửng. */}
+          {/* MÃ BOOKING (30/09/2026): khách giữ mã này + số điện thoại để tự sửa booking. */}
+          {bookingResult?.maBooking ? (
+            <div className="mt-2 rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-center">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">{ui.maTitle}</div>
+              <div className="mt-0.5 font-mono text-2xl font-black tracking-widest md:text-3xl">{bookingResult.maBooking}</div>
+              <div className="mt-1 text-xs font-medium text-white/85">{ui.maHint}</div>
+              <a
+                href="/booking/sua"
+                className="mt-2 inline-block rounded-full bg-white px-4 py-1.5 text-sm font-bold text-[#0194F3] hover:bg-white/90"
+              >
+                {ui.maNut}
+              </a>
+            </div>
+          ) : null}
+
           {queueNo || queueWaiting ? (
             <div className="mt-2 rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-center">
               <div className="text-[11px] font-bold uppercase tracking-wider text-white/80">

@@ -80,6 +80,7 @@ export const PICKUP_KEYS = /pickup|shuttle|garrya/i;
 
 type WebDoc = {
   _id: mongoose.Types.ObjectId;
+  maBooking?: string;
   location?: string;
   dateISO?: string;
   timeSlot?: string;
@@ -273,7 +274,8 @@ export function mapWebBooking(doc: WebDoc, spot: string) {
      *    WebMBL…   đơn từ mebayluon.com   (chính chỗ này)
      *    WebSapa…  đơn từ paraglidingsapa.com (xem ingestSapaWebBooking)
      */
-    bookingCode: `WebMBL${shortId}`,
+    /** Có mã booking mới (30/09/2026) thì dùng đúng mã khách cầm: WebMBL7K3Q9P. */
+    bookingCode: doc.maBooking ? `Web${doc.maBooking}` : `WebMBL${shortId}`,
     guestCount: guests,
     flycam: serviceQty(doc, "flycam", guests),
     video360: serviceQty(doc, "video360", guests),

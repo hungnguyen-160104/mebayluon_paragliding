@@ -32,6 +32,8 @@ type Dict = {
   subjectUpdate: (id: string) => string;
   subjectCancel: (id: string) => string;
   introUpdate: string;
+  /** Dòng dưới mã booking: vào /booking/sua với mã + số điện thoại để tự sửa. */
+  suaBooking: string;
   introCancel: string;
   sectionChanges: string;
   /** Đã thanh toán / còn lại — thư gửi từ app nội bộ có số này, thư web không. */
@@ -107,6 +109,7 @@ const T: Record<EmailLang, Dict> = {
     subject: (id) => `Xác nhận đặt lịch bay dù lượn Mebayluon - ID: ${id}`,
     subjectUpdate: (id) => `Cập nhật đặt chỗ bay dù lượn Mebayluon - ID: ${id}`,
     subjectCancel: (id) => `Huỷ chuyến bay Mebayluon - ID: ${id}`,
+    suaBooking: "Đổi ngày, giờ, số khách hay thông tin: vào mebayluon.com/booking/sua, nhập mã này và số điện thoại.",
     introUpdate: "Đặt chỗ của bạn vừa được cập nhật. Những thay đổi và thông tin mới nhất ở dưới đây.",
     introCancel: "Chuyến bay của bạn đã được huỷ. Chi tiết ở dưới đây — nếu có khoản hoàn, chúng tôi sẽ xử lý sớm nhất.",
     sectionChanges: "Những thay đổi",
@@ -176,6 +179,7 @@ const T: Record<EmailLang, Dict> = {
     subject: (id) => `Mebayluon paragliding booking confirmation - ID: ${id}`,
     subjectUpdate: (id) => `Mebayluon paragliding booking updated - ID: ${id}`,
     subjectCancel: (id) => `Mebayluon flight cancelled - ID: ${id}`,
+    suaBooking: "To change the date, time, guests or details: go to mebayluon.com/booking/sua and enter this code with your phone number.",
     introUpdate: "Your booking has just been updated. The changes and the latest details are below.",
     introCancel: "Your flight has been cancelled. Details below — any refund will be processed shortly.",
     sectionChanges: "What changed",
@@ -246,6 +250,7 @@ const T: Record<EmailLang, Dict> = {
     subject: (id) => `Confirmation de réservation parapente Mebayluon - ID : ${id}`,
     subjectUpdate: (id) => `Mise à jour de votre réservation Mebayluon - ID : ${id}`,
     subjectCancel: (id) => `Vol annulé Mebayluon - ID : ${id}`,
+    suaBooking: "Pour changer la date, l’heure, le nombre de passagers ou vos coordonnées : mebayluon.com/booking/sua, avec ce code et votre numéro de téléphone.",
     introUpdate: "Votre réservation vient d’être mise à jour. Les changements et les informations à jour sont ci-dessous.",
     introCancel: "Votre vol a été annulé. Détails ci-dessous — tout remboursement sera traité rapidement.",
     sectionChanges: "Ce qui a changé",
@@ -316,6 +321,7 @@ const T: Record<EmailLang, Dict> = {
     subject: (id) => `Подтверждение брони полёта Mebayluon - ID: ${id}`,
     subjectUpdate: (id) => `Обновление брони Mebayluon - ID: ${id}`,
     subjectCancel: (id) => `Полёт отменён Mebayluon - ID: ${id}`,
+    suaBooking: "Изменить дату, время, число гостей или данные: mebayluon.com/booking/sua — введите этот код и номер телефона.",
     introUpdate: "Ваша бронь только что обновлена. Изменения и актуальные данные ниже.",
     introCancel: "Ваш полёт отменён. Подробности ниже — возврат, если он положен, оформим в ближайшее время.",
     sectionChanges: "Что изменилось",
@@ -386,6 +392,7 @@ const T: Record<EmailLang, Dict> = {
     subject: (id) => `Mebayluon 滑翔伞预订确认 - ID: ${id}`,
     subjectUpdate: (id) => `Mebayluon 预订更新 - ID: ${id}`,
     subjectCancel: (id) => `Mebayluon 航程取消 - ID: ${id}`,
+    suaBooking: "如需更改日期、时间、人数或信息：请访问 mebayluon.com/booking/sua，输入此编号和电话号码。",
     introUpdate: "您的预订刚刚更新，变更内容与最新信息如下。",
     introCancel: "您的飞行已取消，详情如下——如有退款我们会尽快处理。",
     sectionChanges: "变更内容",
@@ -454,6 +461,7 @@ const T: Record<EmailLang, Dict> = {
     subject: (id) => `Mebayluon पैराग्लाइडिंग बुकिंग पुष्टि - ID: ${id}`,
     subjectUpdate: (id) => `Mebayluon बुकिंग अपडेट - ID: ${id}`,
     subjectCancel: (id) => `Mebayluon उड़ान रद्द - ID: ${id}`,
+    suaBooking: "तारीख, समय, मेहमान या जानकारी बदलने के लिए: mebayluon.com/booking/sua पर यह कोड और फ़ोन नंबर डालें।",
     introUpdate: "आपकी बुकिंग अभी अपडेट हुई है। बदलाव और नवीनतम विवरण नीचे हैं।",
     introCancel: "आपकी उड़ान रद्द हो गई है। विवरण नीचे हैं — रिफ़ंड होने पर हम जल्द प्रोसेस करेंगे।",
     sectionChanges: "क्या बदला",
@@ -875,6 +883,7 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
         <div style="margin-top:8px;font-size:13px;opacity:.92;">${esc(t.bookingRef)}:
           <span style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:800;letter-spacing:1px;">${esc(input.bookingId || "—")}</span>
         </div>
+        ${/^MBL[0-9A-Z]{6}$/.test(String(input.bookingId || "")) ? `<div style="margin-top:6px;font-size:12px;opacity:.92;"><a href="https://www.mebayluon.com/booking/sua?ma=${esc(String(input.bookingId))}" style="color:#ffffff;text-decoration:underline;">${esc(t.suaBooking)}</a></div>` : ""}
       </td>
     </tr></table>
   </td></tr>
