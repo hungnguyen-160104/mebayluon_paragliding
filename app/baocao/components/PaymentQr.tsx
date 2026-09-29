@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { buildVietQrPayload, PAY_ACCOUNT_FLIGHT, toAsciiNote } from "@/lib/vietqr";
+import { buildVietQrPayload, PAY_ACCOUNT_FLIGHT, toAsciiNote, type BankAccount } from "@/lib/vietqr";
 import { formatVND } from "@/lib/pricing";
 
 import { Button } from "./ui";
@@ -28,6 +28,16 @@ import { Button } from "./ui";
  * máy chủ cũng dùng được; tên cũ giữ nguyên cho các nơi đang nhập.
  */
 export const PAY_ACCOUNT = PAY_ACCOUNT_FLIGHT;
+
+/**
+ * Tài khoản công ty đã chắc chắn có. PAY_ACCOUNT còn null (chưa có tài khoản
+ * đứng tên công ty — xem lib/vietqr.ts) thì nút QR tự ẩn, nên các hàm vẽ/chia
+ * sẻ bên dưới không bao giờ chạy tới đây với null.
+ */
+function acc(): BankAccount {
+  if (!PAY_ACCOUNT) throw new Error("Chưa cấu hình tài khoản công ty (lib/vietqr.ts)");
+  return PAY_ACCOUNT;
+}
 
 async function qrDataUrl(payload: string, size = 720): Promise<string> {
   const QRCode = (await import("qrcode")).default;
@@ -90,10 +100,10 @@ async function drawQrCard(d: { amount: number; note: string; purpose: string; qr
   y += 54;
   g.fillStyle = "#475569";
   g.font = font(24);
-  g.fillText(`${PAY_ACCOUNT.bankName} — ${PAY_ACCOUNT.accountNumber}`, W / 2, y);
+  g.fillText(`${acc().bankName} — ${acc().accountNumber}`, W / 2, y);
 
   y += 34;
-  g.fillText(PAY_ACCOUNT.accountName, W / 2, y);
+  g.fillText(acc().accountName, W / 2, y);
 
   y += 46;
   if (d.note) {
@@ -133,6 +143,9 @@ export function PaymentQrButton({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+
+  /** Chưa có tài khoản đứng tên công ty → không phát QR / số TK nào cho khách. */
+  if (!PAY_ACCOUNT) return null;
 
   return (
     <>
@@ -219,8 +232,8 @@ function PaymentQrModal({
     let alive = true;
     qrDataUrl(
       buildVietQrPayload({
-        bankBin: PAY_ACCOUNT.bankBin,
-        accountNumber: PAY_ACCOUNT.accountNumber,
+        bankBin: acc().bankBin,
+        accountNumber: acc().accountNumber,
         amount,
         note: asciiNote,
       }),
@@ -247,7 +260,7 @@ function PaymentQrModal({
         await nav.share({
           files: [file],
           title: "Thanh toán MEBAYLUON",
-          text: `${purpose}: ${formatVND(amount)} — ${PAY_ACCOUNT.bankName} ${PAY_ACCOUNT.accountNumber} (${PAY_ACCOUNT.accountName}), nội dung ${asciiNote}`,
+          text: `${purpose}: ${formatVND(amount)} — ${acc().bankName} ${acc().accountNumber} (${acc().accountName}), nội dung ${asciiNote}`,
         });
         return;
       }
@@ -273,7 +286,7 @@ function PaymentQrModal({
     return `${base}/thanh-toan?${q.toString()}`;
   }, [amount, asciiNote, purpose]);
 
-  const shareText = `${purpose}: ${formatVND(amount)} — ${PAY_ACCOUNT.bankName} ${PAY_ACCOUNT.accountNumber} (${PAY_ACCOUNT.accountName}), nội dung ${asciiNote}. Quét mã: ${shareLink}`;
+  const shareText = `${purpose}: ${formatVND(amount)} — ${acc().bankName} ${acc().accountNumber} (${acc().accountName}), nội dung ${asciiNote}. Quét mã: ${shareLink}`;
 
   const copyLink = useCallback(async () => {
     try {
@@ -313,7 +326,7 @@ function PaymentQrModal({
   );
 
   const copyInfo = useCallback(async () => {
-    const text = `${PAY_ACCOUNT.bankName} ${PAY_ACCOUNT.accountNumber} — ${PAY_ACCOUNT.accountName}\nSố tiền: ${formatVND(amount)}\nNội dung: ${asciiNote}`;
+    const text = `${acc().bankName} ${acc().accountNumber} — ${acc().accountName}\nSố tiền: ${formatVND(amount)}\nNội dung: ${asciiNote}`;
     try {
       await navigator.clipboard.writeText(text);
       setMsg("Đã chép thông tin chuyển khoản — dán vào Zalo gửi khách.");
@@ -362,8 +375,8 @@ function PaymentQrModal({
         <div className="mt-2 text-center">
           <div className="text-2xl font-extrabold tabular-nums text-slate-900">{formatVND(amount)}</div>
           <div className="mt-0.5 text-xs text-slate-600">
-            {PAY_ACCOUNT.bankName} · <strong className="tabular-nums">{PAY_ACCOUNT.accountNumber}</strong> ·{" "}
-            {PAY_ACCOUNT.accountName}
+            {acc().bankName} · <strong className="tabular-nums">{acc().accountNumber}</strong> ·{" "}
+            {acc().accountName}
           </div>
           <div className="mt-0.5 text-xs font-bold text-amber-700">Nội dung: {asciiNote}</div>
         </div>

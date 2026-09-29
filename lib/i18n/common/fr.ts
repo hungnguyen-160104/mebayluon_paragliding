@@ -222,8 +222,8 @@ export const fr: CommonTranslation = {
         items: [
           "Horaires de vol flexibles — annulation, remboursement et report gratuits",
           "Le vol est annulé si la météo est défavorable ou si vous ne vous sentez pas prêt",
-          "Merci de nous signaler tout report ou annulation par e-mail/hotline/Zalo/WhatsApp au moins 03 heures avant l’heure de départ",
-          "En cas d’annulation le jour même, merci de régler les frais déjà engagés (boissons consommées, navette déjà assurée)",
+          "Prévenez-nous de tout report ou annulation par e-mail/hotline/Zalo/WhatsApp avant l’heure de prise en charge ou de vol : remboursement intégral, même le jour même",
+          "Sans préavis, ou si des services ont déjà été utilisés (boissons consommées, navette déjà assurée), merci de régler les frais réellement engagés",
         ],
       },
     },

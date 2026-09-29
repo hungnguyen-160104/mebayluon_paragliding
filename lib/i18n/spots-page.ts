@@ -84,7 +84,7 @@ const vi: SpotsPageCopy = {
     },
     {
       q: "Có cần đặt lịch trước không?",
-      a: "Hầu hết khách đều đặt lịch trước để bên tổ chức bay nắm được số lượng và chuẩn bị chu đáo hơn, đồng thời sớm thông báo đến bạn nếu có thay đổi do yếu tố khách quan như thời tiết. Bạn đừng lo giữ chỗ: mọi đặt lịch đều được huỷ hoặc đổi lịch miễn phí, chỉ cần báo trước vài giờ.",
+      a: "Hầu hết khách đều đặt lịch trước để bên tổ chức bay nắm được số lượng và chuẩn bị chu đáo hơn, đồng thời sớm thông báo đến bạn nếu có thay đổi do yếu tố khách quan như thời tiết. Bạn đừng lo giữ chỗ: mọi đặt lịch đều được huỷ hoặc đổi lịch miễn phí, hoàn tiền đầy đủ, chỉ cần báo trước giờ đón hoặc giờ bay đã hẹn.",
     },
   ],
 };
@@ -148,7 +148,7 @@ const en: SpotsPageCopy = {
     },
     {
       q: "Do I need to book in advance?",
-      a: "Most guests book ahead so we know the numbers, prepare properly, and can tell you early if anything changes for reasons beyond our control, such as the weather. There is no risk in holding a slot: every booking can be cancelled or rescheduled free of charge with just a few hours' notice.",
+      a: "Most guests book ahead so we know the numbers, prepare properly, and can tell you early if anything changes for reasons beyond our control, such as the weather. There is no risk in holding a slot: every booking can be cancelled or rescheduled free of charge with a full refund — just let us know before your pickup or flight time.",
     },
   ],
 };
@@ -212,7 +212,7 @@ const fr: SpotsPageCopy = {
     },
     {
       q: "Faut-il réserver à l’avance ?",
-      a: "La plupart des clients réservent afin que nous connaissions le nombre de participants, préparions tout correctement et puissions vous prévenir tôt en cas de changement indépendant de notre volonté, comme la météo. Réserver ne vous engage à rien : toute réservation peut être annulée ou modifiée gratuitement, en prévenant quelques heures à l’avance.",
+      a: "La plupart des clients réservent afin que nous connaissions le nombre de participants, préparions tout correctement et puissions vous prévenir tôt en cas de changement indépendant de notre volonté, comme la météo. Réserver ne vous engage à rien : toute réservation peut être annulée ou modifiée gratuitement, avec remboursement intégral, en prévenant avant l’heure de prise en charge ou de vol.",
     },
   ],
 };
@@ -276,7 +276,7 @@ const ru: SpotsPageCopy = {
     },
     {
       q: "Нужно ли бронировать заранее?",
-      a: "Большинство гостей бронируют заранее, чтобы мы знали количество, подготовились как следует и вовремя предупредили вас, если что-то изменится по независящим от нас причинам, например из-за погоды. Опасаться нечего: любое бронирование можно бесплатно отменить или перенести, предупредив за несколько часов.",
+      a: "Большинство гостей бронируют заранее, чтобы мы знали количество, подготовились как следует и вовремя предупредили вас, если что-то изменится по независящим от нас причинам, например из-за погоды. Опасаться нечего: любое бронирование можно бесплатно отменить или перенести с полным возвратом, предупредив до времени трансфера или полёта.",
     },
   ],
 };
@@ -340,7 +340,7 @@ const zh: SpotsPageCopy = {
     },
     {
       q: "需要提前预订吗？",
-      a: "大多数客人都会提前预订，让我们掌握人数、做好充分准备，并在遇到天气等客观因素变动时尽早通知您。不必担心：所有预订都可免费取消或改期，只需提前几小时告知。",
+      a: "大多数客人都会提前预订，让我们掌握人数、做好充分准备，并在遇到天气等客观因素变动时尽早通知您。不必担心：所有预订都可免费取消或改期并全额退款，只需在接送或飞行时间之前告知。",
     },
   ],
 };
@@ -404,7 +404,7 @@ const hi: SpotsPageCopy = {
     },
     {
       q: "क्या पहले से बुकिंग ज़रूरी है?",
-      a: "ज़्यादातर मेहमान पहले से बुक करते हैं ताकि हमें संख्या पता रहे, तैयारी पूरी हो और मौसम जैसे बाहरी कारणों से कुछ बदले तो आपको जल्दी बताया जा सके। चिंता की बात नहीं: हर बुकिंग मुफ़्त रद्द या पुनर्निर्धारित हो सकती है, बस कुछ घंटे पहले बता दीजिए।",
+      a: "ज़्यादातर मेहमान पहले से बुक करते हैं ताकि हमें संख्या पता रहे, तैयारी पूरी हो और मौसम जैसे बाहरी कारणों से कुछ बदले तो आपको जल्दी बताया जा सके। चिंता की बात नहीं: हर बुकिंग मुफ़्त रद्द या पुनर्निर्धारित हो सकती है और पूरा रिफ़ंड मिलता है, बस पिकअप या उड़ान समय से पहले बता दीजिए।",
     },
   ],
 };

@@ -219,8 +219,8 @@ export const en: CommonTranslation = {
         items: [
           "Flexible flight schedule — free cancellation, refund and rescheduling",
           "Flights are cancelled when the weather is unfavourable or when you do not feel ready",
-          "Please notify us of any rescheduling or cancellation via email/hotline/Zalo/WhatsApp at least 03 hours before departure time",
-          "For same-day cancellations, please cover the costs already incurred (drinks consumed, transfer already provided)",
+          "Notify us of rescheduling or cancellation via email/hotline/Zalo/WhatsApp before your pickup or flight time and you get a full refund — even for same-day cancellations",
+          "Without prior notice, or if services were already used (drinks consumed, transfer already provided), please cover the actual costs incurred",
         ],
       },
     },

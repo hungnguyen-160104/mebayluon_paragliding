@@ -7,6 +7,7 @@ import { SPOT_SLUGS } from "@/lib/spots-slugs";
 import { STORE_CATEGORY_CONFIG } from "@/lib/store-texts";
 import { getActivePilots } from "@/lib/pilots-data";
 import { collectPostVideos } from "@/lib/video-schema";
+import { POLICY_SLUGS } from "@/lib/policies/shared";
 
 export const revalidate = 3600; // regenerate every hour
 
@@ -106,6 +107,9 @@ async function loadVideosBySlug() {
  */
 const STATIC_CONTENT_UPDATED = new Date("2026-08-10T00:00:00Z");
 
+/** Ngày viết các trang chính sách — khớp POLICY_UPDATED_AT (lib/policies/shared.ts). */
+const POLICIES_UPDATED = new Date("2026-09-30T00:00:00Z");
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -200,6 +204,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Điều khoản chỉ có tiếng Việt (app/terms/layout.tsx) — không khai bản dịch
       alternates: alts(`${BASE}/terms`, ["vi"]),
     },
+    /**
+     * Các trang chính sách (thông báo website TMĐT với Bộ Công Thương) —
+     * danh sách ở lib/policies/shared.ts. Chỉ có bản Việt + Anh.
+     */
+    ...["/chinh-sach", ...POLICY_SLUGS.map((slug) => `/chinh-sach/${slug}`)].map(
+      (path) => ({
+        url: `${BASE}${path}`,
+        lastModified: POLICIES_UPDATED,
+        changeFrequency: "yearly" as const,
+        priority: 0.3,
+        alternates: alts(`${BASE}${path}`, ["vi", "en"]),
+      }),
+    ),
   ];
 
   /**

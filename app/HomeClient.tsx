@@ -311,7 +311,7 @@ export default function HomePage() {
       title: t?.contact?.phone ?? "Điện thoại",
       lines: [
         { text: "+84 964 073 555 (Mr. My)", href: "tel:+84964073555" },
-        { text: "+84 385 907 789 (Ms Ngọc)", href: "tel:+84385907789" },
+        { text: "+84 385 907 789 (Ms Duyên)", href: "tel:+84385907789" },
         t?.contact?.support247 ?? "Hỗ trợ 24/7",
       ],
     },

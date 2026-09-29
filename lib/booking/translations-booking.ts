@@ -173,7 +173,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightNotes: [
         "Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi xác nhận thời tiết bay trước khi xuất phát.",
         "Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 (Mr. Mỹ – Phi công trưởng) – 0385.907.789 (Ms. Duyên – Điều phối bay) để được hỗ trợ kịp thời.",
-        "Có mặt tại điểm bay trước 30 phút để làm thủ tục Check-in.",
+        "Có mặt tại điểm bay trước 15–30 phút để làm thủ tục Check-in.",
         "Trang phục: nên đi giày thể thao; không đi giày cao gót; quần áo dài tay màu sắc sặc sỡ; có thể đeo kính; mang theo điện thoại có sẵn ~10GB bộ nhớ trống để nhận ảnh/video.",
         "Toạ độ điểm bay:",
       ],
@@ -266,7 +266,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightNotes: [
         "Flying weather can change suddenly without notice — please call to confirm flying conditions before you set off.",
         "For any service feedback, please call our Hotline 0964.073.555 (Mr. Mỹ – Phi công trưởng) – 0385.907.789 (Ms. Duyên – Điều phối bay) directly so we can help right away.",
-        "Arrive at the launch site 30 minutes early for check-in.",
+        "Arrive at the launch site 15–30 minutes early for check-in.",
         "Outfit: sneakers recommended; avoid high heels; long-sleeve colorful outfit; glasses allowed; prepare ~10GB free storage for photo/video.",
         "Coordinates:",
       ],
@@ -361,7 +361,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightNotes: [
         "La météo de vol peut changer brusquement sans préavis — merci d'appeler pour confirmer les conditions avant de partir.",
         "Pour toute remarque sur le service, appelez directement la Hotline 0964.073.555 (Mr. Mỹ – Phi công trưởng) – 0385.907.789 (Ms. Duyên – Điều phối bay) pour une aide immédiate.",
-        "Arrivez 30 minutes en avance pour l’enregistrement.",
+        "Arrivez 15 à 30 minutes en avance pour l’enregistrement.",
         "Tenue : baskets, pas de talons ; manches longues colorées ; lunettes autorisées ; prévoyez ~10 Go libres pour photos/vidéos.",
         "Coordonnées :",
       ],
@@ -456,7 +456,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightNotes: [
         "Лётная погода может резко измениться без предупреждения — пожалуйста, позвоните и уточните условия перед выездом.",
         "По любым вопросам о сервисе звоните напрямую на горячую линию 0964.073.555 (г-н Mỹ – старший пилот) – 0385.907.789 (г-жа Duyên – координатор полётов) — поможем сразу.",
-        "Прибудьте на стартовую площадку за 30 минут до вылета.",
+        "Прибудьте на стартовую площадку за 15–30 минут до вылета.",
         "Одежда: кроссовки, не каблуки; яркая одежда с длинными рукавами; очки разрешены; подготовьте ~10 ГБ памяти.",
         "Координаты:",
       ],
@@ -551,7 +551,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightNotes: [
         "飞行天气可能突然变化、恕不另行通知——出发前请致电确认飞行天气。",
         "如对服务有任何反馈，请直接致电热线 0964.073.555（Mỹ 先生 – 首席飞行员）– 0385.907.789（Duyên 女士 – 飞行协调），我们会及时协助。",
-        "请提前 30 分钟到达起飞点办理签到。",
+        "请提前 15–30 分钟到达起飞点办理签到。",
         "建议穿运动鞋；避免高跟鞋；长袖亮色衣服更适合拍照；可佩戴眼镜；手机预留约 10GB 空间用于接收照片/视频。",
         "坐标：",
       ],
@@ -646,7 +646,7 @@ export const bookingTranslations: Record<LangCode, Dict> = {
       preflightNotes: [
         "उड़ान का मौसम बिना सूचना अचानक बदल सकता है — कृपया निकलने से पहले फ़ोन करके मौसम की पुष्टि करें।",
         "सेवा से जुड़ी किसी भी शिकायत के लिए सीधे हॉटलाइन 0964.073.555 (श्री Mỹ – मुख्य पायलट) – 0385.907.789 (सुश्री Duyên – उड़ान समन्वयक) पर कॉल करें, हम तुरंत सहायता करेंगे।",
-        "चेक-इन के लिए लॉन्च साइट पर 30 मिनट पहले पहुँचें।",
+        "चेक-इन के लिए लॉन्च साइट पर 15–30 मिनट पहले पहुँचें।",
         "पोशाक: स्नीकर्स सुझाए जाते हैं; हाई हील्स से बचें; रंगीन लॉन्ग-स्लीव पहनें; चश्मा ठीक है; फोटो/वीडियो के लिए फोन में ~10GB खाली जगह रखें।",
         "कोऑर्डिनेट्स:",
       ],

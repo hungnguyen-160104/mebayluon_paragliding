@@ -1553,7 +1553,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         /**
          * Đón trả 2 chiều ĐÃ NẰM TRONG GIÁ VÉ (cả PG lẫn PPG) nên giá 0 và tích
          * sẵn; vẫn bắt nhập điểm đón để quầy biết đến đâu. Khách tự đến thì bỏ
-         * tích — khi đó hiện lời nhắc có mặt trước 15 phút.
+         * tích — khi đó hiện lời nhắc có mặt trước 15–30 phút.
          */
         key: "quan_ba_pickup",
         label: {

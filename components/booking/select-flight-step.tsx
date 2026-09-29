@@ -903,7 +903,7 @@ function getServiceMeta(
 
   if (key === "quan_ba_pickup") {
     // Đón trả 2 chiều đã nằm trong giá vé Quản Bạ: tích sẵn, không cộng tiền,
-    // chỉ cần điểm đón. Bỏ tích = tự đến, hiện lời nhắc có mặt trước 15 phút
+    // chỉ cần điểm đón. Bỏ tích = tự đến, hiện lời nhắc có mặt trước 15–30 phút
     // (trừ khi khách đã chọn xe từ TP Hà Giang — xem chỗ vẽ lời nhắc).
     return {
       id: "quan_ba_pickup",

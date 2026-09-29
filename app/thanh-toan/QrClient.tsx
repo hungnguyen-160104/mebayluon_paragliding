@@ -4,7 +4,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { buildVietQrPayload, toAsciiNote, BANK_BIN } from "@/lib/vietqr";
+import {
+  buildVietQrPayload,
+  COMPANY_BANK_ACCOUNT,
+  NO_COMPANY_ACCOUNT_TEXT,
+  toAsciiNote,
+  type BankAccount,
+} from "@/lib/vietqr";
 import { formatVND } from "@/lib/pricing";
 
 /**
@@ -17,17 +23,36 @@ import { formatVND } from "@/lib/pricing";
  * vào là thấy mã QR đúng số tiền, quét luôn bằng app ngân hàng.
  *
  * Trang chỉ đọc tham số trên URL rồi vẽ mã — không đụng cơ sở dữ liệu, không
- * lộ thông tin gì ngoài số tài khoản nhận tiền (thứ vốn phải đưa khách).
+ * lộ thông tin gì ngoài số tài khoản nhận tiền của CÔNG TY (thứ vốn phải đưa khách).
  */
 
-const PAY = {
-  bankBin: BANK_BIN.bidv,
-  bankName: "BIDV",
-  accountNumber: "8875639685",
-  accountName: "Đặng Thị Thuỷ",
-};
-
+/**
+ * Tài khoản nhận lấy từ COMPANY_BANK_ACCOUNT (lib/vietqr.ts) — PHẢI đứng tên
+ * công ty. Còn null thì trang KHÔNG vẽ QR, không hiện số tài khoản, chỉ báo
+ * nhân viên sẽ gửi thông tin chuyển khoản của công ty.
+ */
 export function QrClient() {
+  if (!COMPANY_BANK_ACCOUNT) return <NoCompanyAccount />;
+  return <QrView pay={COMPANY_BANK_ACCOUNT} />;
+}
+
+function NoCompanyAccount() {
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-4 py-6 text-center">
+      <h1 className="text-lg font-bold text-slate-900">MEBAYLUON — Thanh toán</h1>
+      <p className="mt-3 text-sm leading-relaxed text-slate-700">{NO_COMPANY_ACCOUNT_TEXT.vi}</p>
+      <p className="mt-2 text-sm leading-relaxed text-slate-500">{NO_COMPANY_ACCOUNT_TEXT.en}</p>
+      <p className="mt-4 text-sm text-slate-600">
+        Hotline:{" "}
+        <a href="tel:+84964073555" className="font-semibold text-sky-700">
+          0964 073 555
+        </a>
+      </p>
+    </main>
+  );
+}
+
+function QrView({ pay: PAY }: { pay: BankAccount }) {
   const params = useSearchParams();
   const amount = Math.max(0, Math.round(Number(params.get("a")) || 0));
   const note = toAsciiNote(params.get("n") || "") || "MEBAYLUON";
@@ -59,7 +84,7 @@ export function QrClient() {
     return () => {
       alive = false;
     };
-  }, [amount, note]);
+  }, [amount, note, PAY.bankBin, PAY.accountNumber]);
 
   async function copyAccount() {
     try {

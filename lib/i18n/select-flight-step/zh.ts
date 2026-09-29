@@ -72,11 +72,11 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     daNangMountainWarning:
       "为获得更灵活和安全的安排，建议使用上山接送服务。",
     paraglidingNoPickupWarning:
-      "注意：该飞行不包含上下山接驳。请于飞行前 15 分钟到达起飞点办理手续。",
+      "注意：该飞行不包含上下山接驳。请于飞行前 15–30 分钟到达起飞点办理手续。",
     paramotorNoPickupWarning:
-      "注意：该飞行不包含前往飞行点的接送。请于飞行前 15 分钟到达 Mebayluon Clubhouse 办理手续。",
+      "注意：该飞行不包含前往飞行点的接送。请于飞行前 15–30 分钟到达 Mebayluon Clubhouse 办理手续。",
     quanBaPickupWarning:
-      "注意：票价已含管坝地区往返接送。若取消勾选并自行前往，请提前 15 分钟到达集合点办理手续。",
+      "注意：票价已含管坝地区往返接送。若取消勾选并自行前往，请提前 15–30 分钟到达集合点办理手续。",
     selectedFlightLabel: "已选飞行",
     selectedOptionsLabel: "已选服务",
     noOptionalSelected: "尚未选择任何可选服务。",

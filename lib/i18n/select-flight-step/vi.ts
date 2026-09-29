@@ -72,11 +72,11 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     daNangMountainWarning:
       "!!!! Quý khách nên sử dụng dịch vụ xe di chuyển lên núi để được sắp xếp nhanh chóng và linh hoạt nhất. Nếu tự di chuyển, không nên sử dụng xe máy tay ga vì lý do an toàn. Điểm cất cánh cách điểm hạ cánh 12km, đường đèo dốc vì vậy cần xe trung chuyển trước chuyến.",
     paraglidingNoPickupWarning:
-      "LƯU Ý: Chuyến bay không bao gồm xe trung chuyển lên/xuống núi, quý khách vui lòng có mặt tại bãi cất cánh 15 phút trước giờ bay để làm thủ tục checkin.",
+      "LƯU Ý: Chuyến bay không bao gồm xe trung chuyển lên/xuống núi, quý khách vui lòng có mặt tại bãi cất cánh 15–30 phút trước giờ bay để làm thủ tục checkin.",
     paramotorNoPickupWarning:
-      "LƯU Ý: Chuyến bay không bao gồm xe trung chuyển đến điểm bay, quý khách vui lòng có mặt tại Mebayluon Clubhouse 15 phút trước giờ bay để làm thủ tục checkin.",
+      "LƯU Ý: Chuyến bay không bao gồm xe trung chuyển đến điểm bay, quý khách vui lòng có mặt tại Mebayluon Clubhouse 15–30 phút trước giờ bay để làm thủ tục checkin.",
     quanBaPickupWarning:
-      "Lưu ý: Giá vé đã gồm xe đón trả 2 chiều trong khu vực Quản Bạ. Nếu bỏ chọn và tự di chuyển, vui lòng có mặt tại điểm hẹn trước 15 phút để làm thủ tục.",
+      "Lưu ý: Giá vé đã gồm xe đón trả 2 chiều trong khu vực Quản Bạ. Nếu bỏ chọn và tự di chuyển, vui lòng có mặt tại điểm hẹn trước 15–30 phút để làm thủ tục.",
     selectedFlightLabel: "Loại bay đã chọn",
     selectedOptionsLabel: "Dịch vụ đã chọn",
     noOptionalSelected: "Chưa chọn dịch vụ tùy chọn nào.",

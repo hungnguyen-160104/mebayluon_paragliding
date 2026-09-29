@@ -124,8 +124,8 @@ export default function PreNoticePage() {
         items: t.preNotice?.requirements?.cancellation?.items ?? [
           "Lịch bay linh động & Hoàn huỷ & đổi lịch miễn phí",
           "Huỷ bay khi thời tiết không thuận lợi & khi khách không sẵn sàng",
-          "Khách vui lòng báo đổi/huỷ lịch bay qua email/hotline/Zalo/WhatsApp ít nhất 03 tiếng trước giờ khởi hành",
-          "Khách vui lòng thanh toán một số phí phát sinh đã sử dụng nếu huỷ lịch bay trong ngày (nước đã uống, xe đã đón)",
+          "Báo đổi/huỷ lịch qua email/hotline/Zalo/WhatsApp trước giờ đón hoặc giờ bay đã hẹn là được hoàn tiền đầy đủ, kể cả huỷ trong ngày bay",
+          "Nếu không báo trước, hoặc đã sử dụng dịch vụ (nước đã uống, xe đã đón), khách vui lòng thanh toán các chi phí thực tế đã phát sinh",
         ],
       }
     }

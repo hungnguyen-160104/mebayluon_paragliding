@@ -72,11 +72,11 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     daNangMountainWarning:
       "We strongly recommend using the mountain transfer service for faster and more flexible arrangements. If you travel by yourself, scooters are not recommended for safety reasons.",
     paraglidingNoPickupWarning:
-      "NOTE: The flight does not include the mountain shuttle up/down. Please arrive at the take-off point 15 minutes before your flight for check-in.",
+      "NOTE: The flight does not include the mountain shuttle up/down. Please arrive at the take-off point 15–30 minutes before your flight for check-in.",
     paramotorNoPickupWarning:
-      "NOTE: The flight does not include the transfer to the flying point. Please arrive at Mebayluon Clubhouse 15 minutes before your flight for check-in.",
+      "NOTE: The flight does not include the transfer to the flying point. Please arrive at Mebayluon Clubhouse 15–30 minutes before your flight for check-in.",
     quanBaPickupWarning:
-      "Note: the ticket already includes round-trip transfer within the Quan Ba area. If you untick it and travel by yourself, please arrive at the meeting point 15 minutes early for check-in.",
+      "Note: the ticket already includes round-trip transfer within the Quan Ba area. If you untick it and travel by yourself, please arrive at the meeting point 15–30 minutes early for check-in.",
     selectedFlightLabel: "Selected flight",
     selectedOptionsLabel: "Selected services",
     noOptionalSelected: "No optional service selected.",

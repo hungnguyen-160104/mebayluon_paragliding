@@ -401,16 +401,16 @@ function useTicketLabels(lang: LangCode) {
               : ["Sharp objects", "Bulky items", "Valuables", "Heavy items"],
 
     guideNote: isVI
-      ? "Có mặt trước giờ bay 15 phút. Nếu bạn có vấn đề tim mạch, huyết áp, động kinh hoặc đang mang thai, vui lòng báo phi công trước khi bay."
+      ? "Có mặt trước giờ bay 15–30 phút. Nếu bạn có vấn đề tim mạch, huyết áp, động kinh hoặc đang mang thai, vui lòng báo phi công trước khi bay."
       : isFR
-        ? "Arrivez 15 minutes avant le vol. En cas de problème cardiaque, de tension, d'épilepsie ou de grossesse, prévenez le pilote avant le décollage."
+        ? "Arrivez 15 à 30 minutes avant le vol. En cas de problème cardiaque, de tension, d'épilepsie ou de grossesse, prévenez le pilote avant le décollage."
         : isRU
-          ? "Приходите за 15 минут до полёта. При проблемах с сердцем, давлением, эпилепсии или беременности предупредите пилота заранее."
+          ? "Приходите за 15–30 минут до полёта. При проблемах с сердцем, давлением, эпилепсии или беременности предупредите пилота заранее."
           : isHI
-            ? "उड़ान से 15 मिनट पहले पहुँचें। हृदय, रक्तचाप, मिर्गी की समस्या या गर्भावस्था हो तो पायलट को पहले बताएँ।"
+            ? "उड़ान से 15–30 मिनट पहले पहुँचें। हृदय, रक्तचाप, मिर्गी की समस्या या गर्भावस्था हो तो पायलट को पहले बताएँ।"
             : isZH || isZHTW
-              ? zh("请提前 15 分钟抵达。如有心脏、血压、癫痫问题或正在怀孕，请飞行前告知飞行员。", "請提前 15 分鐘抵達。如有心臟、血壓、癲癇問題或正在懷孕，請飛行前告知飛行員。")
-              : "Arrive 15 minutes before your flight. If you have heart or blood-pressure conditions, epilepsy, or are pregnant, tell your pilot beforehand.",
+              ? zh("请提前 15–30 分钟抵达。如有心脏、血压、癫痫问题或正在怀孕，请飞行前告知飞行员。", "請提前 15–30 分鐘抵達。如有心臟、血壓、癲癇問題或正在懷孕，請飛行前告知飛行員。")
+              : "Arrive 15–30 minutes before your flight. If you have heart or blood-pressure conditions, epilepsy, or are pregnant, tell your pilot beforehand.",
     notProvided: isVI ? "Chưa cung cấp" : isFR ? "Non fourni" : isRU ? "Не указано" : isHI ? "प्रदान नहीं" : isZH || isZHTW ? zh("未提供", "未提供") : "Not provided",
     pax: isVI ? "khách" : isFR ? "pers" : isRU ? "чел" : isHI ? "यात्री" : isZH || isZHTW ? zh("人", "人") : "pax",
     weekday: isVI ? "Ngày thường" : isFR ? "Jour ouvré" : isRU ? "Будний день" : isHI ? "कार्यदिवस" : isZH || isZHTW ? zh("工作日", "工作日") : "Weekday",
@@ -420,16 +420,16 @@ function useTicketLabels(lang: LangCode) {
     paramotor: isVI ? "Bay dù gắn động cơ" : isFR ? "Paramoteur" : isRU ? "Парамотор" : isHI ? "पैरामोटर" : isZH || isZHTW ? zh("动力伞", "動力傘") : "Paramotor",
     notSelected: isVI ? "Chưa chọn" : isFR ? "Non sélectionné" : isRU ? "Не выбрано" : isHI ? "चयन नहीं" : isZH || isZHTW ? zh("未选择", "未選擇") : "Not selected",
     safetyNote: isVI
-      ? "Vui lòng có mặt trước 15 phút để briefing an toàn."
+      ? "Vui lòng có mặt trước 15–30 phút để briefing an toàn."
       : isFR
-        ? "Veuillez arriver 15 minutes à l'avance pour le briefing de sécurité."
+        ? "Veuillez arriver 15 à 30 minutes à l'avance pour le briefing de sécurité."
         : isRU
-          ? "Пожалуйста, прибудьте за 15 минут до инструктажа по безопасности."
+          ? "Пожалуйста, прибудьте за 15–30 минут до инструктажа по безопасности."
           : isHI
-            ? "कृपया सुरक्षा ब्रीफिंग के लिए 15 मिनट पहले पहुँचें।"
+            ? "कृपया सुरक्षा ब्रीफिंग के लिए 15–30 मिनट पहले पहुँचें।"
             : isZH || isZHTW
-              ? zh("请提前15分钟到达参加安全简报。", "請提前15分鐘到達參加安全簡報。")
-              : "Please arrive 15 minutes early for safety briefing.",
+              ? zh("请提前 15–30 分钟到达参加安全简报。", "請提前 15–30 分鐘到達參加安全簡報。")
+              : "Please arrive 15–30 minutes early for safety briefing.",
     /** Hai dòng nhắc bắt buộc trên mọi vé đặt bay (chủ 17/09): thời tiết đổi bất ngờ + phản ánh gọi Hotline. */
     weatherNote: isVI
       ? "Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi xác nhận thời tiết bay trước khi xuất phát."

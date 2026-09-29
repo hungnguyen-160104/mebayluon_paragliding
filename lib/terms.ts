@@ -16,6 +16,11 @@
  * Khi sửa nội dung, hãy sửa ở văn bản gốc trước rồi mới đồng bộ sang đây, để
  * bản khách tích đồng ý trên web luôn khớp với bản giấy.
  *
+ * 30/09/2026 — CHỦ DOANH NGHIỆP CHỐT (qua điều phối) hai thay đổi so với bản
+ * PDF: (1) mục 4 — khách huỷ vì lý do cá nhân được hoàn tiền ĐẦY ĐỦ kể cả huỷ
+ * trong ngày, miễn báo trước giờ đón/giờ bay; (2) mục 7 — có mặt trước 15–30
+ * phút. Nhớ cập nhật bản giấy cho khớp.
+ *
  * Nội dung mục 1 (kể cả các điểm miễn trừ trách nhiệm) giữ nguyên theo văn
  * bản gốc của công ty. Muốn đổi thì đổi ở bản giấy trước rồi đồng bộ sang đây.
  */
@@ -206,8 +211,8 @@ const vi = `
 <ul>
   <li>Lịch bay có thể bị thay đổi, dời giờ hoặc huỷ do thời tiết xấu, gió không đảm bảo an toàn hoặc các yếu tố bất khả kháng khác. Trong những trường hợp này, khách được quyền đổi lịch hoặc huỷ bay hoàn toàn miễn phí. Khách cũng được đổi lịch hoặc huỷ bay miễn phí trong các trường hợp bất khả kháng hợp lý khác.</li>
   <li>Có những ngày thời tiết xấu làm chậm lịch bay, dẫn đến tình trạng dồn khách. Khi đó, chuyến bay của khách có thể bị dời lịch mà không thể báo trước. Khách đồng ý với sự sắp xếp lại lịch bay nhằm đảm bảo an toàn bay là ưu tiên cao nhất.</li>
-  <li>Nếu khách huỷ bay vì lý do cá nhân trong khi đã sử dụng một phần dịch vụ (ví dụ: đã kích hoạt bảo hiểm, đã sử dụng dịch vụ xe trung chuyển, đã sử dụng đồ uống hoặc các dịch vụ khác), khách đồng ý thanh toán đầy đủ các chi phí đã phát sinh.</li>
-  <li>Nếu khách huỷ hoặc đổi lịch vì lý do cá nhân làm ảnh hưởng đến hoạt động bay, gây gián đoạn vận hành, hoặc khi đội ngũ phi công và nhân sự đã sẵn sàng nhưng khách đột ngột đổi kế hoạch, khách phải chịu chi phí phát sinh tương ứng và chỉ được hoàn lại phần tiền còn lại sau khi trừ các chi phí hợp lý.</li>
+  <li>Khách đổi lịch hoặc huỷ bay vì lý do cá nhân được <b>hoàn tiền đầy đủ</b> (nếu đã thanh toán trước), <b>kể cả khi huỷ trong ngày bay</b>, với điều kiện khách báo trước giờ đón (nếu có đặt xe) hoặc trước giờ bay đã hẹn, qua hotline, Zalo, WhatsApp hoặc email.</li>
+  <li>Nếu khách không báo trước mà không có mặt, hoặc huỷ sau khi đã sử dụng một phần dịch vụ (ví dụ: xe đã đón, bảo hiểm đã kích hoạt, đồ uống hoặc dịch vụ khác đã dùng), khách thanh toán các chi phí thực tế đã phát sinh và được hoàn lại phần tiền còn lại (nếu đã thanh toán trước).</li>
   <li>Lịch bay được sắp xếp theo nguyên tắc <b>“đặt trước, phục vụ trước”</b>, do vậy đối với một số điểm bay (ví dụ: điểm bay Đèo Khau Phạ) vào ngày cao điểm có quá nhiều lượt đặt bay tại chỗ, lịch bay sẽ được sắp xếp theo thời điểm khách đặt dịch vụ. Vui lòng cân nhắc đặt lịch “càng sớm càng tốt” để đảm bảo quyền ưu tiên bay vào các đợt cao điểm.</li>
 </ul>
 
@@ -259,7 +264,7 @@ const vi = `
 <p><i>Các quy định bổ sung nhằm bảo đảm an toàn bay và vận hành, áp dụng cùng với các mục trên.</i></p>
 <ul>
   <li><b>Cân nặng và thể trạng.</b> Khách bay cần có cân nặng dưới 120 kg. Trường hợp trên 90 kg hoặc dưới 30 kg vui lòng thông báo trước để chúng tôi bố trí phi công và trang thiết bị phù hợp. Nếu cân nặng hoặc thể trạng thực tế khác đáng kể so với thông tin đã khai, phi công có quyền từ chối bay vì lý do an toàn và chuyến bay được coi là huỷ vì lý do cá nhân của khách.</li>
-  <li><b>Có mặt đúng giờ.</b> Khách vui lòng có mặt trước giờ bay ít nhất 15 phút để làm thủ tục và nghe hướng dẫn an toàn. Khách đến muộn quá 30 phút so với giờ hẹn mà không báo trước, hoặc không có mặt, được coi là huỷ bay vì lý do cá nhân và áp dụng quy định tại mục 4.</li>
+  <li><b>Có mặt đúng giờ.</b> Khách vui lòng có mặt trước giờ bay 15–30 phút để làm thủ tục và nghe hướng dẫn an toàn. Khách đến muộn quá 30 phút so với giờ hẹn mà không báo trước, hoặc không có mặt, được coi là huỷ bay không báo trước và áp dụng quy định tại mục 4.</li>
   <li><b>Khai báo trung thực.</b> Việc khai báo sai hoặc che giấu tình trạng sức khoẻ, cân nặng, độ tuổi là vi phạm điều khoản này. Đơn vị tổ chức không chịu trách nhiệm đối với hậu quả phát sinh từ thông tin sai lệch do khách cung cấp, và khách không được hoàn tiền trong trường hợp bị từ chối bay vì lý do đó.</li>
   <li><b>Quyền quyết định của phi công.</b> Quyết định cuối cùng về việc có bay hay không, thời điểm bay, đường bay và điểm hạ cánh thuộc về phi công tại hiện trường. Phi công có quyền dừng hoặc rút ngắn chuyến bay bất cứ lúc nào nếu nhận thấy yếu tố mất an toàn, và khách không được yêu cầu hoàn tiền vì lý do này.</li>
   <li><b>Bảo hiểm.</b> Mỗi chuyến bay đã bao gồm gói bảo hiểm tai nạn theo hợp đồng bảo hiểm mà đơn vị tổ chức đang tham gia. Phạm vi và mức chi trả thực hiện theo quy tắc của công ty bảo hiểm. Khách có nhu cầu mức bảo hiểm cao hơn vui lòng tự thu xếp bảo hiểm bổ sung trước ngày bay.</li>
@@ -320,8 +325,8 @@ const en = `
 <ul>
   <li>The flight schedule may be changed, rescheduled, or canceled due to bad weather, unsafe wind conditions, or other force majeure factors. In these cases, Passengers have the right to reschedule or cancel the flight completely free of charge. Passengers are also allowed to reschedule or cancel the flight free of charge in other reasonable force majeure cases.</li>
   <li>There are days when bad weather delays the flight schedule, leading to a backlog of Passengers. In that case, the Passenger's flight may be rescheduled without prior notice. The Passenger agrees to the rescheduling to ensure flight safety as the highest priority.</li>
-  <li>If the Passenger cancels the flight for personal reasons while having already used a part of the services (e.g., insurance has been activated, shuttle service has been used, drinks or other services have been consumed), the Passenger agrees to fully pay for the incurred costs.</li>
-  <li>If the Passenger cancels or reschedules for personal reasons affecting the flight operation, causing operational disruption, or when the pilot and staff team are ready but the Passenger suddenly changes the plan, the Passenger must bear the corresponding incurred costs and will only be refunded the remaining amount after deducting reasonable expenses.</li>
+  <li>Passengers who reschedule or cancel for personal reasons receive a <b>full refund</b> (of any prepaid amount), <b>even when cancelling on the day of the flight</b>, provided they notify us before the pickup time (if a transfer was booked) or before the scheduled flight time, by hotline, Zalo, WhatsApp or email.</li>
+  <li>If the Passenger does not show up without prior notice, or cancels after part of the services has already been used (e.g. the car has picked them up, insurance has been activated, drinks or other services have been consumed), the Passenger pays the actual costs incurred and any remaining prepaid amount is refunded.</li>
   <li>The flight schedule is arranged on a <b>“first come, first served”</b> basis; therefore for some flight sites (e.g., Khau Pha Pass) on peak days with too many on-site bookings, the schedule will be arranged according to the time the Passenger booked the service. Please consider booking “as soon as possible” to ensure priority flying during peak periods.</li>
 </ul>
 
@@ -373,7 +378,7 @@ const en = `
 <p><i>Additional provisions ensuring flight safety and operations, applied together with the sections above.</i></p>
 <ul>
   <li><b>Weight and physical condition.</b> Passengers must weigh under 120 kg. For passengers over 90 kg or under 30 kg, please inform us in advance so we can assign a suitable pilot and equipment. If actual weight or physical condition differs significantly from the information declared, the pilot may refuse the flight for safety reasons and the flight is treated as cancelled for the Passenger's personal reasons.</li>
-  <li><b>Punctuality.</b> Please arrive at least 15 minutes before the flight for check-in and the safety briefing. Arriving more than 30 minutes late without notice, or not arriving at all, is treated as cancellation for personal reasons and section 4 applies.</li>
+  <li><b>Punctuality.</b> Please arrive 15–30 minutes before the flight for check-in and the safety briefing. Arriving more than 30 minutes late without notice, or not arriving at all, is treated as a cancellation without notice and section 4 applies.</li>
   <li><b>Truthful declaration.</b> Misdeclaring or concealing health condition, weight or age is a breach of these terms. The organizing unit is not responsible for consequences arising from inaccurate information provided by the Passenger, and no refund is given if the flight is refused for that reason.</li>
   <li><b>Pilot's authority.</b> The final decision on whether to fly, when to fly, the flight path and the landing area rests with the pilot on site. The pilot may abort or shorten the flight at any time if safety is at risk, and no refund may be claimed on this ground.</li>
   <li><b>Insurance.</b> Each flight includes accident insurance under the policy held by the organizing unit. Scope and payout follow the insurer's rules. Passengers wanting higher coverage should arrange supplementary insurance before the flight date.</li>
@@ -434,8 +439,8 @@ const fr = `
 <ul>
   <li>Le vol puisse être modifié, décalé ou annulé pour mauvais temps, vent non sécuritaire ou tout autre cas de force majeure. Dans ces cas, le report ou l'annulation est entièrement gratuit. Il en va de même pour tout autre cas de force majeure raisonnable.</li>
   <li>Certains jours, le mauvais temps retarde les vols et crée une file d'attente. Le vol peut alors être reprogrammé sans préavis. Le passager accepte cette réorganisation, la sécurité restant la priorité absolue.</li>
-  <li>Si le passager annule pour convenance personnelle après avoir déjà utilisé une partie des services (assurance activée, navette utilisée, boissons ou autres prestations consommées), il s'engage à régler intégralement les frais engagés.</li>
-  <li>Si l'annulation ou le report pour convenance personnelle perturbe l'exploitation, ou intervient alors que l'équipe est déjà prête, le passager supporte les frais correspondants et n'est remboursé que du solde après déduction des dépenses raisonnables.</li>
+  <li>Le passager qui reporte ou annule pour convenance personnelle est <b>intégralement remboursé</b> (des sommes déjà versées), <b>même en cas d'annulation le jour du vol</b>, à condition de nous prévenir avant l'heure de prise en charge (si un transfert est réservé) ou avant l'heure de vol prévue, par téléphone, Zalo, WhatsApp ou e-mail.</li>
+  <li>En cas d'absence sans prévenir, ou d'annulation après avoir déjà utilisé une partie des services (véhicule déjà venu le chercher, assurance activée, boissons ou autres prestations consommées), le passager règle les frais réellement engagés et le solde éventuellement versé lui est remboursé.</li>
   <li>Les vols sont organisés selon le principe <b>« premier réservé, premier servi »</b> ; sur certains sites (par exemple le col de Khau Pha), en période de forte affluence, l'ordre suit l'heure de réservation. Réservez « le plus tôt possible » pour être prioritaire.</li>
 </ul>
 
@@ -487,7 +492,7 @@ const fr = `
 <p><i>Dispositions complémentaires garantissant la sécurité et l'exploitation, applicables avec les sections ci-dessus.</i></p>
 <ul>
   <li><b>Poids et condition physique.</b> Le passager doit peser moins de 120 kg. Au-delà de 90 kg ou en dessous de 30 kg, merci de nous prévenir afin d'affecter un pilote et un matériel adaptés. Si le poids ou la condition réelle diffère nettement des informations déclarées, le pilote peut refuser le vol pour raisons de sécurité ; le vol est alors traité comme une annulation pour convenance personnelle.</li>
-  <li><b>Ponctualité.</b> Merci d'arriver au moins 15 minutes avant le vol pour l'enregistrement et le briefing. Un retard de plus de 30 minutes sans prévenir, ou une absence, équivaut à une annulation pour convenance personnelle ; la section 4 s'applique.</li>
+  <li><b>Ponctualité.</b> Merci d'arriver 15 à 30 minutes avant le vol pour l'enregistrement et le briefing. Un retard de plus de 30 minutes sans prévenir, ou une absence, équivaut à une annulation sans préavis ; la section 4 s'applique.</li>
   <li><b>Déclaration sincère.</b> Déclarer faussement ou dissimuler son état de santé, son poids ou son âge constitue une violation des présentes conditions. L'organisateur n'est pas responsable des conséquences d'informations inexactes fournies par le passager, et aucun remboursement n'est accordé si le vol est refusé pour ce motif.</li>
   <li><b>Autorité du pilote.</b> La décision finale de voler ou non, l'horaire, la trajectoire et la zone d'atterrissage relèvent du pilote sur place. Le pilote peut interrompre ou écourter le vol à tout moment en cas de risque, sans que cela ouvre droit à remboursement.</li>
   <li><b>Assurance.</b> Chaque vol inclut une assurance accident selon le contrat souscrit par l'organisateur. L'étendue et les montants suivent les règles de l'assureur. Pour une couverture supérieure, souscrivez une assurance complémentaire avant la date du vol.</li>
@@ -548,8 +553,8 @@ const ru = `
 <ul>
   <li>Полёт может быть изменён, перенесён или отменён из-за плохой погоды, небезопасного ветра или иных обстоятельств непреодолимой силы. В этих случаях перенос или отмена полностью бесплатны. То же касается других разумных форс-мажорных обстоятельств.</li>
   <li>В отдельные дни непогода задерживает расписание и создаёт очередь. Полёт может быть перенесён без предварительного уведомления. Гость соглашается с таким переносом, поскольку безопасность имеет наивысший приоритет.</li>
-  <li>Если гость отменяет полёт по личным причинам, уже воспользовавшись частью услуг (активирована страховка, использован трансфер, напитки или иные услуги), он обязуется полностью оплатить понесённые расходы.</li>
-  <li>Если отмена или перенос по личным причинам нарушает работу площадки либо происходит, когда пилот и команда уже готовы, гость несёт соответствующие расходы, и возвращается лишь остаток после вычета разумных затрат.</li>
+  <li>Гость, переносящий или отменяющий полёт по личным причинам, получает <b>полный возврат</b> (уже оплаченной суммы), <b>даже при отмене в день полёта</b>, если сообщит об этом до времени трансфера (если он заказан) или до назначенного времени полёта — по телефону, Zalo, WhatsApp или e-mail.</li>
+  <li>Если гость не явился без предупреждения или отменяет полёт, уже воспользовавшись частью услуг (машина уже забрала гостя, страховка активирована, напитки или иные услуги использованы), он оплачивает фактически понесённые расходы, а остаток предоплаты возвращается.</li>
   <li>Расписание формируется по принципу <b>«кто раньше забронировал, тот летит первым»</b>. На отдельных площадках (например, перевал Кхау Фа) в пиковые дни очередь определяется временем бронирования. Бронируйте «как можно раньше», чтобы получить приоритет.</li>
 </ul>
 
@@ -601,7 +606,7 @@ const ru = `
 <p><i>Дополнительные положения, обеспечивающие безопасность и работу площадки; применяются вместе с разделами выше.</i></p>
 <ul>
   <li><b>Вес и физическое состояние.</b> Вес гостя должен быть менее 120 кг. При весе свыше 90 кг или менее 30 кг просим сообщить заранее, чтобы подобрать пилота и снаряжение. Если фактический вес или состояние существенно отличаются от заявленных, пилот вправе отказать в полёте по соображениям безопасности; полёт считается отменённым по личным причинам гостя.</li>
-  <li><b>Пунктуальность.</b> Просим прибыть не позднее чем за 15 минут до полёта для регистрации и инструктажа. Опоздание более чем на 30 минут без предупреждения либо неявка приравниваются к отмене по личным причинам, применяется раздел 4.</li>
+  <li><b>Пунктуальность.</b> Просим прибыть за 15–30 минут до полёта для регистрации и инструктажа. Опоздание более чем на 30 минут без предупреждения либо неявка приравниваются к отмене без предупреждения, применяется раздел 4.</li>
   <li><b>Достоверность сведений.</b> Сообщение недостоверных сведений или сокрытие состояния здоровья, веса, возраста является нарушением настоящих условий. Организатор не отвечает за последствия недостоверной информации, предоставленной гостем; при отказе в полёте по этой причине возврат средств не производится.</li>
   <li><b>Полномочия пилота.</b> Окончательное решение о полёте, его времени, маршруте и месте приземления принимает пилот на месте. Пилот вправе прервать или сократить полёт в любой момент при угрозе безопасности; возврат средств по этому основанию не производится.</li>
   <li><b>Страхование.</b> Каждый полёт включает страхование от несчастного случая по договору, заключённому организатором. Объём и размер выплат определяются правилами страховой компании. Для большего покрытия оформите дополнительную страховку до даты полёта.</li>
@@ -662,8 +667,8 @@ const zh = `
 <ul>
   <li>航班安排可能会因恶劣天气、风力无法确保安全或其他不可抗力因素而被更改、推迟或取消。在这些情况下，客户有权完全免费地更改日期或取消飞行。在其他合理的不可抗力情况下，客户也可以免费更改日期或取消飞行。</li>
   <li>有些日子恶劣的天气会延误航班安排，导致客流拥挤。届时，客户的航班可能会被重新安排，且无法提前通知。客户同意重新安排航班，将确保飞行安全作为最高优先级。</li>
-  <li>如果客户因个人原因取消飞行，而已经使用了部分服务（例如：已激活保险、已使用接送车服务、已使用饮料或其他服务），客户同意全额支付已产生的费用。</li>
-  <li>如果客户因个人原因取消或改期，影响飞行活动，导致运营中断，或者在飞行员和工作人员团队已准备就绪时客户突然改变计划，客户必须承担相应的产生费用，并且在扣除合理费用后才能退还剩余款项。</li>
+  <li>客户因个人原因改期或取消飞行，只要在接送时间（如已预订接送）或约定的飞行时间之前通过热线、Zalo、WhatsApp 或电子邮件告知我们，<b>即使在飞行当天取消，也可获得全额退款</b>（已预付的款项）。</li>
+  <li>如客户未提前告知且未到场，或在已使用部分服务后取消（例如：接送车已接客、保险已激活、已使用饮料或其他服务），客户需支付实际产生的费用，其余已预付款项将予以退还。</li>
   <li>航班安排遵循<b>“先预订，先服务”</b>的原则，因此对于某些飞行点（例如：Khau Pha 垭口飞行点），在高峰期有大量现场预订，航班将根据客户预订服务的时间进行安排。请考虑“尽早”预订，以确保在高峰期的优先飞行权。</li>
 </ul>
 
@@ -715,7 +720,7 @@ const zh = `
 <p><i>以下补充规定用于保障飞行安全与运营，与上述各节一并适用。</i></p>
 <ul>
   <li><b>体重与身体状况。</b>乘客体重须低于 120 公斤。超过 90 公斤或低于 30 公斤，请提前告知，以便我们安排合适的飞行员和装备。若实际体重或身体状况与申报信息有明显出入，飞行员有权出于安全原因拒绝飞行，该次飞行视为因客户个人原因取消。</li>
-  <li><b>准时到达。</b>请于飞行前至少 15 分钟抵达办理登记并听取安全讲解。未提前告知而迟到超过 30 分钟，或未到场者，视为因个人原因取消，适用第 4 节规定。</li>
+  <li><b>准时到达。</b>请于飞行前 15–30 分钟抵达办理登记并听取安全讲解。未提前告知而迟到超过 30 分钟，或未到场者，视为未提前告知的取消，适用第 4 节规定。</li>
   <li><b>如实申报。</b>虚报或隐瞒健康状况、体重、年龄属违反本条款。对因客户提供不实信息而产生的后果，组织单位不承担责任；因此被拒绝飞行的，不予退款。</li>
   <li><b>飞行员的决定权。</b>是否飞行、何时飞行、航线及降落场地的最终决定权归现场飞行员。若发现安全隐患，飞行员可随时中止或缩短飞行，客户不得以此要求退款。</li>
   <li><b>保险。</b>每次飞行均已包含组织单位所投保的意外保险。保障范围与赔付标准依保险公司条款执行。如需更高保额，请在飞行日前自行另行投保。</li>
@@ -776,8 +781,8 @@ const hi = `
 <ul>
   <li>ख़राब मौसम, असुरक्षित हवा या अन्य अपरिहार्य कारणों से उड़ान बदली, टाली या रद्द की जा सकती है। ऐसे मामलों में पुनर्निर्धारण या रद्दीकरण पूर्णतः निःशुल्क है। अन्य उचित अपरिहार्य परिस्थितियों में भी यही लागू है।</li>
   <li>कुछ दिन ख़राब मौसम से उड़ानें विलंबित होती हैं और भीड़ बन जाती है। तब उड़ान बिना पूर्व सूचना के पुनर्निर्धारित हो सकती है। सुरक्षा सर्वोपरि होने के कारण यात्री इससे सहमत होता है।</li>
-  <li>यदि यात्री व्यक्तिगत कारणों से रद्द करता है जबकि कुछ सेवाएँ पहले ही उपयोग हो चुकी हैं (बीमा सक्रिय, शटल सेवा, पेय या अन्य सेवाएँ), तो वह हुए ख़र्च का पूरा भुगतान करने पर सहमत है।</li>
-  <li>यदि व्यक्तिगत कारणों से रद्दीकरण या बदलाव संचालन को बाधित करता है, या पायलट और टीम तैयार होने के बाद यात्री अचानक योजना बदलता है, तो संबंधित ख़र्च यात्री वहन करेगा और उचित ख़र्च काटकर शेष राशि लौटाई जाएगी।</li>
+  <li>व्यक्तिगत कारणों से उड़ान बदलने या रद्द करने वाले यात्री को <b>पूरा रिफ़ंड</b> (पहले से चुकाई गई राशि का) मिलेगा, <b>उड़ान के दिन रद्द करने पर भी</b>, बशर्ते वह पिकअप समय (यदि ट्रांसफ़र बुक है) या तय उड़ान समय से पहले हॉटलाइन, Zalo, WhatsApp या ईमेल से सूचित करे।</li>
+  <li>यदि यात्री बिना सूचना के नहीं आता, या कुछ सेवाएँ उपयोग होने के बाद रद्द करता है (जैसे गाड़ी लेने आ चुकी हो, बीमा सक्रिय हो चुका हो, पेय या अन्य सेवाएँ उपयोग हो चुकी हों), तो वह वास्तविक ख़र्च का भुगतान करेगा और शेष अग्रिम राशि लौटाई जाएगी।</li>
   <li>उड़ानें <b>“पहले बुक करें, पहले उड़ें”</b> के आधार पर तय होती हैं। कुछ स्थलों (जैसे खाउ फ़ा दर्रा) पर व्यस्त दिनों में क्रम बुकिंग के समय से तय होगा। प्राथमिकता के लिए “जितनी जल्दी हो सके” बुक करें।</li>
 </ul>
 
@@ -829,7 +834,7 @@ const hi = `
 <p><i>उड़ान सुरक्षा और संचालन सुनिश्चित करने वाले अतिरिक्त प्रावधान, ऊपर के अनुभागों के साथ लागू।</i></p>
 <ul>
   <li><b>वज़न और शारीरिक स्थिति।</b> यात्री का वज़न 120 किग्रा से कम होना चाहिए। 90 किग्रा से अधिक या 30 किग्रा से कम होने पर कृपया पहले सूचित करें ताकि उपयुक्त पायलट व उपकरण की व्यवस्था हो सके। यदि वास्तविक वज़न या स्थिति घोषित जानकारी से काफ़ी भिन्न हो, तो पायलट सुरक्षा कारणों से उड़ान से मना कर सकता है और उसे यात्री के व्यक्तिगत कारण से रद्दीकरण माना जाएगा।</li>
-  <li><b>समय पर पहुँचना।</b> चेक-इन और सुरक्षा ब्रीफ़िंग के लिए उड़ान से कम से कम 15 मिनट पहले पहुँचें। बिना सूचना 30 मिनट से अधिक देरी या अनुपस्थिति को व्यक्तिगत कारण से रद्दीकरण माना जाएगा और अनुभाग 4 लागू होगा।</li>
+  <li><b>समय पर पहुँचना।</b> चेक-इन और सुरक्षा ब्रीफ़िंग के लिए उड़ान से 15–30 मिनट पहले पहुँचें। बिना सूचना 30 मिनट से अधिक देरी या अनुपस्थिति को बिना सूचना रद्दीकरण माना जाएगा और अनुभाग 4 लागू होगा।</li>
   <li><b>सही जानकारी देना।</b> स्वास्थ्य, वज़न या आयु के बारे में ग़लत जानकारी देना या छिपाना इन शर्तों का उल्लंघन है। यात्री द्वारा दी गई ग़लत जानकारी से उत्पन्न परिणामों के लिए आयोजक उत्तरदायी नहीं है, और इस कारण उड़ान से मना करने पर धनवापसी नहीं होगी।</li>
   <li><b>पायलट का अधिकार।</b> उड़ान भरनी है या नहीं, कब भरनी है, मार्ग और लैंडिंग स्थल का अंतिम निर्णय मौके पर मौजूद पायलट का होता है। सुरक्षा जोखिम दिखने पर पायलट किसी भी समय उड़ान रोक या छोटी कर सकता है; इस आधार पर धनवापसी का दावा नहीं किया जा सकता।</li>
   <li><b>बीमा।</b> प्रत्येक उड़ान में आयोजक द्वारा ली गई दुर्घटना बीमा पॉलिसी शामिल है। दायरा और भुगतान बीमा कंपनी के नियमों के अनुसार होगा। अधिक कवरेज चाहने पर उड़ान की तिथि से पहले स्वयं अतिरिक्त बीमा कराएँ।</li>

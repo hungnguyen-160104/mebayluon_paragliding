@@ -23,7 +23,7 @@
  * Khớp theo căn cứ nào cũng ghi rõ ra để kế toán biết mức tin cậy mà soát lại.
  */
 
-import { toAsciiNote } from "@/lib/vietqr";
+import { COMPANY_BANK_ACCOUNT, toAsciiNote } from "@/lib/vietqr";
 
 /* ================================================================== */
 /* BÓC TÁCH sao kê dán vào                                             */
@@ -427,14 +427,26 @@ function ascii(s: string): string {
 /**
  * SỐ TÀI KHOẢN NHẬN TIỀN CỦA CÔNG TY — phải CHE ĐI trước khi dò mã giao dịch.
  *
- * Khách hay gõ số tài khoản nhận vào nội dung CK ("ND: 8875639685 TRAN LAN ANH
- * chuyen tien"). Nhân viên ghi mã "39685" — tình cờ là ĐUÔI của chính số tài
+ * Khách hay gõ số tài khoản nhận vào nội dung CK ("ND: <số TK> TRAN LAN ANH
+ * chuyen tien"). Nhân viên ghi mã giao dịch tình cờ trùng ĐUÔI của chính số tài
  * khoản — thế là MỌI dòng sao kê có gõ số TK đều "trùng đuôi mã" và bị hút về
  * một booking: một booking dính 6 sao kê của 6 khách lạ, bắt được thật 23/08.
  *
- * Số này in công khai trên phiếu QR gửi khách nên không phải bí mật.
+ * KHÔNG ghi cứng số tài khoản ở đây (chủ chốt 30/09/2026: xoá số TK cá nhân
+ * khỏi mã nguồn). Danh sách gồm:
+ *  - tài khoản công ty trong lib/vietqr.ts (COMPANY_BANK_ACCOUNT), và
+ *  - biến môi trường BANK_CHECK_MASK_ACCOUNTS (các số cách nhau dấu phẩy) —
+ *    ĐẶT số tài khoản nhận tiền cũ vào đây trên máy chủ để sao kê cũ vẫn được
+ *    che đúng như trước.
+ * Chỉ dùng ở máy chủ (services/bank-check.service.ts); ở trình duyệt biến môi
+ * trường không có nên danh sách chỉ còn tài khoản công ty — không sao.
  */
-export const COMPANY_BANK_ACCOUNTS = ["8875639685"];
+export const COMPANY_BANK_ACCOUNTS: string[] = [
+  COMPANY_BANK_ACCOUNT?.accountNumber ?? "",
+  ...(process.env.BANK_CHECK_MASK_ACCOUNTS ?? "").split(","),
+]
+  .map((x) => x.replace(/\D/g, ""))
+  .filter((x) => x.length >= 6);
 
 /**
  * Che các số TK công ty trong chuỗi sao kê TRƯỚC KHI bóc dãy chữ-số để dò mã

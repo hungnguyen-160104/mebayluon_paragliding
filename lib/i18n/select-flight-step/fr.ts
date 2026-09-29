@@ -77,11 +77,11 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
     daNangMountainWarning:
       "Nous recommandons fortement d’utiliser le service de transfert vers la montagne pour plus de sécurité et de flexibilité.",
     paraglidingNoPickupWarning:
-      "REMARQUE : Le vol ne comprend pas la navette montée/descente. Veuillez arriver au point de décollage 15 minutes avant le vol.",
+      "REMARQUE : Le vol ne comprend pas la navette montée/descente. Veuillez arriver au point de décollage 15 à 30 minutes avant le vol.",
     paramotorNoPickupWarning:
-      "REMARQUE : Le vol ne comprend pas le transport jusqu’au point de vol. Veuillez arriver au Clubhouse Mebayluon 15 minutes avant le vol.",
+      "REMARQUE : Le vol ne comprend pas le transport jusqu’au point de vol. Veuillez arriver au Clubhouse Mebayluon 15 à 30 minutes avant le vol.",
     quanBaPickupWarning:
-      "Remarque : le billet inclut déjà le transfert aller-retour dans la zone de Quan Ba. Si vous le décochez et venez par vos propres moyens, merci d'arriver au point de rendez-vous 15 minutes avant.",
+      "Remarque : le billet inclut déjà le transfert aller-retour dans la zone de Quan Ba. Si vous le décochez et venez par vos propres moyens, merci d'arriver au point de rendez-vous 15 à 30 minutes avant.",
     selectedFlightLabel: "Vol sélectionné",
     selectedOptionsLabel: "Services sélectionnés",
     noOptionalSelected: "Aucun service optionnel sélectionné.",

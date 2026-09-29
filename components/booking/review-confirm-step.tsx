@@ -12,6 +12,7 @@ import { useBookingText, useLangCode } from "@/lib/booking/translations-booking"
 import { createBooking } from "@/lib/booking/api";
 import { notifyTelegram } from "@/lib/booking/chatbot-api";
 import { TERMS_HTML, type LangCode } from "@/lib/terms";
+import { PRICE_TAX_NOTE } from "@/lib/legal-entity";
 import { shortServiceLabel } from "@/lib/booking/service-label";
 import TurnstileWidget from "@/components/booking/turnstile-widget";
 import BookingTicket from "@/components/booking/BookingTicket";
@@ -127,7 +128,7 @@ const UI_I18N: Record<
     flightTypeLabel: "Loại bay",
     pickupDetails: "Thông tin đón / trả",
     noPickupSelected:
-      "Chuyến bay không bao gồm xe trung chuyển đến điểm bay. Khách cần có mặt trước 15 phút để check-in.",
+      "Chuyến bay không bao gồm xe trung chuyển đến điểm bay. Khách cần có mặt trước 15–30 phút để check-in.",
     pickupAddressMissing: "Vui lòng nhập đầy đủ địa chỉ đón cho dịch vụ đã chọn.",
     paragliding: "Bay dù không động cơ",
     paramotor: "Bay dù gắn động cơ",
@@ -172,7 +173,7 @@ const UI_I18N: Record<
     preFlightNotes: [
       "Thời tiết bay có thể thay đổi bất ngờ không báo trước — Quý khách vui lòng gọi xác nhận thời tiết bay trước khi xuất phát.",
       "Mọi phản ánh dịch vụ vui lòng gọi trực tiếp tới Hotline 0964.073.555 (Mr. Mỹ – Phi công trưởng) – 0385.907.789 (Ms. Duyên – Điều phối bay) để được hỗ trợ kịp thời.",
-      "Vui lòng có mặt tại điểm bay trước giờ cất cánh ít nhất 15 phút để hoàn tất thủ tục check-in.",
+      "Vui lòng có mặt tại điểm bay trước giờ cất cánh 15–30 phút để hoàn tất thủ tục check-in.",
       "Mang theo giấy tờ tùy thân (CMND/CCCD hoặc Hộ chiếu) để xác minh thông tin.",
       "Mặc trang phục thoải mái, đi giày thể thao hoặc giày bệt. Tránh mang dép lê, giày cao gót.",
       "Không mang theo vật dụng sắc nhọn, dễ rơi hoặc có giá trị cao khi bay.",
@@ -191,7 +192,7 @@ const UI_I18N: Record<
     flightTypeLabel: "Flight type",
     pickupDetails: "Pickup details",
     noPickupSelected:
-      "This flight does not include transfer to the takeoff point. Please arrive 15 minutes early for check-in.",
+      "This flight does not include transfer to the takeoff point. Please arrive 15–30 minutes early for check-in.",
     pickupAddressMissing: "Please provide the pickup address for the selected service.",
     paragliding: "Paragliding",
     paramotor: "Paramotor",
@@ -236,7 +237,7 @@ const UI_I18N: Record<
     preFlightNotes: [
       "Flying weather can change suddenly without notice — please call to confirm flying conditions before you set off.",
       "For any service feedback, please call our Hotline 0964.073.555 (Mr. Mỹ – Phi công trưởng) – 0385.907.789 (Ms. Duyên – Điều phối bay) directly so we can help right away.",
-      "Please arrive at the flight site at least 15 minutes before takeoff to complete check-in.",
+      "Please arrive at the flight site 15–30 minutes before takeoff to complete check-in.",
       "Bring valid ID (National ID or Passport) for verification.",
       "Wear comfortable clothes and sneakers or flat shoes. Avoid flip-flops or high heels.",
       "Do not bring sharp objects, items that may fall, or high-value items during the flight.",
@@ -255,7 +256,7 @@ const UI_I18N: Record<
     flightTypeLabel: "Type de vol",
     pickupDetails: "Informations de prise en charge",
     noPickupSelected:
-      "Ce vol ne comprend pas le transfert vers le point de départ. Veuillez arriver 15 minutes à l'avance pour l'enregistrement.",
+      "Ce vol ne comprend pas le transfert vers le point de départ. Veuillez arriver 15 à 30 minutes à l'avance pour l'enregistrement.",
     pickupAddressMissing:
       "Veuillez renseigner l'adresse de prise en charge pour le service sélectionné.",
     paragliding: "Parapente",
@@ -301,7 +302,7 @@ const UI_I18N: Record<
     preFlightNotes: [
       "La météo de vol peut changer brusquement sans préavis — merci d'appeler pour confirmer les conditions avant de partir.",
       "Pour toute remarque sur le service, appelez directement la Hotline 0964.073.555 (Mr. Mỹ – Phi công trưởng) – 0385.907.789 (Ms. Duyên – Điều phối bay) pour une aide immédiate.",
-      "Veuillez arriver sur le site de vol au moins 15 minutes avant le décollage pour l'enregistrement.",
+      "Veuillez arriver sur le site de vol 15 à 30 minutes avant le décollage pour l'enregistrement.",
       "Apportez une pièce d'identité valide (carte nationale ou passeport) pour vérification.",
       "Portez des vêtements confortables et des chaussures de sport ou plates. Évitez les tongs ou talons hauts.",
       "Ne transportez pas d'objets pointus, d'objets pouvant tomber ou d'objets de grande valeur pendant le vol.",
@@ -320,7 +321,7 @@ const UI_I18N: Record<
     flightTypeLabel: "Тип полёта",
     pickupDetails: "Информация о трансфере",
     noPickupSelected:
-      "Этот полёт не включает трансфер до точки старта. Пожалуйста, прибудьте за 15 минут до регистрации.",
+      "Этот полёт не включает трансфер до точки старта. Пожалуйста, прибудьте за 15–30 минут до регистрации.",
     pickupAddressMissing: "Пожалуйста, укажите адрес трансфера для выбранной услуги.",
     paragliding: "Параплан",
     paramotor: "Парамотор",
@@ -365,7 +366,7 @@ const UI_I18N: Record<
     preFlightNotes: [
       "Лётная погода может резко измениться без предупреждения — пожалуйста, позвоните и уточните условия перед выездом.",
       "По любым вопросам о сервисе звоните напрямую на горячую линию 0964.073.555 (г-н Mỹ – старший пилот) – 0385.907.789 (г-жа Duyên – координатор полётов) — поможем сразу.",
-      "Пожалуйста, прибудьте на место полёта минимум за 15 минут до взлёта для регистрации.",
+      "Пожалуйста, прибудьте на место полёта за 15–30 минут до взлёта для регистрации.",
       "Возьмите с собой удостоверение личности (паспорт или ID-карту) для проверки.",
       "Наденьте удобную одежду и кроссовки или плоскую обувь. Избегайте шлёпанцев или каблуков.",
       "Не берите острые предметы, вещи, которые могут упасть, или ценные вещи на полёт.",
@@ -384,7 +385,7 @@ const UI_I18N: Record<
     flightTypeLabel: "फ्लाइट प्रकार",
     pickupDetails: "पिकअप जानकारी",
     noPickupSelected:
-      "इस फ्लाइट में टेकऑफ पॉइंट तक ट्रांसफर शामिल नहीं है। कृपया चेक-इन के लिए 15 मिनट पहले पहुँचें।",
+      "इस फ्लाइट में टेकऑफ पॉइंट तक ट्रांसफर शामिल नहीं है। कृपया चेक-इन के लिए 15–30 मिनट पहले पहुँचें।",
     pickupAddressMissing: "कृपया चुनी गई सेवा के लिए पिकअप पता भरें।",
     paragliding: "पैराग्लाइडिंग",
     paramotor: "पैरामोटर",
@@ -429,7 +430,7 @@ const UI_I18N: Record<
     preFlightNotes: [
       "उड़ान का मौसम बिना सूचना अचानक बदल सकता है — कृपया निकलने से पहले फ़ोन करके मौसम की पुष्टि करें।",
       "सेवा से जुड़ी किसी भी शिकायत के लिए सीधे हॉटलाइन 0964.073.555 (श्री Mỹ – मुख्य पायलट) – 0385.907.789 (सुश्री Duyên – उड़ान समन्वयक) पर कॉल करें, हम तुरंत सहायता करेंगे।",
-      "कृपया चेक-इन के लिए टेकऑफ से कम से कम 15 मिनट पहले उड़ान स्थल पर पहुँचें।",
+      "कृपया चेक-इन के लिए टेकऑफ से 15–30 मिनट पहले उड़ान स्थल पर पहुँचें।",
       "सत्यापन के लिए वैध पहचान पत्र (राष्ट्रीय आईडी या पासपोर्ट) साथ लाएं।",
       "आरामदायक कपड़े और स्नीकर्स या फ्लैट जूते पहनें। फ्लिप-फ्लॉप या हाई हील्स से बचें।",
       "उड़ान के दौरान तेज धार वाली वस्तुएं, गिरने वाली वस्तुएं या उच्च मूल्य की वस्तुएं न लाएं।",
@@ -448,7 +449,7 @@ const UI_I18N: Record<
     flightTypeLabel: "飞行类型",
     pickupDetails: "接送信息",
     noPickupSelected:
-      "该飞行不包含前往起飞点的接送服务。请提前 15 分钟到达办理登记。",
+      "该飞行不包含前往起飞点的接送服务。请提前 15–30 分钟到达办理登记。",
     pickupAddressMissing: "请选择接送服务后填写接送地址。",
     paragliding: "无动力滑翔伞",
     paramotor: "动力伞",
@@ -493,7 +494,7 @@ const UI_I18N: Record<
     preFlightNotes: [
       "飞行天气可能突然变化、恕不另行通知——出发前请致电确认飞行天气。",
       "如对服务有任何反馈，请直接致电热线 0964.073.555（Mỹ 先生 – 首席飞行员）– 0385.907.789（Duyên 女士 – 飞行协调），我们会及时协助。",
-      "请至少提前15分钟到达飞行现场完成登记手续。",
+      "请提前 15–30 分钟到达飞行现场完成登记手续。",
       "请携带有效身份证件（身份证或护照）进行验证。",
       "请穿着舒适的衣物和运动鞋或平底鞋。避免穿拖鞋或高跟鞋。",
       "飞行时请勿携带尖锐物品、易掉落物品或贵重物品。",
@@ -1820,6 +1821,14 @@ export default function ReviewConfirmStep() {
                     </span>
                   </span>
                 </div>
+
+                {/* Giá đã gồm/chưa gồm thuế, phí — điền ở PRICE_TAX_NOTE
+                    (lib/legal-entity.ts); còn null thì không hiện. */}
+                {PRICE_TAX_NOTE ? (
+                  <p className="text-right text-xs text-[#5B6B7A]">
+                    {lang === "vi" ? PRICE_TAX_NOTE.vi : PRICE_TAX_NOTE.en}
+                  </p>
+                ) : null}
               </div>
             </section>
           </div>

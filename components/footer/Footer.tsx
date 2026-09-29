@@ -26,6 +26,10 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage, type Language } from "@/contexts/language-context";
+import { BctNoticeBadge } from "@/components/bct-notice-badge";
+import { LEGAL_ENTITY } from "@/lib/legal-entity";
+import { POLICY_NAV_LABELS } from "@/lib/policies/nav";
+import { POLICY_SLUGS } from "@/lib/policies/shared";
 
 /**
  * Link điểm bay ở footer — trỏ thẳng vào trang điểm bay chuẩn.
@@ -116,6 +120,17 @@ type FooterDict = {
   terms: string;
   license: string;
   rightsReserved: string;
+  /** Khối thông tin pháp nhân (bắt buộc với website TMĐT — NĐ 52/2013). */
+  legal: {
+    title: string;
+    code: string;
+    firstIssued: string;
+    issuedBy: string;
+    office: string;
+    representative: string;
+    phone: string;
+    policies: string;
+  };
 };
 
 const DICT: Record<Language, FooterDict> = {
@@ -141,6 +156,16 @@ const DICT: Record<Language, FooterDict> = {
     license:
       "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham Mưu, Bộ Quốc Phòng Việt Nam.",
     rightsReserved: "Đã đăng ký bản quyền.",
+    legal: {
+      title: "Thông tin doanh nghiệp",
+      code: "Mã số doanh nghiệp / MST",
+      firstIssued: "đăng ký lần đầu ngày",
+      issuedBy: "Nơi cấp",
+      office: "Trụ sở chính",
+      representative: "Người đại diện theo pháp luật",
+      phone: "Điện thoại",
+      policies: "Chính sách & điều khoản",
+    },
   },
   en: {
     slogan: "Experience the best paragliding in Vietnam",
@@ -164,6 +189,16 @@ const DICT: Record<Language, FooterDict> = {
     license:
       "Flight operations are licensed by the Combat Operations Department – General Staff, Ministry of National Defense of Vietnam.",
     rightsReserved: "All rights reserved.",
+    legal: {
+      title: "Company information",
+      code: "Enterprise code / Tax code",
+      firstIssued: "first registered on",
+      issuedBy: "Issued by",
+      office: "Head office",
+      representative: "Legal representative",
+      phone: "Phone",
+      policies: "Policies & terms",
+    },
   },
   fr: {
     slogan: "Découvrez la meilleure expérience de parapente au Vietnam",
@@ -187,6 +222,16 @@ const DICT: Record<Language, FooterDict> = {
     license:
       "Les opérations de vol sont autorisées par le Département des opérations de combat – État-major général, Ministère de la Défense nationale du Vietnam.",
     rightsReserved: "Tous droits réservés.",
+    legal: {
+      title: "Informations sur l’entreprise",
+      code: "Code d’entreprise / N° fiscal",
+      firstIssued: "première immatriculation le",
+      issuedBy: "Délivré par",
+      office: "Siège social",
+      representative: "Représentant légal",
+      phone: "Téléphone",
+      policies: "Politiques & conditions",
+    },
   },
   ru: {
     slogan: "Лучший парапланеризм во Вьетнаме",
@@ -210,6 +255,16 @@ const DICT: Record<Language, FooterDict> = {
     license:
       "Полёты лицензированы Управлением боевых операций Генерального штаба Министерства национальной обороны Вьетнама.",
     rightsReserved: "Все права защищены.",
+    legal: {
+      title: "Сведения о компании",
+      code: "Код предприятия / ИНН",
+      firstIssued: "первичная регистрация",
+      issuedBy: "Выдан",
+      office: "Головной офис",
+      representative: "Законный представитель",
+      phone: "Телефон",
+      policies: "Политики и условия",
+    },
   },
   zh: {
     slogan: "体验越南最佳滑翔伞飞行",
@@ -232,6 +287,16 @@ const DICT: Record<Language, FooterDict> = {
     terms: "服务条款",
     license: "飞行运营已获越南国防部总参谋部作战局许可。",
     rightsReserved: "保留所有权利。",
+    legal: {
+      title: "企业信息",
+      code: "企业编码 / 税号",
+      firstIssued: "首次登记日期",
+      issuedBy: "签发机关",
+      office: "总部地址",
+      representative: "法定代表人",
+      phone: "电话",
+      policies: "政策与条款",
+    },
   },
   hi: {
     slogan: "वियतनाम में सर्वश्रेष्ठ पैराग्लाइडिंग का अनुभव करें",
@@ -255,6 +320,16 @@ const DICT: Record<Language, FooterDict> = {
     license:
       "उड़ान संचालन को वियतनाम के राष्ट्रीय रक्षा मंत्रालय के जनरल स्टाफ के कॉम्बैट ऑपरेशंस विभाग द्वारा लाइसेंस प्राप्त है।",
     rightsReserved: "सर्वाधिकार सुरक्षित।",
+    legal: {
+      title: "कंपनी की जानकारी",
+      code: "उद्यम कोड / कर संख्या",
+      firstIssued: "पहला पंजीकरण",
+      issuedBy: "जारीकर्ता",
+      office: "मुख्य कार्यालय",
+      representative: "कानूनी प्रतिनिधि",
+      phone: "फ़ोन",
+      policies: "नीतियाँ और शर्तें",
+    },
   },
 };
 
@@ -695,6 +770,83 @@ export default function Footer() {
                   </li>
                 ))}
               </ul>
+            </div>
+          </div>
+
+          {/* THÔNG TIN PHÁP NHÂN + CHÍNH SÁCH + LOGO BỘ CÔNG THƯƠNG.
+              Bắt buộc để thông báo website TMĐT với Bộ Công Thương
+              (NĐ 52/2013/NĐ-CP sửa bởi 85/2021/NĐ-CP, TT 47/2014/TT-BCT).
+              Số liệu đọc thẳng từ lib/legal-entity.ts — sửa ở đó, không gõ
+              tay ở đây. Hotline/email chăm sóc khách ở cột thương hiệu phía
+              trên giữ nguyên; khối này là thông tin ĐĂNG KÝ doanh nghiệp. */}
+          <div className="mt-4 border-t border-white/15 pt-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+              <div className="min-w-0 space-y-1 text-[13px] leading-5 text-slate-300">
+                <h3 className="text-[15px] font-semibold text-white">
+                  {t.legal.title}
+                </h3>
+                <p className="font-semibold text-slate-100">
+                  {LEGAL_ENTITY.legalName}
+                  {language !== "vi" ? ` (${LEGAL_ENTITY.legalNameEn})` : ""}
+                </p>
+                <p>
+                  {t.legal.code}: {LEGAL_ENTITY.taxCode} — {t.legal.firstIssued}{" "}
+                  {LEGAL_ENTITY.registration.firstIssuedDate},{" "}
+                  {language === "vi"
+                    ? LEGAL_ENTITY.registration.latestChange
+                    : LEGAL_ENTITY.registration.latestChangeEn}
+                  . {t.legal.issuedBy}:{" "}
+                  {language === "vi"
+                    ? LEGAL_ENTITY.registration.issuer
+                    : LEGAL_ENTITY.registration.issuerEn}
+                </p>
+                <p>
+                  {t.legal.office}: {LEGAL_ENTITY.registeredOffice}
+                </p>
+                <p>
+                  {t.legal.representative}: {LEGAL_ENTITY.legalRepresentative.name} –{" "}
+                  {language === "vi"
+                    ? LEGAL_ENTITY.legalRepresentative.title
+                    : LEGAL_ENTITY.legalRepresentative.titleEn}
+                </p>
+                <p>
+                  {t.legal.phone}:{" "}
+                  <a
+                    href="tel:+84964073555"
+                    className="transition-colors hover:text-white"
+                  >
+                    {LEGAL_ENTITY.registeredPhone}
+                  </a>{" "}
+                  — Email:{" "}
+                  <a
+                    href={`mailto:${LEGAL_ENTITY.registeredEmail}`}
+                    className="transition-colors hover:text-white"
+                  >
+                    {LEGAL_ENTITY.registeredEmail}
+                  </a>
+                </p>
+              </div>
+
+              <div className="shrink-0 space-y-3 lg:max-w-[22rem]">
+                <h3 className="text-[15px] font-semibold text-white">
+                  {t.legal.policies}
+                </h3>
+                <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px]">
+                  {POLICY_SLUGS.map((slug) => (
+                    <li key={slug}>
+                      <Link
+                        href={makeLocalizedHref(`/chinh-sach/${slug}`, pathname)}
+                        className="text-slate-300 underline-offset-4 transition-colors hover:text-white hover:underline"
+                      >
+                        {POLICY_NAV_LABELS[language][slug]}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                {/* Logo "Đã thông báo Bộ Công Thương": tự ẩn khi chưa có
+                    mã (BCT_NOTICE_URL = null trong lib/legal-entity.ts). */}
+                <BctNoticeBadge />
+              </div>
             </div>
           </div>
 

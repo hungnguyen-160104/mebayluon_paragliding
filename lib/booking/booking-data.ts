@@ -206,7 +206,7 @@ export const flightOptions: FlightOption[] = [
         name: "Xe đón/trả 2 chiều trong khu vực Quản Bạ (đã bao gồm)",
         price: 0,
         description:
-          "Đón trả tại khách sạn/homestay trong khu vực Nậm Đăm, xã Quản Bạ, Lùng Tám, Cán Tỉ. Nếu tự di chuyển, khách cần có mặt trước 15 phút.",
+          "Đón trả tại khách sạn/homestay trong khu vực Nậm Đăm, xã Quản Bạ, Lùng Tám, Cán Tỉ. Nếu tự di chuyển, khách cần có mặt trước 15–30 phút.",
       },
       {
         name: "Flycam (Drone camera)",
