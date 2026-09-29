@@ -59,7 +59,7 @@ type Gio = {
   giat: number;
   huong: number;
   mua: number;
-  /** Phần mưa rào / giông trong tổng lượng mưa — vẽ thành dải cam. */
+  /** Phần mưa rào / dông trong tổng lượng mưa — vẽ thành dải cam. */
   muaRao?: number;
   may: number;
   nhietDo: number;

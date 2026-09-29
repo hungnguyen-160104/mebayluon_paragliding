@@ -95,7 +95,7 @@ export const NHAN_METEOGRAM_VI: NhanMeteogram = {
   batDau: "bãi cất",
   haCanh: "bãi hạ",
   amsl: "m AMSL",
-  vuot: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa giông",
+  vuot: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa dông",
 };
 
 /**
@@ -534,10 +534,10 @@ export function Meteogram({
 
               {/**
                * CỘT MƯA HAI MÀU (luật chủ 10/09): XANH là mưa thường, CAM là
-               * phần MƯA RÀO / GIÔNG chồng lên trên. Mưa 1,0mm cộng giông 5,0mm
+               * phần MƯA RÀO / DÔNG chồng lên trên. Mưa 1,0mm cộng dông 5,0mm
                * ra cột 6,0mm nhưng nhìn là biết ngay phần lớn nước đến từ ổ
-               * giông — hai kiểu mưa ấy quyết định khác hẳn nhau: mưa dầm thì
-               * chờ ngớt là bay, còn giông thì gió đổ xuống quét qua bãi trước
+               * dông — hai kiểu mưa ấy quyết định khác hẳn nhau: mưa dầm thì
+               * chờ ngớt là bay, còn dông thì gió đổ xuống quét qua bãi trước
                * khi mưa tới, không ai cất cánh.
                *
                * Cột nhạt hơn là mưa bay (0,4–0,8mm); từ 0,3 trở xuống không vẽ.

@@ -305,9 +305,9 @@ export type GioThoiTiet = {
   huong: number;
   mua: number;
   /**
-   * Phần mưa RÀO / GIÔNG trong tổng lượng mưa (mm) — mô hình tách riêng
-   * (`showers`, mưa đối lưu). Mưa dầm 1mm và mưa giông 5mm rơi rất khác nhau:
-   * mưa dầm thì chờ ngớt là bay, còn ổ giông kéo theo gió đổ xuống đảo chiều
+   * Phần mưa RÀO / DÔNG trong tổng lượng mưa (mm) — mô hình tách riêng
+   * (`showers`, mưa đối lưu). Mưa dầm 1mm và mưa dông 5mm rơi rất khác nhau:
+   * mưa dầm thì chờ ngớt là bay, còn ổ dông kéo theo gió đổ xuống đảo chiều
    * ngay trước khi mưa tới. Vẽ thành hai màu chồng nhau trên cùng một cột.
    */
   muaRao?: number;

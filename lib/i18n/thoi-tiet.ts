@@ -282,7 +282,7 @@ const vi: ThoiTietCopy = {
   seeSpot: "Chi tiết điểm bay",
   tapDayHint: "👆 Bấm vào ngày bay để xem chi tiết và phân tích dự báo",
   ground: "mặt đất",
-  swipeDays: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa giông",
+  swipeDays: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa dông",
   sunrise: "Mặt trời mọc",
   sunset: "lặn",
   assessment: "Đánh giá ngày bay",

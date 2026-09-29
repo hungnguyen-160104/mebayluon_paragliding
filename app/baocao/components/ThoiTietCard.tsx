@@ -875,7 +875,7 @@ function BangGio({
                 }
                 title={
                   (g.mua >= MUA_DANG_KE ? "mưa" : g.mua >= MUA_BAY ? "mưa bay — bay vẫn bay" : "từ 0,3 mm trở xuống: coi như không mưa") +
-                  ((g.muaRao ?? 0) > 0 ? ` · trong đó mưa giông ${(g.muaRao ?? 0).toFixed(1)}mm` : "")
+                  ((g.muaRao ?? 0) > 0 ? ` · trong đó mưa dông ${(g.muaRao ?? 0).toFixed(1)}mm` : "")
                 }
               >
                 {/* Dải nước dâng theo lượng mưa, kiểu bảng Basic của Windy — xem DaiMua. */}

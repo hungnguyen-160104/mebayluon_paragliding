@@ -9,7 +9,7 @@
  * câu đó trong một cái liếc, mà số vẫn nằm nguyên trên nền (luật chủ 10/09).
  *
  * HAI MÀU như cột mưa của meteogram: xanh là mưa thường, cam là phần mưa rào /
- * giông chồng lên trên — mưa dầm thì chờ ngớt là bay, còn giông thì gió đổ
+ * dông chồng lên trên — mưa dầm thì chờ ngớt là bay, còn dông thì gió đổ
  * xuống quét qua bãi trước khi mưa tới.
  *
  * Thang cao thấp lấy theo GIỜ MƯA TO NHẤT đang bày, kẹp trong 2–10mm: ngày mưa
@@ -36,7 +36,7 @@ export function DaiMua({ mm, rao = 0, max, cao = 18 }: { mm: number; rao?: numbe
       className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden"
       style={{ height: `${(pt / 100) * cao}px` }}
     >
-      {/* Nền là phần mưa thường; dải cam phủ từ trên xuống theo tỉ lệ giông. */}
+      {/* Nền là phần mưa thường; dải cam phủ từ trên xuống theo tỉ lệ dông. */}
       <span className="absolute inset-0" style={{ background: that ? "#60a5fa" : "#bfdbfe" }} />
       {phanRao > 0 && (
         <span
