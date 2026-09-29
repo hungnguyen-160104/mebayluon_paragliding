@@ -7,12 +7,20 @@
 import { nhanNgayVN, thuDuBao, type ChiTietNgay, type DiemDuBaoMail } from "@/lib/baobay/thoi-tiet-mail";
 import { layThamKhong } from "@/lib/baobay/tham-khong-api";
 import { phanTichPhiCong } from "@/lib/baobay/phan-tich-cao";
-import { anhBieuDoGio, anhSkewT } from "@/lib/baobay/thoi-tiet-anh";
+import { anhBieuDoGio, anhMeteogram, anhSkewT } from "@/lib/baobay/thoi-tiet-anh";
 import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
 import { shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { duBaoDiemCongKhai } from "@/services/baobay-thoitiet.service";
 
-const DIEM = ["vien-nam", "doi-bu"] as const;
+/**
+ * THỨ TỰ ĐIỂM THEO MÙA (chủ 30/09/2026): mùa gió bắc (tháng 9 → 12) Đồi Bù
+ * đứng trên — bãi quay hướng bắc, đang là mùa của nó; từ tháng 1 tới tháng 8
+ * Viên Nam (quay hướng nam) đứng trên. Tính theo ngày đầu tiên trong thư.
+ */
+function thuTuDiem(ngayDau: string): readonly string[] {
+  const thang = Number(ngayDau.slice(5, 7));
+  return thang >= 9 ? ["doi-bu", "vien-nam"] : ["vien-nam", "doi-bu"];
+}
 
 /**
  * DỰNG THƯ (không gửi) — tách ra để xem trước bản thư đầy đủ ở máy mà không
@@ -24,7 +32,7 @@ export async function dungThuDuBao() {
   const ngayCanGui = [shiftDateKey(homNay, 1), shiftDateKey(homNay, 2)];
 
   const diem: DiemDuBaoMail[] = [];
-  for (const slug of DIEM) {
+  for (const slug of thuTuDiem(ngayCanGui[0])) {
     const d = diemThoiTietTheoSlug(slug);
     if (!d) continue;
     const du = await duBaoDiemCongKhai(d);
@@ -68,6 +76,13 @@ export async function dungThuDuBao() {
           ct.cidGio = cid;
         } catch (e) {
           console.error("thoi-tiet-mail: biểu đồ gió lỗi", d.slug, k, e);
+        }
+        try {
+          const cid = `meteo-${d.slug}-${k}@mebayluon`;
+          attachments.push({ filename: `meteo-${d.slug}-${k}.png`, content: await anhMeteogram({ ten: d.ten, nhanNgay: nhan, ngay: n }), contentType: "image/png", cid });
+          ct.cidMeteo = cid;
+        } catch (e) {
+          console.error("thoi-tiet-mail: meteogram lỗi", d.slug, k, e);
         }
         const g12 = tk?.find((g) => g.gio.endsWith("T12:00"));
         if (g12) {

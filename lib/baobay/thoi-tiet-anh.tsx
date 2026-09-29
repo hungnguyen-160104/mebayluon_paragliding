@@ -308,3 +308,167 @@ export async function anhSkewT(opts: {
     H,
   );
 }
+
+/**
+ * METEOGRAM — dự báo theo giờ 6h–18h, cùng lối trang thời tiết (Windy): nhiệt
+ * độ (đường cong), gió (mũi tên + số, nền theo sức gió), giật, mây theo ba
+ * tầng (thấp / giữa / cao, càng đậm càng dày), mưa từng giờ (cột mm), áp suất
+ * và trần thermal. Chủ 30/09/2026: "gửi thêm hình biểu đồ dự báo, không phải
+ * mỗi cái airgram".
+ */
+export async function anhMeteogram(opts: {
+  ten: string;
+  nhanNgay: string;
+  ngay: { gio: GioThoiTiet[]; matTroi?: { moc: string; lan: string }; muaTong?: number };
+}): Promise<Buffer> {
+  const ds = opts.ngay.gio.filter((g) => {
+    const h = Number(g.gio.slice(11, 13));
+    return h >= 6 && h <= 18;
+  });
+  const TRAI = 190;
+  const COT = Math.floor((W - TRAI - 20) / Math.max(1, ds.length));
+  const x0 = (i: number) => TRAI + i * COT;
+  const DAU = 128;
+  const H_GIO = 40;
+  const H_NHIET = 150;
+  const H_GIOMS = 92;
+  const H_GIAT = 46;
+  const H_MAY = 44;
+  const H_MUA = 110;
+  const H_AP = 90;
+  const H_TRAN = 46;
+  let y = DAU;
+  const yGio = y; y += H_GIO;
+  const yNhiet = y; y += H_NHIET;
+  const yGioMs = y; y += H_GIOMS;
+  const yGiat = y; y += H_GIAT;
+  const yMay = y; y += H_MAY * 3 + 8;
+  const yMua = y; y += H_MUA;
+  const yAp = y; y += H_AP;
+  const yTran = y; y += H_TRAN;
+  const H = y + 24;
+
+  const nhiet = ds.map((g) => g.nhietDo);
+  const tMin = Math.floor(Math.min(...nhiet) - 1);
+  const tMax = Math.ceil(Math.max(...nhiet) + 1);
+  const yT = (t: number) => yNhiet + 18 + (1 - (t - tMin) / Math.max(1, tMax - tMin)) * (H_NHIET - 40);
+  const duongT = ds.map((g, i) => `${i ? "L" : "M"}${(x0(i) + COT / 2).toFixed(1)} ${yT(g.nhietDo).toFixed(1)}`).join(" ");
+  const muaMax = Math.max(2, ...ds.map((g) => g.mua ?? 0));
+  const ap = ds.map((g) => g.apSuat).filter((v): v is number => typeof v === "number");
+  const apMin = ap.length ? Math.min(...ap) - 0.5 : 0;
+  const apMax = ap.length ? Math.max(...ap) + 0.5 : 1;
+  const yA = (v: number) => yAp + 14 + (1 - (v - apMin) / Math.max(0.5, apMax - apMin)) * (H_AP - 28);
+  const duongAp = ds
+    .map((g, i) => (typeof g.apSuat === "number" ? `${x0(i) + COT / 2} ${yA(g.apSuat).toFixed(1)}` : null))
+    .filter(Boolean)
+    .map((p, i) => `${i ? "L" : "M"}${p}`)
+    .join(" ");
+  const tangMay: Array<{ nhan: string; k: "mayCao" | "mayGiua" | "mayThap" }> = [
+    { nhan: "Mây cao", k: "mayCao" },
+    { nhan: "Mây giữa", k: "mayGiua" },
+    { nhan: "Mây thấp", k: "mayThap" },
+  ];
+  const nhanTrai = (y: number, h: number, chu: string, phu?: string, mau = "#334155") => (
+    <div key={chu} style={{ display: "flex", flexDirection: "column", justifyContent: "center", position: "absolute", left: 18, top: y, height: h, width: TRAI - 26 }}>
+      <div style={{ display: "flex", fontSize: 25, fontWeight: 700, color: mau }}>{chu}</div>
+      {phu ? <div style={{ display: "flex", fontSize: 19, color: "#64748b" }}>{phu}</div> : null}
+    </div>
+  );
+  const soVN = (v: number, le = 1) => v.toFixed(le).replace(".", ",");
+
+  return png(
+    <div style={{ display: "flex", position: "relative", width: W, height: H, background: "#ffffff", fontFamily: "BVP" }}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+        {/* nền đêm theo giờ mọc / lặn */}
+        {ds.map((g, i) => {
+          const hm = g.gio.slice(11, 16);
+          const dem = opts.ngay.matTroi ? hm < opts.ngay.matTroi.moc.slice(0, 5) || hm >= opts.ngay.matTroi.lan.slice(0, 5) : false;
+          return dem ? <rect key={`d${i}`} x={x0(i)} y={yNhiet} width={COT} height={yTran + H_TRAN - yNhiet} fill="#eef2ff" /> : null;
+        })}
+        {[yNhiet, yGioMs, yGiat, yMay, yMua, yAp, yTran, yTran + H_TRAN].map((yy, i) => (
+          <line key={`h${i}`} x1={TRAI} y1={yy} x2={x0(ds.length)} y2={yy} stroke="#e2e8f0" strokeWidth={2} />
+        ))}
+        <path d={`${duongT} L${x0(ds.length - 1) + COT / 2} ${yNhiet + H_NHIET} L${x0(0) + COT / 2} ${yNhiet + H_NHIET} Z`} fill="#fecaca" opacity={0.45} />
+        <path d={duongT} stroke="#f59e0b" strokeWidth={5} fill="none" strokeLinejoin="round" />
+        {tangMay.map((t, j) =>
+          ds.map((g, i) => {
+            const pt = Math.max(0, Math.min(100, (g[t.k] as number | undefined) ?? 0));
+            return <rect key={`${t.k}${i}`} x={x0(i)} y={yMay + j * H_MAY + 2} width={COT} height={H_MAY - 4} fill="#475569" opacity={Math.min(0.9, (pt / 100) ** 0.8)} />;
+          }),
+        )}
+        {ds.map((g, i) => {
+          const mm = g.mua ?? 0;
+          if (mm <= 0) return null;
+          const h = (mm / muaMax) * (H_MUA - 36);
+          const mau = mm >= 0.8 ? "#2563eb" : "#93c5fd";
+          return <rect key={`m${i}`} x={x0(i) + COT * 0.2} y={yMua + H_MUA - 6 - h} width={COT * 0.6} height={h} fill={mau} rx={4} />;
+        })}
+        {duongAp ? <path d={duongAp} stroke="#475569" strokeWidth={3.5} fill="none" strokeLinejoin="round" /> : null}
+        {ds.map((g, i) => {
+          const tr = g.tranThermal ?? 0;
+          if (!(tr > 0)) return null;
+          const w = Math.min(1, tr / 2500) * (COT - 10);
+          return <rect key={`t${i}`} x={x0(i) + (COT - w) / 2} y={yTran + 10} width={w} height={H_TRAN - 20} fill="#fed7aa" rx={4} />;
+        })}
+      </svg>
+
+      <div style={{ display: "flex", flexDirection: "column", position: "absolute", left: 18, top: 16 }}>
+        <div style={{ display: "flex", fontSize: 38, fontWeight: 700, color: "#0f172a" }}>{`Dự báo theo giờ — ${opts.ten}`}</div>
+        <div style={{ display: "flex", fontSize: 24, color: "#475569", marginTop: 6 }}>
+          {`${opts.nhanNgay}` +
+            (opts.ngay.matTroi ? ` · mọc ${opts.ngay.matTroi.moc.slice(0, 5)} · lặn ${opts.ngay.matTroi.lan.slice(0, 5)}` : "") +
+            ` · tổng mưa 6h–18h ${soVN(ds.reduce((a, g) => a + (g.mua ?? 0), 0))} mm`}
+        </div>
+      </div>
+
+      {nhanTrai(yGio, H_GIO, "Giờ")}
+      {nhanTrai(yNhiet, H_NHIET, "Nhiệt độ", "°C", "#b45309")}
+      {nhanTrai(yGioMs, H_GIOMS, "Gió", "m/s")}
+      {nhanTrai(yGiat, H_GIAT, "Giật m/s", undefined, "#be123c")}
+      {tangMay.map((t, j) => nhanTrai(yMay + j * H_MAY, H_MAY, t.nhan, undefined, "#475569"))}
+      {nhanTrai(yMua, H_MUA, "Mưa", "mm/giờ", "#1d4ed8")}
+      {nhanTrai(yAp, H_AP, "Áp suất", "hPa")}
+      {nhanTrai(yTran, H_TRAN, "Trần thermal", "m trên mặt đất", "#c2410c")}
+
+      {ds.flatMap((g, i) => {
+        const m = mauGio(g.gio10m);
+        const mg = mauGio(g.giat);
+        /** Trả MẢNG phần tử con trực tiếp của khung ngoài — satori không đặt được phần tử tuyệt đối lồng trong khung trung gian. */
+        return [
+            <div key={`g${i}`} style={{ display: "flex", position: "absolute", left: x0(i), top: yGio, width: COT, height: H_GIO, justifyContent: "center", alignItems: "center", fontSize: 25, fontWeight: 700, color: "#334155" }}>
+              {`${Number(g.gio.slice(11, 13))}h`}
+            </div>,
+            i % 2 === 0 ? (
+              <div key={`t${i}`} style={{ display: "flex", position: "absolute", left: x0(i), top: yT(g.nhietDo) - 40, width: COT, justifyContent: "center", fontSize: 23, fontWeight: 700, color: "#92400e" }}>
+                {`${Math.round(g.nhietDo)}°`}
+              </div>
+            ) : null,
+            <div key={`w${i}`} style={{ display: "flex", flexDirection: "column", position: "absolute", left: x0(i) + 3, top: yGioMs + 6, width: COT - 6, height: H_GIOMS - 12, alignItems: "center", justifyContent: "center", background: m.nen, borderRadius: 10 }}>
+              <MuiTen huong={g.huong} size={32} mau={m.chu} />
+              <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: m.chu }}>{soVN(g.gio10m)}</div>
+            </div>,
+            <div key={`gi${i}`} style={{ display: "flex", position: "absolute", left: x0(i) + 3, top: yGiat + 6, width: COT - 6, height: H_GIAT - 12, alignItems: "center", justifyContent: "center", background: mg.nen, borderRadius: 8, fontSize: 23, fontWeight: 700, color: mg.chu }}>
+              {soVN(g.giat)}
+            </div>,
+            (g.mua ?? 0) >= 0.1 ? (
+              <div key={`mu${i}`} style={{ display: "flex", position: "absolute", left: x0(i), top: yMua + 4, width: COT, justifyContent: "center", fontSize: 20, fontWeight: 700, color: "#1d4ed8" }}>
+                {soVN(g.mua ?? 0)}
+              </div>
+            ) : null,
+            typeof g.apSuat === "number" && i % 3 === 0 ? (
+              <div key={`ap${i}`} style={{ display: "flex", position: "absolute", left: x0(i), top: yA(g.apSuat) - 34, width: COT, justifyContent: "center", fontSize: 19, color: "#334155" }}>
+                {Math.round(g.apSuat)}
+              </div>
+            ) : null,
+            (g.tranThermal ?? 0) > 0 ? (
+              <div key={`tr${i}`} style={{ display: "flex", position: "absolute", left: x0(i), top: yTran + 8, width: COT, height: H_TRAN - 16, justifyContent: "center", alignItems: "center", fontSize: 19, fontWeight: 700, color: "#7c2d12" }}>
+                {Math.round((g.tranThermal ?? 0) / 100) / 10 >= 1 ? `${(Math.round((g.tranThermal ?? 0) / 100) / 10).toString().replace(".", ",")}k` : Math.round(g.tranThermal ?? 0)}
+              </div>
+            ) : null,
+        ];
+      })}
+    </div>,
+    W,
+    H,
+  );
+}

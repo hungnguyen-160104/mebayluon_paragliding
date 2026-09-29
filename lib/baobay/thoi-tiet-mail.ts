@@ -86,6 +86,8 @@ export type ThuThoiTiet = { subject: string; html: string; text: string };
 export type ChiTietNgay = {
   /** Bảng 10 mục cho phi công bay đơn + đọc Skew-T 12h. */
   phiCong?: PhanTichPhiCong;
+  /** Biểu đồ dự báo theo giờ (meteogram): nhiệt, gió, giật, mây theo tầng, mưa, áp suất. */
+  cidMeteo?: string;
   cidGio?: string;
   cidSkewT?: string;
 };
@@ -181,6 +183,7 @@ export function thuDuBao(
                 .join("") +
               `</table>`
             : `<div style="margin-top:6px;font:400 13px/1.55 ${F};color:#0f172a">${dongSo(n).html}</div>`) +
+          (ct.cidMeteo ? anh(ct.cidMeteo, `Biểu đồ dự báo theo giờ ${d.ten} ${nhanNgayVN(k)}`) : "") +
           (ct.cidGio ? anh(ct.cidGio, `Biểu đồ gió theo độ cao ${d.ten} ${nhanNgayVN(k)}`) : "") +
           (ct.cidSkewT ? anh(ct.cidSkewT, `Skew-T 12h ${d.ten} ${nhanNgayVN(k)}`) : "") +
           (sk && (sk.nhanXet.length || sk.canhBao.length)
