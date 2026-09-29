@@ -480,12 +480,12 @@ export default function PilotsPage() {
   const introDesc =
     P?.intro?.description ??
     (lang === "vi"
-      ? "Tất cả phi công của chúng tôi đều được đào tạo bài bản theo tiêu chuẩn quốc tế, có chứng chỉ IPPI và nhiều năm kinh nghiệm bay."
+      ? "Tất cả phi công của chúng tôi đều được đào tạo bài bản theo tiêu chuẩn quốc tế, có thẻ IPPI và nhiều năm kinh nghiệm bay."
       : lang === "zh"
-      ? "我们的飞行员均按国际标准培训，持有 IPPI 证书，并拥有多年飞行经验。"
+      ? "我们的飞行员均按国际标准培训，持有 IPPI 卡，并拥有多年飞行经验。"
       : lang === "hi"
-      ? "हमारे सभी पायलट अंतरराष्ट्रीय मानकों के अनुसार प्रशिक्षित हैं, IPPI प्रमाणपत्र रखते हैं और वर्षों का अनुभव है।"
-      : "All our pilots are trained to international standards, hold IPPI certificates, and have years of experience.");
+      ? "हमारे सभी पायलट अंतरराष्ट्रीय मानकों के अनुसार प्रशिक्षित हैं, IPPI कार्ड रखते हैं और वर्षों का अनुभव है।"
+      : "All our pilots are trained to international standards, hold IPPI cards, and have years of experience.");
 
   return (
     <main className="min-h-screen relative text-foreground">

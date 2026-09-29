@@ -2176,12 +2176,12 @@ export const pilots: Pilot[] = [
       hi: ["Heli", "Tumbling", "अनुवादक"],
     },
     certificates: {
-      vi: ["IPPI5 Nhật Bản"],
-      en: ["Japan IPPI5"],
-      fr: ["IPPI5 (Japon)"],
-      ru: ["IPPI5 (Япония)"],
-      zh: ["日本 IPPI5"],
-      hi: ["जापान IPPI5"],
+      vi: ["P5 JHF Nhật Bản (tương đương IPPI 5)"],
+      en: ["JHF P5, Japan (IPPI 5 equivalent)"],
+      fr: ["P5 JHF, Japon (équivalent IPPI 5)"],
+      ru: ["P5 JHF, Япония (эквивалент IPPI 5)"],
+      zh: ["日本 JHF P5（相当于 IPPI 5）"],
+      hi: ["जापान JHF P5 (IPPI 5 के समकक्ष)"],
     },
     bio: {
       vi: "10 năm kinh nghiệm, ~1.500 chuyến bay đơn, 6,000+ chuyến bay đôi. Anh là phi công Heli đầu tiên tại Việt Nam và là phi công nhảy dù (tumbling) đầu tiên & duy nhất tại Việt Nam. Anh hiện là phi công có số giờ bay cao nhất Việt Nam.",
@@ -2217,7 +2217,7 @@ export const pilots: Pilot[] = [
         "Phi công Heli đầu tiên tại Việt Nam và Phi công nhảy dù (tumbling) đầu tiên & duy nhất tại Việt Nam. Anh có thể thực hiện các động tác mạnh với kỹ thuật cao và các động tác nhào lộn trên không hiếm có.",
         "Sở hữu kỹ năng bay dù lượn và dù lượn gắn động cơ.",
         "Dịch giả của hơn 1,000 trang sách chuyên sâu về dù lượn và là phi công nổi tiếng có kiến thức chuyên sâu về dù lượn. Anh sở hữu 04 đầu sách bán chạy nhất về dù lượn: Bay thermal, Bay đường trường, Làm chủ dù lượn và Làm chủ bầu trời.",
-        "Dịch rất nhiều tài liệu bay, có nhiều kiến thức chuyên môn, phi công đầu tiên nhận chứng chỉ bay IPPI5 của Nhật Bản.",
+        "Dịch rất nhiều tài liệu bay, có nhiều kiến thức chuyên môn, phi công Việt Nam đầu tiên nhận bằng P5 của Hiệp hội Dù và Diều lượn Nhật Bản (JHF), tương đương IPPI 5.",
         "Đang nắm giữ kỷ lục chuyến bay Tam giác khép kín lớn nhất tại Tây Nguyên 100+km và là phi công có nhiều giờ bay nhất Việt Nam.",
       ],
       en: [
@@ -2225,7 +2225,7 @@ export const pilots: Pilot[] = [
         "First Heli pilot in Vietnam and the first & only tumbling pilot in Vietnam; capable of high-G maneuvers and rare aerial acrobatics.",
         "Skilled in both paragliding and powered paragliding.",
         "Translated 1,000+ pages of advanced paragliding books; author of 4 bestsellers: Thermal Flying, Cross-Country Flying, Mastering Paragliding, and Mastering the Sky.",
-        "Translated many technical documents; first pilot to receive Japan’s IPPI5 certificate.",
+        "Translated many technical documents; first Vietnamese pilot to receive a P5 rating from the Japan Hang & Paragliding Federation (JHF), equivalent to IPPI 5.",
         "Holds the record for the largest closed triangle flight in the Central Highlands (100+ km) and is among Vietnam’s highest flight-hour pilots.",
       ],
       fr: [
@@ -2233,7 +2233,7 @@ export const pilots: Pilot[] = [
         "Premier pilote Heli au Vietnam et premier & unique pilote de tumbling ; manœuvres à forte charge et acrobaties rares.",
         "Compétent en parapente et paramoteur.",
         "A traduit 1 000+ pages d’ouvrages techniques ; auteur de 4 best-sellers : Vol thermique, Vol de distance, Maîtriser le parapente, Maîtriser le ciel.",
-        "Traducteur de nombreux documents ; premier pilote à obtenir la certification IPPI5 du Japon.",
+        "Traducteur de nombreux documents ; premier pilote vietnamien à obtenir le niveau P5 de la fédération japonaise (JHF), équivalent IPPI 5.",
         "Détient le record du plus grand triangle fermé aux Hauts Plateaux (100+ km) et fait partie des pilotes aux plus nombreuses heures de vol au Vietnam.",
       ],
       ru: [
@@ -2241,7 +2241,7 @@ export const pilots: Pilot[] = [
         "Первый Heli-пилот во Вьетнаме и первый/единственный пилот по тамблингу; способен на манёвры с высокими перегрузками и редкую акробатику.",
         "Владеет парапланом и моторным парапланом.",
         "Перевёл 1 000+ страниц специализированных книг; автор 4 бестселлеров: Bay thermal, Bay đường trường, Làm chủ dù lượn, Làm chủ bầu trời.",
-        "Перевёл множество материалов; первый пилот с сертификатом IPPI5 (Япония).",
+        "Перевёл множество материалов; первый вьетнамский пилот с рейтингом P5 Японской федерации (JHF), эквивалент IPPI 5.",
         "Держит рекорд крупнейшего замкнутого треугольника на Центральном нагорье (100+ км) и входит в число пилотов с максимальным налётом во Вьетнаме.",
       ],
       zh: [
@@ -2249,7 +2249,7 @@ export const pilots: Pilot[] = [
         "越南首位 Heli 飞行员、首位且唯一 tumbling 飞行员；可完成高 G 动作与罕见空中技巧。",
         "熟练掌握无动力与动力伞飞行。",
         "翻译 1,000+ 页专业书籍；著有 4 本热销书：热气流飞行、长距离飞行、掌握滑翔伞、驾驭天空。",
-        "翻译大量飞行资料，专业知识深厚；越南首位获得日本 IPPI5 证书的飞行员。",
+        "翻译大量飞行资料，专业知识深厚；越南首位获得日本滑翔伞协会（JHF）P5 等级的飞行员，相当于 IPPI 5。",
         "保持西原地区 100+ km 最大闭合三角航线纪录，也是越南飞行时长最多的飞行员之一。",
       ],
       hi: [
@@ -2257,7 +2257,7 @@ export const pilots: Pilot[] = [
         "वियतनाम के पहले Heli पायलट और पहले व इकलौते tumbling पायलट—हाई-G मैनूवर्स और दुर्लभ एरियल एक्रोबेटिक्स कर सकते हैं।",
         "पैराग्लाइडिंग और पावर्ड पैराग्लाइडिंग—दोनों में दक्ष।",
         "1,000+ पेज की एडवांस्ड पैराग्लाइडिंग पुस्तकों के अनुवादक; 4 बेस्टसेलर पुस्तकों के लेखक: Bay thermal, Bay đường trường, Làm chủ dù lượn, Làm chủ bầu trời।",
-        "कई तकनीकी डॉक्यूमेंट्स का अनुवाद; जापान का IPPI5 सर्टिफिकेट पाने वाले पहले पायलट।",
+        "कई तकनीकी डॉक्यूमेंट्स का अनुवाद; जापान हैंग एंड पैराग्लाइडिंग फ़ेडरेशन (JHF) का P5 पाने वाले पहले वियतनामी पायलट, IPPI 5 के समकक्ष।",
         "Central Highlands में 100+ km का सबसे बड़ा closed triangle flight रिकॉर्ड; वियतनाम में सबसे ज़्यादा उड़ान घंटे रखने वाले पायलट्स में से एक।",
       ],
     },
