@@ -116,7 +116,7 @@ const HOURLY_PHU = ["lifted_index", "convective_inhibition", "boundary_layer_hei
  * ngắn để không ai xem phải số cũ của hôm trước, đủ dài để cả ca trực chỉ gọi
  * vài lần. Máy chủ khởi động lại thì mất — không sao, gọi lại là có.
  */
-const CACHE = new Map<string, { luc: number; du: NgayThoiTiet[]; moHinh: string }>();
+const CACHE = new Map<string, { luc: number; du: NgayThoiTiet[]; moHinh: string; hanMs?: number }>();
 const CACHE_MS = 20 * 60 * 1000;
 
 /**
@@ -318,13 +318,18 @@ async function duBaoDiemBayTho(
   const cacheKey = `${key}:${mh.ma}:${soNgay}:${toaDo.lat},${toaDo.lon}`;
 
   const cu = CACHE.get(cacheKey);
-  if (!opts.boCache && cu && Date.now() - cu.luc < CACHE_MS) {
+  if (!opts.boCache && cu && Date.now() - cu.luc < (cu.hanMs ?? CACHE_MS)) {
     return { spot: key, toaDo, nguong, ngay: cu.du, moHinh: cu.moHinh, layLuc: new Date(cu.luc).toISOString() };
   }
 
   try {
     const { ngay, moHinh } = await layVaCham(toaDo, soNgay, nguong, mh);
-    CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh });
+    /**
+     * Bản thiếu LI chỉ giữ 2 phút thay vì 20: không để một lượt mạng hỏng làm
+     * một bãi mất LI suốt 20 phút.
+     */
+    const thieuLi = moHinh.includes("thiếu chỉ số ổn định");
+    CACHE.set(cacheKey, { luc: Date.now(), du: ngay, moHinh, hanMs: thieuLi ? 2 * 60 * 1000 : undefined });
     return { spot: key, toaDo, nguong, ngay, moHinh, layLuc: new Date().toISOString() };
   } catch (e) {
     /** Không gọi được thì đưa bản cũ, nếu còn trong hạn cứu — xem CACHE_CUU_MS. */
@@ -368,9 +373,19 @@ async function layVaCham(
    * Mô hình phụ (GFS) lấy chỉ số ổn định — trừ khi mô hình chính đã có sẵn
    * (GFS chọn làm chính): gọi thêm là gọi hai lần cùng một thứ.
    */
-  const hen = mh.coChiSoOnDinh
-    ? goiMoHinh(toaDo, soNgay, mh.id, HOURLY_PHU).catch(() => null)
-    : goiMoHinh(toaDo, soNgay, "gfs_seamless", HOURLY_PHU).catch(() => null);
+  /**
+   * GỌI LẠI MỘT LẦN khi hỏng (chủ 30/09/2026: Đồi Bù có LI mà Viên Nam cùng
+   * ngày không có). Hai bãi gọi sát nhau nên một lượt dính timeout / 429 của
+   * Open-Meteo là mất trọn LI, CIN, trần lớp xáo trộn, tỉ lệ mưa rào — bãi này
+   * có số, bãi kia không.
+   */
+  const goiPhu = () => goiMoHinh(toaDo, soNgay, mh.coChiSoOnDinh ? mh.id : "gfs_seamless", HOURLY_PHU);
+  const hen = goiPhu()
+    .catch(() => new Promise((r) => setTimeout(r, 1500)).then(goiPhu))
+    .catch((e) => {
+      console.warn("Mô hình phụ (LI) hỏng hai lần:", (e as Error)?.message);
+      return null;
+    });
 
   let raw: any;
   let moHinh = `${mh.ten} (Open-Meteo)`;
@@ -542,7 +557,8 @@ async function layVaCham(
       gioBay: toaDo.gioBay,
     });
   });
-  return { ngay, moHinh };
+  /** Thiếu mô hình phụ: báo ra để bộ đệm giữ ngắn, lượt sau gọi lại — xem `duBaoDiemBayTho`. */
+  return { ngay, moHinh: phu?.hourly?.time?.length ? moHinh : `${moHinh} — thiếu chỉ số ổn định (LI)` };
 }
 
 /* ------------------------------------------------------------------ */
