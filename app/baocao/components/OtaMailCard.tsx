@@ -39,6 +39,8 @@ const KIND_LABEL: Record<string, string> = {
   cancel: "huỷ",
   amend: "đổi lịch",
   pending: "mới hỏi",
+  /** Khách nhắn tin / CSKH hỏi / hoàn tiền — có mã đơn nhưng không đổi lịch. */
+  notice: "tin nhắn",
   unknown: "chưa hiểu",
 };
 
