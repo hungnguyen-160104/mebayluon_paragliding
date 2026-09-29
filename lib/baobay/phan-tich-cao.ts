@@ -282,12 +282,18 @@ function huongTheoQuang(gio: GioThoiTiet[]): string {
  * chỉ xét từ bãi cất lên 4.000 m.
  *  - Đứt gió: độ chênh vectơ gió giữa hai mực liền nhau chia độ dày (m/s mỗi
  *    km). ≥ 5 là nhiễu động đáng kể, ≥ 8 là mạnh.
- *  - Gió xiết: mực có gió ≥ 8 m/s VÀ mạnh hơn cả mực trên lẫn mực dưới (luồng
- *    xiết tầng thấp), hoặc bất kỳ mực nào ≥ 10 m/s.
+ *  - GIÓ XIẾT (định nghĩa của chủ 29/09/2026): GIÓ CHÍNH (gió trung bình của
+ *    mô hình ở mực áp suất — KHÔNG phải gió giật) ở tầng quanh bãi cất, từ bãi
+ *    lên ~1.000 m trên bãi, MẠNH HƠN 6 m/s. Vì: 6 m/s đã vượt ngưỡng tiến của
+ *    dù, lại cộng hưởng với địa hình núi (hiệu ứng venturi) nên thực tế có khi
+ *    trên 10 m/s — dù không tiến được. Gió giật không tính là gió xiết.
  */
 function tangDutGioXiet(tk: ThamKhong[], altCat: number) {
   let dut: { tu: number; den: number; tri: number; gio: number } | null = null;
-  let xiet: { cao: number; v: number; ten: string; gio: number } | null = null;
+  let xiet: { cao: number; v: number; ten: string; gio: number; soGio: number } | null = null;
+  /** Gió chính mạnh nhất trong tầng bãi cất (kể cả khi chưa tới 6 m/s) — để nói "mạnh nhất X m/s". */
+  let manhNhat: { cao: number; v: number; ten: string; gio: number } | null = null;
+  const gioXiet = new Set<number>();
   const dutCacTang = new Map<string, { tu: number; den: number; tri: number; gio: number }>();
   for (const h of tk) {
     if (!trongGioBay(h.gio)) continue;
@@ -307,16 +313,21 @@ function tangDutGioXiet(tk: ThamKhong[], altCat: number) {
       if (!cu || tri > cu.tri) dutCacTang.set(k, { tu: a.cao, den: b.cao, tri, gio: gioCua(h.gio) });
       if (!dut || tri > dut.tri) dut = { tu: a.cao, den: b.cao, tri, gio: gioCua(h.gio) };
     }
-    for (let i = 0; i < m.length; i++) {
-      const v = m[i].gio as number;
-      const tren = m[i + 1]?.gio ?? 0;
-      const duoi = m[i - 1]?.gio ?? 0;
-      const laXiet = (v >= 8 && v > (tren as number) && v > (duoi as number)) || v >= 10;
-      if (laXiet && (!xiet || v > xiet.v)) xiet = { cao: m[i].cao, v, ten: huongDayDuVi(m[i].huong as number).toUpperCase(), gio: gioCua(h.gio) };
+    for (const x of m) {
+      if (x.cao > altCat + 1000) continue;
+      const v = x.gio as number;
+      const moc = { cao: x.cao, v, ten: huongDayDuVi(x.huong as number).toUpperCase(), gio: gioCua(h.gio) };
+      if (!manhNhat || v > manhNhat.v) manhNhat = moc;
+      if (v > 6) {
+        gioXiet.add(gioCua(h.gio));
+        if (!xiet || v > xiet.v) xiet = { ...moc, soGio: 0 };
+      }
     }
   }
   const cacTangDut = [...dutCacTang.values()].filter((x) => x.tri >= 5).sort((a, b) => b.tri - a.tri);
-  return { dut, cacTangDut, xiet };
+  if (xiet) xiet.soGio = gioXiet.size;
+  const cacGioXiet = [...gioXiet].sort((a, b) => a - b);
+  return { dut, cacTangDut, xiet, manhNhat, cacGioXiet };
 }
 
 /** Đỉnh mây: từ đáy mây đi lên, lớp còn gần bão hoà (T − Td ≤ 3°C) liền mạch. */
@@ -415,10 +426,25 @@ export function phanTichPhiCong(n: NgayThoiTiet, tk: ThamKhong[] | null, altCat:
       muc: tang.cacTangDut.some((x) => x.tri >= 8) ? "xau" : tang.cacTangDut.length ? "chuY" : "tot",
     });
     /* 7. Gió xiết */
+    const x = tang.xiet;
+    const quangGio = (ds: number[]) => {
+      const q: string[] = [];
+      for (let i = 0; i < ds.length; i++) {
+        let j = i;
+        while (j + 1 < ds.length && ds[j + 1] === ds[j] + 1) j++;
+        q.push(i === j ? `${ds[i]}h` : `${ds[i]}–${ds[j]}h`);
+        i = j;
+      }
+      return q.join(", ");
+    };
     dong.push({
       nhan: "Gió xiết",
-      giaTri: tang.xiet ? `~${m50(tang.xiet.cao)}: ${tang.xiet.ten} ${v1(tang.xiet.v)} m/s (${tang.xiet.gio}h)` : "không có luồng gió xiết dưới 4.000 m",
-      muc: tang.xiet ? (tang.xiet.v >= 12 ? "xau" : "chuY") : "tot",
+      giaTri: x
+        ? `CÓ — gió chính ~${m50(x.cao)} ${x.ten} ${v1(x.v)} m/s (mạnh nhất lúc ${x.gio}h; trên 6 m/s trong ${quangGio(tang.cacGioXiet)}). ` +
+          `Qua núi có venturi, thực tế có thể trên 10 m/s — dù không tiến được.`
+        : `không — gió chính tầng bãi cất (tới ~${m50(altCat + 1000)}) đều ≤ 6 m/s` +
+          (tang.manhNhat ? `, mạnh nhất ${tang.manhNhat.ten} ${v1(tang.manhNhat.v)} m/s ở ~${m50(tang.manhNhat.cao)} lúc ${tang.manhNhat.gio}h` : ""),
+      muc: x ? "xau" : tang.manhNhat && tang.manhNhat.v > 5 ? "chuY" : "tot",
     });
   }
 
