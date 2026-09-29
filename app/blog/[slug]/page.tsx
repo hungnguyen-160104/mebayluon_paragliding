@@ -733,7 +733,7 @@ export async function generateMetadata({
   // Chỉ khai hreflang cho ngôn ngữ bài này THẬT SỰ có nội dung. Mở
   // /fr/blog/... khi bài chưa dịch tiếng Pháp thì canonical trỏ về bản
   // tiếng Anh, tránh 5 URL cùng nội dung bị tính là trùng lặp.
-  return buildMetadata({
+  const meta = buildMetadata({
     title,
     description,
     image,
@@ -745,6 +745,13 @@ export async function generateMetadata({
     locale: urlLocale,
     availableLocales: postLocales(post),
   });
+
+  /**
+   * Bản nháp mở bằng ?preview=1 để gửi link duyệt — không cho Google index
+   * (29/09/2026: trước đây bản nháp xem trước vẫn "index, follow").
+   */
+  if (!post.isPublished) return { ...meta, robots: { index: false, follow: false } };
+  return meta;
 }
 
 /**
