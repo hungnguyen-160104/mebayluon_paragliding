@@ -151,7 +151,7 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: " để được giá tốt nhất.",
     terms: "Điều khoản & Điều kiện",
     license:
-      "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham Mưu, Bộ Quốc Phòng Việt Nam.",
+      "Giấy phép bay số 11323/TC-QC, Cục Tác chiến – Bộ Tổng Tham mưu, Bộ Quốc phòng, ngày 08/08/2026.",
     rightsReserved: "Đã đăng ký bản quyền.",
     legal: {
       title: "Thông tin doanh nghiệp",
@@ -181,7 +181,7 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: " for the best price.",
     terms: "Terms & Conditions",
     license:
-      "Flight operations are licensed by the Combat Operations Department – General Staff, Ministry of National Defense of Vietnam.",
+      "Flight permit No. 11323/TC-QC, Operations Department – General Staff, Ministry of National Defence of Vietnam, dated 08/08/2026.",
     rightsReserved: "All rights reserved.",
     legal: {
       title: "Company information",
@@ -211,7 +211,7 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: " pour le meilleur tarif.",
     terms: "Conditions générales",
     license:
-      "Les opérations de vol sont autorisées par le Département des opérations de combat – État-major général, Ministère de la Défense nationale du Vietnam.",
+      "Autorisation de vol n° 11323/TC-QC, Département des opérations – État-major général, Ministère de la Défense nationale du Vietnam, du 08/08/2026.",
     rightsReserved: "Tous droits réservés.",
     legal: {
       title: "Informations sur l’entreprise",
@@ -241,7 +241,7 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: " — так выгоднее всего.",
     terms: "Условия обслуживания",
     license:
-      "Полёты лицензированы Управлением боевых операций Генерального штаба Министерства национальной обороны Вьетнама.",
+      "Разрешение на полёты № 11323/TC-QC, Оперативное управление Генерального штаба Министерства национальной обороны Вьетнама, от 08.08.2026.",
     rightsReserved: "Все права защищены.",
     legal: {
       title: "Сведения о компании",
@@ -270,7 +270,7 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteLink: "直接在本站预订",
     trustNoteAfter: "，价格最优。",
     terms: "服务条款",
-    license: "飞行运营已获越南国防部总参谋部作战局许可。",
+    license: "飞行许可证编号 11323/TC-QC，越南国防部总参谋部作战局，2026年8月8日签发。",
     rightsReserved: "保留所有权利。",
     legal: {
       title: "企业信息",
@@ -300,7 +300,7 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: "।",
     terms: "नियम और शर्तें",
     license:
-      "उड़ान संचालन को वियतनाम के राष्ट्रीय रक्षा मंत्रालय के जनरल स्टाफ के कॉम्बैट ऑपरेशंस विभाग द्वारा लाइसेंस प्राप्त है।",
+      "उड़ान परमिट सं. 11323/TC-QC, ऑपरेशंस विभाग – जनरल स्टाफ, राष्ट्रीय रक्षा मंत्रालय, वियतनाम, दिनांक 08/08/2026।",
     rightsReserved: "सर्वाधिकार सुरक्षित।",
     legal: {
       title: "कंपनी की जानकारी",
