@@ -23,7 +23,7 @@ export type NgayApi = {
   muc: string;
   /** Số giờ MƯA THẬT (≥ 0,8 mm/giờ) trong khung bay. */
   gioMua?: number;
-  /** Số giờ "mưa bay" — mưa phùn 0,4–0,8 mm/giờ, bay vẫn được. */
+  /** Số giờ mưa nhẹ ("mưa bay" trong hệ dự báo) — 0,4–0,8 mm/giờ, bay vẫn được; chủ 01/10: ghi "mưa nhẹ" cho dễ hiểu. */
   gioMuaBay?: number;
   /** Xác suất dông cao nhất trong ngày (%) — cùng số bảng dự báo đầy đủ dùng (⚡ từ 20%). */
   xacSuatDongMax?: number;
@@ -286,7 +286,7 @@ const WORDS: Record<string, Words> = {
     thermal: { khong: "không thermal", nhe: "thermal nhẹ", vua: "thermal vừa", manh: "thermal mạnh", gat: "thermal gắt" },
     sun: (h) => `${h}h nắng`,
     rain: (h) => `mưa ${h}h`,
-    drizzle: (h) => `mưa bay ${h}h`,
+    drizzle: (h) => `mưa nhẹ ${h}h`,
     storm: (p) => `Dông (${p}%)`,
     turb: { nhe: "nhiễu động nhẹ", vua: "nhiễu động vừa", manh: "nhiễu động mạnh" },
     cloudBase: (m) => `trần mây ${m}m AMSL`,
@@ -306,7 +306,7 @@ const WORDS: Record<string, Words> = {
     thermal: { khong: "no thermals", nhe: "weak thermals", vua: "moderate thermals", manh: "strong thermals", gat: "rough thermals" },
     sun: (h) => `${h}h sunshine`,
     rain: (h) => `rain ${h}h`,
-    drizzle: (h) => `drizzle ${h}h`,
+    drizzle: (h) => `light rain ${h}h`,
     storm: (p) => `Thunderstorm (${p}%)`,
     turb: { nhe: "light turbulence", vua: "moderate turbulence", manh: "strong turbulence" },
     cloudBase: (m) => `cloud base ${m}m AMSL`,
@@ -327,7 +327,7 @@ const WORDS: Record<string, Words> = {
     thermal: { khong: "pas de thermiques", nhe: "thermiques faibles", vua: "thermiques moyens", manh: "thermiques forts", gat: "thermiques musclés" },
     sun: (h) => `${h} h de soleil`,
     rain: (h) => `pluie ${h} h`,
-    drizzle: (h) => `bruine ${h} h`,
+    drizzle: (h) => `pluie faible ${h} h`,
     storm: (p) => `Orage (${p} %)`,
     turb: { nhe: "turbulences faibles", vua: "turbulences modérées", manh: "turbulences fortes" },
     cloudBase: (m) => `plafond ${m} m AMSL`,
@@ -347,7 +347,7 @@ const WORDS: Record<string, Words> = {
     thermal: { khong: "без термиков", nhe: "слабые термики", vua: "умеренные термики", manh: "сильные термики", gat: "жёсткие термики" },
     sun: (h) => `${h} ч солнца`,
     rain: (h) => `дождь ${h} ч`,
-    drizzle: (h) => `морось ${h} ч`,
+    drizzle: (h) => `слабый дождь ${h} ч`,
     storm: (p) => `Гроза (${p}%)`,
     turb: { nhe: "слабая турбулентность", vua: "умеренная турбулентность", manh: "сильная турбулентность" },
     cloudBase: (m) => `нижняя граница облаков ${m} м AMSL`,
@@ -367,7 +367,7 @@ const WORDS: Record<string, Words> = {
     thermal: { khong: "无热气流", nhe: "热气流弱", vua: "热气流中等", manh: "热气流强", gat: "热气流猛烈" },
     sun: (h) => `日照 ${h} 小时`,
     rain: (h) => `降雨 ${h} 小时`,
-    drizzle: (h) => `毛毛雨 ${h} 小时`,
+    drizzle: (h) => `小雨 ${h} 小时`,
     storm: (p) => `雷暴（${p}%）`,
     turb: { nhe: "轻度乱流", vua: "中度乱流", manh: "强乱流" },
     cloudBase: (m) => `云底 ${m} 米（海拔）`,
@@ -387,7 +387,7 @@ const WORDS: Record<string, Words> = {
     thermal: { khong: "थर्मल नहीं", nhe: "कमज़ोर थर्मल", vua: "मध्यम थर्मल", manh: "तेज़ थर्मल", gat: "बहुत तेज़ थर्मल" },
     sun: (h) => `${h} घंटे धूप`,
     rain: (h) => `बारिश ${h} घंटे`,
-    drizzle: (h) => `बूंदाबांदी ${h} घंटे`,
+    drizzle: (h) => `हल्की बारिश ${h} घंटे`,
     storm: (p) => `आंधी-तूफ़ान (${p}%)`,
     turb: { nhe: "हल्की अशांति", vua: "मध्यम अशांति", manh: "तेज़ अशांति" },
     cloudBase: (m) => `क्लाउड बेस ${m} मी AMSL`,
