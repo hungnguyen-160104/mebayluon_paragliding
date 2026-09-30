@@ -35,6 +35,26 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
   if (body.note !== undefined) set.note = String(body.note ?? "").trim().slice(0, 500);
 
+  /**
+   * "KHÔNG ĐẾN BAY (báo ảo)" theo TỪNG NGÀY — { noShow: { date, value } }.
+   * Chỉ nhận ngày có trong báo bay; bật thì thêm (một lần), tắt thì gỡ.
+   */
+  if (body.noShow && typeof body.noShow === "object") {
+    const date = String(body.noShow.date ?? "").slice(0, 10);
+    await connectDB();
+    const cur = await FlightNotice.findById(id).select("dates noShowDates").lean();
+    if (!cur) return NextResponse.json({ message: "Không tìm thấy báo bay" }, { status: 404 });
+    if (!cur.dates.includes(date)) return NextResponse.json({ message: "Ngày không thuộc báo bay này" }, { status: 400 });
+    const item = body.noShow.value
+      ? await FlightNotice.findOneAndUpdate(
+          { _id: id, "noShowDates.date": { $ne: date } },
+          { $push: { noShowDates: { date, at: new Date(), by: auth.username } } },
+          { new: true },
+        ).lean() ?? (await FlightNotice.findById(id).lean())
+      : await FlightNotice.findByIdAndUpdate(id, { $pull: { noShowDates: { date } } }, { new: true }).lean();
+    return NextResponse.json({ ok: true, item });
+  }
+
   if (!Object.keys(set).length) {
     return NextResponse.json({ message: "Không có gì để sửa" }, { status: 400 });
   }

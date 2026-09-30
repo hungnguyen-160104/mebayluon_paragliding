@@ -190,6 +190,27 @@ export function purchasePrice(mode: PurchaseMode): number {
 export const HNAA_CUTOFF_HOUR = 9;
 
 /**
+ * GIỜ CHỐT DANH SÁCH NGÀY BAY (chủ 01/10): 9h00 sáng ngày bay danh sách phi
+ * công của ngày đó bị khoá — cùng mốc với miễn phí HNAA. Sau giờ này KHÔNG huỷ
+ * được báo bay của ngày đó nữa (không bay thì tính là báo ảo).
+ */
+export const LIST_CLOSE_HOUR = HNAA_CUTOFF_HOUR;
+
+/** Ngày bay `date` còn huỷ được lúc `now` không (trước 9h00 ngày đó, giờ VN máy chủ). */
+export function canCancelDate(date: string, now: Date): boolean {
+  const { date: today, minutes } = vnParts(now);
+  if (date > today) return true;
+  if (date < today) return false;
+  return minutes < LIST_CLOSE_HOUR * 60;
+}
+
+/**
+ * Chặn báo bay của hội viên sau N lần "không đến bay (báo ảo)". 0 = TẮT — hiện
+ * chỉ đếm cho admin xem (chủ 01/10: chưa tự động chặn).
+ */
+export const NO_SHOW_BLOCK_AFTER = 0;
+
+/**
  * Ngày và giờ theo GIỜ VIỆT NAM của một thời điểm.
  *
  * Tính bằng Intl với múi Asia/Ho_Chi_Minh thay vì lấy giờ máy: máy chủ Vercel

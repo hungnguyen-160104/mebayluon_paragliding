@@ -42,6 +42,8 @@ export function baoBayPilotMail(input: {
   fee: BaoBayFee;
   transferNote: string;
   lang: string;
+  /** Vé huỷ ký HMAC (lib/bao-bay-token) — có thì thư kèm link huỷ một chạm. */
+  cancelToken?: string;
 }): { subject: string; html: string } {
   const { notice: n, fee, transferNote } = input;
   const lang = ["vi", "en", "fr", "ru", "zh", "hi"].includes(input.lang) ? input.lang : "vi";
@@ -131,6 +133,12 @@ export function baoBayPilotMail(input: {
     ${feeHtml}
     ${radioHtml}
     ${rulesHtml}
+    <div style="margin-top:16px;padding:12px 14px;border-radius:10px;background:#F3F4F6;font-size:13px;color:#374151;">
+      ${bi(b((d) => d.cancelHint))}
+      <div style="margin-top:6px;"><a href="${esc(
+        input.cancelToken ? `${pageUrl}?cancel=${encodeURIComponent(input.cancelToken)}#cancel` : `${pageUrl}#cancel`,
+      )}" style="color:#B91C1C;font-weight:700;">✖ ${bi(b((d) => d.cancelLink))} →</a></div>
+    </div>
     <div style="margin-top:18px;padding-top:12px;border-top:1px solid #E5E7EB;font-size:13px;color:#6B7280;">
       ${bi(b((d) => d.mailBack))} <a href="${esc(pageUrl)}" style="color:#B45309;font-weight:700;">${esc(pageUrl.replace(/^https?:\/\//, ""))}</a>
     </div>
@@ -138,5 +146,44 @@ export function baoBayPilotMail(input: {
 </table></td></tr></table>
 </body></html>`;
 
+  return { subject, html };
+}
+
+/**
+ * THƯ XÁC NHẬN ĐÃ HUỶ — ngắn: mã báo bay, điểm bay, các ngày vừa huỷ; đã trả
+ * tiền theo ngày thì nhắc gọi hotline (không tự hoàn tiền); có vé tháng/năm thì
+ * nói vé vẫn giữ.
+ */
+export function baoBayCancelMail(input: {
+  notice: IFlightNotice;
+  cancelled: string[];
+  paidPerDay: boolean;
+  lang: string;
+}): { subject: string; html: string } {
+  const n = input.notice;
+  const lang = ["vi", "en", "fr", "ru", "zh", "hi"].includes(input.lang) ? input.lang : "vi";
+  const { b, s } = baoBayBilingual(lang);
+  const pageUrl = `${SITE_URL}${lang === "vi" ? "" : `/${lang}`}/baobay`;
+  const subject = `${s((d) => d.cancelMailSubject, " / ")} ${n.noticeCode} · ${s((d) => d.spotName[n.spot], " / ")}`;
+  const html = `<!doctype html>
+<html lang="${lang}"><body style="margin:0;padding:0;background:#F9FAFB;">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F9FAFB;padding:18px 12px;"><tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+  <tr><td style="background:#374151;padding:16px 20px;color:#ffffff;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;opacity:.9;">Mebayluon Paragliding</div>
+    <div style="margin-top:4px;font-size:20px;font-weight:800;">✖ ${bi(b((d) => d.cancelMailSubject))}</div>
+  </td></tr>
+  <tr><td style="padding:16px 20px 22px;font-size:14px;color:#111827;">
+    <div>${bi(b((d) => d.okCode))}: <b style="font-family:ui-monospace,Menlo,monospace;">${esc(n.noticeCode)}</b> · ${bi(b((d) => d.spotName[n.spot]))}</div>
+    <p style="margin:12px 0 4px;">${bi(b((d) => d.cancelMailIntro))}</p>
+    <div style="font-size:16px;font-weight:700;">${esc(input.cancelled.map(formatVnDate).join(" · "))}</div>
+    ${input.paidPerDay ? `<div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:#FFFBEB;border:1px solid #FCD34D;color:#92400E;">${bi(b((d) => d.cancelPaidNote))}: <a href="${esc(BAO_BAY_HOTLINE.tel)}" style="color:#92400E;font-weight:700;">${esc(BAO_BAY_HOTLINE.display)}</a></div>` : ""}
+    ${n.passValidUntil ? `<div style="margin-top:10px;color:#065F46;">🎫 ${bi(b((d) => d.cancelPassKept))} (${esc(formatVnDate(n.passValidUntil))})</div>` : ""}
+    <div style="margin-top:18px;padding-top:12px;border-top:1px solid #E5E7EB;font-size:13px;color:#6B7280;">
+      ${bi(b((d) => d.mailBack))} <a href="${esc(pageUrl)}" style="color:#B45309;font-weight:700;">${esc(pageUrl.replace(/^https?:\/\//, ""))}</a>
+    </div>
+  </td></tr>
+</table></td></tr></table>
+</body></html>`;
   return { subject, html };
 }

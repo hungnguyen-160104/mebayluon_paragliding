@@ -28,6 +28,7 @@ export type BaoBayErrKey =
   | "phoneLocked"
   | "rules"
   | "email"
+  | "cancelNotFound"
   | "server"
   | "rate"
   | "network";
@@ -108,6 +109,26 @@ export type BaoBayDict = {
   fEmailHint: string;
   fEmailPh: string;
   mailSubject: string;
+  cancelTitle: string;
+  cancelIntro: string;
+  cancelCodeLabel: string;
+  cancelCodePh: string;
+  cancelPhoneLabel: string;
+  cancelFind: string;
+  cancelSearching: string;
+  cancelSelectAll: string;
+  cancelBtn: string;
+  cancelDone: string;
+  cancelClosed: string;
+  cancelledAtLabel: string;
+  cancelPaidNote: string;
+  cancelPassKept: string;
+  cancelHint: string;
+  cancelLink: string;
+  cancelNothing: string;
+  cancelMailSubject: string;
+  cancelMailIntro: string;
+
   mailIntro: string;
   mailRulesTitle: string;
   mailRulesGeneric: string;
@@ -270,6 +291,25 @@ const vi: BaoBayDict = {
   fEmailHint: "không bắt buộc — để nhận thư xác nhận",
   fEmailPh: "ban@email.com",
   mailSubject: "Xác nhận báo bay",
+  cancelTitle: "Huỷ báo bay",
+  cancelIntro: "Không bay được? Huỷ trước 9h00 sáng ngày bay để không bị tính là báo ảo. Nhập mã báo bay (BB…) hoặc mã hội viên HNAA, kèm số điện thoại.",
+  cancelCodeLabel: "Mã báo bay hoặc mã hội viên",
+  cancelCodePh: "Ví dụ: BB261005.5678 hoặc HNAA-05",
+  cancelPhoneLabel: "Số điện thoại đã báo bay / đăng ký hội viên",
+  cancelFind: "Tìm báo bay",
+  cancelSearching: "Đang tìm…",
+  cancelSelectAll: "Chọn tất cả ngày còn huỷ được",
+  cancelBtn: "Huỷ các ngày đã chọn",
+  cancelDone: "Đã huỷ",
+  cancelClosed: "đã chốt danh sách, không huỷ được",
+  cancelledAtLabel: "đã huỷ lúc",
+  cancelPaidNote: "Phí đã đóng: liên hệ hotline để được hỗ trợ",
+  cancelPassKept: "Vé tháng/năm đã mua vẫn giữ nguyên",
+  cancelHint: "Không bay được thì huỷ báo bay trước 9h00 ngày bay để không bị tính là báo ảo.",
+  cancelLink: "Huỷ báo bay",
+  cancelNothing: "Không tìm thấy báo bay khớp mã và số điện thoại",
+  cancelMailSubject: "Đã huỷ báo bay",
+  cancelMailIntro: "Báo bay của bạn đã được huỷ cho các ngày sau:",
   mailIntro: "Cảm ơn bạn đã báo bay. Đây là thông tin báo bay của bạn:",
   mailRulesTitle: "Nhắc nội quy điểm bay",
   mailRulesGeneric: "Hãy tuân thủ nội quy điểm bay và hướng dẫn của điều phối; chỉ bay trong vùng được phép, đủ mũ bảo hiểm, bộ đàm, dù phụ.",
@@ -356,6 +396,7 @@ const vi: BaoBayDict = {
     phoneLocked: "Nhập sai số điện thoại quá nhiều lần — mã hội viên này tạm khoá 15 phút",
     rules: "Vui lòng đọc và tích chấp nhận Nội quy điểm bay Núi Viên Nam",
     email: "Email chưa đúng định dạng",
+    cancelNotFound: "Không tìm thấy báo bay để huỷ",
     server: "Không gửi được báo bay, vui lòng thử lại",
     rate: "Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút",
     network: "Mất kết nối mạng, vui lòng thử lại",
@@ -464,6 +505,25 @@ const en: BaoBayDict = {
   fEmailHint: "optional — to receive a confirmation",
   fEmailPh: "you@email.com",
   mailSubject: "Flight register confirmation",
+  cancelTitle: "Cancel a flight register",
+  cancelIntro: "Can't fly? Cancel before 09:00 on the flying day so it isn't counted as a no-show. Enter your register code (BB…) or HNAA member code, plus your phone number.",
+  cancelCodeLabel: "Register code or member code",
+  cancelCodePh: "e.g. BB261005.5678 or HNAA-05",
+  cancelPhoneLabel: "Phone number used for the register / membership",
+  cancelFind: "Find register",
+  cancelSearching: "Searching…",
+  cancelSelectAll: "Select all days that can still be cancelled",
+  cancelBtn: "Cancel selected days",
+  cancelDone: "Cancelled",
+  cancelClosed: "list closed, can't be cancelled",
+  cancelledAtLabel: "cancelled at",
+  cancelPaidNote: "Fee already paid: contact the hotline for help",
+  cancelPassKept: "Your month/year pass stays valid",
+  cancelHint: "Can't fly? Cancel your register before 09:00 on the flying day so it isn't counted as a no-show.",
+  cancelLink: "Cancel a flight register",
+  cancelNothing: "No register matches this code and phone number",
+  cancelMailSubject: "Flight register cancelled",
+  cancelMailIntro: "Your flight register has been cancelled for these days:",
   mailIntro: "Thank you for registering your flight. Here are your details:",
   mailRulesTitle: "Site rules reminder",
   mailRulesGeneric: "Follow the site rules and the coordinators' instructions; fly only inside the permitted zone, with helmet, radio and reserve.",
@@ -550,6 +610,7 @@ const en: BaoBayDict = {
     phoneLocked: "Too many wrong phone numbers — this member code is locked for 15 minutes",
     rules: "Please read and accept the Vien Nam flying site regulations",
     email: "This email address doesn't look right",
+    cancelNotFound: "Register not found",
     server: "Could not submit the register, please try again",
     rate: "Too many attempts, please try again in a few minutes",
     network: "Network error, please try again",
@@ -658,6 +719,25 @@ const fr: BaoBayDict = {
   fEmailHint: "facultatif — pour recevoir une confirmation",
   fEmailPh: "vous@email.com",
   mailSubject: "Confirmation d'enregistrement de vol",
+  cancelTitle: "Annuler un enregistrement de vol",
+  cancelIntro: "Vous ne pouvez pas voler ? Annulez avant 9h00 le jour du vol pour ne pas être compté absent. Saisissez le code d'enregistrement (BB…) ou le code membre HNAA, avec votre téléphone.",
+  cancelCodeLabel: "Code d'enregistrement ou code membre",
+  cancelCodePh: "ex. BB261005.5678 ou HNAA-05",
+  cancelPhoneLabel: "Téléphone utilisé pour l'enregistrement / l'adhésion",
+  cancelFind: "Rechercher",
+  cancelSearching: "Recherche…",
+  cancelSelectAll: "Tout sélectionner (jours encore annulables)",
+  cancelBtn: "Annuler les jours choisis",
+  cancelDone: "Annulé",
+  cancelClosed: "liste close, annulation impossible",
+  cancelledAtLabel: "annulé à",
+  cancelPaidNote: "Frais déjà payés : contactez la hotline",
+  cancelPassKept: "Votre forfait mois/année reste valable",
+  cancelHint: "Vous ne pouvez pas voler ? Annulez avant 9h00 le jour du vol pour ne pas être compté absent.",
+  cancelLink: "Annuler un enregistrement",
+  cancelNothing: "Aucun enregistrement ne correspond à ce code et ce téléphone",
+  cancelMailSubject: "Enregistrement de vol annulé",
+  cancelMailIntro: "Votre enregistrement a été annulé pour ces jours :",
   mailIntro: "Merci pour votre enregistrement. Voici vos informations :",
   mailRulesTitle: "Rappel du règlement du site",
   mailRulesGeneric: "Respectez le règlement du site et les consignes des coordinateurs ; volez uniquement dans la zone autorisée, avec casque, radio et secours.",
@@ -744,6 +824,7 @@ const fr: BaoBayDict = {
     phoneLocked: "Trop de numéros erronés — ce code membre est bloqué 15 minutes",
     rules: "Veuillez lire et accepter le règlement du site de Vien Nam",
     email: "Cette adresse email semble incorrecte",
+    cancelNotFound: "Enregistrement introuvable",
     server: "Impossible d'envoyer l'enregistrement, veuillez réessayer",
     rate: "Trop de tentatives, réessayez dans quelques minutes",
     network: "Erreur réseau, veuillez réessayer",
@@ -852,6 +933,25 @@ const ru: BaoBayDict = {
   fEmailHint: "необязательно — для письма-подтверждения",
   fEmailPh: "vy@email.com",
   mailSubject: "Подтверждение регистрации полёта",
+  cancelTitle: "Отменить регистрацию полёта",
+  cancelIntro: "Не можете лететь? Отмените до 09:00 в день полёта, чтобы это не считалось неявкой. Введите код регистрации (BB…) или членский код HNAA и телефон.",
+  cancelCodeLabel: "Код регистрации или членский код",
+  cancelCodePh: "напр. BB261005.5678 или HNAA-05",
+  cancelPhoneLabel: "Телефон, указанный при регистрации / членстве",
+  cancelFind: "Найти",
+  cancelSearching: "Поиск…",
+  cancelSelectAll: "Выбрать все дни, которые ещё можно отменить",
+  cancelBtn: "Отменить выбранные дни",
+  cancelDone: "Отменено",
+  cancelClosed: "список закрыт, отмена невозможна",
+  cancelledAtLabel: "отменено в",
+  cancelPaidNote: "Сбор уже оплачен: свяжитесь с горячей линией",
+  cancelPassKept: "Абонемент на месяц/год сохраняется",
+  cancelHint: "Не можете лететь? Отмените регистрацию до 09:00 в день полёта, чтобы это не считалось неявкой.",
+  cancelLink: "Отменить регистрацию",
+  cancelNothing: "Регистрация с таким кодом и телефоном не найдена",
+  cancelMailSubject: "Регистрация полёта отменена",
+  cancelMailIntro: "Ваша регистрация отменена на эти дни:",
   mailIntro: "Спасибо за регистрацию полёта. Ваши данные:",
   mailRulesTitle: "Напоминание о правилах площадки",
   mailRulesGeneric: "Соблюдайте правила площадки и указания координаторов; летайте только в разрешённой зоне, со шлемом, рацией и запаской.",
@@ -938,6 +1038,7 @@ const ru: BaoBayDict = {
     phoneLocked: "Слишком много неверных номеров — код члена заблокирован на 15 минут",
     rules: "Прочитайте и примите правила площадки Вьен Нам",
     email: "Адрес email указан неверно",
+    cancelNotFound: "Регистрация не найдена",
     server: "Не удалось отправить регистрацию, попробуйте ещё раз",
     rate: "Слишком много попыток, попробуйте через несколько минут",
     network: "Ошибка сети, попробуйте ещё раз",
@@ -1046,6 +1147,25 @@ const zh: BaoBayDict = {
   fEmailHint: "选填——用于接收确认邮件",
   fEmailPh: "you@email.com",
   mailSubject: "飞行登记确认",
+  cancelTitle: "取消飞行登记",
+  cancelIntro: "无法飞行？请在飞行当天 09:00 前取消，以免被记为虚假登记。请输入登记编号（BB…）或 HNAA 会员编号及电话号码。",
+  cancelCodeLabel: "登记编号或会员编号",
+  cancelCodePh: "例如 BB261005.5678 或 HNAA-05",
+  cancelPhoneLabel: "登记 / 会员所用的电话号码",
+  cancelFind: "查找登记",
+  cancelSearching: "查找中…",
+  cancelSelectAll: "全选仍可取消的日期",
+  cancelBtn: "取消所选日期",
+  cancelDone: "已取消",
+  cancelClosed: "名单已锁定，无法取消",
+  cancelledAtLabel: "取消于",
+  cancelPaidNote: "费用已支付：请联系热线协助",
+  cancelPassKept: "月票/年票仍然有效",
+  cancelHint: "无法飞行请在飞行当天 09:00 前取消登记，以免被记为虚假登记。",
+  cancelLink: "取消飞行登记",
+  cancelNothing: "未找到与该编号和电话匹配的登记",
+  cancelMailSubject: "飞行登记已取消",
+  cancelMailIntro: "您的飞行登记已取消以下日期：",
   mailIntro: "感谢您的飞行登记。以下是您的登记信息：",
   mailRulesTitle: "场地规章提醒",
   mailRulesGeneric: "请遵守场地规章和调度指示；只在允许区域内飞行，并配备头盔、对讲机和备份伞。",
@@ -1132,6 +1252,7 @@ const zh: BaoBayDict = {
     phoneLocked: "电话号码错误次数过多——该会员编号锁定 15 分钟",
     rules: "请阅读并同意 Vien Nam 飞行场地规章",
     email: "电子邮箱格式不正确",
+    cancelNotFound: "未找到登记",
     server: "登记提交失败，请重试",
     rate: "操作过于频繁，请几分钟后再试",
     network: "网络错误，请重试",
@@ -1240,6 +1361,25 @@ const hi: BaoBayDict = {
   fEmailHint: "वैकल्पिक — पुष्टि पाने के लिए",
   fEmailPh: "you@email.com",
   mailSubject: "उड़ान पंजीकरण की पुष्टि",
+  cancelTitle: "उड़ान पंजीकरण रद्द करें",
+  cancelIntro: "उड़ान नहीं भर सकते? उड़ान वाले दिन 09:00 से पहले रद्द करें ताकि इसे फ़र्ज़ी न गिना जाए। पंजीकरण कोड (BB…) या HNAA सदस्य कोड और फ़ोन नंबर दर्ज करें।",
+  cancelCodeLabel: "पंजीकरण कोड या सदस्य कोड",
+  cancelCodePh: "जैसे BB261005.5678 या HNAA-05",
+  cancelPhoneLabel: "पंजीकरण / सदस्यता वाला फ़ोन नंबर",
+  cancelFind: "पंजीकरण खोजें",
+  cancelSearching: "खोज रहे हैं…",
+  cancelSelectAll: "रद्द हो सकने वाले सभी दिन चुनें",
+  cancelBtn: "चुने दिन रद्द करें",
+  cancelDone: "रद्द",
+  cancelClosed: "सूची बंद, रद्द नहीं हो सकता",
+  cancelledAtLabel: "रद्द किया गया",
+  cancelPaidNote: "शुल्क चुका दिया गया: मदद के लिए हेल्पलाइन से संपर्क करें",
+  cancelPassKept: "मासिक/वार्षिक पास मान्य रहेगा",
+  cancelHint: "उड़ान नहीं भर सकते तो उड़ान वाले दिन 09:00 से पहले पंजीकरण रद्द करें ताकि इसे फ़र्ज़ी न गिना जाए।",
+  cancelLink: "उड़ान पंजीकरण रद्द करें",
+  cancelNothing: "इस कोड और फ़ोन से कोई पंजीकरण नहीं मिला",
+  cancelMailSubject: "उड़ान पंजीकरण रद्द",
+  cancelMailIntro: "आपका पंजीकरण इन दिनों के लिए रद्द कर दिया गया:",
   mailIntro: "उड़ान पंजीकरण के लिए धन्यवाद। आपका विवरण:",
   mailRulesTitle: "साइट नियमों की याद",
   mailRulesGeneric: "साइट नियमों और समन्वयकों के निर्देशों का पालन करें; केवल अनुमत क्षेत्र में, हेलमेट, रेडियो और रिज़र्व के साथ उड़ें।",
@@ -1326,6 +1466,7 @@ const hi: BaoBayDict = {
     phoneLocked: "बहुत बार ग़लत फ़ोन नंबर — यह सदस्य कोड 15 मिनट के लिए लॉक है",
     rules: "कृपया विएन नाम उड़ान स्थल के नियम पढ़कर स्वीकार करें",
     email: "ईमेल पता सही नहीं लगता",
+    cancelNotFound: "पंजीकरण नहीं मिला",
     server: "पंजीकरण नहीं भेजा जा सका, कृपया फिर कोशिश करें",
     rate: "बहुत अधिक प्रयास, कुछ मिनट बाद फिर कोशिश करें",
     network: "नेटवर्क त्रुटि, कृपया फिर कोशिश करें",

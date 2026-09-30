@@ -408,6 +408,18 @@ function clearSaved(): void {
 }
 const str = (v: unknown, max = 120) => (typeof v === "string" ? v.slice(0, max) : "");
 
+/** Một báo bay ở khung huỷ (máy chủ trả, xem services/bao-bay cancelView). */
+type CancelNotice = {
+  token: string;
+  noticeCode: string;
+  spot: BaoBaySpot;
+  dates: Array<{ date: string; status: "active" | "cancelled" | "closed"; cancelledAt?: string }>;
+  amount: number;
+  feeMode: string;
+  passValidUntil?: string;
+  paidPerDay: boolean;
+};
+
 const isBaoBaySpotClient = (v: unknown): v is BaoBaySpot => BAO_BAY_SPOTS.includes(v as BaoBaySpot);
 
 const SPOT_ICON: Record<BaoBaySpot, string> = { "vien-nam": "🏞️", "khau-pha": "🌾", "quan-ba": "⛰️" };
@@ -511,7 +523,21 @@ export default function BaoBayClient() {
     dates: string[];
     fee: BaoBayFee;
     transferNote: string;
+    /** Vé huỷ ký HMAC — link "Huỷ báo bay" ở màn hình gửi xong. */
+    cancelToken: string;
   } | null>(null);
+
+  /* ---------------- HUỶ BÁO BAY (chủ 01/10) ---------------- */
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelCode, setCancelCode] = useState("");
+  const [cancelPhone, setCancelPhone] = useState("");
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelErr, setCancelErr] = useState("");
+  const [cancelList, setCancelList] = useState<CancelNotice[]>([]);
+  /** Ngày đang chọn để huỷ, theo mã báo bay. */
+  const [cancelSel, setCancelSel] = useState<Record<string, string[]>>({});
+  /** Kết quả vừa huỷ, theo mã báo bay — để hiện "Đã huỷ" / nhắc hotline. */
+  const [cancelDone, setCancelDone] = useState<Record<string, { cancelled: string[]; paidPerDay: boolean }>>({});
 
   const cfg = spot ? BAO_BAY_SPOT_CONFIG[spot] : null;
   const hnaaSpot = Boolean(cfg?.hnaa);
@@ -717,6 +743,77 @@ export default function BaoBayClient() {
     }
     setPrefilled(true);
     // chỉ chạy một lần lúc mở trang
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Tìm báo bay để huỷ: vé ký (link thư) hoặc mã + SĐT. */
+  const cancelLookup = async (by: { token?: string; code?: string; phone?: string }) => {
+    setCancelBusy(true);
+    setCancelErr("");
+    try {
+      const res = await fetch("/api/bao-bay/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "lookup", ...by }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        const list = (data.notices ?? []) as CancelNotice[];
+        setCancelList(list);
+        setCancelSel({});
+        setCancelDone({});
+        if (!list.length) setCancelErr(s((d) => d.cancelNothing));
+      } else {
+        setCancelList([]);
+        setCancelErr(errText(String(data?.code || "")) ?? s((d) => d.cancelNothing));
+      }
+    } catch {
+      setCancelErr(s((d) => d.err.network));
+    } finally {
+      setCancelBusy(false);
+    }
+  };
+
+  /** Huỷ các ngày đã chọn của một báo bay — chỉ khi phi công BẤM nút (mở link không tự huỷ). */
+  const cancelDates = async (n: CancelNotice) => {
+    const dates = cancelSel[n.noticeCode] ?? [];
+    if (!dates.length) return;
+    setCancelBusy(true);
+    setCancelErr("");
+    try {
+      const res = await fetch("/api/bao-bay/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel", token: n.token, dates, lang: language }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        setCancelList((list) => list.map((x) => (x.noticeCode === n.noticeCode ? (data.notice as CancelNotice) : x)));
+        setCancelSel((sel) => ({ ...sel, [n.noticeCode]: [] }));
+        setCancelDone((dn) => ({ ...dn, [n.noticeCode]: { cancelled: data.cancelled ?? [], paidPerDay: Boolean(data.paidPerDay) } }));
+        if (spot) void loadToday(spot);
+      } else {
+        setCancelErr(errText(String(data?.code || "")) ?? s((d) => d.err.server));
+      }
+    } catch {
+      setCancelErr(s((d) => d.err.network));
+    } finally {
+      setCancelBusy(false);
+    }
+  };
+
+  // Link huỷ trong thư: /baobay?cancel=<vé>#cancel → mở khung huỷ, tìm sẵn báo bay (chưa huỷ gì)
+  useEffect(() => {
+    let token = "";
+    try {
+      token = new URLSearchParams(window.location.search).get("cancel") || "";
+    } catch {
+      token = "";
+    }
+    if (!token) return;
+    setCancelOpen(true);
+    void cancelLookup({ token });
+    window.setTimeout(() => document.getElementById("cancel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 400);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1010,6 +1107,7 @@ export default function BaoBayClient() {
         dates: Array.isArray(data.dates) ? data.dates : dates,
         fee: data.fee as BaoBayFee,
         transferNote: String(data.transferNote || ""),
+        cancelToken: String(data.cancelToken || ""),
       });
       if (data.spot) void loadToday(data.spot as BaoBaySpot);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1165,6 +1263,140 @@ export default function BaoBayClient() {
       </div>
     );
   };
+
+  /** Khung HUỶ BÁO BAY (thu gọn mặc định) — mã báo bay/mã hội viên + SĐT → chọn ngày huỷ. */
+  const cancelPanel = () => (
+    <div id="cancel" className="scroll-mt-24 rounded-2xl border border-red-300/30 bg-red-500/[0.07] text-sm text-white/85">
+      <button
+        type="button"
+        onClick={() => setCancelOpen((x) => !x)}
+        aria-expanded={cancelOpen}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+      >
+        <span className="font-bold text-red-200">
+          ✖ <Bi t={b((d) => d.cancelTitle)} />
+        </span>
+        <span className={`text-lg transition-transform ${cancelOpen ? "rotate-180" : ""}`}>⌄</span>
+      </button>
+      {cancelOpen ? (
+        <div className="border-t border-white/10 px-4 pb-4 pt-3">
+          <p className="text-[13px] leading-relaxed text-white/70">
+            <Bi t={b((d) => d.cancelIntro)} />
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <input
+              className={inputClass}
+              value={cancelCode}
+              onChange={(e) => setCancelCode(e.target.value)}
+              placeholder={s((d) => d.cancelCodePh, " / ")}
+              aria-label={s((d) => d.cancelCodeLabel, " / ")}
+              autoComplete="off"
+            />
+            <input
+              className={inputClass}
+              value={cancelPhone}
+              inputMode="tel"
+              onChange={(e) => setCancelPhone(e.target.value)}
+              placeholder={s((d) => d.cancelPhoneLabel, " / ")}
+              aria-label={s((d) => d.cancelPhoneLabel, " / ")}
+            />
+          </div>
+          <button
+            type="button"
+            disabled={cancelBusy || !cancelCode.trim() || cancelPhone.replace(/\D/g, "").length < 8}
+            onClick={() => cancelLookup({ code: cancelCode.trim(), phone: cancelPhone.trim() })}
+            className="mt-2 h-11 rounded-xl bg-white/15 px-4 text-sm font-bold text-white hover:bg-white/25 disabled:opacity-50"
+          >
+            {cancelBusy ? <Bi t={b((d) => d.cancelSearching)} /> : <Bi t={b((d) => d.cancelFind)} />}
+          </button>
+          {cancelErr ? <p className="mt-2 text-sm font-semibold text-red-300">{cancelErr}</p> : null}
+
+          {cancelList.map((n) => {
+            const sel = cancelSel[n.noticeCode] ?? [];
+            const huyDuoc = n.dates.filter((x) => x.status === "active").map((x) => x.date);
+            const done = cancelDone[n.noticeCode];
+            return (
+              <div key={n.noticeCode} className="mt-3 rounded-xl border border-white/15 bg-black/25 p-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="whitespace-nowrap font-mono font-bold text-white">{n.noticeCode}</span>
+                  <span className="text-white/70">{T.spotName[n.spot]}</span>
+                </div>
+                <div className="mt-2 space-y-1">
+                  {n.dates.map((x) => (
+                    <label key={x.date} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        disabled={x.status !== "active"}
+                        checked={sel.includes(x.date)}
+                        onChange={(e) =>
+                          setCancelSel((m) => ({
+                            ...m,
+                            [n.noticeCode]: e.target.checked
+                              ? [...(m[n.noticeCode] ?? []), x.date]
+                              : (m[n.noticeCode] ?? []).filter((d) => d !== x.date),
+                          }))
+                        }
+                        className="h-4 w-4 accent-red-500"
+                      />
+                      <span className={x.status === "cancelled" ? "text-white/40 line-through" : "font-semibold text-white"}>
+                        {formatVnDate(x.date)}
+                      </span>
+                      {x.status === "cancelled" ? (
+                        <span className="text-xs text-white/50">
+                          <Bi t={b((d) => d.cancelDone)} />
+                        </span>
+                      ) : x.status === "closed" ? (
+                        <span className="text-xs text-amber-200/80">
+                          <Bi t={b((d) => d.cancelClosed)} />
+                        </span>
+                      ) : null}
+                    </label>
+                  ))}
+                </div>
+                {huyDuoc.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setCancelSel((m) => ({ ...m, [n.noticeCode]: huyDuoc }))}
+                    className="mt-2 text-xs font-semibold text-amber-300 underline underline-offset-2"
+                  >
+                    <Bi t={b((d) => d.cancelSelectAll)} />
+                  </button>
+                ) : null}
+                {huyDuoc.length ? (
+                  <button
+                    type="button"
+                    disabled={cancelBusy || !sel.length}
+                    onClick={() => cancelDates(n)}
+                    className="mt-2 block h-11 w-full rounded-xl bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-500 disabled:opacity-40"
+                  >
+                    <Bi t={b((d) => d.cancelBtn)} />
+                  </button>
+                ) : null}
+                {n.passValidUntil ? (
+                  <p className="mt-2 text-xs text-emerald-200">
+                    🎫 <Bi t={b((d) => d.cancelPassKept)} /> ({formatVnDate(n.passValidUntil)})
+                  </p>
+                ) : null}
+                {done?.cancelled.length ? (
+                  <p className="mt-2 text-xs font-semibold text-emerald-300">
+                    ✓ <Bi t={b((d) => d.cancelDone)} />: {done.cancelled.map(formatVnDate).join(" · ")}
+                  </p>
+                ) : null}
+                {n.paidPerDay && (done?.cancelled.length || n.dates.some((x) => x.status === "cancelled")) ? (
+                  <p className="mt-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+                    💳 <Bi t={b((d) => d.cancelPaidNote)} />:{" "}
+                    <a href={SUPPORT_TEL} className="whitespace-nowrap font-bold underline">
+                      {SUPPORT_PHONE}
+                    </a>
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 
   /** Tần số bộ đàm + hotline khẩn cấp — trên phiếu và trên màn hình gửi xong. */
   const radioBox = () => (
@@ -1334,6 +1566,15 @@ export default function BaoBayClient() {
 
           <div className="mt-5 w-full">{radioBox()}</div>
 
+          {/* Link huỷ ngay ở màn hình gửi xong (mở khung huỷ, chưa huỷ gì) */}
+          <a
+            href={result.cancelToken ? `?cancel=${encodeURIComponent(result.cancelToken)}#cancel` : "#cancel"}
+            className="mt-4 block text-sm text-white/70"
+          >
+            <Bi t={b((d) => d.cancelHint)} />{" "}
+            <span className="whitespace-nowrap font-bold text-red-300 underline">✖ {T.cancelLink}</span>
+          </a>
+
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a
               href={SUPPORT_TEL}
@@ -1420,7 +1661,11 @@ export default function BaoBayClient() {
       {/* ============ PHIẾU BÁO BAY ============ */}
       <section className="relative bg-[#0B0A08] pb-12 pt-6">
         {/* Bộ đàm + hotline khẩn cấp ngay trên phiếu: thứ phi công cần lưu trước khi lên bãi */}
-        <div className="mx-auto mb-4 max-w-3xl px-4">{radioBox()}</div>
+        <div className="mx-auto mb-4 max-w-3xl space-y-3 px-4">
+          {radioBox()}
+          {/* Huỷ báo bay — không bay được thì huỷ trước 9h00 để khỏi bị tính báo ảo */}
+          {cancelPanel()}
+        </div>
         <div ref={formRef} className="mx-auto max-w-3xl scroll-mt-20 px-4">
           <div className="overflow-hidden rounded-3xl border-2 border-amber-400/50 bg-[#28344A] shadow-[0_0_70px_rgba(251,191,36,.22),0_24px_60px_rgba(0,0,0,.55)]">
             <div className="border-b border-white/15 bg-gradient-to-r from-amber-400/30 via-amber-400/15 to-transparent px-5 py-5 sm:px-7">
@@ -1853,6 +2098,9 @@ export default function BaoBayClient() {
                     </p>
                     <p className="mt-2 rounded-lg border border-red-400/35 bg-red-500/10 px-3 py-2 text-[13px] font-semibold leading-relaxed text-red-200">
                       ⚠️ <Bi t={b((d) => d.hnaaWarn)} />
+                      <span className="mt-1 block font-normal text-red-100/90">
+                        <Bi t={b((d) => d.cancelHint)} />
+                      </span>
                     </p>
                   </div>
                 ) : null}
@@ -2284,6 +2532,12 @@ export default function BaoBayClient() {
                 ) : null}
                 <p className="text-center text-xs leading-relaxed text-white/45">
                   <Bi t={b((d) => d.submitFoot)} />
+                  <span className="mt-1.5 block">
+                    <Bi t={b((d) => d.cancelHint)} />{" "}
+                    <a href="#cancel" onClick={() => setCancelOpen(true)} className="font-semibold text-red-300 underline">
+                      {T.cancelLink}
+                    </a>
+                  </span>
                   <span className="mt-1.5 block">
                     <Bi t={b((d) => d.needHelp)} inline />{" "}
                     <a href={SUPPORT_TEL} className="font-bold text-white/70">

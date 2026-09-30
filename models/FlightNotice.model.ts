@@ -45,6 +45,14 @@ export interface IFlightNotice {
   memberPhoneUnverified?: boolean;
   /** Lúc phi công tích "chấp nhận tuân thủ Nội quy điểm bay" (bắt buộc ở Viên Nam). */
   rulesAcceptedAt?: Date;
+  /**
+   * NGÀY ĐÃ HUỶ (chủ 01/10): phi công tự huỷ trước 9h00 ngày bay. KHÔNG xoá báo
+   * bay, không bớt `dates` — ngày huỷ nằm ở đây kèm giờ huỷ; danh sách "hôm nay"
+   * và số liệu admin tự bỏ những ngày này. Vé tháng/năm đã mua vẫn giữ.
+   */
+  cancelledDates?: Array<{ date: string; at: Date }>;
+  /** Ngày admin đánh dấu "Không đến bay (báo ảo)" — đếm cho luật hội viên báo ảo. */
+  noShowDates?: Array<{ date: string; at: Date; by?: string }>;
 
   feeMode: FeeMode;
   /** Cách phi công chọn trả (day/month/year) — khác feeMode khi được miễn hết. */
@@ -91,10 +99,12 @@ const FlightNoticeSchema = new Schema<IFlightNotice>(
     idNorm: { type: String, default: "", index: true },
     phoneNorm: { type: String, default: "", index: true },
 
-    memberCode: String,
+    memberCode: { type: String, index: true },
     memberId: { type: Schema.Types.ObjectId, ref: "HnaaMember" },
     memberPhoneUnverified: { type: Boolean, default: false },
     rulesAcceptedAt: Date,
+    cancelledDates: [{ _id: false, date: String, at: Date }],
+    noShowDates: [{ _id: false, date: String, at: Date, by: String }],
 
     feeMode: {
       type: String,

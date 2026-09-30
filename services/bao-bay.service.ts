@@ -10,6 +10,7 @@
 
 import { connectDB } from "@/lib/mongodb";
 import {
+  canCancelDate,
   ALLOW_MEMBER_WITHOUT_PHONE,
   BAO_BAY_SPOT_CONFIG,
   buildNoticeCode,
@@ -34,6 +35,7 @@ import {
 import { WING_CLASSES, type WingClass } from "@/lib/pilot-event";
 import { ensureFlightNoticeIndexes, FlightNotice, type IFlightNotice } from "@/models/FlightNotice.model";
 import { ensureHnaaMemberIndexes, HnaaMember, type IHnaaMember } from "@/models/HnaaMember.model";
+import { makeCancelToken, readCancelToken } from "@/lib/bao-bay-token";
 
 const clean = (v: unknown, max = 200) => String(v ?? "").trim().slice(0, max);
 
@@ -55,6 +57,7 @@ export type BaoBayErrorCode =
   | "phoneLocked"
   | "rules"
   | "email"
+  | "cancelNotFound"
   | "server";
 
 export class BaoBayError extends Error {
@@ -592,7 +595,8 @@ export async function listTodayPilots(spotRaw: unknown, now: Date): Promise<{ co
   const spot = parseSpot(spotRaw);
   const today = vnParts(now).date;
   await connectDB();
-  const docs = await FlightNotice.find({ spot, dates: today })
+  // Ngày đã huỷ thì người đó không còn trong danh sách hôm nay
+  const docs = await FlightNotice.find({ spot, dates: today, "cancelledDates.date": { $ne: today } })
     .sort({ submittedAt: 1 })
     .select("fullName idNorm phoneNorm memberCode")
     .limit(500)
@@ -709,4 +713,155 @@ export async function importMembers(
   await ensureHnaaMemberIndexes();
   const res = await HnaaMember.bulkWrite(ops, { ordered: false });
   return { inserted: res.upsertedCount, updated: res.modifiedCount, matched: res.matchedCount, skipped };
+}
+
+/* ------------------------------------------------------------------ *
+ * HUỶ BÁO BAY (chủ 01/10) — trước 9h00 ngày bay, từng ngày hoặc cả loạt
+ * ------------------------------------------------------------------ */
+
+export type CancelDateView = {
+  date: string;
+  /** active = còn huỷ được · cancelled = đã huỷ · closed = đã chốt danh sách (qua 9h00) */
+  status: "active" | "cancelled" | "closed";
+  cancelledAt?: string;
+};
+
+export type CancelNoticeView = {
+  /** Vé ký HMAC để huỷ báo bay này mà không phải gửi lại SĐT. */
+  token: string;
+  noticeCode: string;
+  spot: BaoBaySpot;
+  dates: CancelDateView[];
+  amount: number;
+  feeMode: string;
+  /** Có vé tháng/năm mua trong báo bay này — huỷ ngày KHÔNG huỷ vé. */
+  passValidUntil?: string;
+  /** Đã trả tiền theo ngày — huỷ không tự hoàn tiền, phải gọi hotline. */
+  paidPerDay: boolean;
+};
+
+type NoticeDoc = IFlightNotice & { _id: unknown };
+
+/** Ngày đã trả tiền theo ngày (không phải vé tháng/năm) — huỷ thì phải liên hệ hotline. */
+function paidPerDay(n: NoticeDoc): boolean {
+  return (n.amount ?? 0) > 0 && n.feeMode === "day" && (Boolean(n.paid) || Boolean(n.paidClaimedAt));
+}
+
+export function cancelView(n: NoticeDoc, now: Date): CancelNoticeView {
+  const huy = new Map((n.cancelledDates ?? []).map((c) => [c.date, c.at]));
+  return {
+    token: makeCancelToken(n.noticeCode),
+    noticeCode: n.noticeCode,
+    spot: n.spot,
+    dates: [...n.dates].sort().map((date) =>
+      huy.has(date)
+        ? { date, status: "cancelled" as const, cancelledAt: new Date(huy.get(date) as Date).toISOString() }
+        : { date, status: canCancelDate(date, now) ? ("active" as const) : ("closed" as const) },
+    ),
+    amount: n.amount ?? 0,
+    feeMode: n.feeMode,
+    passValidUntil: n.passValidUntil,
+    paidPerDay: paidPerDay(n),
+  };
+}
+
+/**
+ * TÌM BÁO BAY ĐỂ HUỶ — ba cách nhận ra người huỷ:
+ *  - vé ký (link trong thư / đã xác minh trước đó);
+ *  - mã báo bay (BB…) + SĐT đã báo bay (so số đã chuẩn hoá);
+ *  - mã hội viên HNAA + SĐT đăng ký (cùng luật xác nhận như lúc báo bay) →
+ *    mọi báo bay còn ngày chưa tới của hội viên đó.
+ * Sai thì trả mảng rỗng + lý do, không nói "mã có nhưng sai SĐT" để khỏi dò.
+ */
+export async function findNoticesForCancel(
+  input: { token?: unknown; code?: unknown; phone?: unknown },
+  now: Date,
+): Promise<{ notices: CancelNoticeView[]; reason?: "notFound" | "phoneLocked" }> {
+  await connectDB();
+  const today = vnParts(now).date;
+
+  const byToken = readCancelToken(input.token);
+  if (byToken) {
+    const n = (await FlightNotice.findOne({ noticeCode: byToken }).lean()) as NoticeDoc | null;
+    return { notices: n ? [cancelView(n, now)] : [], ...(n ? {} : { reason: "notFound" as const }) };
+  }
+
+  const code = clean(input.code, 60).toUpperCase().replace(/\s+/g, "");
+  const phone = normalizePhone(input.phone);
+  if (!code || phone.length < 8) return { notices: [], reason: "notFound" };
+
+  if (code.startsWith("BB")) {
+    const n = (await FlightNotice.findOne({ noticeCode: code }).lean()) as NoticeDoc | null;
+    if (!n || n.phoneNorm !== phone) return { notices: [], reason: "notFound" };
+    return { notices: [cancelView(n, now)] };
+  }
+
+  // Mã hội viên HNAA + SĐT đăng ký
+  const c = await confirmMember(code, input.phone);
+  if (!c.ok) return { notices: [], reason: c.reason === "locked" ? "phoneLocked" : "notFound" };
+  const docs = (await FlightNotice.find({ memberCode: c.member.code, dates: { $gte: today } })
+    .sort({ submittedAt: -1 })
+    .limit(30)
+    .lean()) as NoticeDoc[];
+  return { notices: docs.map((d) => cancelView(d, now)) };
+}
+
+export type CancelResult = {
+  notice: CancelNoticeView;
+  cancelled: string[];
+  closed: string[];
+  paidPerDay: boolean;
+  email: string;
+  noticeDoc: NoticeDoc;
+};
+
+/**
+ * HUỶ NGÀY: chỉ nhận vé ký (lấy từ bước tìm, hoặc link trong thư). Ngày nào
+ * còn trước 9h00 (giờ máy chủ) thì ghi vào cancelledDates kèm giờ; ngày đã chốt
+ * thì trả về `closed`. KHÔNG xoá báo bay, KHÔNG động tới vé tháng/năm.
+ */
+export async function cancelNoticeDates(token: unknown, datesRaw: unknown, now: Date): Promise<CancelResult> {
+  const code = readCancelToken(token);
+  if (!code) throw new BaoBayError("cancelNotFound", "Không tìm thấy báo bay để huỷ", 404);
+  await connectDB();
+  const n = (await FlightNotice.findOne({ noticeCode: code }).lean()) as NoticeDoc | null;
+  if (!n) throw new BaoBayError("cancelNotFound", "Không tìm thấy báo bay để huỷ", 404);
+
+  const want = Array.isArray(datesRaw) ? datesRaw.map((d) => clean(d, 10)) : [];
+  const daHuy = new Set((n.cancelledDates ?? []).map((c) => c.date));
+  const cancelled: string[] = [];
+  const closed: string[] = [];
+  for (const d of [...new Set(want)].filter((d) => n.dates.includes(d) && !daHuy.has(d)).sort()) {
+    if (canCancelDate(d, now)) cancelled.push(d);
+    else closed.push(d);
+  }
+  if (cancelled.length) {
+    await FlightNotice.updateOne(
+      { _id: n._id },
+      { $push: { cancelledDates: { $each: cancelled.map((date) => ({ date, at: now })) } } },
+    );
+  }
+  const fresh = (await FlightNotice.findById(n._id).lean()) as NoticeDoc;
+  let email = fresh.email || "";
+  if (!email && fresh.memberCode) {
+    const m = await HnaaMember.findOne({ code: fresh.memberCode }).select("email").lean();
+    email = m?.email || "";
+  }
+  return { notice: cancelView(fresh, now), cancelled, closed, paidPerDay: paidPerDay(fresh), email, noticeDoc: fresh };
+}
+
+/** Đếm "báo ảo" (không đến bay) và số ngày tự huỷ theo mã hội viên — cho thẻ Hội viên ở admin. */
+export async function memberNoShowCounts(): Promise<Record<string, { noShow: number; cancelled: number }>> {
+  await connectDB();
+  const rows = await FlightNotice.aggregate([
+    { $match: { memberCode: { $exists: true, $nin: [null, ""] } } },
+    {
+      $group: {
+        _id: "$memberCode",
+        noShow: { $sum: { $size: { $ifNull: ["$noShowDates", []] } } },
+        cancelled: { $sum: { $size: { $ifNull: ["$cancelledDates", []] } } },
+      },
+    },
+  ]);
+  return Object.fromEntries(rows.map((r) => [String(r._id), { noShow: r.noShow, cancelled: r.cancelled }]));
 }

@@ -9,8 +9,9 @@ import { NextResponse } from "next/server";
 
 import { requireBaoBayAdmin } from "@/lib/bao-bay-admin-auth";
 import { connectDB } from "@/lib/mongodb";
+import { NO_SHOW_BLOCK_AFTER } from "@/lib/bao-bay";
 import { HnaaMember } from "@/models/HnaaMember.model";
-import { importMembers, type ImportMemberRow } from "@/services/bao-bay.service";
+import { importMembers, memberNoShowCounts, type ImportMemberRow } from "@/services/bao-bay.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,7 +42,9 @@ export async function GET(req: Request) {
     HnaaMember.countDocuments({ active: true }),
   ]);
 
-  return NextResponse.json({ ok: true, items, total, activeCount });
+  // Đếm "báo ảo" (không đến bay) và số ngày tự huỷ theo mã — luật hội viên báo ảo
+  const counts = await memberNoShowCounts();
+  return NextResponse.json({ ok: true, items, total, activeCount, counts, noShowBlockAfter: NO_SHOW_BLOCK_AFTER });
 }
 
 /**

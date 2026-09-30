@@ -37,6 +37,10 @@ type Notice = {
   /** Hội viên chưa có SĐT trong danh sách hội — SĐT là tự khai. */
   memberPhoneUnverified?: boolean;
   rulesAcceptedAt?: string;
+  /** Ngày phi công tự huỷ (trước 9h00 ngày bay) — gạch ngang, không tính số liệu. */
+  cancelledDates?: Array<{ date: string; at: string }>;
+  /** Ngày staff đánh dấu "Không đến bay (báo ảo)". */
+  noShowDates?: Array<{ date: string; at: string; by?: string }>;
   feeMode: FeeMode;
   amount: number;
   passFrom?: string;
@@ -56,6 +60,8 @@ type Notice = {
 };
 
 type Totals = {
+  cancelled?: number;
+  cancelledPaid?: number;
   count: number;
   amount: number;
   paidAmount: number;
@@ -212,6 +218,22 @@ function NoticesTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, allDates, spot, paid]);
 
+  /** Bật/tắt "Không đến bay (báo ảo)" cho MỘT ngày của báo bay. */
+  const toggleNoShow = async (n: Notice, date: string, value: boolean) => {
+    setBusyId(n._id);
+    try {
+      const data = await call<{ item: Notice }>(`/api/admin/bao-bay/notices/${n._id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ noShow: { date, value } }),
+      });
+      setItems((list) => list.map((x) => (x._id === n._id ? data.item : x)));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Không cập nhật được");
+    } finally {
+      setBusyId("");
+    }
+  };
+
   const togglePaid = async (n: Notice) => {
     setBusyId(n._id);
     try {
@@ -306,6 +328,14 @@ function NoticesTab() {
           <Stat label="Tổng phải thu" value={formatVndNb(totals.amount)} />
           <Stat label="Đã thu" value={formatVndNb(totals.paidAmount)} tone="green" />
           <Stat label="Chưa thu" value={formatVndNb(totals.unpaidAmount)} tone={totals.unpaidAmount ? "red" : undefined} />
+          {totals.cancelled ? (
+            <div className="text-sm text-slate-500 sm:col-span-4">
+              Đã huỷ (không tính vào số trên): <b>{totals.cancelled}</b>
+              {totals.cancelledPaid ? (
+                <span className="ml-2 font-semibold text-red-600">· huỷ – đã thu tiền: {totals.cancelledPaid} (xử lý hoàn tiền tay)</span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
       {totals && Object.keys(totals.byMode).length ? (
@@ -355,7 +385,7 @@ function NoticesTab() {
                   <td className="px-3 py-2 font-mono text-xs font-semibold text-slate-800">{n.noticeCode}</td>
                   <td className="px-3 py-2">
                     <div className="font-semibold text-slate-800">{BAO_BAY_SPOT_CONFIG[n.spot]?.name ?? n.spot}</div>
-                    <div className="text-xs text-slate-500">{n.dates.map(formatVnDate).join(", ")}</div>
+                    <NoticeDates n={n} busy={busyId === n._id} onNoShow={(d, v) => toggleNoShow(n, d, v)} />
                   </td>
                   <td className="px-3 py-2">
                     <div className="font-semibold text-slate-800">
@@ -447,6 +477,44 @@ function NoticesTab() {
   );
 }
 
+/**
+ * Các ngày của một báo bay: ngày huỷ gạch ngang kèm giờ huỷ; ngày còn lại có
+ * nút "Báo ảo" (Không đến bay) để staff đánh dấu. Huỷ mà đã thu tiền theo ngày
+ * thì gắn cờ "huỷ – đã thu tiền" để xử lý hoàn tiền tay.
+ */
+function NoticeDates({ n, busy, onNoShow }: { n: Notice; busy: boolean; onNoShow: (date: string, value: boolean) => void }) {
+  const huy = new Map((n.cancelledDates ?? []).map((c) => [c.date, c.at]));
+  const ao = new Set((n.noShowDates ?? []).map((x) => x.date));
+  const daThu = n.amount > 0 && n.feeMode === "day" && (n.paid || Boolean(n.paidClaimedAt));
+  return (
+    <div className="mt-0.5 space-y-0.5 text-xs">
+      {[...n.dates].sort().map((d) =>
+        huy.has(d) ? (
+          <div key={d} className="text-slate-400">
+            <span className="line-through">{formatVnDate(d)}</span> <span className="whitespace-nowrap">huỷ {vnTime(huy.get(d))}</span>
+            {daThu ? <span className="ml-1 whitespace-nowrap font-semibold text-red-600">· huỷ – đã thu tiền</span> : null}
+          </div>
+        ) : (
+          <div key={d} className="flex items-center gap-1.5 text-slate-600">
+            <span>{formatVnDate(d)}</span>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onNoShow(d, !ao.has(d))}
+              title="Không đến bay (báo ảo)"
+              className={`rounded px-1.5 py-0.5 text-[10px] font-bold disabled:opacity-50 ${
+                ao.has(d) ? "bg-red-600 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              }`}
+            >
+              {ao.has(d) ? "✓ Báo ảo" : "Báo ảo?"}
+            </button>
+          </div>
+        ),
+      )}
+    </div>
+  );
+}
+
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -471,6 +539,8 @@ function MembersTab() {
 
   const [items, setItems] = useState<Member[]>([]);
   const [counts, setCounts] = useState({ total: 0, activeCount: 0 });
+  /** Số lần "báo ảo" (không đến bay) và số ngày tự huỷ theo mã hội viên. */
+  const [noShow, setNoShow] = useState<Record<string, { noShow: number; cancelled: number }>>({});
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [loading, setLoading] = useState(false);
@@ -482,7 +552,13 @@ function MembersTab() {
     try {
       const p = new URLSearchParams({ status });
       if (q.trim()) p.set("q", q.trim());
-      const data = await call<{ items: Member[]; total: number; activeCount: number }>(`/api/admin/bao-bay/members?${p}`);
+      const data = await call<{
+        items: Member[];
+        total: number;
+        activeCount: number;
+        counts?: Record<string, { noShow: number; cancelled: number }>;
+      }>(`/api/admin/bao-bay/members?${p}`);
+      setNoShow(data.counts ?? {});
       setItems(data.items);
       setCounts({ total: data.total, activeCount: data.activeCount });
     } catch (e) {
@@ -545,6 +621,7 @@ function MembersTab() {
                 <th className="px-3 py-2">SĐT</th>
                 <th className="px-3 py-2">SĐT khẩn cấp</th>
                 <th className="px-3 py-2">Thông tin thêm</th>
+                <th className="px-3 py-2" title="Không đến bay (báo ảo) · số ngày tự huỷ">Báo ảo · Huỷ</th>
                 <th className="px-3 py-2">Trạng thái</th>
                 <th className="px-3 py-2" />
               </tr>
@@ -552,13 +629,13 @@ function MembersTab() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-slate-500">
+                  <td colSpan={9} className="px-3 py-6 text-center text-slate-500">
                     Đang tải…
                   </td>
                 </tr>
               ) : !items.length ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-slate-500">
+                  <td colSpan={9} className="px-3 py-6 text-center text-slate-500">
                     Chưa có hội viên nào — dán bảng ở trên để nhập.
                   </td>
                 </tr>
@@ -567,6 +644,7 @@ function MembersTab() {
                   <MemberRow
                     key={m._id}
                     member={m}
+                    stats={noShow[m.code]}
                     onSaved={(next) => setItems((list) => list.map((x) => (x._id === next._id ? next : x)))}
                   />
                 ))
@@ -579,7 +657,15 @@ function MembersTab() {
   );
 }
 
-function MemberRow({ member, onSaved }: { member: Member; onSaved: (m: Member) => void }) {
+function MemberRow({
+  member,
+  stats,
+  onSaved,
+}: {
+  member: Member;
+  stats?: { noShow: number; cancelled: number };
+  onSaved: (m: Member) => void;
+}) {
   const call = useAdminFetch();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(member);
@@ -641,6 +727,7 @@ function MemberRow({ member, onSaved }: { member: Member; onSaved: (m: Member) =
         </td>
         <td className="px-3 py-2 text-xs text-slate-500">{extra.map(([k, v]) => `${k}: ${v}`).join(" · ") || "—"}</td>
         <td className="px-3 py-2" />
+        <td className="px-3 py-2" />
         <td className="whitespace-nowrap px-3 py-2">
           <button
             type="button"
@@ -688,6 +775,11 @@ function MemberRow({ member, onSaved }: { member: Member; onSaved: (m: Member) =
       <td className="px-3 py-2">{member.phone || "—"}</td>
       <td className="px-3 py-2">{member.emergencyPhone || "—"}</td>
       <td className="max-w-[240px] px-3 py-2 text-xs text-slate-500">{extra.map(([k, v]) => `${k}: ${v}`).join(" · ") || "—"}</td>
+      <td className="whitespace-nowrap px-3 py-2 text-xs">
+        {/* Đếm báo ảo (staff đánh dấu) · số ngày tự huỷ — chỉ để xem, chưa tự chặn (NO_SHOW_BLOCK_AFTER = 0) */}
+        <span className={stats?.noShow ? "font-bold text-red-600" : "text-slate-400"}>{stats?.noShow ?? 0}</span>
+        <span className="text-slate-400"> · {stats?.cancelled ?? 0}</span>
+      </td>
       <td className="px-3 py-2">
         <button
           type="button"

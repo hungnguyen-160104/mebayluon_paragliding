@@ -26,6 +26,7 @@ import {
   type BaoBayFee,
 } from "@/lib/bao-bay";
 import { baoBayPilotMail } from "@/lib/email/bao-bay-pilot";
+import { makeCancelToken } from "@/lib/bao-bay-token";
 import { sendSmtpMail } from "@/lib/mailer";
 import { formatVnDate, formatVnd, wingClassLabel, type WingClass } from "@/lib/pilot-event";
 import { pilotAdminRecipients } from "@/lib/pilot-sheet";
@@ -156,6 +157,8 @@ export async function POST(req: Request) {
    */
   const pilotEmail = notice.email || (member?.email ? String(member.email) : "");
   const lang = String(body.lang ?? "vi").slice(0, 2);
+  /** Vé huỷ (ký HMAC) — cho link huỷ một chạm trong thư và ở màn hình gửi xong. */
+  const cancelToken = makeCancelToken(saved.noticeCode);
 
   // Thư báo về ban tổ chức: chạy sau khi đã trả lời, hỏng cũng chỉ ghi log
   after(async () => {
@@ -173,7 +176,7 @@ export async function POST(req: Request) {
   if (pilotEmail) {
     after(async () => {
       try {
-        const mail = baoBayPilotMail({ notice, fee, transferNote, lang });
+        const mail = baoBayPilotMail({ notice, fee, transferNote, lang, cancelToken });
         // Gửi từ hộp dangky.mebayluon (chưa có mật khẩu thì hộp mặc định + Reply-To dangky)
         await sendSmtpMail({ to: pilotEmail, subject: mail.subject, html: mail.html, sender: "dangky" });
       } catch (e) {
@@ -189,6 +192,7 @@ export async function POST(req: Request) {
     dates: saved.dates,
     fee,
     transferNote,
+    cancelToken,
     submittedAt: saved.submittedAt,
   });
 }

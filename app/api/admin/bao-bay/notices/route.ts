@@ -46,8 +46,24 @@ export async function GET(req: Request) {
   await connectDB();
   const items = await FlightNotice.find(filter).sort({ submittedAt: -1 }).limit(date === "all" ? 500 : 1000).lean();
 
+  /**
+   * NGÀY ĐÃ HUỶ không tính vào số liệu (chủ 01/10): xem theo một ngày thì bỏ
+   * báo bay đã huỷ ĐÚNG ngày đó; xem mọi ngày thì bỏ báo bay đã huỷ HẾT các
+   * ngày. Vẫn liệt kê trong bảng (gạch ngang) để admin thấy; đếm riêng
+   * `cancelled` và `cancelledPaid` (đã thu tiền mà huỷ — cần xử lý tay).
+   */
+  const huyHet = (n: (typeof items)[number]) => {
+    const h = new Set((n.cancelledDates ?? []).map((c) => c.date));
+    return date === "all" ? n.dates.every((d) => h.has(d)) : h.has(date);
+  };
+  const extra = { cancelled: 0, cancelledPaid: 0 };
   const totals = items.reduce(
     (t, n) => {
+      if (huyHet(n)) {
+        extra.cancelled++;
+        if ((n.amount || 0) > 0 && n.feeMode === "day" && (n.paid || n.paidClaimedAt)) extra.cancelledPaid++;
+        return t;
+      }
       t.count++;
       t.amount += n.amount || 0;
       if (n.paid) t.paidAmount += n.amount || 0;
@@ -58,5 +74,5 @@ export async function GET(req: Request) {
     { count: 0, amount: 0, paidAmount: 0, unpaidAmount: 0, byMode: {} as Record<string, number> },
   );
 
-  return NextResponse.json({ ok: true, date, items, totals });
+  return NextResponse.json({ ok: true, date, items, totals: { ...totals, ...extra } });
 }
