@@ -47,9 +47,6 @@ export const LEGAL_ENTITY = {
       "Phòng Đăng ký kinh doanh và Tài chính doanh nghiệp – Sở Tài chính TP Hà Nội",
     issuerEn:
       "Business Registration and Corporate Finance Division – Hanoi Department of Finance",
-    /** Nơi cấp viết gọn cho dòng chữ nhỏ ở footer. */
-    issuerShort: "Phòng ĐKKD – Sở Tài chính Hà Nội",
-    issuerShortEn: "Business Registration Office – Hanoi Department of Finance",
   },
   /** Trụ sở chính — nguyên văn trên Giấy CN ĐKDN. */
   registeredOffice:

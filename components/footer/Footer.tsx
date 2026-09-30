@@ -129,13 +129,10 @@ type FooterDict = {
     policies: string;
     /** Dòng 3: giấy phép kinh doanh dù lượn — chỉ số + cơ quan cấp. */
     bizLicense: (items: readonly { no: string; issuer: string }[]) => string;
-    /** Dòng 4 (chữ rất nhỏ): nhãn trụ sở · ĐT · người đại diện · ĐKDN. */
+    /** Dòng 4 (chữ rất nhỏ): nhãn trụ sở · ĐT · người đại diện. */
     office: string;
     phone: string;
     rep: string;
-    /** "ĐKDN cấp {ngày} tại {nơi}" — tách 2 mảnh để chèn số liệu. */
-    regIssued: string;
-    regAt: string;
   };
 };
 
@@ -169,8 +166,6 @@ const DICT: Record<Language, FooterDict> = {
       office: "Trụ sở",
       phone: "ĐT",
       rep: "Đại diện",
-      regIssued: "ĐKDN cấp",
-      regAt: "tại",
     },
   },
   en: {
@@ -202,8 +197,6 @@ const DICT: Record<Language, FooterDict> = {
       office: "Head office",
       phone: "Tel",
       rep: "Representative",
-      regIssued: "Business registration issued",
-      regAt: "by",
     },
   },
   fr: {
@@ -235,8 +228,6 @@ const DICT: Record<Language, FooterDict> = {
       office: "Siège",
       phone: "Tél.",
       rep: "Représentant",
-      regIssued: "Immatriculation délivrée le",
-      regAt: "par",
     },
   },
   ru: {
@@ -268,8 +259,6 @@ const DICT: Record<Language, FooterDict> = {
       office: "Офис",
       phone: "Тел.",
       rep: "Представитель",
-      regIssued: "Регистрация предприятия от",
-      regAt: "—",
     },
   },
   zh: {
@@ -300,8 +289,6 @@ const DICT: Record<Language, FooterDict> = {
       office: "总部",
       phone: "电话",
       rep: "法定代表人",
-      regIssued: "企业登记日期",
-      regAt: "签发机关",
     },
   },
   hi: {
@@ -333,8 +320,6 @@ const DICT: Record<Language, FooterDict> = {
       office: "मुख्यालय",
       phone: "फ़ोन",
       rep: "प्रतिनिधि",
-      regIssued: "व्यवसाय पंजीकरण",
-      regAt: "जारीकर्ता",
     },
   },
 };
@@ -795,8 +780,8 @@ export default function Footer() {
                 <p>{t.license}</p>
                 <p>{t.legal.bizLicense(LEGAL_ENTITY.sportLicenses)}</p>
                 {/* Dòng 4 (chủ duyệt 30/09: "cứ cho lên đủ, chữ nhỏ gọn"):
-                    TT 47/2014 buộc trang chủ hiện đủ thông tin chủ sở hữu.
-                    Ngày cấp ĐKDN lần đầu giữ vì luật đòi "số, ngày, nơi cấp". */}
+                    trụ sở · ĐT · email · người đại diện. Chủ chốt KHÔNG hiện
+                    ngày và nơi cấp ĐKDN ở footer — có ở các trang /chinh-sach. */}
                 <p className="text-slate-500">
                   {t.legal.office}: {LEGAL_ENTITY.registeredOffice} · {t.legal.phone}{" "}
                   <a href="tel:+84964073555" className="hover:text-white">
@@ -809,12 +794,7 @@ export default function Footer() {
                   >
                     {LEGAL_ENTITY.registeredEmail}
                   </a>{" "}
-                  · {t.legal.rep}: {LEGAL_ENTITY.legalRepresentative.name} ·{" "}
-                  {t.legal.regIssued} {LEGAL_ENTITY.registration.firstIssuedDate}{" "}
-                  {t.legal.regAt}{" "}
-                  {language === "vi"
-                    ? LEGAL_ENTITY.registration.issuerShort
-                    : LEGAL_ENTITY.registration.issuerShortEn}
+                  · {t.legal.rep}: {LEGAL_ENTITY.legalRepresentative.name}
                 </p>
               </div>
 
