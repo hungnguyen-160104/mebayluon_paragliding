@@ -15,12 +15,13 @@ import {
   BAO_BAY_SPOTS,
   BAO_BAY_SPOT_CONFIG,
   FEE_MODE_LABEL,
+  formatVndNb,
   parseMemberPaste,
   vnParts,
   type FeeMode,
   type MemberField,
 } from "@/lib/bao-bay";
-import { formatVnDate, formatVnd, wingClassLabel, type WingClass } from "@/lib/pilot-event";
+import { formatVnDate, wingClassLabel, type WingClass } from "@/lib/pilot-event";
 
 type Notice = {
   _id: string;
@@ -292,9 +293,9 @@ function NoticesTab() {
       {totals ? (
         <div className="grid gap-3 sm:grid-cols-4">
           <Stat label="Số báo bay" value={String(totals.count)} />
-          <Stat label="Tổng phải thu" value={formatVnd(totals.amount)} />
-          <Stat label="Đã thu" value={formatVnd(totals.paidAmount)} tone="green" />
-          <Stat label="Chưa thu" value={formatVnd(totals.unpaidAmount)} tone={totals.unpaidAmount ? "red" : undefined} />
+          <Stat label="Tổng phải thu" value={formatVndNb(totals.amount)} />
+          <Stat label="Đã thu" value={formatVndNb(totals.paidAmount)} tone="green" />
+          <Stat label="Chưa thu" value={formatVndNb(totals.unpaidAmount)} tone={totals.unpaidAmount ? "red" : undefined} />
         </div>
       ) : null}
       {totals && Object.keys(totals.byMode).length ? (
@@ -382,7 +383,7 @@ function NoticesTab() {
                     ) : null}
                     {n.coveredByNotice ? <div className="mt-1 text-xs text-slate-400">theo {n.coveredByNotice}</div> : null}
                   </td>
-                  <td className="px-3 py-2 text-right font-semibold text-slate-800">{n.amount ? formatVnd(n.amount) : "0"}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-right font-semibold text-slate-800">{n.amount ? formatVndNb(n.amount) : "0"}</td>
                   <td className="px-3 py-2">
                     {/* HAI dấu tách bạch: khách tự báo đã CK (lời khai lúc gửi) và admin
                         đã đối chiếu sao kê bấm "đã thu". */}
@@ -423,7 +424,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "gr
     <div className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
       <div
-        className={`mt-1 text-xl font-bold ${
+        className={`mt-1 whitespace-nowrap text-xl font-bold ${
           tone === "green" ? "text-emerald-700" : tone === "red" ? "text-red-600" : "text-slate-900"
         }`}
       >

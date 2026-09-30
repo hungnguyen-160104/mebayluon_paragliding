@@ -9,10 +9,10 @@
  *
  * Trình duyệt chỉ dùng hàm tính phí để VẼ bảng tạm; con số thật luôn do máy chủ
  * tính lại lúc nhận báo bay, với giờ Việt Nam của máy chủ — không tin đồng hồ
- * máy phi công, sửa giờ điện thoại là qua được mốc 8h00.
+ * máy phi công, sửa giờ điện thoại là qua được mốc 9h00.
  */
 
-import { addOneMonth, formatVnDate } from "@/lib/pilot-event";
+import { addOneMonth, formatVnDate, formatVnd } from "@/lib/pilot-event";
 import { toAsciiNote } from "@/lib/vietqr";
 
 export type BaoBaySpot = "vien-nam" | "khau-pha" | "quan-ba";
@@ -24,7 +24,7 @@ export type PurchaseMode = "day" | "month" | "year";
 
 /**
  * Kết quả phí lưu trên báo bay:
- * - hnaa_free: hội viên HNAA báo trước 8h00 ngày bay (chỉ Viên Nam)
+ * - hnaa_free: hội viên HNAA báo trước 9h00 ngày bay (chỉ Viên Nam)
  * - pass: đã có vé tháng/năm còn hạn cho đúng điểm bay đó
  * - day / month / year: trả theo ngày, mua vé tháng, mua vé năm
  */
@@ -56,7 +56,7 @@ type SpotConfig = {
   purchaseModes: PurchaseMode[];
   /**
    * Viên Nam có thoả thuận với Hội dù lượn Hà Nội (HNAA): hội viên bay miễn phí
-   * nếu báo bay TRƯỚC 8h00 sáng ngày bay. Hai điểm còn lại không có thoả thuận.
+   * nếu báo bay TRƯỚC 9h00 sáng ngày bay. Hai điểm còn lại không có thoả thuận.
    */
   hnaa: boolean;
   /**
@@ -129,6 +129,16 @@ export const BAO_BAY_KNOWLEDGE_LINKS = [
 
 export type BaoBayKnowledgeKey = (typeof BAO_BAY_KNOWLEDGE_LINKS)[number]["key"];
 
+/**
+ * Số tiền KHÔNG BAO GIỜ bị bẻ dòng (chủ 30/09 thấy chữ "đ" rơi xuống dòng
+ * riêng): giống formatVnd của /muavang nhưng khoảng trắng trước "đ" là khoảng
+ * trắng KHÔNG NGẮT (U+00A0). Viết riêng ở đây thay vì sửa formatVnd để không
+ * đụng tới /muavang, thư và Google Sheets đang dùng hàm đó.
+ */
+export function formatVndNb(n: number): string {
+  return formatVnd(n).replace(/\s+(?=đ$)/, "\u00a0");
+}
+
 export function isBaoBaySpot(v: unknown): v is BaoBaySpot {
   return typeof v === "string" && (BAO_BAY_SPOTS as string[]).includes(v);
 }
@@ -140,11 +150,11 @@ export function purchasePrice(mode: PurchaseMode): number {
 }
 
 /* ------------------------------------------------------------------ *
- * Giờ Việt Nam và mốc 8h00 của hội viên HNAA
+ * Giờ Việt Nam và mốc 9h00 của hội viên HNAA
  * ------------------------------------------------------------------ */
 
 /** Hội viên HNAA phải báo bay TRƯỚC giờ này (giờ Việt Nam) của chính ngày bay. */
-export const HNAA_CUTOFF_HOUR = 8;
+export const HNAA_CUTOFF_HOUR = 9;
 
 /**
  * Ngày và giờ theo GIỜ VIỆT NAM của một thời điểm.
@@ -174,7 +184,7 @@ export function vnParts(now: Date): { date: string; minutes: number } {
 /**
  * Báo bay lúc `now` cho ngày bay `flyDate` có còn kịp mốc HNAA không.
  *
- * Báo cho NGÀY SAU thì lúc nào cũng kịp; báo cho HÔM NAY thì phải trước 8h00;
+ * Báo cho NGÀY SAU thì lúc nào cũng kịp; báo cho HÔM NAY thì phải trước 9h00;
  * ngày đã qua thì không (máy chủ vốn đã từ chối ngày quá khứ).
  */
 export function isBeforeHnaaCutoff(flyDate: string, now: Date): boolean {
@@ -249,7 +259,7 @@ export type BaoBayFee = {
   /** Vé đã có từ trước và đang che các ngày bay — để trang báo "còn hạn tới". */
   coveredByPass?: ExistingPass;
   /**
-   * Hội viên HNAA nhưng có ngày bay đã quá 8h00 — phải trả như người khác.
+   * Hội viên HNAA nhưng có ngày bay đã quá 9h00 — phải trả như người khác.
    * Trang dùng để giải thích vì sao hội viên vẫn bị tính tiền.
    */
   hnaaLateDates: string[];
@@ -268,7 +278,7 @@ export const BAO_BAY_BREAK_EVEN_DAYS = Math.ceil(BAO_BAY_FEE_PER_MONTH / BAO_BAY
  *
  * Thứ tự xét cho TỪNG ngày bay:
  *   1. có vé tháng/năm còn hạn cho đúng điểm bay → miễn (pass)
- *   2. hội viên HNAA, điểm Viên Nam, báo trước 8h00 ngày bay → miễn (hnaa_free)
+ *   2. hội viên HNAA, điểm Viên Nam, báo trước 9h00 ngày bay → miễn (hnaa_free)
  *   3. còn lại là ngày phải trả, tính theo cách phi công chọn.
  *
  * Mua vé tháng/năm: vé bắt đầu từ NGÀY PHẢI TRẢ ĐẦU TIÊN; ngày nào lỡ nằm ngoài
@@ -331,7 +341,7 @@ export function computeBaoBayFee(input: {
       key: "hnaaFree",
       dates: hnaaDays,
       amount: 0,
-      label: `Hội viên HNAA báo trước 8h00 — miễn phí × ${hnaaDays.length} ngày`,
+      label: `Hội viên HNAA báo trước 9h00 — miễn phí × ${hnaaDays.length} ngày`,
     });
   }
 

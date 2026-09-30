@@ -4,7 +4,7 @@
  * tháng/năm còn hạn, báo giá và lưu báo bay.
  *
  * Mọi hàm nhận `now` từ ngoài vào thay vì tự gọi new Date(): route truyền giờ
- * thật của máy chủ, còn phép thử truyền giờ cố định để kiểm được mốc 8h00 mà
+ * thật của máy chủ, còn phép thử truyền giờ cố định để kiểm được mốc 9h00 mà
  * không phải chờ tới sáng.
  */
 
@@ -248,7 +248,7 @@ export type BaoBayQuote = {
 
 /**
  * Báo giá trước khi gửi — cùng đường tính với lúc lưu, nên con số trang hiện
- * chính là con số sẽ ghi (trừ khi phi công để trang qua mốc 8h00 rồi mới bấm
+ * chính là con số sẽ ghi (trừ khi phi công để trang qua mốc 9h00 rồi mới bấm
  * gửi: lúc đó máy chủ tính lại và màn hình kết quả hiện số mới).
  */
 export async function quoteBaoBay(input: BaoBayInput, now: Date): Promise<BaoBayQuote> {
@@ -363,7 +363,7 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
   /**
    * TRẢ TIỀN RỒI MỚI GỬI (chủ 30/09). Tổng 0 đ thì không hỏi gì. Có tiền thì:
    *  - số máy chủ tính lại phải KHỚP số trang đang hiện (phi công đã chuyển theo
-   *    số đó) — lệch (vd. vừa qua 8h00) thì báo số mới cho trang vẽ lại QR,
+   *    số đó) — lệch (vd. vừa qua 9h00) thì báo số mới cho trang vẽ lại QR,
    *    KHÔNG lặng lẽ lưu một số khác với số đã chuyển;
    *  - phải có tích "đã thanh toán" — lưu thành lời khai paidClaimedAt, còn
    *    `paid` vẫn chờ admin đối chiếu sao kê.

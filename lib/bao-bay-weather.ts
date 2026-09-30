@@ -15,7 +15,7 @@
  * Thiếu số liệu mục nào thì BỎ mục đó — không đoán.
  */
 
-import { huongTroiNgay, tranMay, type SucThermal } from "@/lib/baobay/thoi-tiet";
+import { caoAmsl, huongTroiNgay, tranMay, type SucThermal } from "@/lib/baobay/thoi-tiet";
 
 /** Những trường của một ngày dự báo mà trang báo bay dùng tới. */
 export type NgayApi = {
@@ -40,9 +40,14 @@ export type NgayApi = {
   nhanDinh?: { diem?: Array<{ ten: string; ngan: string; noiDung: string; tong: string }> };
 };
 
-export type CalDay = { face: string; wind: number | null; sky: string };
+/** Mức bay của ngày — vẽ thành mặt tròn XANH / VÀNG / ĐỎ (BaoBayClient FaceIcon). */
+export type DayLevel = "xanh" | "vang" | "do";
 
-const MAT_NGAY: Record<string, string> = { xanh: "😊", vang: "😐", do: "😢" };
+export type CalDay = { level: DayLevel | null; wind: number | null; sky: string };
+
+function mucNgay(muc: string): DayLevel | null {
+  return muc === "xanh" || muc === "vang" || muc === "do" ? muc : null;
+}
 
 const gioCuaMot = (g: { gio: string }) => Number(String(g.gio).slice(11, 13));
 
@@ -55,7 +60,7 @@ export function calDay(n: NgayApi): CalDay {
   });
   const may = bay.length ? bay.reduce((t, g) => t + (g.may as number), 0) / bay.length : 0;
   return {
-    face: MAT_NGAY[n.muc] ?? "",
+    level: mucNgay(n.muc),
     // Cùng hàm và cùng khung 6h–18h với ô ngày của bảng dự báo (huongTroiCuaNgay)
     wind: huongTroiNgay(gio as never, [6, 18]),
     /**
@@ -74,7 +79,7 @@ export type Turb = "nhe" | "vua" | "manh";
 export type UpperLevel = "em" | "vua" | "manh" | "cucManh" | "cat";
 
 export type DayParts = {
-  face: string;
+  level: DayLevel | null;
   /** Hướng gió TỚI TỪ (quy ước khí tượng), độ — "gió Đông Nam" là gió từ Đông Nam thổi lại. */
   windFrom: number | null;
   /** Gió trung bình mặt đất 6h–18h, m/s. */
@@ -84,8 +89,9 @@ export type DayParts = {
   rainHours: number;
   drizzleHours: number;
   turb: Turb | null;
-  /** Trần mây TRÊN BÃI CẤT (m), ước tính 10h–15h — xem chú thích ở dayParts. */
+  /** Trần mây, mét AMSL (trên mực nước biển) — xem chú thích ở dayParts. */
   cloudBase: number | null;
+  /** Độ cao nghịch nhiệt / lớp chặn, mét AMSL. */
   inversion: { kind: "nghich" | "chan"; m: number } | "none" | null;
   upper: { level: UpperLevel; ms: number | null } | null;
 };
@@ -96,7 +102,14 @@ function trungVi(xs: number[]): number | null {
   return s[Math.floor(s.length / 2)];
 }
 
-export function dayParts(n: NgayApi): DayParts {
+/**
+ * `altBai`: độ cao BÃI CẤT (m AMSL) — lấy `toaDo.alt` của chính phản hồi
+ * /api/thoi-tiet, tức cùng con số hệ dự báo dùng (lib/weather-spots.ts). Không
+ * có thì KHÔNG hiện trần mây / nghịch nhiệt, chứ không in số "trên bãi" dưới
+ * nhãn AMSL.
+ */
+export function dayParts(n: NgayApi, altBai?: number): DayParts {
+  const coAlt = typeof altBai === "number" && Number.isFinite(altBai);
   const gio = Array.isArray(n.gio) ? n.gio : [];
   const khung = gio.filter((g) => gioCuaMot(g) >= 6 && gioCuaMot(g) <= 18 && Number.isFinite(g.gio10m));
   const diem = n.nhanDinh?.diem ?? [];
@@ -134,7 +147,8 @@ export function dayParts(n: NgayApi): DayParts {
   let inversion: DayParts["inversion"] = null;
   if (nn) {
     const m = nn.ngan.match(/~(\d+)\s*m/);
-    if (m) inversion = { kind: nn.ten === "Lớp chặn" ? "chan" : "nghich", m: Number(m[1]) };
+    // Số trong câu là mét TRÊN BÃI → đổi sang AMSL cho cùng thước với trần mây (chủ 30/09)
+    if (m && coAlt) inversion = { kind: nn.ten === "Lớp chặn" ? "chan" : "nghich", m: Math.round(caoAmsl(altBai as number, Number(m[1])) / 50) * 50 };
     else if (/không/i.test(nn.ngan)) inversion = "none";
   }
 
@@ -161,7 +175,7 @@ export function dayParts(n: NgayApi): DayParts {
   }
 
   return {
-    face: MAT_NGAY[n.muc] ?? "",
+    level: mucNgay(n.muc),
     windFrom: huongTroiNgay(gio as never, [6, 18]),
     windAvg: khung.length ? khung.reduce((t, g) => t + g.gio10m, 0) / khung.length : null,
     thermal: n.thermal?.muc ?? null,
@@ -169,7 +183,11 @@ export function dayParts(n: NgayApi): DayParts {
     rainHours: n.gioMua ?? 0,
     drizzleHours: n.gioMuaBay ?? 0,
     turb,
-    cloudBase: tb === null ? null : Math.round(tb / 50) * 50,
+    /**
+     * TRẦN MÂY AMSL (chủ 30/09: phi công đọc độ cao theo máy đo, tức AMSL):
+     * tranMay cho mét TRÊN BÃI CẤT → cộng độ cao bãi (caoAmsl), làm tròn 50 m.
+     */
+    cloudBase: tb === null || !coAlt ? null : Math.round(caoAmsl(altBai as number, tb) / 50) * 50,
     inversion,
     upper,
   };
@@ -180,6 +198,10 @@ export function dayParts(n: NgayApi): DayParts {
  * ------------------------------------------------------------------ */
 
 type Words = {
+  /** Định dạng số theo thói quen từng thứ tiếng: 1.500 (vi) · 1,500 (en) · 1 500 (fr). */
+  locale: string;
+  /** Nhãn đọc cho mặt tròn mức ngày (aria-label/title). */
+  level: Record<DayLevel, string>;
   dirs: string[];
   wind: (dir: string, ms: string) => string;
   windCalm: (ms: string) => string;
@@ -188,9 +210,10 @@ type Words = {
   rain: (h: number) => string;
   drizzle: (h: number) => string;
   turb: Record<Turb, string>;
-  cloudBase: (m: number) => string;
-  inversion: (m: number) => string;
-  stableLayer: (m: number) => string;
+  /** Nhận số ĐÃ định dạng ("1.500") — xem `fmt` trong renderDaySummary. */
+  cloudBase: (m: string) => string;
+  inversion: (m: string) => string;
+  stableLayer: (m: string) => string;
   noInversion: string;
   upper: Record<UpperLevel, string>;
   upperMs: (level: string, ms: number) => string;
@@ -199,6 +222,8 @@ type Words = {
 
 const WORDS: Record<string, Words> = {
   vi: {
+    locale: "vi-VN",
+    level: { xanh: "bay tốt", vang: "cân nhắc", do: "nên nghỉ" },
     dirs: ["Bắc", "Đông Bắc", "Đông", "Đông Nam", "Nam", "Tây Nam", "Tây", "Tây Bắc"],
     wind: (d, ms) => `gió ${d} ${ms} m/s`,
     windCalm: (ms) => `gió lặng ${ms} m/s`,
@@ -207,15 +232,17 @@ const WORDS: Record<string, Words> = {
     rain: (h) => `${h}h mưa`,
     drizzle: (h) => `${h}h mưa bay`,
     turb: { nhe: "nhiễu động nhẹ", vua: "nhiễu động vừa", manh: "nhiễu động mạnh" },
-    cloudBase: (m) => `trần mây ${m}m`,
-    inversion: (m) => `có nghịch nhiệt ở ${m}m`,
-    stableLayer: (m) => `lớp chặn ở ${m}m`,
+    cloudBase: (m) => `trần mây ${m}m AMSL`,
+    inversion: (m) => `có nghịch nhiệt ở ${m}m AMSL`,
+    stableLayer: (m) => `lớp chặn ở ${m}m AMSL`,
     noInversion: "không nghịch nhiệt",
     upper: { em: "gió trên cao êm", vua: "gió trên cao vừa", manh: "gió trên cao mạnh", cucManh: "gió trên cao cực mạnh", cat: "gió đứt ngay trên bãi" },
     upperMs: (l, ms) => `${l} (${ms} m/s)`,
     weekdays: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
   },
   en: {
+    locale: "en-US",
+    level: { xanh: "good to fly", vang: "marginal", do: "not flyable" },
     dirs: ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"],
     wind: (d, ms) => `${d} wind ${ms} m/s`,
     windCalm: (ms) => `calm, ${ms} m/s`,
@@ -224,32 +251,37 @@ const WORDS: Record<string, Words> = {
     rain: (h) => `${h}h rain`,
     drizzle: (h) => `${h}h drizzle`,
     turb: { nhe: "light turbulence", vua: "moderate turbulence", manh: "strong turbulence" },
-    cloudBase: (m) => `cloud base ${m}m`,
-    inversion: (m) => `inversion at ${m}m`,
-    stableLayer: (m) => `stable layer at ${m}m`,
+    cloudBase: (m) => `cloud base ${m}m AMSL`,
+    inversion: (m) => `inversion at ${m}m AMSL`,
+    stableLayer: (m) => `stable layer at ${m}m AMSL`,
     noInversion: "no inversion",
     upper: { em: "light winds aloft", vua: "moderate winds aloft", manh: "strong winds aloft", cucManh: "very strong winds aloft", cat: "wind shear just above launch" },
     upperMs: (l, ms) => `${l} (${ms} m/s)`,
     weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
   },
   fr: {
+    locale: "fr-FR",
+    level: { xanh: "bon pour voler", vang: "limite", do: "pas volable" },
     dirs: ["nord", "nord-est", "est", "sud-est", "sud", "sud-ouest", "ouest", "nord-ouest"],
-    wind: (d, ms) => `vent de ${d} ${ms} m/s`,
+    // "vent d'est", "vent d'ouest" — élision devant voyelle
+    wind: (d, ms) => `vent ${/^[aeiou]/.test(d) ? `d'${d}` : `de ${d}`} ${ms} m/s`,
     windCalm: (ms) => `vent calme ${ms} m/s`,
     thermal: { khong: "pas de thermiques", nhe: "thermiques faibles", vua: "thermiques moyens", manh: "thermiques forts", gat: "thermiques musclés" },
     sun: (h) => `${h} h de soleil`,
     rain: (h) => `${h} h de pluie`,
     drizzle: (h) => `${h} h de bruine`,
     turb: { nhe: "turbulences faibles", vua: "turbulences modérées", manh: "turbulences fortes" },
-    cloudBase: (m) => `plafond ${m} m`,
-    inversion: (m) => `inversion à ${m} m`,
-    stableLayer: (m) => `couche stable à ${m} m`,
+    cloudBase: (m) => `plafond ${m} m AMSL`,
+    inversion: (m) => `inversion à ${m} m AMSL`,
+    stableLayer: (m) => `couche stable à ${m} m AMSL`,
     noInversion: "pas d'inversion",
     upper: { em: "vent en altitude faible", vua: "vent en altitude modéré", manh: "vent en altitude fort", cucManh: "vent en altitude très fort", cat: "cisaillement juste au-dessus du déco" },
     upperMs: (l, ms) => `${l} (${ms} m/s)`,
     weekdays: ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"],
   },
   ru: {
+    locale: "ru-RU",
+    level: { xanh: "хорошо для полётов", vang: "на грани", do: "нелётно" },
     dirs: ["северный", "северо-восточный", "восточный", "юго-восточный", "южный", "юго-западный", "западный", "северо-западный"],
     wind: (d, ms) => `ветер ${d} ${ms} м/с`,
     windCalm: (ms) => `штиль ${ms} м/с`,
@@ -258,15 +290,17 @@ const WORDS: Record<string, Words> = {
     rain: (h) => `${h} ч дождя`,
     drizzle: (h) => `${h} ч мороси`,
     turb: { nhe: "слабая турбулентность", vua: "умеренная турбулентность", manh: "сильная турбулентность" },
-    cloudBase: (m) => `нижняя граница облаков ${m} м`,
-    inversion: (m) => `инверсия на ${m} м`,
-    stableLayer: (m) => `задерживающий слой на ${m} м`,
+    cloudBase: (m) => `нижняя граница облаков ${m} м AMSL`,
+    inversion: (m) => `инверсия на ${m} м AMSL`,
+    stableLayer: (m) => `задерживающий слой на ${m} м AMSL`,
     noInversion: "без инверсии",
     upper: { em: "ветер на высоте слабый", vua: "ветер на высоте умеренный", manh: "ветер на высоте сильный", cucManh: "ветер на высоте очень сильный", cat: "сдвиг ветра над стартом" },
     upperMs: (l, ms) => `${l} (${ms} м/с)`,
     weekdays: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
   },
   zh: {
+    locale: "zh-CN",
+    level: { xanh: "适合飞行", vang: "需斟酌", do: "不宜飞行" },
     dirs: ["北", "东北", "东", "东南", "南", "西南", "西", "西北"],
     wind: (d, ms) => `${d}风 ${ms} 米/秒`,
     windCalm: (ms) => `静风 ${ms} 米/秒`,
@@ -275,15 +309,17 @@ const WORDS: Record<string, Words> = {
     rain: (h) => `降雨 ${h} 小时`,
     drizzle: (h) => `毛毛雨 ${h} 小时`,
     turb: { nhe: "轻度乱流", vua: "中度乱流", manh: "强乱流" },
-    cloudBase: (m) => `云底 ${m} 米`,
-    inversion: (m) => `${m} 米处有逆温`,
-    stableLayer: (m) => `${m} 米处有稳定层`,
+    cloudBase: (m) => `云底 ${m} 米（海拔）`,
+    inversion: (m) => `海拔 ${m} 米处有逆温`,
+    stableLayer: (m) => `海拔 ${m} 米处有稳定层`,
     noInversion: "无逆温",
     upper: { em: "高空风弱", vua: "高空风中等", manh: "高空风强", cucManh: "高空风极强", cat: "起飞场上方风切变" },
     upperMs: (l, ms) => `${l}（${ms} 米/秒）`,
     weekdays: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
   },
   hi: {
+    locale: "en-IN",
+    level: { xanh: "उड़ान के लिए अच्छा", vang: "सीमांत", do: "उड़ान योग्य नहीं" },
     dirs: ["उत्तर", "उत्तर-पूर्व", "पूर्व", "दक्षिण-पूर्व", "दक्षिण", "दक्षिण-पश्चिम", "पश्चिम", "उत्तर-पश्चिम"],
     wind: (d, ms) => `${d} की हवा ${ms} m/s`,
     windCalm: (ms) => `शांत हवा ${ms} m/s`,
@@ -292,9 +328,9 @@ const WORDS: Record<string, Words> = {
     rain: (h) => `${h} घंटे बारिश`,
     drizzle: (h) => `${h} घंटे बूंदाबांदी`,
     turb: { nhe: "हल्की अशांति", vua: "मध्यम अशांति", manh: "तेज़ अशांति" },
-    cloudBase: (m) => `क्लाउड बेस ${m} मी`,
-    inversion: (m) => `${m} मी पर इनवर्ज़न`,
-    stableLayer: (m) => `${m} मी पर स्थिर परत`,
+    cloudBase: (m) => `क्लाउड बेस ${m} मी AMSL`,
+    inversion: (m) => `${m} मी AMSL पर इनवर्ज़न`,
+    stableLayer: (m) => `${m} मी AMSL पर स्थिर परत`,
     noInversion: "इनवर्ज़न नहीं",
     upper: { em: "ऊपरी हवा हल्की", vua: "ऊपरी हवा मध्यम", manh: "ऊपरी हवा तेज़", cucManh: "ऊपरी हवा बहुत तेज़", cat: "लॉन्च के ठीक ऊपर विंड शियर" },
     upperMs: (l, ms) => `${l} (${ms} m/s)`,
@@ -314,12 +350,21 @@ export function shortDayLabel(iso: string, lang: string): string {
 }
 
 /**
- * Dòng tóm tắt, vd: "😊 T5 01/10: gió Đông Nam 1.5 m/s, thermal mạnh, 11h nắng,
- * 3h mưa bay, nhiễu động vừa, trần mây 900m, không nghịch nhiệt, gió trên cao êm".
+ * Dòng tóm tắt, vd: "T5 01/10: gió Đông Nam 1.5 m/s, thermal mạnh, 11h nắng,
+ * 3h mưa bay, nhiễu động vừa, trần mây 1.500m AMSL, không nghịch nhiệt, gió trên cao êm".
  * Mục nào không có số liệu thì không có mặt trong câu.
+ */
+/** Nhãn đọc của mức ngày — aria-label / title cho mặt tròn màu. */
+export function levelLabel(level: DayLevel, lang: string): string {
+  return words(lang).level[level];
+}
+
+/**
+ * Câu tóm tắt KHÔNG kèm mặt: trang tự vẽ mặt tròn màu (SVG) đứng trước câu.
  */
 export function renderDaySummary(iso: string, p: DayParts, lang: string): string {
   const w = words(lang);
+  const fmt = (m: number) => m.toLocaleString(w.locale);
   const out: string[] = [];
   if (p.windAvg !== null) {
     const ms = p.windAvg.toFixed(1);
@@ -334,13 +379,13 @@ export function renderDaySummary(iso: string, p: DayParts, lang: string): string
   if (p.rainHours > 0) out.push(w.rain(p.rainHours));
   else if (p.drizzleHours > 0) out.push(w.drizzle(p.drizzleHours));
   if (p.turb) out.push(w.turb[p.turb]);
-  if (p.cloudBase !== null) out.push(w.cloudBase(p.cloudBase));
+  if (p.cloudBase !== null) out.push(w.cloudBase(fmt(p.cloudBase)));
   if (p.inversion === "none") out.push(w.noInversion);
-  else if (p.inversion) out.push(p.inversion.kind === "nghich" ? w.inversion(p.inversion.m) : w.stableLayer(p.inversion.m));
+  else if (p.inversion) out.push(p.inversion.kind === "nghich" ? w.inversion(fmt(p.inversion.m)) : w.stableLayer(fmt(p.inversion.m)));
   if (p.upper) {
     const l = w.upper[p.upper.level];
     out.push(p.upper.ms !== null && p.upper.level !== "cat" ? w.upperMs(l, p.upper.ms) : l);
   }
   const sep = String(lang).startsWith("zh") ? "，" : ", ";
-  return `${p.face} ${shortDayLabel(iso, lang)}: ${out.join(sep)}`.trim();
+  return `${shortDayLabel(iso, lang)}: ${out.join(sep)}`;
 }

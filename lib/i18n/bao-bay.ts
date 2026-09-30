@@ -203,7 +203,7 @@ const vi: BaoBayDict = {
   step3: "Thông tin báo bay",
   hnaaLabel: "Mã hội viên HNAA",
   hnaaHint: "Nếu bạn là Hội viên HNAA hãy điền mã hội viên để được miễn phí báo bay.",
-  hnaaCutoff: "Chỉ miễn phí khi báo bay TRƯỚC 8h00 sáng ngày bay (giờ Việt Nam). Báo cho các ngày sau thì lúc nào cũng được.",
+  hnaaCutoff: "Chỉ miễn phí khi báo bay TRƯỚC 9h00 sáng ngày bay (giờ Việt Nam). Báo cho các ngày sau thì lúc nào cũng được.",
   hnaaWarn: "Báo bay ảo mà không đi bay, vi phạm nhiều lần sẽ bị từ chối báo bay.",
   hnaaPh: "Ví dụ: HN123",
   hnaaCheck: "Kiểm tra",
@@ -243,7 +243,7 @@ const vi: BaoBayDict = {
 
   feeTitle: "Chi phí báo bay",
   feeLine: {
-    hnaaFree: (n) => `Hội viên HNAA báo trước 8h00 × ${n} ngày`,
+    hnaaFree: (n) => `Hội viên HNAA báo trước 9h00 × ${n} ngày`,
     passCovered: (n) => `Vé tháng/năm còn hạn × ${n} ngày`,
     day: (n) => `Phí điểm bay × ${n} ngày`,
     month: () => "Vé tháng",
@@ -256,7 +256,7 @@ const vi: BaoBayDict = {
   passNotice: (d) => `Vé tháng/năm còn hạn tới ${d}`,
   newPassNotice: (f, t) => `Vé của bạn có hiệu lực từ ${f} tới hết ${t}. Những lần báo bay sau trong thời gian này sẽ tự miễn phí.`,
   autoMonthNotice: "Từ 8 ngày trở lên vé tháng rẻ hơn — đã tự chuyển sang vé tháng.",
-  hnaaLateNotice: "Đã qua 8h00 sáng ngày bay nên ngày đó hội viên HNAA cũng phải đóng phí như mọi phi công.",
+  hnaaLateNotice: "Đã qua 9h00 sáng ngày bay nên ngày đó hội viên HNAA cũng phải đóng phí như mọi phi công.",
 
   submit: "Gửi báo bay",
   submitting: "Đang gửi…",
@@ -371,7 +371,7 @@ const en: BaoBayDict = {
   step3: "Pilot details",
   hnaaLabel: "HNAA member code",
   hnaaHint: "If you are an HNAA member, enter your member code to fly for free.",
-  hnaaCutoff: "Free only when the register is submitted BEFORE 08:00 on the flying day (Vietnam time). Registers for later days are always in time.",
+  hnaaCutoff: "Free only when the register is submitted BEFORE 09:00 on the flying day (Vietnam time). Registers for later days are always in time.",
   hnaaWarn: "Registering flights without actually flying — repeat offenders will have their registers refused.",
   hnaaPh: "e.g. HN123",
   hnaaCheck: "Check",
@@ -411,7 +411,7 @@ const en: BaoBayDict = {
 
   feeTitle: "Register fee",
   feeLine: {
-    hnaaFree: (n) => `HNAA member, submitted before 08:00 × ${n} day${n === 1 ? "" : "s"}`,
+    hnaaFree: (n) => `HNAA member, submitted before 09:00 × ${n} day${n === 1 ? "" : "s"}`,
     passCovered: (n) => `Valid month/year pass × ${n} day${n === 1 ? "" : "s"}`,
     day: (n) => `Site fee × ${n} day${n === 1 ? "" : "s"}`,
     month: () => "Month pass",
@@ -424,7 +424,7 @@ const en: BaoBayDict = {
   passNotice: (d) => `Month/year pass valid until ${d}`,
   newPassNotice: (f, t) => `Your pass is valid from ${f} through ${t}. Later registers within this period are free automatically.`,
   autoMonthNotice: "From 8 days a month pass is cheaper — switched to a month pass for you.",
-  hnaaLateNotice: "It is already past 08:00 on the flying day, so HNAA members pay the normal fee for that day.",
+  hnaaLateNotice: "It is already past 09:00 on the flying day, so HNAA members pay the normal fee for that day.",
 
   submit: "Submit flight register",
   submitting: "Submitting…",
@@ -539,7 +539,7 @@ const fr: BaoBayDict = {
   step3: "Informations du pilote",
   hnaaLabel: "Numéro de membre HNAA",
   hnaaHint: "Si vous êtes membre de la HNAA, saisissez votre numéro de membre pour voler gratuitement.",
-  hnaaCutoff: "Gratuit uniquement si l'enregistrement est envoyé AVANT 8h00 le jour du vol (heure du Vietnam). Pour les jours suivants, c'est toujours dans les temps.",
+  hnaaCutoff: "Gratuit uniquement si l'enregistrement est envoyé AVANT 9h00 le jour du vol (heure du Vietnam). Pour les jours suivants, c'est toujours dans les temps.",
   hnaaWarn: "Enregistrer un vol sans voler réellement : en cas de récidive, vos enregistrements seront refusés.",
   hnaaPh: "ex. HN123",
   hnaaCheck: "Vérifier",
@@ -579,7 +579,7 @@ const fr: BaoBayDict = {
 
   feeTitle: "Coût de l'enregistrement",
   feeLine: {
-    hnaaFree: (n) => `Membre HNAA, enregistré avant 8h00 × ${n} jour${n > 1 ? "s" : ""}`,
+    hnaaFree: (n) => `Membre HNAA, enregistré avant 9h00 × ${n} jour${n > 1 ? "s" : ""}`,
     passCovered: (n) => `Forfait mois/année valide × ${n} jour${n > 1 ? "s" : ""}`,
     day: (n) => `Taxe de site × ${n} jour${n > 1 ? "s" : ""}`,
     month: () => "Forfait mois",
@@ -592,7 +592,7 @@ const fr: BaoBayDict = {
   passNotice: (d) => `Forfait mois/année valable jusqu'au ${d}`,
   newPassNotice: (f, t) => `Votre forfait est valable du ${f} au ${t} inclus. Les enregistrements suivants sur cette période seront gratuits automatiquement.`,
   autoMonthNotice: "À partir de 8 jours, le forfait mois est moins cher — nous l'avons choisi pour vous.",
-  hnaaLateNotice: "Il est déjà plus de 8h00 le jour du vol : ce jour-là, les membres HNAA paient la taxe normale.",
+  hnaaLateNotice: "Il est déjà plus de 9h00 le jour du vol : ce jour-là, les membres HNAA paient la taxe normale.",
 
   submit: "Envoyer l'enregistrement",
   submitting: "Envoi…",
@@ -707,7 +707,7 @@ const ru: BaoBayDict = {
   step3: "Данные пилота",
   hnaaLabel: "Членский номер HNAA",
   hnaaHint: "Если вы член HNAA, введите членский номер, чтобы летать бесплатно.",
-  hnaaCutoff: "Бесплатно, только если регистрация подана ДО 08:00 в день полёта (время Вьетнама). Регистрация на последующие дни всегда вовремя.",
+  hnaaCutoff: "Бесплатно, только если регистрация подана ДО 09:00 в день полёта (время Вьетнама). Регистрация на последующие дни всегда вовремя.",
   hnaaWarn: "Регистрация без реального полёта: при повторных нарушениях регистрация будет отклоняться.",
   hnaaPh: "напр. HN123",
   hnaaCheck: "Проверить",
@@ -747,7 +747,7 @@ const ru: BaoBayDict = {
 
   feeTitle: "Стоимость регистрации",
   feeLine: {
-    hnaaFree: (n) => `Член HNAA, регистрация до 08:00 × ${n} дн.`,
+    hnaaFree: (n) => `Член HNAA, регистрация до 09:00 × ${n} дн.`,
     passCovered: (n) => `Действующий абонемент × ${n} дн.`,
     day: (n) => `Сбор за площадку × ${n} дн.`,
     month: () => "Абонемент на месяц",
@@ -760,7 +760,7 @@ const ru: BaoBayDict = {
   passNotice: (d) => `Абонемент действует до ${d}`,
   newPassNotice: (f, t) => `Ваш абонемент действует с ${f} по ${t} включительно. Последующие регистрации в этот период будут бесплатными автоматически.`,
   autoMonthNotice: "От 8 дней абонемент на месяц выгоднее — мы переключили вас на него.",
-  hnaaLateNotice: "В день полёта уже больше 08:00, поэтому за этот день члены HNAA платят обычный сбор.",
+  hnaaLateNotice: "В день полёта уже больше 09:00, поэтому за этот день члены HNAA платят обычный сбор.",
 
   submit: "Отправить регистрацию",
   submitting: "Отправка…",
@@ -875,7 +875,7 @@ const zh: BaoBayDict = {
   step3: "飞行员信息",
   hnaaLabel: "HNAA 会员编号",
   hnaaHint: "如果您是 HNAA 会员，请填写会员编号以免费登记。",
-  hnaaCutoff: "仅在飞行当天 08:00（越南时间）之前登记才免费。登记之后日期的飞行则随时都来得及。",
+  hnaaCutoff: "仅在飞行当天 09:00（越南时间）之前登记才免费。登记之后日期的飞行则随时都来得及。",
   hnaaWarn: "登记后不飞行属虚假登记，多次违规将被拒绝登记。",
   hnaaPh: "例如 HN123",
   hnaaCheck: "验证",
@@ -915,7 +915,7 @@ const zh: BaoBayDict = {
 
   feeTitle: "登记费用",
   feeLine: {
-    hnaaFree: (n) => `HNAA 会员 08:00 前登记 × ${n} 天`,
+    hnaaFree: (n) => `HNAA 会员 09:00 前登记 × ${n} 天`,
     passCovered: (n) => `有效月票/年票 × ${n} 天`,
     day: (n) => `场地费 × ${n} 天`,
     month: () => "月票",
@@ -928,7 +928,7 @@ const zh: BaoBayDict = {
   passNotice: (d) => `月票/年票有效期至 ${d}`,
   newPassNotice: (f, t) => `您的票自 ${f} 起至 ${t}（含）有效。此期间内之后的登记将自动免费。`,
   autoMonthNotice: "满 8 天时月票更划算——已自动为您改为月票。",
-  hnaaLateNotice: "飞行当天已过 08:00，因此当天 HNAA 会员也需按普通标准缴费。",
+  hnaaLateNotice: "飞行当天已过 09:00，因此当天 HNAA 会员也需按普通标准缴费。",
 
   submit: "提交登记",
   submitting: "提交中…",
@@ -1043,7 +1043,7 @@ const hi: BaoBayDict = {
   step3: "पायलट विवरण",
   hnaaLabel: "HNAA सदस्य कोड",
   hnaaHint: "यदि आप HNAA सदस्य हैं, तो निःशुल्क उड़ान पंजीकरण के लिए अपना सदस्य कोड दर्ज करें।",
-  hnaaCutoff: "निःशुल्क केवल तब, जब पंजीकरण उड़ान वाले दिन सुबह 08:00 (वियतनाम समय) से पहले किया जाए। आगे की तारीखों के लिए पंजीकरण हमेशा समय पर है।",
+  hnaaCutoff: "निःशुल्क केवल तब, जब पंजीकरण उड़ान वाले दिन सुबह 09:00 (वियतनाम समय) से पहले किया जाए। आगे की तारीखों के लिए पंजीकरण हमेशा समय पर है।",
   hnaaWarn: "बिना उड़े फ़र्ज़ी पंजीकरण करना — बार-बार उल्लंघन पर पंजीकरण अस्वीकार कर दिया जाएगा।",
   hnaaPh: "जैसे HN123",
   hnaaCheck: "जाँचें",
@@ -1083,7 +1083,7 @@ const hi: BaoBayDict = {
 
   feeTitle: "पंजीकरण शुल्क",
   feeLine: {
-    hnaaFree: (n) => `HNAA सदस्य, 08:00 से पहले पंजीकरण × ${n} दिन`,
+    hnaaFree: (n) => `HNAA सदस्य, 09:00 से पहले पंजीकरण × ${n} दिन`,
     passCovered: (n) => `मान्य मासिक/वार्षिक पास × ${n} दिन`,
     day: (n) => `साइट शुल्क × ${n} दिन`,
     month: () => "मासिक पास",
@@ -1096,7 +1096,7 @@ const hi: BaoBayDict = {
   passNotice: (d) => `मासिक/वार्षिक पास ${d} तक मान्य`,
   newPassNotice: (f, t) => `आपका पास ${f} से ${t} तक (सहित) मान्य है। इस अवधि में आगे के पंजीकरण अपने-आप निःशुल्क होंगे।`,
   autoMonthNotice: "8 दिन या अधिक पर मासिक पास सस्ता है — आपके लिए मासिक पास चुन लिया गया।",
-  hnaaLateNotice: "उड़ान वाले दिन 08:00 बज चुके हैं, इसलिए उस दिन HNAA सदस्य भी सामान्य शुल्क देंगे।",
+  hnaaLateNotice: "उड़ान वाले दिन 09:00 बज चुके हैं, इसलिए उस दिन HNAA सदस्य भी सामान्य शुल्क देंगे।",
 
   submit: "उड़ान पंजीकरण भेजें",
   submitting: "भेजा जा रहा है…",

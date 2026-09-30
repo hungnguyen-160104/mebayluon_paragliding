@@ -33,6 +33,7 @@ import {
   BAO_BAY_RADIO,
   BAO_BAY_SPOTS,
   BAO_BAY_SPOT_CONFIG,
+  formatVndNb,
   vnParts,
   VN_NATIONALITY,
   type BaoBayFee,
@@ -44,11 +45,19 @@ import {
   PAYMENT_ACCOUNT,
   WING_CLASSES,
   formatVnDate,
-  formatVnd,
   wingClassLabel,
   type WingClass,
 } from "@/lib/pilot-event";
-import { calDay, dayParts, renderDaySummary, type CalDay, type DayParts, type NgayApi } from "@/lib/bao-bay-weather";
+import {
+  calDay,
+  dayParts,
+  levelLabel,
+  renderDaySummary,
+  type CalDay,
+  type DayLevel,
+  type DayParts,
+  type NgayApi,
+} from "@/lib/bao-bay-weather";
 import { buildVietQrPayload } from "@/lib/vietqr";
 import { WindArrow } from "@/components/weather/WindArrow";
 
@@ -129,6 +138,31 @@ function Bi({ t, inline, subClass = "" }: { t: BiText; inline?: boolean; subClas
       {t.main}
       <span className={`mt-0.5 block text-[0.8em] font-normal leading-snug opacity-60 ${subClass}`}>{t.sub}</span>
     </>
+  );
+}
+
+/**
+ * MẶT TRÒN MÀU cho mức ngày (chủ 30/09): emoji không tô màu được, mà ba mặt
+ * vàng giống nhau thì liếc lịch không phân biệt ngày tốt/xấu. Vẽ SVG: xanh
+ * cười · vàng miệng thẳng · đỏ mếu, viền tối để nổi trên nền lịch tối và trên
+ * ô đang chọn (nền vàng).
+ */
+const FACE_FILL: Record<DayLevel, string> = { xanh: "#22c55e", vang: "#facc15", do: "#ef4444" };
+const FACE_MOUTH: Record<DayLevel, string> = {
+  xanh: "M7 13.5 Q12 18 17 13.5",
+  vang: "M7.5 15 H16.5",
+  do: "M7 16.5 Q12 12 17 16.5",
+};
+
+function FaceIcon({ level, label, className = "" }: { level: DayLevel; label: string; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} role="img" aria-label={label}>
+      <title>{label}</title>
+      <circle cx="12" cy="12" r="10.5" fill={FACE_FILL[level]} stroke="#0f172a" strokeWidth="1.6" />
+      <circle cx="8.6" cy="9.6" r="1.4" fill="#0f172a" />
+      <circle cx="15.4" cy="9.6" r="1.4" fill="#0f172a" />
+      <path d={FACE_MOUTH[level]} fill="none" stroke="#0f172a" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -437,9 +471,11 @@ export default function BaoBayClient() {
     (async () => {
       const res = await fetch(`/api/thoi-tiet?spot=${encodeURIComponent(weatherSlug)}&days=15`);
       if (!res.ok) return;
-      const j = (await res.json()) as { ngay?: NgayApi[] };
+      const j = (await res.json()) as { ngay?: NgayApi[]; toaDo?: { alt?: number } };
+      // Độ cao bãi cất của CHÍNH hệ dự báo — đổi trần mây / nghịch nhiệt sang AMSL
+      const alt = j.toaDo?.alt;
       const map: Record<string, { cal: CalDay; parts: DayParts }> = {};
-      for (const n of j.ngay ?? []) map[n.ngay] = { cal: calDay(n), parts: dayParts(n) };
+      for (const n of j.ngay ?? []) map[n.ngay] = { cal: calDay(n), parts: dayParts(n, alt) };
       if (alive) setCalFc((c) => ({ ...c, [weatherSlug]: map }));
     })().catch(() => {
       /* không có dự báo thì lịch trơn */
@@ -763,8 +799,8 @@ export default function BaoBayClient() {
                 </span>
               ) : null}
             </span>
-            <span className={`shrink-0 text-right text-sm font-bold ${line.amount ? "text-white" : "text-emerald-400"}`}>
-              {line.amount ? formatVnd(line.amount) : <Bi t={b((d) => d.feeFree)} />}
+            <span className={`shrink-0 whitespace-nowrap text-right text-sm font-bold ${line.amount ? "text-white" : "text-emerald-400"}`}>
+              {line.amount ? formatVndNb(line.amount) : <Bi t={b((d) => d.feeFree)} />}
             </span>
           </div>
         ))}
@@ -773,8 +809,8 @@ export default function BaoBayClient() {
         <span className="text-base font-bold text-white">
           <Bi t={b((d) => d.feeTotal)} inline />
         </span>
-        <span className={`text-right text-2xl font-extrabold ${fee.total > 0 ? "text-amber-300" : "text-emerald-400"}`}>
-          {fee.total > 0 ? formatVnd(fee.total) : <Bi t={b((d) => d.feeFree)} />}
+        <span className={`whitespace-nowrap text-right text-2xl font-extrabold ${fee.total > 0 ? "text-amber-300" : "text-emerald-400"}`}>
+          {fee.total > 0 ? formatVndNb(fee.total) : <Bi t={b((d) => d.feeFree)} />}
         </span>
       </div>
 
@@ -942,7 +978,7 @@ export default function BaoBayClient() {
               <div className="text-lg font-bold text-amber-200">
                 ⏳ <Bi t={b((d) => d.okPendingPay)} />
               </div>
-              <div className="mt-1 text-2xl font-extrabold text-amber-300">{formatVnd(result.fee.total)}</div>
+              <div className="mt-1 whitespace-nowrap text-2xl font-extrabold text-amber-300">{formatVndNb(result.fee.total)}</div>
               <p className="mt-1 text-sm text-white/65">
                 <Bi t={b((d) => d.okPendingPayDesc)} />
               </p>
@@ -1114,7 +1150,8 @@ export default function BaoBayClient() {
                         </span>
                         <span className="mt-1.5 space-y-0.5 text-[11px] font-semibold leading-tight text-white/80 sm:text-xs">
                           {priceUnits(sp).map(({ m, t }) => (
-                            <span key={m} className="block">
+                            // Mỗi mức giá một khối không ngắt: "2,5tr/năm", "2,5 млн/год" không bị bẻ đôi
+                            <span key={m} className="block whitespace-nowrap">
                               {t.main}
                             </span>
                           ))}
@@ -1224,7 +1261,9 @@ export default function BaoBayClient() {
                           <span>{Number(iso.slice(-2))}</span>
                           {fc ? (
                             <>
-                              <span className="mt-0.5 text-[12px] leading-none">{fc.face}</span>
+                              {fc.level ? (
+                                <FaceIcon level={fc.level} label={levelLabel(fc.level, language)} className="mt-0.5 h-3.5 w-3.5" />
+                              ) : null}
                               <span className="mt-0.5 flex items-center gap-px text-[9px] leading-none">
                                 {fc.wind !== null ? <WindArrow deg={fc.wind} className="!h-2.5 !w-2.5" /> : null}
                                 <span>{fc.sky}</span>
@@ -1265,6 +1304,13 @@ export default function BaoBayClient() {
                           const sub = isVi ? renderDaySummary(iso, fcMap[iso].parts, "en") : "";
                           return (
                             <p key={iso} className="text-[13px] leading-snug text-white/85">
+                              {fcMap[iso].parts.level ? (
+                                <FaceIcon
+                                  level={fcMap[iso].parts.level as DayLevel}
+                                  label={levelLabel(fcMap[iso].parts.level as DayLevel, language)}
+                                  className="mr-1 inline-block h-4 w-4 align-[-3px]"
+                                />
+                              ) : null}
                               {main}
                               {sub ? <span className="mt-0.5 block text-[11px] leading-snug text-white/50">{sub}</span> : null}
                             </p>
@@ -1598,10 +1644,10 @@ export default function BaoBayClient() {
                     {cfg.purchaseModes.map((m) => {
                       const title = b((d) =>
                         m === "day"
-                          ? d.modeDay(formatVnd(BAO_BAY_FEE_PER_DAY))
+                          ? d.modeDay(formatVndNb(BAO_BAY_FEE_PER_DAY))
                           : m === "month"
-                            ? d.modeMonth(formatVnd(BAO_BAY_FEE_PER_MONTH))
-                            : d.modeYear(formatVnd(BAO_BAY_FEE_PER_YEAR)),
+                            ? d.modeMonth(formatVndNb(BAO_BAY_FEE_PER_MONTH))
+                            : d.modeYear(formatVndNb(BAO_BAY_FEE_PER_YEAR)),
                       );
                       const desc = b((d) => (m === "day" ? d.modeDayDesc : m === "month" ? d.modeMonthDesc : d.modeYearDesc));
                       return (
@@ -1648,7 +1694,7 @@ export default function BaoBayClient() {
                     <div className="text-center text-xs font-bold uppercase tracking-[.15em] text-amber-300">
                       <Bi t={b((d) => d.payBeforeTitle)} />
                     </div>
-                    <div className="mt-1 text-center text-3xl font-extrabold text-amber-300">{formatVnd(payTotal)}</div>
+                    <div className="mt-1 whitespace-nowrap text-center text-3xl font-extrabold text-amber-300">{formatVndNb(payTotal)}</div>
                     <p className="mt-2 text-center text-sm text-white/65">
                       <Bi t={b((d) => d.payBeforeHint)} />
                     </p>
