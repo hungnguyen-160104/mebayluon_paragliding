@@ -66,6 +66,9 @@ type Member = {
   idNumber?: string;
   phone?: string;
   emergencyPhone?: string;
+  nationality?: string;
+  /** Chỉ admin thấy — API công khai không bao giờ trả email. */
+  email?: string;
   extra?: Record<string, string>;
   active: boolean;
 };
@@ -76,6 +79,9 @@ const FIELD_LABEL: Record<MemberField, string> = {
   idNumber: "CCCD/Hộ chiếu",
   phone: "SĐT",
   emergencyPhone: "SĐT khẩn cấp",
+  nationality: "Quốc tịch",
+  email: "Email",
+  skip: "Bỏ cột này",
 };
 
 const MODE_STYLE: Record<FeeMode, string> = {
@@ -583,8 +589,20 @@ function MemberRow({ member, onSaved }: { member: Member; onSaved: (m: Member) =
         <td className="px-3 py-2">
           <input className={`${cell} font-mono uppercase`} value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} />
         </td>
-        <td className="px-3 py-2">
+        <td className="space-y-1 px-3 py-2">
           <input className={cell} value={draft.fullName} onChange={(e) => setDraft({ ...draft, fullName: e.target.value })} />
+          <input
+            className={cell}
+            placeholder="Quốc tịch"
+            value={draft.nationality || ""}
+            onChange={(e) => setDraft({ ...draft, nationality: e.target.value })}
+          />
+          <input
+            className={cell}
+            placeholder="Email"
+            value={draft.email || ""}
+            onChange={(e) => setDraft({ ...draft, email: e.target.value })}
+          />
         </td>
         <td className="px-3 py-2">
           <input className={cell} value={draft.idNumber || ""} onChange={(e) => setDraft({ ...draft, idNumber: e.target.value })} />
@@ -612,6 +630,8 @@ function MemberRow({ member, onSaved }: { member: Member; onSaved: (m: Member) =
                 idNumber: draft.idNumber,
                 phone: draft.phone,
                 emergencyPhone: draft.emergencyPhone,
+                nationality: draft.nationality,
+                email: draft.email,
               })
             }
             className="rounded bg-emerald-600 px-3 py-1 text-xs font-bold text-white disabled:opacity-50"
@@ -636,7 +656,12 @@ function MemberRow({ member, onSaved }: { member: Member; onSaved: (m: Member) =
   return (
     <tr className={`align-top ${member.active ? "" : "bg-slate-50 text-slate-400"}`}>
       <td className="px-3 py-2 font-mono text-xs font-semibold">{member.code}</td>
-      <td className="px-3 py-2 font-semibold">{member.fullName}</td>
+      <td className="px-3 py-2">
+        <div className="font-semibold">{member.fullName}</div>
+        {member.nationality || member.email ? (
+          <div className="text-xs text-slate-500">{[member.nationality, member.email].filter(Boolean).join(" · ")}</div>
+        ) : null}
+      </td>
       <td className="px-3 py-2">{member.idNumber || "—"}</td>
       <td className="px-3 py-2">{member.phone || "—"}</td>
       <td className="px-3 py-2">{member.emergencyPhone || "—"}</td>
@@ -707,9 +732,10 @@ function ImportBox({ onDone }: { onDone: () => void }) {
     <div className="rounded-xl border border-slate-200 bg-white p-4">
       <h2 className="text-lg font-bold text-slate-900">Nhập hội viên HNAA</h2>
       <p className="mt-1 text-sm text-slate-500">
-        Bôi đen cả bảng trong Excel/Google Sheets (gồm DÒNG TIÊU ĐỀ), Ctrl+C rồi dán vào ô dưới. Các cột mã hội viên, họ
-        tên, CCCD/hộ chiếu, SĐT, SĐT khẩn cấp được tự nhận ra; cột khác giữ nguyên làm thông tin thêm. Trùng mã thì ghi đè,
-        ô trống không xoá dữ liệu cũ.
+        Bôi đen cả bảng trong Excel/Google Sheets (gồm DÒNG TIÊU ĐỀ — dòng tên bảng phía trên và dòng trống được tự bỏ
+        qua), Ctrl+C rồi dán vào ô dưới. Tự nhận ra: mã hội viên, họ tên, quốc tịch, email, CCCD/hộ chiếu, SĐT, SĐT khẩn
+        cấp; cột STT bỏ qua; cột khác (giới tính…) giữ làm thông tin thêm. Mã gõ khác kiểu (HNAA-01 / HNAA-1) coi là một
+        người và ghi đè; ô trống không xoá dữ liệu cũ. Email chỉ admin thấy.
       </p>
       <textarea
         value={text}
@@ -749,7 +775,8 @@ function ImportBox({ onDone }: { onDone: () => void }) {
                           const next = [...parsed.mapping];
                           const v = (e.target.value || null) as MemberField | null;
                           // Một trường chỉ một cột: chọn cho cột này thì gỡ ở cột kia
-                          if (v) next.forEach((f, j) => f === v && (next[j] = null));
+                          // "Bỏ cột" được dùng cho nhiều cột; trường thật thì mỗi trường một cột
+                          if (v && v !== "skip") next.forEach((f, j) => f === v && (next[j] = null));
                           next[i] = v;
                           setOverride(next);
                         }}
@@ -782,6 +809,8 @@ function ImportBox({ onDone }: { onDone: () => void }) {
                   <th className="px-2 py-1">CCCD/HC</th>
                   <th className="px-2 py-1">SĐT</th>
                   <th className="px-2 py-1">SĐT khẩn cấp</th>
+                  <th className="px-2 py-1">Quốc tịch</th>
+                  <th className="px-2 py-1">Email</th>
                   <th className="px-2 py-1">Thông tin thêm</th>
                 </tr>
               </thead>
@@ -793,6 +822,8 @@ function ImportBox({ onDone }: { onDone: () => void }) {
                     <td className="px-2 py-1">{r.idNumber}</td>
                     <td className="px-2 py-1">{r.phone}</td>
                     <td className="px-2 py-1">{r.emergencyPhone}</td>
+                    <td className="px-2 py-1">{r.nationality}</td>
+                    <td className="px-2 py-1">{r.email}</td>
                     <td className="px-2 py-1 text-slate-500">
                       {Object.entries(r.extra)
                         .map(([k, v]) => `${k}: ${v}`)

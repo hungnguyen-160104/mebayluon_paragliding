@@ -8,9 +8,20 @@ import mongoose, { Schema } from "mongoose";
  * số điện thoại đầy đủ không bao giờ rời máy chủ.
  */
 export interface IHnaaMember {
-  /** Mã hội viên, đã chuẩn hoá: chữ hoa, không khoảng trắng. */
+  /** Mã hội viên đúng như bảng hội ("HNAA-01"), chữ hoa, không khoảng trắng — để HIỂN THỊ. */
   code: string;
+  /**
+   * Khoá tra mã (lib/bao-bay memberCodeKey): "HNAA-01", "hnaa 1", "01" đều ra
+   * "HNAA1". Tra và ghi đè đều theo khoá này, không theo `code`.
+   */
+  codeKey?: string;
   fullName: string;
+  /** Quốc tịch như bảng hội ghi ("Việt Nam", "Vietnam", "United States"…). */
+  nationality?: string;
+  /** Email trong bảng hội — chỉ admin xem, KHÔNG BAO GIỜ trả ra trang công khai. */
+  email?: string;
+  /** Lần nhập gần nhất lấy từ đâu (vd. "Danh sach HNAA cap nhat 01/10/26"). */
+  importSource?: string;
   idNumber?: string;
   phone?: string;
   emergencyPhone?: string;
@@ -25,7 +36,12 @@ export interface IHnaaMember {
 const HnaaMemberSchema = new Schema<IHnaaMember>(
   {
     code: { type: String, required: true, unique: true, index: true, trim: true, uppercase: true },
+    // sparse: bản ghi cũ chưa có khoá vẫn nằm yên, không đụng chỉ mục duy nhất
+    codeKey: { type: String, unique: true, sparse: true, index: true },
     fullName: { type: String, required: true, trim: true },
+    nationality: { type: String, default: "", trim: true },
+    email: { type: String, default: "", trim: true },
+    importSource: { type: String, default: "" },
     idNumber: { type: String, default: "", trim: true },
     phone: { type: String, default: "", trim: true },
     emergencyPhone: { type: String, default: "", trim: true },

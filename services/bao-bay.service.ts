@@ -16,7 +16,9 @@ import {
   computeBaoBayFee,
   isBaoBaySpot,
   maskTail,
+  memberCodeKey,
   nationalityFromExtra,
+  normalizeNationality,
   normalizeIdNumber,
   normalizeMemberCode,
   normalizePhone,
@@ -30,7 +32,7 @@ import {
 } from "@/lib/bao-bay";
 import { WING_CLASSES, type WingClass } from "@/lib/pilot-event";
 import { ensureFlightNoticeIndexes, FlightNotice, type IFlightNotice } from "@/models/FlightNotice.model";
-import { HnaaMember, type IHnaaMember } from "@/models/HnaaMember.model";
+import { ensureHnaaMemberIndexes, HnaaMember, type IHnaaMember } from "@/models/HnaaMember.model";
 
 const clean = (v: unknown, max = 200) => String(v ?? "").trim().slice(0, max);
 
@@ -67,12 +69,23 @@ export class BaoBayError extends Error {
 
 type MemberDoc = IHnaaMember & { _id: unknown };
 
-/** Hội viên còn hiệu lực theo mã; mã sai hoặc đã tắt đều trả null như nhau. */
+/**
+ * Hội viên còn hiệu lực theo mã; mã sai hoặc đã tắt đều trả null như nhau.
+ *
+ * Tra theo KHOÁ (memberCodeKey) để gõ "hnaa 1", "01", "HNAA-01" đều ra một
+ * người (chủ 01/10). Bản ghi cũ chưa có codeKey thì còn đường tra theo `code`.
+ */
 export async function findActiveMember(rawCode: unknown): Promise<MemberDoc | null> {
   const code = normalizeMemberCode(rawCode);
-  if (!code || code.length > 40) return null;
+  const key = memberCodeKey(rawCode);
+  if (!code || !key || code.length > 40) return null;
   await connectDB();
-  return (await HnaaMember.findOne({ code, active: true }).lean()) as MemberDoc | null;
+  return (await HnaaMember.findOne({ active: true, $or: [{ codeKey: key }, { code }] }).lean()) as MemberDoc | null;
+}
+
+/** Quốc tịch của hội viên: cột "Quốc tịch" của bảng hội, bản ghi cũ thì tìm trong cột phụ. */
+function memberNationality(m: MemberDoc): { foreigner: boolean; nationality: string } {
+  return normalizeNationality(m.nationality || nationalityFromExtra(m.extra));
 }
 
 /**
@@ -80,16 +93,22 @@ export async function findActiveMember(rawCode: unknown): Promise<MemberDoc | nu
  * Thiếu trường nào trong danh sách hội thì báo để trang hỏi thêm đúng trường đó.
  */
 export function publicMemberView(m: MemberDoc) {
+  const nat = memberNationality(m);
   return {
     code: m.code,
     fullName: m.fullName,
     idMasked: maskTail(m.idNumber),
     phoneMasked: maskTail(m.phone),
-    needId: !normalizeIdNumber(m.idNumber),
-    needPhone: normalizePhone(m.phone).length < 8,
-    needEmergencyPhone: normalizePhone(m.emergencyPhone).length < 8,
-    /** Quốc tịch nếu bảng hội có cột đó — để điền sẵn, không phải dữ liệu nhạy cảm. */
-    nationality: nationalityFromExtra(m.extra),
+    /**
+     * HỘI VIÊN CHỈ CẦN MÃ (chủ 01/10: "chỉ cần điền mã là được"): danh sách
+     * HNAA không có CCCD/SĐT, và không bắt hội viên khai lại gì — ba cờ này
+     * luôn false, trang ẩn hẳn các ô đó. Email KHÔNG có mặt ở đây.
+     */
+    needId: false,
+    needPhone: false,
+    needEmergencyPhone: false,
+    nationality: nat.nationality,
+    foreigner: nat.foreigner,
   };
 }
 
@@ -107,12 +126,18 @@ export async function findPasses(input: {
   spot: BaoBaySpot;
   idNorm: string;
   phoneNorm: string;
+  /**
+   * Hội viên HNAA không có CCCD/SĐT trong danh sách → nhận ra vé tháng/năm của
+   * họ bằng MÃ HỘI VIÊN đã lưu trên báo bay mua vé.
+   */
+  memberCode?: string;
   /** Chỉ lấy vé còn hạn tới ít nhất ngày này. */
   fromDate: string;
 }): Promise<ExistingPass[]> {
   const or: Array<Record<string, string>> = [];
   if (input.idNorm.length >= 6) or.push({ idNorm: input.idNorm });
   if (input.phoneNorm.length >= 8) or.push({ phoneNorm: input.phoneNorm });
+  if (input.memberCode) or.push({ memberCode: input.memberCode });
   if (!or.length) return [];
 
   await connectDB();
@@ -261,6 +286,7 @@ export async function quoteBaoBay(input: BaoBayInput, now: Date): Promise<BaoBay
     spot,
     idNorm: normalizeIdNumber(pilot.idNumber),
     phoneNorm: normalizePhone(pilot.phone),
+    memberCode: pilot.member?.code,
     fromDate: dates[0],
   });
 
@@ -320,36 +346,42 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
   const purchase = parsePurchase(input.purchase);
   const pilot = await resolvePilot(input);
 
-  // Kiểm bắt buộc SAU khi ghép dữ liệu hội viên — hội viên không phải gõ lại
-  if (!pilot.fullName) throw new BaoBayError("name", "Chưa nhập họ tên");
-  if (!normalizeIdNumber(pilot.idNumber)) throw new BaoBayError("id", "Chưa nhập số CCCD/hộ chiếu");
-  if (normalizePhone(pilot.phone).length < 8) throw new BaoBayError("phone", "Số điện thoại chưa đúng");
-  if (normalizePhone(pilot.emergencyPhone).length < 8) {
-    throw new BaoBayError("emergencyPhone", "Số điện thoại khẩn cấp chưa đúng");
-  }
-
   /**
-   * QUỐC TỊCH: người nước ngoài BẮT BUỘC khai (chủ 30/09) — ghi "Việt Nam" hay
-   * để trống đều không nhận. Hội viên không gửi lựa chọn thì lấy theo cột quốc
-   * tịch trong bảng hội (nếu có).
+   * HỘI VIÊN HNAA CHỈ CẦN MÃ (chủ 01/10): tên và quốc tịch lấy từ danh sách
+   * hội, không đòi CCCD/SĐT/SĐT khẩn cấp/quốc tịch — dù ngày đó miễn phí hay
+   * phải trả (nội dung CK dùng mã hội viên nên cũng không cần SĐT).
+   * Người thường: kiểm đủ như trước.
    */
-  const foreigner = input.foreigner === true || input.foreigner === "true";
-  let nationality = clean(input.nationality, 60);
-  if (foreigner) {
-    if (!nationality || /^vi[eệ]t ?nam$/i.test(nationality)) {
-      throw new BaoBayError("nationality", "Người nước ngoài phải khai quốc tịch");
-    }
+  let foreigner: boolean;
+  let nationality: string;
+  if (pilot.member) {
+    if (!pilot.fullName) throw new BaoBayError("name", "Chưa nhập họ tên");
+    ({ foreigner, nationality } = memberNationality(pilot.member));
   } else {
-    nationality = pilot.member && input.foreigner === undefined
-      ? nationalityFromExtra(pilot.member.extra) || VN_NATIONALITY
-      : VN_NATIONALITY;
+    if (!pilot.fullName) throw new BaoBayError("name", "Chưa nhập họ tên");
+    if (!normalizeIdNumber(pilot.idNumber)) throw new BaoBayError("id", "Chưa nhập số CCCD/hộ chiếu");
+    if (normalizePhone(pilot.phone).length < 8) throw new BaoBayError("phone", "Số điện thoại chưa đúng");
+    if (normalizePhone(pilot.emergencyPhone).length < 8) {
+      throw new BaoBayError("emergencyPhone", "Số điện thoại khẩn cấp chưa đúng");
+    }
+
+    /** QUỐC TỊCH: người nước ngoài BẮT BUỘC khai (chủ 30/09) — "Việt Nam" hay để trống đều không nhận. */
+    foreigner = input.foreigner === true || input.foreigner === "true";
+    nationality = clean(input.nationality, 60);
+    if (foreigner) {
+      if (!nationality || /^vi[eệ]t ?nam$/i.test(nationality)) {
+        throw new BaoBayError("nationality", "Người nước ngoài phải khai quốc tịch");
+      }
+    } else {
+      nationality = VN_NATIONALITY;
+    }
   }
 
   const idNorm = normalizeIdNumber(pilot.idNumber);
   const phoneNorm = normalizePhone(pilot.phone);
 
   await connectDB();
-  const passes = await findPasses({ spot, idNorm, phoneNorm, fromDate: dates[0] });
+  const passes = await findPasses({ spot, idNorm, phoneNorm, memberCode: pilot.member?.code, fromDate: dates[0] });
 
   const fee = computeBaoBayFee({
     spot,
@@ -395,7 +427,14 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
   }
 
   const wingRaw = clean(input.wingClass, 10) as WingClass;
-  const baseCode = buildNoticeCode(dates, pilot.phone);
+  /**
+   * Mã báo bay: BB + ngày + 4 số cuối SĐT. Hội viên không có SĐT trong danh sách
+   * thì đuôi là MÃ HỘI VIÊN ("BB261001.HNAA-01") — cùng đuôi với nội dung CK.
+   */
+  const baseCode =
+    normalizePhone(pilot.phone).length >= 4 || !pilot.member
+      ? buildNoticeCode(dates, pilot.phone)
+      : `${buildNoticeCode(dates, "").split(".")[0]}.${pilot.member.code}`;
 
   const saved = await createWithUniqueCode(baseCode, {
     spot,
@@ -443,17 +482,119 @@ export async function listTodayPilots(spotRaw: unknown, now: Date): Promise<{ co
   await connectDB();
   const docs = await FlightNotice.find({ spot, dates: today })
     .sort({ submittedAt: 1 })
-    .select("fullName idNorm phoneNorm")
+    .select("fullName idNorm phoneNorm memberCode")
     .limit(500)
     .lean();
 
   const seen = new Set<string>();
   const names: string[] = [];
   for (const d of docs) {
-    const key = d.idNorm || d.phoneNorm || d.fullName;
+    // Hội viên không có CCCD/SĐT → nhận ra người trùng bằng mã hội viên
+    const key = d.memberCode || d.idNorm || d.phoneNorm || d.fullName;
     if (seen.has(key)) continue;
     seen.add(key);
     names.push(shortPilotName(d.fullName));
   }
   return { count: names.length, names };
+}
+
+/* ------------------------------------------------------------------ *
+ * NHẬP DANH SÁCH HỘI VIÊN — dùng chung cho trang /admin/baobay và script
+ * ------------------------------------------------------------------ */
+
+export type ImportMemberRow = {
+  code: string;
+  fullName?: string;
+  idNumber?: string;
+  phone?: string;
+  emergencyPhone?: string;
+  nationality?: string;
+  email?: string;
+  extra?: Record<string, unknown>;
+};
+
+export type ImportMembersResult = {
+  inserted: number;
+  updated: number;
+  matched: number;
+  skipped: string[];
+};
+
+/**
+ * Ghi đè danh sách hội viên theo KHOÁ MÃ (memberCodeKey): "HNAA-01" và
+ * "HNAA-1" là cùng một người. Mã hiển thị lấy đúng như dòng nhập.
+ *
+ * - Ô TRỐNG không xoá dữ liệu đang có (bảng hội hay thiếu cột).
+ * - Nhập lại hội viên đã tắt thì bật lại — có tên trong bảng mới là còn hội viên.
+ * - `source` ghi vào importSource để biết bản ghi lấy từ bảng nào.
+ *
+ * Gọi từ script: `await importMembers(rows, { source: "Danh sach HNAA cap nhat 01/10/26" })`
+ * (tự nối DB qua connectDB — nhớ trỏ MONGODB_URI đúng cơ sở dữ liệu).
+ */
+export async function importMembers(
+  rows: ImportMemberRow[],
+  opts: { source?: string } = {},
+): Promise<ImportMembersResult> {
+  const ops: Parameters<typeof HnaaMember.bulkWrite>[0] = [];
+  const skipped: string[] = [];
+  const seen = new Set<string>();
+
+  for (const r of rows) {
+    const code = normalizeMemberCode(r.code);
+    const codeKey = memberCodeKey(r.code);
+    const fullName = clean(r.fullName, 120);
+    if (!code || !codeKey || code.length > 40) {
+      skipped.push(`(thiếu mã) ${fullName}`.trim());
+      continue;
+    }
+    if (seen.has(codeKey)) {
+      skipped.push(`${code} (trùng mã trong bảng — lấy dòng đầu)`);
+      continue;
+    }
+    seen.add(codeKey);
+
+    const set: Record<string, unknown> = { active: true, code, codeKey };
+    if (fullName) set.fullName = fullName;
+    for (const k of ["idNumber", "phone", "emergencyPhone", "nationality"] as const) {
+      const v = clean(r[k], 60);
+      if (v) set[k] = v;
+    }
+    const email = clean(r.email, 120).toLowerCase();
+    if (email) set.email = email;
+    if (opts.source) set.importSource = clean(opts.source, 120);
+
+    // Cột phụ: chỉ nhận cặp chữ–chữ, bỏ dấu chấm/$ ở tên cột (MongoDB không cho)
+    if (r.extra && typeof r.extra === "object") {
+      const extra: Record<string, string> = {};
+      for (const [k, v] of Object.entries(r.extra)) {
+        const key = clean(k, 60).replace(/[.$]/g, " ").trim();
+        const val = clean(v, 300);
+        if (key && val) extra[key] = val;
+      }
+      if (Object.keys(extra).length) set.extra = extra;
+    }
+
+    ops.push({
+      updateOne: {
+        /**
+         * Khớp theo codeKey, HOẶC bản ghi cũ cùng `code` chưa có khoá — để lần
+         * nhập đầu sau khi thêm khoá không đẻ ra bản trùng.
+         */
+        filter: { $or: [{ codeKey }, { code, codeKey: { $exists: false } }] },
+        update: {
+          $set: set,
+          // Hội viên mới mà bảng không có tên thì tạm lấy mã làm tên, sửa sau được
+          ...(fullName ? {} : { $setOnInsert: { fullName: code } }),
+        },
+        upsert: true,
+      },
+    });
+  }
+
+  if (!ops.length) return { inserted: 0, updated: 0, matched: 0, skipped };
+
+  await connectDB();
+  await ensureHnaaMemberIndexes();
+  const res = await HnaaMember.bulkWrite(ops, { ordered: false });
+  return { inserted: res.upsertedCount, updated: res.modifiedCount, matched: res.matchedCount, skipped };
 }

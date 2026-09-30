@@ -9,7 +9,7 @@ import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
 import { requireBaoBayAdmin } from "@/lib/bao-bay-admin-auth";
-import { normalizeMemberCode } from "@/lib/bao-bay";
+import { memberCodeKey, normalizeMemberCode } from "@/lib/bao-bay";
 import { connectDB } from "@/lib/mongodb";
 import { ensureHnaaMemberIndexes, HnaaMember } from "@/models/HnaaMember.model";
 
@@ -34,14 +34,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const code = normalizeMemberCode(body.code);
     if (!code) return NextResponse.json({ message: "Mã hội viên không được trống" }, { status: 400 });
     set.code = code;
+    // Khoá tra phải đổi theo mã, không thì mã mới gõ vào trang sẽ báo sai
+    set.codeKey = memberCodeKey(code);
   }
   if (body.fullName !== undefined) {
     const name = clean(body.fullName, 120);
     if (!name) return NextResponse.json({ message: "Họ tên không được trống" }, { status: 400 });
     set.fullName = name;
   }
-  for (const k of ["idNumber", "phone", "emergencyPhone"] as const) {
-    if (body[k] !== undefined) set[k] = clean(body[k], 40);
+  for (const k of ["idNumber", "phone", "emergencyPhone", "nationality", "email"] as const) {
+    if (body[k] !== undefined) set[k] = clean(body[k], k === "email" ? 120 : 60);
   }
   if (body.active !== undefined) set.active = Boolean(body.active);
 

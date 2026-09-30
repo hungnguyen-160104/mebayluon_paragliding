@@ -316,6 +316,7 @@ type MemberView = {
   needPhone: boolean;
   needEmergencyPhone: boolean;
   nationality?: string;
+  foreigner?: boolean;
 };
 
 type MemberState =
@@ -523,13 +524,8 @@ export default function BaoBayClient() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.ok && data.member) {
-        const m = data.member as MemberView;
-        setMemberState({ status: "ok", member: m });
-        // Bảng hội có cột quốc tịch khác Việt Nam → điền sẵn "người nước ngoài"
-        if (m.nationality && !/^vi[eệ]t ?nam$/i.test(m.nationality)) {
-          setForeigner(true);
-          setNationality(m.nationality);
-        }
+        // Hội viên: quốc tịch lấy từ danh sách hội ở máy chủ, trang không hỏi nữa
+        setMemberState({ status: "ok", member: data.member as MemberView });
         setErrors((e) => ({ ...e, fullName: undefined, idNumber: undefined, phone: undefined, emergencyPhone: undefined }));
       } else if (res.status === 429) {
         setMemberState({ status: "rate" });
@@ -681,7 +677,7 @@ export default function BaoBayClient() {
     const needEmg = !verifiedMember || verifiedMember.needEmergencyPhone;
 
     if (needName && !fullName.trim()) next.fullName = err((d) => d.err.name);
-    if (foreigner && (!nationality.trim() || /^vi[eệ]t ?nam$/i.test(nationality.trim()))) {
+    if (!verifiedMember && foreigner && (!nationality.trim() || /^vi[eệ]t ?nam$/i.test(nationality.trim()))) {
       next.nationality = err((d) => d.err.nationality);
     }
     if (needId && !idNumber.trim()) next.idNumber = err((d) => d.err.id);
@@ -1347,12 +1343,18 @@ export default function BaoBayClient() {
                         <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm text-white/70">
                           <span>
                             <Bi t={b((d) => d.hnaaLabel)} inline />:{" "}
-                            <b className="font-mono text-white">{memberState.member.code}</b>
+                            <b className="whitespace-nowrap font-mono text-white">{memberState.member.code}</b>
                           </span>
                           {memberState.member.idMasked ? (
                             <span>
                               <Bi t={b((d) => d.memberId)} inline />:{" "}
                               <b className="text-white">{memberState.member.idMasked}</b>
+                            </span>
+                          ) : null}
+                          {memberState.member.nationality ? (
+                            <span>
+                              <Bi t={b((d) => d.fNationality)} inline />:{" "}
+                              <b className="text-white">{memberState.member.nationality}</b>
                             </span>
                           ) : null}
                           {memberState.member.phoneMasked ? (
@@ -1437,8 +1439,10 @@ export default function BaoBayClient() {
                 ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {/* Người Việt / người nước ngoài — hỏi MỌI phi công, kể cả hội viên
-                      (chủ 30/09): người nước ngoài bắt buộc khai quốc tịch. */}
+                  {/* Người Việt / người nước ngoài — người thường bắt buộc chọn (chủ 30/09).
+                      HỘI VIÊN HNAA thì KHÔNG hỏi: quốc tịch lấy từ danh sách hội (chủ 01/10:
+                      "chỉ cần điền mã là được"). */}
+                  {!verifiedMember ? (
                   <div
                     className="scroll-mt-24 sm:col-span-2"
                     ref={(el) => {
@@ -1502,6 +1506,7 @@ export default function BaoBayClient() {
                       </div>
                     ) : null}
                   </div>
+                  ) : null}
 
                   {!verifiedMember ? (
                     <div

@@ -438,6 +438,37 @@ export function normalizeMemberCode(raw: unknown): string {
     .replace(/\s+/g, "");
 }
 
+/**
+ * KHOÁ SO KHỚP mã hội viên — gõ kiểu gì cũng ra một (chủ 01/10):
+ *   "HNAA-01", "hnaa01", "HNAA 1", "hnaa-1", "01", "1"  →  "HNAA1"
+ * Bỏ mọi dấu cách/gạch/chấm, chữ hoa; dạng "(HNAA)số" thì bỏ số 0 ở đầu. Mã
+ * kiểu khác (nếu sau này có hội khác) giữ nguyên phần chữ-số đã làm sạch.
+ * Mã HIỂN THỊ vẫn giữ đúng như trong bảng hội ("HNAA-01"); khoá này chỉ để tra.
+ */
+export function memberCodeKey(raw: unknown): string {
+  const s = String(raw ?? "")
+    .toUpperCase()
+    .replace(/[^0-9A-Z]/g, "");
+  const m = s.match(/^(?:HNAA)?0*(\d+)$/);
+  if (m) return `HNAA${Number(m[1])}`;
+  return s;
+}
+
+/**
+ * Quốc tịch trong bảng hội: "Việt Nam", "Vietnam", "Viet Nam", "VN" (hoặc bỏ
+ * trống) là người Việt; còn lại là người nước ngoài với đúng quốc tịch đó.
+ */
+export function normalizeNationality(raw: unknown): { foreigner: boolean; nationality: string } {
+  const s = String(raw ?? "").trim();
+  const p = s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+  if (!p || p === "vietnam" || p === "vn") return { foreigner: false, nationality: VN_NATIONALITY };
+  return { foreigner: true, nationality: s };
+}
+
 /** "0912345456" → "***456" — đủ để hội viên nhận ra số của mình, không lộ số. */
 export function maskTail(raw: unknown, keep = 3): string {
   const s = String(raw ?? "").replace(/\s+/g, "");
@@ -545,7 +576,18 @@ export function nationalityFromExtra(extra: unknown): string {
  * Dán bảng hội viên từ Excel / Google Sheets
  * ------------------------------------------------------------------ */
 
-export type MemberField = "code" | "fullName" | "idNumber" | "phone" | "emergencyPhone";
+/** "skip" = cột bỏ hẳn (vd. STT — số thứ tự của bảng, không phải thông tin hội viên). */
+export type MemberField =
+  | "code"
+  | "fullName"
+  | "idNumber"
+  | "phone"
+  | "emergencyPhone"
+  | "nationality"
+  | "email"
+  | "skip";
+
+type MemberDataField = Exclude<MemberField, "skip">;
 
 export type ParsedMemberRow = {
   code: string;
@@ -553,6 +595,9 @@ export type ParsedMemberRow = {
   idNumber: string;
   phone: string;
   emergencyPhone: string;
+  nationality: string;
+  /** Lưu để admin liên hệ — KHÔNG BAO GIỜ trả ra trang công khai. */
+  email: string;
   extra: Record<string, string>;
 };
 
@@ -581,6 +626,9 @@ export function guessMemberField(header: string): MemberField | null {
   if (/cccd|cmnd|can cuoc|ho chieu|passport|dinh danh|giay to/.test(h)) return "idNumber";
   if (/sdt|dien thoai|so dt|phone|mobile|di dong/.test(h)) return "phone";
   if (/ho ten|ho va ten|full ?name|^ten$|^name$|ten hoi vien/.test(h)) return "fullName";
+  if (/quoc tich|nationality|country/.test(h)) return "nationality";
+  if (/^e ?mail|thu dien tu/.test(h)) return "email";
+  if (/^stt$|^so thu tu$|^tt$|^no$/.test(h)) return "skip";
   return null;
 }
 
@@ -600,10 +648,22 @@ export function parseMemberPaste(
   rows: ParsedMemberRow[];
   skipped: number;
 } {
-  const lines = String(text || "")
+  const all = String(text || "")
     .replace(/\r\n?/g, "\n")
     .split("\n")
-    .filter((l) => l.trim() !== "");
+    // Dòng trống hoặc chỉ toàn ô trống (Excel hay dán kèm "\t\t\t") thì bỏ
+    .filter((l) => l.replace(/\t/g, "").trim() !== "");
+
+  /**
+   * DÒNG TIÊU ĐỀ không nhất thiết là dòng đầu: bảng hội có dòng tên bảng ở trên
+   * ("Danh sach HNAA cap nhat 01/10/26"). Lấy dòng ĐẦU TIÊN có cột mã hội viên,
+   * hoặc có từ hai cột nhận ra được; các dòng phía trên nó bỏ qua.
+   */
+  const hIdx = all.findIndex((l) => {
+    const f = l.split("\t").map((c) => guessMemberField(c));
+    return f.includes("code") || f.filter((x) => x && x !== "skip").length >= 2;
+  });
+  const lines = hIdx > 0 ? all.slice(hIdx) : all;
 
   if (!lines.length) return { headers: [], mapping: [], rows: [], skipped: 0 };
 
@@ -613,7 +673,9 @@ export function parseMemberPaste(
   for (const [i, h] of headers.entries()) {
     const f = mappingOverride && i < mappingOverride.length ? mappingOverride[i] : guessMemberField(h);
     // Hai cột cùng đoán ra một trường thì chỉ nhận cột đầu, cột sau vào extra.
-    if (f && !used.has(f)) {
+    if (f === "skip") {
+      mapping.push("skip");
+    } else if (f && !used.has(f)) {
       mapping.push(f);
       used.add(f);
     } else {
@@ -632,14 +694,18 @@ export function parseMemberPaste(
       idNumber: "",
       phone: "",
       emergencyPhone: "",
+      nationality: "",
+      email: "",
       extra: {},
     };
     cells.forEach((cell, i) => {
       const f = mapping[i];
-      if (f) row[f] = cell;
+      if (f === "skip") return;
+      if (f) row[f as MemberDataField] = cell;
       else if (cell && headers[i]) row.extra[headers[i]] = cell;
       else if (cell) row.extra[`Cột ${i + 1}`] = cell;
     });
+    // Mã giữ nguyên cách viết của bảng ("HNAA-01"), chỉ bỏ khoảng trắng + chữ hoa
     row.code = normalizeMemberCode(row.code);
 
     // Không có mã hội viên thì không nhận được — mã là khoá để ghi đè lần sau.
