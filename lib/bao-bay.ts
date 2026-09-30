@@ -129,8 +129,11 @@ export const BAO_BAY_KNOWLEDGE_LINKS = [
 
 export type BaoBayKnowledgeKey = (typeof BAO_BAY_KNOWLEDGE_LINKS)[number]["key"];
 
-/** Ba link chung giữ lại dưới nhóm bài của điểm bay (chủ 01/10: "2–3 link chung"). */
-export const BAO_BAY_GENERAL_KNOWLEDGE: BaoBayKnowledgeKey[] = ["weather", "active", "p3p4"];
+/**
+ * Link kiến thức chung dưới nhóm bài của điểm bay. Để đủ cả năm vì bài riêng
+ * cho phi công ở từng điểm còn ít (chủ 01/10 bỏ các bài dịch vụ, giá vé).
+ */
+export const BAO_BAY_GENERAL_KNOWLEDGE: BaoBayKnowledgeKey[] = ["weather", "wind", "thermal", "active", "p3p4"];
 
 /**
  * BÀI GẮN VỚI TỪNG ĐIỂM BAY — đứng ĐẦU khối "Kiến thức dù lượn", đổi theo điểm
@@ -139,27 +142,24 @@ export const BAO_BAY_GENERAL_KNOWLEDGE: BaoBayKnowledgeKey[] = ["weather", "acti
  * Cách chọn (01/10): truy vấn CHỈ ĐỌC các bài đã đăng (isPublished) có slug /
  * tiêu đề / tag chứa tên điểm, cả có dấu lẫn không dấu (Viên Nam, Hà Nội, Đồi
  * Bù · Khau Phạ, Mù Cang Chải, Tú Lệ · Quản Bạ, Hà Giang), rồi chọn tay 2–4 bài
- * THỰC DỤNG cho phi công (hồ sơ điểm bay, gió, bãi cất/hạ, đường đi) trước bài
- * du lịch. Ghi cứng ở đây — đổi slug bài nào thì phải sửa ở đây.
+ * THỰC DỤNG cho phi công (gió, bãi cất/hạ, đường đi). Chủ 01/10: trang dành
+ * cho phi công nên TUYỆT ĐỐI không đưa bài dịch vụ, giá vé, gói bay. Ghi cứng ở đây — đổi slug bài nào thì phải sửa ở đây.
  * Tiêu đề rút gọn từ tiêu đề bài; trang tiếng Việt hiện vi + en cùng dòng, bốn
  * ngôn ngữ còn lại hiện bản en.
  */
 export const BAO_BAY_SITE_POSTS: Record<BaoBaySpot, Array<{ href: string; icon: string; vi: string; en: string }>> = {
+  /** Chưa có bài kiến thức riêng cho Viên Nam — chỉ bài đường lên đỉnh; nội quy + bản đồ vùng bay đã nằm ngay trong trang. */
   "vien-nam": [
-    { href: "/blog/du-luon-vien-nam", icon: "🏔️", vi: "Dù lượn đỉnh Viên Nam: độ cao, gói bay", en: "Vien Nam Peak paragliding: altitude and options" },
-    { href: "/blog/bay-du-luon-hanoi", icon: "🧭", vi: "Đường lên đỉnh Viên Nam và cắm trại", en: "The climb to Vien Nam Peak and camping" },
-    { href: "/blog/gia-ve-du-luon-ha-noi", icon: "🗺️", vi: "Hai điểm bay Hà Nội: Đồi Bù và Viên Nam", en: "Hanoi's two sites: Doi Bu and Vien Nam" },
+    { href: "/blog/bay-du-luon-hanoi", icon: "🧭", vi: "Đường lên đỉnh Viên Nam", en: "Getting up to Vien Nam Peak" },
   ],
   "khau-pha": [
     { href: "/blog/ky-thuat-bay-deo-khau-pha-3-kich-ban-gio", icon: "🌬️", vi: "Kỹ thuật bay Khau Phạ — 3 kịch bản gió", en: "Flying Khau Pha — the three main wind scenarios" },
     { href: "/blog/diem-cat-canh-ha-canh-du-luon-khau-pha", icon: "🪂", vi: "Bãi cất cánh và hạ cánh đèo Khau Phạ", en: "Khau Pha launch and landing sites" },
-    { href: "/blog/du-luon-deo-khau-pha", icon: "⛰️", vi: "Hồ sơ điểm bay đèo Khau Phạ", en: "Khau Pha Pass site profile" },
     { href: "/blog/di-chuyen-den-diem-bay-du-luon-khau-pha", icon: "🚐", vi: "Đường tới điểm bay Khau Phạ", en: "Getting to the Khau Pha site" },
+    { href: "/blog/duong-ha-noi-di-mu-cang-chai-qua-ic14", icon: "🛣️", vi: "Hà Nội đi Mù Cang Chải qua nút giao IC14", en: "Hanoi to Mu Cang Chai via the IC14 junction" },
   ],
-  "quan-ba": [
-    { href: "/blog/ha-giang-loop-paragliding", icon: "🏍️", vi: "Bay dù lượn Hà Giang Loop: dừng chân Quản Bạ", en: "Paragliding on the Ha Giang Loop: Quan Ba" },
-    { href: "/blog/best-time-for-paragliding-in-vietnam", icon: "📅", vi: "Mùa bay đẹp từng điểm (có Hà Giang)", en: "Best season for every site (incl. Ha Giang)" },
-  ],
+  /** Chưa có bài dành cho phi công ở Quản Bạ (các bài Hà Giang hiện có là bài dịch vụ). */
+  "quan-ba": [],
 };
 
 /**
