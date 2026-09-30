@@ -22,6 +22,13 @@ export interface IHnaaMember {
   email?: string;
   /** Lần nhập gần nhất lấy từ đâu (vd. "Danh sach HNAA cap nhat 01/10/26"). */
   importSource?: string;
+  /**
+   * Đếm SĐT xác nhận nhập SAI cho mã này + hạn của cửa sổ đếm. Lưu ngay trên
+   * bản ghi (không để trong bộ nhớ) vì trên Vercel mỗi cửa API là một tiến
+   * trình riêng — khoá ở cửa tra mã thì cửa báo giá/gửi cũng phải thấy.
+   */
+  phoneFailCount?: number;
+  phoneFailUntil?: Date;
   idNumber?: string;
   phone?: string;
   emergencyPhone?: string;
@@ -42,6 +49,8 @@ const HnaaMemberSchema = new Schema<IHnaaMember>(
     nationality: { type: String, default: "", trim: true },
     email: { type: String, default: "", trim: true },
     importSource: { type: String, default: "" },
+    phoneFailCount: { type: Number, default: 0 },
+    phoneFailUntil: Date,
     idNumber: { type: String, default: "", trim: true },
     phone: { type: String, default: "", trim: true },
     emergencyPhone: { type: String, default: "", trim: true },

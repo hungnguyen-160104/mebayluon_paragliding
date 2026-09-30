@@ -15,7 +15,7 @@
  * Thiếu số liệu mục nào thì BỎ mục đó — không đoán.
  */
 
-import { caoAmsl, huongTroiNgay, tranMay, type SucThermal } from "@/lib/baobay/thoi-tiet";
+import { caoAmsl, huongTroiNgay, laDongTo, tranMay, type SucThermal } from "@/lib/baobay/thoi-tiet";
 
 /** Những trường của một ngày dự báo mà trang báo bay dùng tới. */
 export type NgayApi = {
@@ -25,6 +25,8 @@ export type NgayApi = {
   gioMua?: number;
   /** Số giờ "mưa bay" — mưa phùn 0,4–0,8 mm/giờ, bay vẫn được. */
   gioMuaBay?: number;
+  /** Xác suất dông cao nhất trong ngày (%) — cùng số bảng dự báo đầy đủ dùng (⚡ từ 20%). */
+  xacSuatDongMax?: number;
   thermal?: { diem: number; muc: SucThermal };
   gio?: Array<{
     gio: string;
@@ -51,23 +53,58 @@ function mucNgay(muc: string): DayLevel | null {
 
 const gioCuaMot = (g: { gio: string }) => Number(String(g.gio).slice(11, 13));
 
-/** Ô lịch: mặt theo mức ngày, mũi tên gió 6h–18h, nắng/mây/mưa. */
+/**
+ * NGƯỠNG BIỂU TƯỢNG TRỜI Ở Ô LỊCH (chủ 01/10). Khung bay = các giờ 7h–17h của
+ * ngày (cùng khung "trongKhung" mà gioMua/gioMuaBay đếm).
+ *  - Có mưa (mưa thật gioMua hoặc mưa bay gioMuaBay) mà vẫn có nắng → 🌦️.
+ *  - Mưa gần hết khung bay: nắng < SUN_MIN_RAINY_DAY giờ, HOẶC số giờ ướt ≥
+ *    WET_SHARE_RAINY_DAY × số giờ khung bay → 🌧️.
+ *  - Không mưa: mây trung bình 8h–17h < CLOUDY_PCT → ☀️, còn lại ⛅.
+ *  - Dông: cùng điều kiện ra "Dông (NN%)" ở dòng tóm tắt (xacSuatDongMax ≥
+ *    STORM_PCT) → thêm ⚡ cạnh biểu tượng (☀️⚡, 🌦️⚡). Có giờ DÔNG TO
+ *    (laDongTo — dông ≥ 40% và mưa rào ≥ 2 mm/giờ) trong khung bay → ⛈️.
+ */
+export const SUN_MIN_RAINY_DAY = 2;
+export const WET_SHARE_RAINY_DAY = 0.5;
+export const CLOUDY_PCT = 50;
+export const STORM_PCT = 20;
+const KHUNG_BAY: [number, number] = [7, 17];
+
+/** Ô lịch: mặt theo mức ngày, mũi tên gió 6h–18h, nắng/mây/mưa (+ dông). */
 export function calDay(n: NgayApi): CalDay {
   const gio = Array.isArray(n.gio) ? n.gio : [];
-  const bay = gio.filter((g) => {
+  const trongKhung = gio.filter((g) => gioCuaMot(g) >= KHUNG_BAY[0] && gioCuaMot(g) <= KHUNG_BAY[1]);
+  const coMay = gio.filter((g) => {
     const h = gioCuaMot(g);
     return h >= 8 && h <= 17 && Number.isFinite(g.may);
   });
-  const may = bay.length ? bay.reduce((t, g) => t + (g.may as number), 0) / bay.length : 0;
+  const may = coMay.length ? coMay.reduce((t, g) => t + (g.may as number), 0) / coMay.length : 0;
+  const nang = gio.filter((g) => Number.isFinite(g.giayNang)).reduce((t, g) => t + (g.giayNang as number), 0) / 3600;
+  const gioUot = (n.gioMua ?? 0) + (n.gioMuaBay ?? 0);
+  const khungGio = trongKhung.length || 11;
+
+  let sky: string;
+  if (gioUot > 0) {
+    sky = nang < SUN_MIN_RAINY_DAY || gioUot >= WET_SHARE_RAINY_DAY * khungGio ? "🌧️" : "🌦️";
+  } else {
+    sky = may < CLOUDY_PCT ? "☀️" : "⛅";
+  }
+
+  const dongTo = trongKhung.some((g) => {
+    try {
+      return laDongTo(g as never);
+    } catch {
+      return false;
+    }
+  });
+  if (dongTo) sky = "⛈️";
+  else if ((n.xacSuatDongMax ?? 0) >= STORM_PCT) sky = `${sky}⚡`;
+
   return {
     level: mucNgay(n.muc),
     // Cùng hàm và cùng khung 6h–18h với ô ngày của bảng dự báo (huongTroiCuaNgay)
     wind: huongTroiNgay(gio as never, [6, 18]),
-    /**
-     * Mưa THẬT trong khung bay mới là 🌧️; chỉ "mưa bay" (mưa phùn, bay vẫn được)
-     * là 🌦️ — gộp chung thì ngày mưa phùn vài giờ trông như ngày nghỉ.
-     */
-    sky: (n.gioMua ?? 0) > 0 ? "🌧️" : (n.gioMuaBay ?? 0) > 0 ? "🌦️" : may < 50 ? "☀️" : "⛅",
+    sky,
   };
 }
 
@@ -88,6 +125,8 @@ export type DayParts = {
   sunHours: number | null;
   rainHours: number;
   drizzleHours: number;
+  /** Xác suất dông (%) — chỉ có khi ≥ 20%, cùng ngưỡng ⚡ của bảng dự báo đầy đủ. */
+  storm: number | null;
   turb: Turb | null;
   /** Trần mây, mét AMSL (trên mực nước biển) — xem chú thích ở dayParts. */
   cloudBase: number | null;
@@ -132,11 +171,26 @@ export function dayParts(n: NgayApi, altBai?: number): DayParts {
    * 10h–15h (giữa ngày bay). KHÔNG dùng tranMax: đó là ĐỈNH THERMAL, khác trần mây.
    * Giờ nào trời không có mây thấp thì tranMay trả null — cả khung null thì bỏ.
    */
-  const tran = gio
-    .filter((g) => gioCuaMot(g) >= 10 && gioCuaMot(g) <= 15 && Number.isFinite(g.nhietDo))
+  const trongKhung = (tu: number, den: number) =>
+    gio.filter((g) => gioCuaMot(g) >= tu && gioCuaMot(g) <= den && Number.isFinite(g.nhietDo));
+  const tran = trongKhung(10, 15)
     .map((g) => tranMay(g.nhietDo as number, g.diemSuong, g.mayThap, g.chenhDoCao ?? 0))
     .filter((v): v is number => v !== null && Number.isFinite(v));
-  const tb = trungVi(tran);
+  /**
+   * DỰ PHÒNG (chủ 01/10: "trần mây phải luôn có khi số liệu cho phép"):
+   * tranMay trả null khi mô hình không thấy mây thấp (< 25%) — để khỏi báo "mây
+   * 200m" lúc sáng sớm trời quang. Nhưng GIỮA NGÀY (11h–14h) chính công thức
+   * (nhiệt độ − điểm sương) × 125m là ĐỘ CAO NGƯNG TỤ của khối khí bốc lên, tức
+   * chân mây tích mà thermal sẽ tạo — đó VẪN là trần mây phi công cần. Chỉ dùng
+   * khi khung 10–15h không có giờ nào có mây thấp; không có điểm sương thì bỏ.
+   * KHÔNG dùng tranMax (đỉnh thermal) — đó không phải trần mây.
+   */
+  const tranDuPhong = tran.length
+    ? []
+    : trongKhung(11, 14)
+        .filter((g) => Number.isFinite(g.diemSuong))
+        .map((g) => Math.max(0, Math.round(((g.nhietDo as number) - (g.diemSuong as number)) * 125 + (g.chenhDoCao ?? 0))));
+  const tb = trungVi(tran.length ? tran : tranDuPhong);
 
   /**
    * NGHỊCH NHIỆT: mục "Nghịch nhiệt"/"Lớp chặn" của nhận định, tính từ nhiệt độ
@@ -181,6 +235,7 @@ export function dayParts(n: NgayApi, altBai?: number): DayParts {
     thermal: n.thermal?.muc ?? null,
     sunHours,
     rainHours: n.gioMua ?? 0,
+    storm: (n.xacSuatDongMax ?? 0) >= STORM_PCT ? Math.round(n.xacSuatDongMax as number) : null,
     drizzleHours: n.gioMuaBay ?? 0,
     turb,
     /**
@@ -209,6 +264,7 @@ type Words = {
   sun: (h: number) => string;
   rain: (h: number) => string;
   drizzle: (h: number) => string;
+  storm: (p: number) => string;
   turb: Record<Turb, string>;
   /** Nhận số ĐÃ định dạng ("1.500") — xem `fmt` trong renderDaySummary. */
   cloudBase: (m: string) => string;
@@ -229,8 +285,9 @@ const WORDS: Record<string, Words> = {
     windCalm: (ms) => `gió lặng ${ms} m/s`,
     thermal: { khong: "không thermal", nhe: "thermal nhẹ", vua: "thermal vừa", manh: "thermal mạnh", gat: "thermal gắt" },
     sun: (h) => `${h}h nắng`,
-    rain: (h) => `${h}h mưa`,
-    drizzle: (h) => `${h}h mưa bay`,
+    rain: (h) => `mưa ${h}h`,
+    drizzle: (h) => `mưa bay ${h}h`,
+    storm: (p) => `Dông (${p}%)`,
     turb: { nhe: "nhiễu động nhẹ", vua: "nhiễu động vừa", manh: "nhiễu động mạnh" },
     cloudBase: (m) => `trần mây ${m}m AMSL`,
     inversion: (m) => `có nghịch nhiệt ở ${m}m AMSL`,
@@ -248,8 +305,9 @@ const WORDS: Record<string, Words> = {
     windCalm: (ms) => `calm, ${ms} m/s`,
     thermal: { khong: "no thermals", nhe: "weak thermals", vua: "moderate thermals", manh: "strong thermals", gat: "rough thermals" },
     sun: (h) => `${h}h sunshine`,
-    rain: (h) => `${h}h rain`,
-    drizzle: (h) => `${h}h drizzle`,
+    rain: (h) => `rain ${h}h`,
+    drizzle: (h) => `drizzle ${h}h`,
+    storm: (p) => `Thunderstorm (${p}%)`,
     turb: { nhe: "light turbulence", vua: "moderate turbulence", manh: "strong turbulence" },
     cloudBase: (m) => `cloud base ${m}m AMSL`,
     inversion: (m) => `inversion at ${m}m AMSL`,
@@ -268,8 +326,9 @@ const WORDS: Record<string, Words> = {
     windCalm: (ms) => `vent calme ${ms} m/s`,
     thermal: { khong: "pas de thermiques", nhe: "thermiques faibles", vua: "thermiques moyens", manh: "thermiques forts", gat: "thermiques musclés" },
     sun: (h) => `${h} h de soleil`,
-    rain: (h) => `${h} h de pluie`,
-    drizzle: (h) => `${h} h de bruine`,
+    rain: (h) => `pluie ${h} h`,
+    drizzle: (h) => `bruine ${h} h`,
+    storm: (p) => `Orage (${p} %)`,
     turb: { nhe: "turbulences faibles", vua: "turbulences modérées", manh: "turbulences fortes" },
     cloudBase: (m) => `plafond ${m} m AMSL`,
     inversion: (m) => `inversion à ${m} m AMSL`,
@@ -287,8 +346,9 @@ const WORDS: Record<string, Words> = {
     windCalm: (ms) => `штиль ${ms} м/с`,
     thermal: { khong: "без термиков", nhe: "слабые термики", vua: "умеренные термики", manh: "сильные термики", gat: "жёсткие термики" },
     sun: (h) => `${h} ч солнца`,
-    rain: (h) => `${h} ч дождя`,
-    drizzle: (h) => `${h} ч мороси`,
+    rain: (h) => `дождь ${h} ч`,
+    drizzle: (h) => `морось ${h} ч`,
+    storm: (p) => `Гроза (${p}%)`,
     turb: { nhe: "слабая турбулентность", vua: "умеренная турбулентность", manh: "сильная турбулентность" },
     cloudBase: (m) => `нижняя граница облаков ${m} м AMSL`,
     inversion: (m) => `инверсия на ${m} м AMSL`,
@@ -308,6 +368,7 @@ const WORDS: Record<string, Words> = {
     sun: (h) => `日照 ${h} 小时`,
     rain: (h) => `降雨 ${h} 小时`,
     drizzle: (h) => `毛毛雨 ${h} 小时`,
+    storm: (p) => `雷暴（${p}%）`,
     turb: { nhe: "轻度乱流", vua: "中度乱流", manh: "强乱流" },
     cloudBase: (m) => `云底 ${m} 米（海拔）`,
     inversion: (m) => `海拔 ${m} 米处有逆温`,
@@ -325,8 +386,9 @@ const WORDS: Record<string, Words> = {
     windCalm: (ms) => `शांत हवा ${ms} m/s`,
     thermal: { khong: "थर्मल नहीं", nhe: "कमज़ोर थर्मल", vua: "मध्यम थर्मल", manh: "तेज़ थर्मल", gat: "बहुत तेज़ थर्मल" },
     sun: (h) => `${h} घंटे धूप`,
-    rain: (h) => `${h} घंटे बारिश`,
-    drizzle: (h) => `${h} घंटे बूंदाबांदी`,
+    rain: (h) => `बारिश ${h} घंटे`,
+    drizzle: (h) => `बूंदाबांदी ${h} घंटे`,
+    storm: (p) => `आंधी-तूफ़ान (${p}%)`,
     turb: { nhe: "हल्की अशांति", vua: "मध्यम अशांति", manh: "तेज़ अशांति" },
     cloudBase: (m) => `क्लाउड बेस ${m} मी AMSL`,
     inversion: (m) => `${m} मी AMSL पर इनवर्ज़न`,
@@ -376,6 +438,8 @@ export function renderDaySummary(iso: string, p: DayParts, lang: string): string
   }
   if (p.thermal) out.push(w.thermal[p.thermal]);
   if (p.sunHours !== null) out.push(w.sun(p.sunHours));
+  // Dông trước (nguy hiểm nhất), rồi mưa thật; chỉ có mưa phùn thì mới ghi "mưa bay"
+  if (p.storm !== null) out.push(w.storm(p.storm));
   if (p.rainHours > 0) out.push(w.rain(p.rainHours));
   else if (p.drizzleHours > 0) out.push(w.drizzle(p.drizzleHours));
   if (p.turb) out.push(w.turb[p.turb]);

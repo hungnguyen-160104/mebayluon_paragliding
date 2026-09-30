@@ -10,6 +10,7 @@
 
 import { connectDB } from "@/lib/mongodb";
 import {
+  ALLOW_MEMBER_WITHOUT_PHONE,
   BAO_BAY_SPOT_CONFIG,
   buildNoticeCode,
   buildPaymentNote,
@@ -49,6 +50,10 @@ export type BaoBayErrorCode =
   | "nationality"
   | "payConfirm"
   | "amountChanged"
+  | "memberPhone"
+  | "phoneMismatch"
+  | "phoneLocked"
+  | "rules"
   | "server";
 
 export class BaoBayError extends Error {
@@ -81,6 +86,72 @@ export async function findActiveMember(rawCode: unknown): Promise<MemberDoc | nu
   if (!code || !key || code.length > 40) return null;
   await connectDB();
   return (await HnaaMember.findOne({ active: true, $or: [{ codeKey: key }, { code }] }).lean()) as MemberDoc | null;
+}
+
+/**
+ * BƯỚC 1 — chỉ hỏi "mã có không" (chủ 01/10): KHÔNG trả tên hay bất cứ thông
+ * tin cá nhân nào, để không ai dò lần lượt HNAA-01, 02… mà gom được danh sách
+ * tên. Chỉ nói mã có thật, dạng hiển thị chuẩn, và hội viên có SĐT trong danh
+ * sách để đối chiếu hay chưa.
+ */
+export async function checkMemberCode(rawCode: unknown): Promise<{ code: string; hasPhone: boolean } | null> {
+  const m = await findActiveMember(rawCode);
+  if (!m) return null;
+  return { code: m.code, hasPhone: normalizePhone(m.phone).length >= 8 };
+}
+
+export type MemberConfirm =
+  | { ok: true; member: MemberDoc; phone: string; phoneUnverified: boolean }
+  | { ok: false; reason: "invalid" | "phoneMissing" | "phoneMismatch" | "locked" };
+
+/** Sai SĐT tối đa bao nhiêu lần trong một cửa sổ trước khi khoá mã. */
+export const MEMBER_PHONE_MAX_FAILS = 5;
+const MEMBER_PHONE_LOCK_MS = 15 * 60_000;
+
+function phoneLocked(m: MemberDoc, now = new Date()): boolean {
+  return (m.phoneFailCount ?? 0) >= MEMBER_PHONE_MAX_FAILS && !!m.phoneFailUntil && new Date(m.phoneFailUntil) > now;
+}
+
+/**
+ * Ghi một lần SAI SĐT lên CHÍNH bản ghi hội viên: cửa sổ 15 phút, đủ 5 lần là
+ * khoá mã tới hết cửa sổ. Hai bước cập nhật có điều kiện để hai lượt gọi cùng
+ * lúc không đếm lệch.
+ */
+async function recordPhoneFailureDb(m: MemberDoc, now = new Date()): Promise<void> {
+  const until = new Date(now.getTime() + MEMBER_PHONE_LOCK_MS);
+  const res = await HnaaMember.updateOne(
+    { _id: m._id, phoneFailUntil: { $gt: now } },
+    { $inc: { phoneFailCount: 1 } },
+  );
+  if (!res.modifiedCount) {
+    await HnaaMember.updateOne({ _id: m._id }, { $set: { phoneFailCount: 1, phoneFailUntil: until } });
+  }
+}
+
+/**
+ * BƯỚC 2 — mã + SĐT. Hội viên có SĐT trong danh sách: SĐT gõ vào phải KHỚP
+ * TRỌN (đã chuẩn hoá: chỉ chữ số, +84 → 0). Chưa có SĐT: nếu
+ * ALLOW_MEMBER_WITHOUT_PHONE thì nhận, SĐT tự khai được giữ lại và gắn cờ
+ * chưa đối chiếu; không thì từ chối như sai SĐT.
+ *
+ * Máy chủ gọi lại hàm này ở CẢ báo giá lẫn lúc gửi — không tin việc trang đã
+ * xác nhận trước đó.
+ */
+export async function confirmMember(rawCode: unknown, rawPhone: unknown): Promise<MemberConfirm> {
+  const m = await findActiveMember(rawCode);
+  if (!m) return { ok: false, reason: "invalid" };
+  // Mã đang bị khoá vì sai SĐT nhiều lần — kể cả SĐT đúng cũng phải chờ hết giờ
+  if (phoneLocked(m)) return { ok: false, reason: "locked" };
+  const typed = normalizePhone(rawPhone);
+  if (typed.length < 8) return { ok: false, reason: "phoneMissing" };
+  const onFile = normalizePhone(m.phone);
+  if (onFile.length >= 8) {
+    if (onFile === typed) return { ok: true, member: m, phone: String(m.phone), phoneUnverified: false };
+    await recordPhoneFailureDb(m);
+    return { ok: false, reason: "phoneMismatch" };
+  }
+  if (!ALLOW_MEMBER_WITHOUT_PHONE) return { ok: false, reason: "phoneMismatch" };
+  return { ok: true, member: m, phone: clean(rawPhone, 30), phoneUnverified: true };
 }
 
 /** Quốc tịch của hội viên: cột "Quốc tịch" của bảng hội, bản ghi cũ thì tìm trong cột phụ. */
@@ -169,6 +240,10 @@ export type BaoBayInput = {
   dates?: unknown;
   purchase?: unknown;
   memberCode?: unknown;
+  /** SĐT đăng ký hội viên — bắt buộc khi có memberCode (bước xác nhận thứ hai). */
+  memberPhone?: unknown;
+  /** Đã tích "chấp nhận tuân thủ Nội quy" — bắt buộc ở Viên Nam. */
+  rulesAccepted?: unknown;
   fullName?: unknown;
   idNumber?: unknown;
   phone?: unknown;
@@ -222,6 +297,8 @@ type ResolvedPilot = {
   phone: string;
   emergencyPhone: string;
   member: MemberDoc | null;
+  /** Hội viên chưa có SĐT trong danh sách — SĐT là tự khai, chưa đối chiếu. */
+  memberPhoneUnverified: boolean;
 };
 
 /**
@@ -240,20 +317,35 @@ async function resolvePilot(input: BaoBayInput): Promise<ResolvedPilot> {
   };
 
   const rawCode = normalizeMemberCode(input.memberCode);
-  if (!rawCode) return { ...typed, member: null };
+  if (!rawCode) return { ...typed, member: null, memberPhoneUnverified: false };
 
-  const member = await findActiveMember(rawCode);
-  if (!member) throw new BaoBayError("memberInvalid", "Mã hội viên không đúng");
+  /**
+   * Hội viên: MÃ + SĐT đăng ký (chủ 01/10). Sai mã / thiếu SĐT / SĐT không
+   * khớp đều BÁO LỖI chứ không lặng lẽ tính như người thường — nếu không, phi
+   * công tưởng mình được miễn rồi mới thấy bị tính tiền.
+   */
+  const c = await confirmMember(rawCode, input.memberPhone);
+  if (!c.ok) {
+    if (c.reason === "invalid") throw new BaoBayError("memberInvalid", "Mã hội viên không đúng");
+    if (c.reason === "phoneMissing") throw new BaoBayError("memberPhone", "Nhập số điện thoại đăng ký hội viên để xác nhận");
+    if (c.reason === "locked") {
+      throw new BaoBayError("phoneLocked", "Nhập sai số điện thoại quá nhiều lần, mã hội viên này tạm khoá 15 phút", 429);
+    }
+    throw new BaoBayError("phoneMismatch", "Số điện thoại không khớp với hội viên này");
+  }
+  const member = c.member;
 
   return {
     fullName: member.fullName || typed.fullName,
     idNumber: normalizeIdNumber(member.idNumber) ? String(member.idNumber) : typed.idNumber,
-    phone: normalizePhone(member.phone).length >= 8 ? String(member.phone) : typed.phone,
+    // SĐT ĐÃ XÁC NHẬN (hoặc tự khai nếu danh sách chưa có số) — lưu lên báo bay
+    phone: c.phone,
     emergencyPhone:
       normalizePhone(member.emergencyPhone).length >= 8
         ? String(member.emergencyPhone)
         : typed.emergencyPhone,
     member,
+    memberPhoneUnverified: c.phoneUnverified,
   };
 }
 
@@ -352,6 +444,14 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
    * phải trả (nội dung CK dùng mã hội viên nên cũng không cần SĐT).
    * Người thường: kiểm đủ như trước.
    */
+  /**
+   * NỘI QUY VIÊN NAM (chủ 01/10): phi công phải tích "chấp nhận tuân thủ" —
+   * trang có ô bắt buộc, máy chủ kiểm lại và lưu lúc chấp nhận.
+   */
+  if (spot === "vien-nam" && input.rulesAccepted !== true) {
+    throw new BaoBayError("rules", "Vui lòng đọc và chấp nhận Nội quy điểm bay Núi Viên Nam");
+  }
+
   let foreigner: boolean;
   let nationality: string;
   if (pilot.member) {
@@ -451,6 +551,8 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
     phoneNorm,
     memberCode: pilot.member?.code,
     memberId: pilot.member?._id as IFlightNotice["memberId"],
+    memberPhoneUnverified: pilot.member ? pilot.memberPhoneUnverified : undefined,
+    rulesAcceptedAt: spot === "vien-nam" ? now : undefined,
     feeMode: fee.feeMode,
     purchase,
     feeLines: fee.lines.map((l) => ({ key: l.key, label: l.label, dates: l.dates, amount: l.amount })),

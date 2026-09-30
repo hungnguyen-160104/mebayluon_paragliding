@@ -29,11 +29,14 @@ import {
   BAO_BAY_FEE_PER_MONTH,
   BAO_BAY_FEE_PER_YEAR,
   BAO_BAY_HOTLINE,
+  BAO_BAY_GENERAL_KNOWLEDGE,
   BAO_BAY_KNOWLEDGE_LINKS,
+  BAO_BAY_SITE_POSTS,
   BAO_BAY_RADIO,
   BAO_BAY_SPOTS,
   BAO_BAY_SPOT_CONFIG,
   formatVndNb,
+  memberCodeDisplay,
   vnParts,
   VN_NATIONALITY,
   type BaoBayFee,
@@ -58,6 +61,7 @@ import {
   type DayParts,
   type NgayApi,
 } from "@/lib/bao-bay-weather";
+import { VIEN_NAM_RULE_IMAGES, vienNamRules } from "@/lib/bao-bay-rules";
 import { buildVietQrPayload } from "@/lib/vietqr";
 import { WindArrow } from "@/components/weather/WindArrow";
 
@@ -123,20 +127,17 @@ function monthGrid(year: number, month: number, showUntil?: string): Array<{ iso
  * ------------------------------------------------------------------ */
 
 /**
- * Một câu hai thứ tiếng: chữ chính, tiếng Anh nhỏ và nhạt hơn.
- * `inline` = tiếng Anh trong ngoặc ngay sau (nhãn ngắn); mặc định xuống dòng.
+ * Một câu hai thứ tiếng: tiếng Việt, rồi " / tiếng Anh" nhỏ và nhạt hơn NGAY
+ * CÙNG DÒNG (chủ 01/10: "Chọn ngày bay / Choose your flying dates") — để chữ
+ * tự xuống dòng như câu thường, không tốn thêm một hàng cho bản tiếng Anh.
+ * `inline` giữ lại cho tương thích chỗ gọi cũ, giờ hai kiểu vẽ như nhau.
  */
-function Bi({ t, inline, subClass = "" }: { t: BiText; inline?: boolean; subClass?: string }) {
+function Bi({ t, subClass = "" }: { t: BiText; inline?: boolean; subClass?: string }) {
   if (!t.sub) return <>{t.main}</>;
-  return inline ? (
+  return (
     <>
       {t.main}
-      <span className={`ml-1 text-[0.82em] font-normal opacity-60 ${subClass}`}>({t.sub})</span>
-    </>
-  ) : (
-    <>
-      {t.main}
-      <span className={`mt-0.5 block text-[0.8em] font-normal leading-snug opacity-60 ${subClass}`}>{t.sub}</span>
+      <span className={`text-[0.82em] font-normal opacity-60 ${subClass}`}> / {t.sub}</span>
     </>
   );
 }
@@ -319,14 +320,20 @@ type MemberView = {
   foreigner?: boolean;
 };
 
+/**
+ * Hai bước xác nhận hội viên (chủ 01/10): mã → SĐT đăng ký. Bước mã KHÔNG
+ * trả tên; chỉ khi SĐT khớp mới có thông tin hội viên (status "ok").
+ */
 type MemberState =
   | { status: "idle" }
   | { status: "checking" }
-  | { status: "ok"; member: MemberView }
+  | { status: "codeOk"; code: string; hasPhone: boolean; error?: "phoneMismatch" | "phoneLocked" | "memberPhone" }
+  | { status: "confirming"; code: string; hasPhone: boolean }
+  | { status: "ok"; member: MemberView; phoneUnverified: boolean }
   | { status: "wrong" }
   | { status: "rate" };
 
-const ERROR_ORDER = ["spot", "dates", "fullName", "nationality", "idNumber", "phone", "emergencyPhone"] as const;
+const ERROR_ORDER = ["spot", "dates", "fullName", "nationality", "idNumber", "phone", "emergencyPhone", "rules"] as const;
 type ErrorKey = (typeof ERROR_ORDER)[number];
 type Errors = Partial<Record<ErrorKey, string>>;
 
@@ -340,10 +347,64 @@ const SERVER_ERR_FIELD: Partial<Record<BaoBayErrKey, ErrorKey>> = {
   phone: "phone",
   emergencyPhone: "emergencyPhone",
   nationality: "nationality",
+  rules: "rules",
 };
 
 const SUPPORT_PHONE = BAO_BAY_HOTLINE.display;
 const SUPPORT_TEL = BAO_BAY_HOTLINE.tel;
+
+/**
+ * NHỚ THÔNG TIN PHI CÔNG TRÊN MÁY (chủ 01/10): lần sau chỉ việc chọn ngày.
+ * Chỉ lưu ở trình duyệt (localStorage), không lưu gì thêm ở máy chủ. KHÔNG lưu
+ * ngày bay, cách trả phí, tích "đã thanh toán", tích "chấp nhận nội quy" — mấy
+ * thứ ấy mỗi lần phải chọn lại. Khoá có số phiên bản: đổi cấu trúc thì đổi v2,
+ * bản cũ tự bị bỏ qua chứ không làm vỡ trang.
+ */
+const SAVED_KEY = "baobay:pilot:v1";
+
+type SavedPilot = {
+  v: 1;
+  spot?: BaoBaySpot;
+  foreigner?: boolean;
+  nationality?: string;
+  fullName?: string;
+  idNumber?: string;
+  phone?: string;
+  emergencyPhone?: string;
+  licence?: string;
+  wingClass?: string;
+  memberCode?: string;
+  memberPhone?: string;
+};
+
+/** Mọi lần chạm localStorage đều bọc try/catch: chế độ ẩn danh / bị chặn thì coi như không có. */
+function readSaved(): SavedPilot | null {
+  try {
+    const raw = window.localStorage.getItem(SAVED_KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw) as SavedPilot;
+    return o && o.v === 1 ? o : null;
+  } catch {
+    return null;
+  }
+}
+function writeSaved(o: SavedPilot): void {
+  try {
+    window.localStorage.setItem(SAVED_KEY, JSON.stringify(o));
+  } catch {
+    /* không lưu được thì thôi */
+  }
+}
+function clearSaved(): void {
+  try {
+    window.localStorage.removeItem(SAVED_KEY);
+  } catch {
+    /* bỏ qua */
+  }
+}
+const str = (v: unknown, max = 120) => (typeof v === "string" ? v.slice(0, max) : "");
+
+const isBaoBaySpotClient = (v: unknown): v is BaoBaySpot => BAO_BAY_SPOTS.includes(v as BaoBaySpot);
 
 const SPOT_ICON: Record<BaoBaySpot, string> = { "vien-nam": "🏞️", "khau-pha": "🌾", "quan-ba": "⛰️" };
 
@@ -387,6 +448,11 @@ export default function BaoBayClient() {
   const [purchase, setPurchase] = useState<PurchaseMode>("day");
 
   const [memberCode, setMemberCode] = useState("");
+  /** SĐT đăng ký hội viên — bước xác nhận thứ hai; máy chủ đối chiếu lại ở mọi lần báo giá/gửi. */
+  const [memberPhone, setMemberPhone] = useState("");
+  /** Đã tích "chấp nhận tuân thủ Nội quy điểm bay" — bắt buộc ở Viên Nam. */
+  const [rulesAccepted, setRulesAccepted] = useState(false);
+  const [zoomImg, setZoomImg] = useState("");
   const [memberState, setMemberState] = useState<MemberState>({ status: "idle" });
 
   const [fullName, setFullName] = useState("");
@@ -402,6 +468,8 @@ export default function BaoBayClient() {
   const [wingClass, setWingClass] = useState<WingClass | "">("");
   const [licence, setLicence] = useState("");
   const [note, setNote] = useState("");
+  /** Phiếu đang được điền sẵn từ lần báo bay trước (localStorage). */
+  const [prefilled, setPrefilled] = useState(false);
 
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState("");
@@ -512,9 +580,11 @@ export default function BaoBayClient() {
 
   /* ---------------- tra mã hội viên ---------------- */
 
+  /** Bước 1: chỉ mã — máy chủ trả "mã có thật" + mã dạng chuẩn, KHÔNG trả tên. */
   const checkMember = async () => {
-    const code = memberCode.trim();
+    const code = memberCodeDisplay(memberCode.trim());
     if (!code) return;
+    setMemberCode(code);
     setMemberState({ status: "checking" });
     try {
       const res = await fetch("/api/bao-bay/member", {
@@ -523,10 +593,9 @@ export default function BaoBayClient() {
         body: JSON.stringify({ code }),
       });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data?.ok && data.member) {
-        // Hội viên: quốc tịch lấy từ danh sách hội ở máy chủ, trang không hỏi nữa
-        setMemberState({ status: "ok", member: data.member as MemberView });
-        setErrors((e) => ({ ...e, fullName: undefined, idNumber: undefined, phone: undefined, emergencyPhone: undefined }));
+      if (res.ok && data?.ok && data.step === "phone") {
+        setMemberCode(String(data.code));
+        setMemberState({ status: "codeOk", code: String(data.code), hasPhone: Boolean(data.hasPhone) });
       } else if (res.status === 429) {
         setMemberState({ status: "rate" });
       } else {
@@ -538,8 +607,126 @@ export default function BaoBayClient() {
     }
   };
 
+  /** Bước 2: mã + SĐT đăng ký — khớp mới hiện tên, quốc tịch và tính giá hội viên. */
+  const confirmMemberPhone = async () => {
+    if (memberState.status !== "codeOk") return;
+    const { code, hasPhone } = memberState;
+    if (memberPhone.replace(/\D/g, "").length < 8) {
+      setMemberState({ status: "codeOk", code, hasPhone, error: "memberPhone" });
+      return;
+    }
+    setMemberState({ status: "confirming", code, hasPhone });
+    try {
+      const res = await fetch("/api/bao-bay/member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, phone: memberPhone.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok && data.member) {
+        setMemberState({ status: "ok", member: data.member as MemberView, phoneUnverified: Boolean(data.phoneUnverified) });
+        setErrors((e) => ({ ...e, fullName: undefined, idNumber: undefined, phone: undefined, emergencyPhone: undefined }));
+      } else {
+        const c = String(data?.code || "");
+        setMemberState({
+          status: "codeOk",
+          code,
+          hasPhone,
+          error: c === "phoneLocked" ? "phoneLocked" : c === "memberPhone" ? "memberPhone" : "phoneMismatch",
+        });
+      }
+    } catch {
+      setMemberState({ status: "codeOk", code, hasPhone });
+      setServerError(s((d) => d.err.network));
+    }
+  };
+
+  /**
+   * Tự xác nhận lại hội viên đã lưu trên máy (mã + SĐT) khi mở trang — máy chủ
+   * vẫn đối chiếu như thường; sai thì dừng ở bước nhập SĐT cho phi công sửa.
+   */
+  const autoVerifyMember = async (rawCode: string, phoneRaw: string) => {
+    try {
+      const r1 = await fetch("/api/bao-bay/member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: rawCode }),
+      });
+      const d1 = await r1.json().catch(() => ({}));
+      if (!r1.ok || !d1?.ok || d1.step !== "phone") {
+        setMemberState(r1.status === 429 ? { status: "rate" } : { status: "wrong" });
+        return;
+      }
+      const code = String(d1.code);
+      setMemberCode(code);
+      const r2 = await fetch("/api/bao-bay/member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, phone: phoneRaw }),
+      });
+      const d2 = await r2.json().catch(() => ({}));
+      if (r2.ok && d2?.ok && d2.member) {
+        setMemberState({ status: "ok", member: d2.member as MemberView, phoneUnverified: Boolean(d2.phoneUnverified) });
+      } else {
+        const c = String(d2?.code || "");
+        setMemberState({
+          status: "codeOk",
+          code,
+          hasPhone: Boolean(d1.hasPhone),
+          error: c === "phoneLocked" ? "phoneLocked" : c === "memberPhone" ? "memberPhone" : "phoneMismatch",
+        });
+      }
+    } catch {
+      setMemberState({ status: "idle" });
+    }
+  };
+
+  // Mở trang: điền sẵn từ lần trước (chạy SAU khi hydrate — không làm lệch HTML máy chủ)
+  useEffect(() => {
+    const o = readSaved();
+    if (!o) return;
+    if (o.spot && isBaoBaySpotClient(o.spot)) setSpot(o.spot);
+    setForeigner(Boolean(o.foreigner));
+    setNationality(str(o.nationality, 60));
+    setFullName(str(o.fullName));
+    setIdNumber(str(o.idNumber, 40));
+    setPhone(str(o.phone, 30));
+    setEmergencyPhone(str(o.emergencyPhone, 30));
+    setLicence(str(o.licence, 60));
+    if (o.wingClass && (WING_CLASSES as string[]).includes(o.wingClass)) setWingClass(o.wingClass as WingClass);
+    const mc = str(o.memberCode, 40);
+    const mp = str(o.memberPhone, 30);
+    if (mc && mp) {
+      setMemberCode(mc);
+      setMemberPhone(mp);
+      setMemberState({ status: "checking" });
+      void autoVerifyMember(mc, mp);
+    }
+    setPrefilled(true);
+    // chỉ chạy một lần lúc mở trang
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** "Xoá thông tin đã lưu" / "Không phải bạn?": xoá khỏi máy và làm trống phiếu. */
+  const forgetSaved = () => {
+    clearSaved();
+    setPrefilled(false);
+    setForeigner(false);
+    setNationality("");
+    setFullName("");
+    setIdNumber("");
+    setPhone("");
+    setEmergencyPhone("");
+    setLicence("");
+    setWingClass("");
+    setMemberCode("");
+    setMemberPhone("");
+    setMemberState({ status: "idle" });
+  };
+
   const resetMember = () => {
     setMemberCode("");
+    setMemberPhone("");
     setMemberState({ status: "idle" });
   };
 
@@ -577,6 +764,7 @@ export default function BaoBayClient() {
             dates,
             purchase,
             memberCode: verifiedMember?.code ?? "",
+            memberPhone: verifiedMember ? memberPhone.trim() : "",
             idNumber: idNumber.trim(),
             phone: phone.trim(),
             fullName: fullName.trim(),
@@ -595,6 +783,15 @@ export default function BaoBayClient() {
           const code = String(data?.code || "server");
           // Mã hội viên vừa bị admin tắt giữa chừng → quay về nhập tay
           if (code === "memberInvalid") setMemberState({ status: "wrong" });
+          // SĐT hội viên không còn khớp (máy chủ đối chiếu lại) → quay về bước nhập SĐT
+          if ((code === "phoneMismatch" || code === "memberPhone" || code === "phoneLocked") && verifiedMember) {
+            setMemberState({
+              status: "codeOk",
+              code: verifiedMember.code,
+              hasPhone: true,
+              error: code === "phoneLocked" ? "phoneLocked" : code === "memberPhone" ? "memberPhone" : "phoneMismatch",
+            });
+          }
           setQuote({ loading: false, fee: null, paymentNote: "", error: errText(code) ?? s((d) => d.err.server) });
         }
       } catch {
@@ -677,6 +874,7 @@ export default function BaoBayClient() {
     const needEmg = !verifiedMember || verifiedMember.needEmergencyPhone;
 
     if (needName && !fullName.trim()) next.fullName = err((d) => d.err.name);
+    if (spot === "vien-nam" && !rulesAccepted) next.rules = err((d) => d.err.rules);
     if (!verifiedMember && foreigner && (!nationality.trim() || /^vi[eệ]t ?nam$/i.test(nationality.trim()))) {
       next.nationality = err((d) => d.err.nationality);
     }
@@ -716,6 +914,8 @@ export default function BaoBayClient() {
           dates,
           purchase,
           memberCode: verifiedMember?.code ?? "",
+          memberPhone: verifiedMember ? memberPhone.trim() : "",
+          rulesAccepted: spot === "vien-nam" ? rulesAccepted : undefined,
           fullName: fullName.trim(),
           idNumber: idNumber.trim(),
           phone: phone.trim(),
@@ -734,6 +934,15 @@ export default function BaoBayClient() {
       if (!res.ok || !data?.ok) {
         const code = String(data?.code || "server");
         if (code === "memberInvalid") setMemberState({ status: "wrong" });
+          // SĐT hội viên không còn khớp (máy chủ đối chiếu lại) → quay về bước nhập SĐT
+          if ((code === "phoneMismatch" || code === "memberPhone" || code === "phoneLocked") && verifiedMember) {
+            setMemberState({
+              status: "codeOk",
+              code: verifiedMember.code,
+              hasPhone: true,
+              error: code === "phoneLocked" ? "phoneLocked" : code === "memberPhone" ? "memberPhone" : "phoneMismatch",
+            });
+          }
         /**
          * Phí vừa đổi lúc gửi (vd. qua 8h00): máy chủ trả số mới — vẽ lại QR theo
          * số đó, ô "đã thanh toán" tự bỏ tích (payKey đổi), phi công trả thêm.
@@ -757,6 +966,22 @@ export default function BaoBayClient() {
         setServerError(msg);
         return;
       }
+
+      // Nhớ thông tin CỦA PHI CÔNG cho lần sau (không nhớ ngày, phí, các ô tích)
+      writeSaved({
+        v: 1,
+        spot: spot || undefined,
+        foreigner,
+        nationality: nationality.trim(),
+        fullName: fullName.trim(),
+        idNumber: idNumber.trim(),
+        phone: phone.trim(),
+        emergencyPhone: emergencyPhone.trim(),
+        licence: licence.trim(),
+        wingClass: wingClass || undefined,
+        memberCode: verifiedMember ? verifiedMember.code : undefined,
+        memberPhone: verifiedMember ? memberPhone.trim() : undefined,
+      });
 
       setResult({
         code: String(data.code),
@@ -832,6 +1057,93 @@ export default function BaoBayClient() {
       ) : null}
     </div>
   );
+
+  /**
+   * TOÀN VĂN NỘI QUY VIÊN NAM trong khung cuộn cao cố định (~220px): đọc bằng
+   * cách vuốt trong khung, không đẩy phần trả tiền xuống quá xa. Trang tiếng
+   * Việt: bản vi rồi bản en; ngôn ngữ khác: bản en (biển chỉ có hai bản).
+   */
+  const rulesBox = () => {
+    const versions = isVi ? [vienNamRules("vi"), vienNamRules("en")] : [vienNamRules(language)];
+    return (
+      <div className="mt-2">
+        <p className="mb-1 text-[11px] text-white/50">
+          ↕ <Bi t={b((d) => d.rulesScrollHint)} />
+        </p>
+        <div
+          className="h-[220px] overflow-y-auto overscroll-contain rounded-xl border border-white/15 bg-black/30 p-3 text-[13px] leading-relaxed text-white/85"
+          tabIndex={0}
+        >
+          {versions.map((r, vi) => (
+            <div key={r.title} className={vi ? "mt-5 border-t border-white/10 pt-4" : ""}>
+              <div className="text-sm font-extrabold uppercase tracking-wide text-amber-300">{r.title}</div>
+              <div className="mt-1 font-bold text-white">{r.sectionA}</div>
+              <ol className="mt-1 list-decimal space-y-1 pl-5">
+                {r.items.map((it) => (
+                  <li key={it.text}>
+                    {it.text}
+                    {it.sub ? (
+                      <ul className="mt-1 space-y-0.5">
+                        {it.sub.map((x) => (
+                          <li key={x}>❌ {x}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+              <div className="mt-3 font-bold text-white">{r.zoneTitle}</div>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                {r.zoneNotes.map((z) => (
+                  <li key={z}>{z}</li>
+                ))}
+              </ul>
+              <div className="mt-3 space-y-0.5">
+                <div>
+                  <b>{r.windLabel}:</b> {r.wind}
+                </div>
+                <div>
+                  <b>{r.radioLabel}:</b> {r.radio}
+                </div>
+                <div>
+                  <b>{r.emergencyLabel}:</b>{" "}
+                  {r.emergency.map((e) => (
+                    <a key={e.tel} href={e.tel} className="whitespace-nowrap font-semibold text-red-300 underline">
+                      {e.display} ({e.name})
+                    </a>
+                  ))}
+                </div>
+                <div>
+                  <b>{r.hotlineLabel}:</b>{" "}
+                  <a href={r.hotline.tel} className="whitespace-nowrap font-semibold text-amber-300 underline">
+                    {r.hotline.display}
+                  </a>
+                </div>
+              </div>
+              {vi === versions.length - 1 ? (
+                <div className="mt-3 grid gap-2">
+                  {(
+                    [
+                      [VIEN_NAM_RULE_IMAGES.zone, r.mapZoneAlt],
+                      [VIEN_NAM_RULE_IMAGES.site, r.mapSiteAlt],
+                    ] as const
+                  ).map(([src, alt]) => (
+                    <button key={src} type="button" onClick={() => setZoomImg(src)} className="block text-left">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={alt} loading="lazy" className="w-full rounded-lg border border-white/15" />
+                      <span className="mt-0.5 block text-[11px] text-white/50">
+                        🔍 <Bi t={b((d) => d.rulesTapZoom)} />
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   /** Tần số bộ đàm + hotline khẩn cấp — trên phiếu và trên màn hình gửi xong. */
   const radioBox = () => (
@@ -1135,13 +1447,15 @@ export default function BaoBayClient() {
                         >
                           {on ? <span className="h-2.5 w-2.5 rounded-full bg-amber-400" /> : null}
                         </span>
-                        <span className="mt-1.5 text-lg leading-none">{SPOT_ICON[sp]}</span>
+                        <span className="mt-1 text-sm leading-none">{SPOT_ICON[sp]}</span>
+                        {/* Tên điểm KHÔNG kèm tiếng Anh trên thẻ (chủ 01/10: thẻ phải thật gọn,
+                            "Núi Viên Nam / Vien Nam Mountain" chỉ là lặp chữ) */}
                         <span
-                          className={`mt-1 text-[13px] font-bold leading-tight sm:text-[15px] ${on ? "text-amber-300" : "text-white"}`}
+                          className={`mt-0.5 text-[13px] font-bold leading-tight sm:text-[15px] ${on ? "text-amber-300" : "text-white"}`}
                         >
-                          <Bi t={b((d) => d.spotName[sp])} subClass="text-[10px] sm:text-xs" />
+                          {T.spotName[sp]}
                         </span>
-                        <span className="mt-1 text-[11px] leading-tight text-white/55 sm:text-xs">
+                        <span className="mt-0.5 text-[11px] leading-tight text-white/55 sm:text-xs">
                           <Bi t={b((d) => d.spotArea[sp])} subClass="text-[10px]" />
                         </span>
                         <span className="mt-1.5 space-y-0.5 text-[11px] font-semibold leading-tight text-white/80 sm:text-xs">
@@ -1154,7 +1468,8 @@ export default function BaoBayClient() {
                         </span>
                         {BAO_BAY_SPOT_CONFIG[sp].hnaa ? (
                           <span className="mt-1.5 rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-emerald-300 ring-1 ring-emerald-400/40">
-                            <Bi t={b((d) => d.hnaaTag)} subClass="text-[9px]" />
+                            {/* Nhãn đã chứa chữ "Free" — không cần thêm bản tiếng Anh cho gọn thẻ */}
+                            {T.hnaaTag}
                           </span>
                         ) : null}
                       </button>
@@ -1226,7 +1541,9 @@ export default function BaoBayClient() {
                       <div key={w} className="pb-1 text-xs font-semibold text-white/40">
                         {w}
                         {/* Thứ tiếng Anh viết tắt dưới thứ tiếng Việt (T2/Mo) */}
-                        <Bi t={{ main: "", sub: b((d) => d.weekdays[i]).sub }} subClass="text-[9px]" />
+                        {/* Ô thứ quá hẹp (≈41px) cho "T2 / Mo" một dòng — riêng chỗ này để chữ
+                            viết tắt tiếng Anh nhỏ ngay dưới */}
+                        {isVi ? <span className="block text-[9px] opacity-60">{b((d) => d.weekdays[i]).sub}</span> : null}
                       </div>
                     ))}
                     {grid.map(({ iso, inMonth }) => {
@@ -1308,7 +1625,8 @@ export default function BaoBayClient() {
                                 />
                               ) : null}
                               {main}
-                              {sub ? <span className="mt-0.5 block text-[11px] leading-snug text-white/50">{sub}</span> : null}
+                              {/* Bản tiếng Anh CÙNG DÒNG, nhỏ và nhạt (chủ 01/10) */}
+                              {sub ? <span className="text-[11px] text-white/50"> / {sub}</span> : null}
                             </p>
                           );
                         })}
@@ -1328,6 +1646,20 @@ export default function BaoBayClient() {
               {/* --- 3. thông tin báo bay --- */}
               <div className="mt-9">
                 <SectionTitle step={3} title={b((d) => d.step3)} />
+
+                {prefilled ? (
+                  <div className="-mt-2 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-sky-300/25 bg-sky-400/[0.07] px-3 py-2 text-xs text-sky-100/90">
+                    <span>
+                      💾 <Bi t={b((d) => d.savedPrefilled)} />
+                    </span>
+                    <button type="button" onClick={forgetSaved} className="font-semibold text-amber-300 underline underline-offset-2">
+                      <Bi t={b((d) => d.savedClear)} />
+                    </button>
+                    <button type="button" onClick={forgetSaved} className="font-semibold text-amber-300 underline underline-offset-2">
+                      <Bi t={b((d) => d.savedNotYou)} />
+                    </button>
+                  </div>
+                ) : null}
 
                 {/* Mã hội viên HNAA: ô ĐẦU TIÊN, chỉ ở Viên Nam (chủ chốt). Mã đúng
                     thì trang chỉ nhận họ tên + vài số cuối, dữ liệu đầy đủ máy chủ
@@ -1357,6 +1689,11 @@ export default function BaoBayClient() {
                               <b className="text-white">{memberState.member.nationality}</b>
                             </span>
                           ) : null}
+                          {memberState.phoneUnverified ? (
+                            <span className="basis-full text-xs text-amber-200/90">
+                              ⓘ <Bi t={b((d) => d.memberPhoneUnverified)} />
+                            </span>
+                          ) : null}
                           {memberState.member.phoneMasked ? (
                             <span>
                               <Bi t={b((d) => d.memberPhone)} inline />:{" "}
@@ -1377,49 +1714,109 @@ export default function BaoBayClient() {
                         <p className="mb-2 text-sm leading-relaxed text-white/75">
                           <Bi t={b((d) => d.hnaaHint)} />
                         </p>
-                        <div className="flex gap-2">
-                          <input
-                            className={`${inputClass} uppercase placeholder:normal-case`}
-                            value={memberCode}
-                            onChange={(e) => {
-                              setMemberCode(e.target.value);
-                              if (memberState.status !== "idle" && memberState.status !== "checking") {
-                                setMemberState({ status: "idle" });
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                checkMember();
-                              }
-                            }}
-                            placeholder={s((d) => d.hnaaPh, " / ")}
-                            autoComplete="off"
-                          />
-                          <button
-                            type="button"
-                            onClick={checkMember}
-                            disabled={!memberCode.trim() || memberState.status === "checking"}
-                            className="flex h-12 shrink-0 flex-col items-center justify-center rounded-xl bg-emerald-500 px-3 text-sm font-bold leading-tight text-white transition hover:bg-emerald-400 disabled:opacity-50"
-                          >
-                            <Bi t={b((d) => (memberState.status === "checking" ? d.hnaaChecking : d.hnaaCheck))} />
-                          </button>
-                        </div>
-                        {memberState.status === "wrong" ? (
-                          <div className="mt-2 text-sm">
-                            <span className="font-bold text-red-400">
-                              <Bi t={b((d) => d.hnaaWrong)} inline />
+                        {memberState.status === "codeOk" || memberState.status === "confirming" ? (
+                          <div>
+                            {/* Bước 2: mã đã có thật — hỏi SĐT đăng ký, chưa hiện tên */}
+                            <div className="flex flex-wrap items-baseline gap-x-3 text-sm">
+                              <span className="font-bold text-emerald-300">
+                                ✓ <Bi t={b((d) => d.memberCodeFound(memberState.code))} />
+                              </span>
+                              <button
+                                type="button"
+                                onClick={resetMember}
+                                className="text-xs font-semibold text-amber-300 underline underline-offset-4"
+                              >
+                                <Bi t={b((d) => d.hnaaChange)} />
+                              </button>
+                            </div>
+                            <span className="mb-1.5 mt-3 block text-sm font-medium text-white/85">
+                              <Bi t={b((d) => d.memberPhoneLabel)} />
                             </span>
-                            <span className="mt-0.5 block text-white/65">
-                              <Bi t={b((d) => d.hnaaWrongContinue)} />
-                            </span>
+                            {!memberState.hasPhone ? (
+                              <p className="mb-2 text-xs text-white/60">
+                                <Bi t={b((d) => d.memberPhoneNoFile)} />
+                              </p>
+                            ) : null}
+                            <div className="flex gap-2">
+                              <input
+                                className={inputClass}
+                                value={memberPhone}
+                                inputMode="tel"
+                                autoComplete="tel"
+                                onChange={(e) => setMemberPhone(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    confirmMemberPhone();
+                                  }
+                                }}
+                                placeholder={T.fPhonePh}
+                              />
+                              <button
+                                type="button"
+                                onClick={confirmMemberPhone}
+                                disabled={!memberPhone.trim() || memberState.status === "confirming"}
+                                className="h-12 shrink-0 rounded-xl bg-emerald-500 px-3 text-sm font-bold leading-tight text-white transition hover:bg-emerald-400 disabled:opacity-50"
+                              >
+                                {memberState.status === "confirming" ? "…" : <Bi t={b((d) => d.memberConfirm)} />}
+                              </button>
+                            </div>
+                            {memberState.status === "codeOk" && memberState.error ? (
+                              <p className="mt-2 text-sm font-semibold text-red-400">
+                                <Bi t={b((d) => d.err[memberState.error as BaoBayErrKey])} />
+                              </p>
+                            ) : null}
                           </div>
-                        ) : null}
-                        {memberState.status === "rate" ? (
-                          <p className="mt-2 text-sm text-red-400">
-                            <Bi t={b((d) => d.err.rate)} />
-                          </p>
-                        ) : null}
+                        ) : (
+                          <>
+                            <div className="flex gap-2">
+                              <input
+                                className={`${inputClass} uppercase placeholder:normal-case`}
+                                value={memberCode}
+                                onChange={(e) => {
+                                  setMemberCode(e.target.value);
+                                  if (memberState.status !== "idle" && memberState.status !== "checking") {
+                                    setMemberState({ status: "idle" });
+                                  }
+                                }}
+                                /* Tự sửa về dạng chuẩn "HNAA-05" khi RỜI ô — sửa theo
+                                   từng phím thì con trỏ nhảy lung tung */
+                                onBlur={(e) => setMemberCode(memberCodeDisplay(e.target.value.trim()))}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    checkMember();
+                                  }
+                                }}
+                                placeholder={s((d) => d.hnaaPh, " / ")}
+                                autoComplete="off"
+                              />
+                              <button
+                                type="button"
+                                onClick={checkMember}
+                                disabled={!memberCode.trim() || memberState.status === "checking"}
+                                className="h-12 shrink-0 rounded-xl bg-emerald-500 px-3 text-sm font-bold leading-tight text-white transition hover:bg-emerald-400 disabled:opacity-50"
+                              >
+                                <Bi t={b((d) => (memberState.status === "checking" ? d.hnaaChecking : d.hnaaCheck))} />
+                              </button>
+                            </div>
+                            {memberState.status === "wrong" ? (
+                              <div className="mt-2 text-sm">
+                                <span className="font-bold text-red-400">
+                                  <Bi t={b((d) => d.hnaaWrong)} />
+                                </span>{" "}
+                                <span className="text-white/65">
+                                  <Bi t={b((d) => d.hnaaWrongContinue)} />
+                                </span>
+                              </div>
+                            ) : null}
+                            {memberState.status === "rate" ? (
+                              <p className="mt-2 text-sm text-red-400">
+                                <Bi t={b((d) => d.err.rate)} />
+                              </p>
+                            ) : null}
+                          </>
+                        )}
                       </Field>
                     )}
                     <p className="mt-3 text-[13px] leading-relaxed text-emerald-200/90">
@@ -1691,6 +2088,43 @@ export default function BaoBayClient() {
                   )}
                 </div>
 
+                {/* ---- NỘI QUY VIÊN NAM (chủ 01/10) ----
+                    Ô chấp nhận BẮT BUỘC ngay trước phần trả tiền/gửi; ngay dưới là
+                    khung cuộn chứa toàn văn nội quy + hai sơ đồ (chạm để phóng to). */}
+                {spot === "vien-nam" ? (
+                  <div
+                    className="mt-5 scroll-mt-24"
+                    ref={(el) => {
+                      fieldRefs.current.rules = el;
+                    }}
+                  >
+                    <label
+                      className={[
+                        "flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition",
+                        rulesAccepted
+                          ? "border-emerald-400/70 bg-emerald-400/15"
+                          : "border-amber-400/60 bg-amber-400/10 hover:bg-amber-400/15",
+                      ].join(" ")}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={rulesAccepted}
+                        onChange={(e) => {
+                          setRulesAccepted(e.target.checked);
+                          setErrors((er) => ({ ...er, rules: undefined }));
+                        }}
+                        className="mt-0.5 h-5 w-5 shrink-0 accent-emerald-500"
+                      />
+                      <span className="text-[15px] font-bold text-white">
+                        <Bi t={b((d) => d.rulesAccept)} />
+                        <span className="ml-1 text-amber-400">*</span>
+                      </span>
+                    </label>
+                    {errors.rules ? <p className="mt-2 text-sm text-red-400">{errors.rules}</p> : null}
+                    {rulesBox()}
+                  </div>
+                ) : null}
+
                 {/* ---- TRẢ TIỀN TRƯỚC KHI GỬI (chủ 30/09) ----
                     Tổng 0 đ thì không có khối này, gửi thẳng. Có tiền thì QR +
                     tài khoản + nội dung CK ngay đây, và ô xác nhận bắt buộc. */}
@@ -1770,7 +2204,12 @@ export default function BaoBayClient() {
               <div className="mt-7 flex flex-col items-center gap-3">
                 <button
                   type="button"
-                  disabled={submitting || (needsPay && (!paidConfirmed || quote.loading))}
+                  disabled={
+                    submitting ||
+                    (needsPay && (!paidConfirmed || quote.loading)) ||
+                    // Viên Nam: phải tích chấp nhận Nội quy mới gửi được
+                    (spot === "vien-nam" && !rulesAccepted)
+                  }
                   onClick={submit}
                   className="cta-btn flex min-h-14 w-full max-w-sm flex-col items-center justify-center rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 py-2 text-lg font-extrabold text-black shadow-[0_10px_36px_rgba(251,191,36,.3)] transition hover:brightness-110 disabled:opacity-60"
                 >
@@ -1811,7 +2250,21 @@ export default function BaoBayClient() {
               </Link>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {BAO_BAY_KNOWLEDGE_LINKS.map((k) => (
+              {/* Bài của ĐIỂM ĐANG CHỌN đứng đầu (chủ 01/10), đổi theo điểm; sau đó
+                  vài bài chung cho phi công bay đơn */}
+              {(spot ? BAO_BAY_SITE_POSTS[spot] : []).map((p) => (
+                <Link
+                  key={p.href}
+                  href={p.href}
+                  className="flex items-start gap-2 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] px-3 py-2.5 text-sm font-semibold text-white/90 transition hover:border-amber-400/60 hover:bg-amber-400/[0.12]"
+                >
+                  <span>{p.icon}</span>
+                  <span className="min-w-0">
+                    {isVi ? <Bi t={{ main: p.vi, sub: p.en }} /> : p.en}
+                  </span>
+                </Link>
+              ))}
+              {BAO_BAY_KNOWLEDGE_LINKS.filter((k) => BAO_BAY_GENERAL_KNOWLEDGE.includes(k.key)).map((k) => (
                 <Link
                   key={k.key}
                   href={k.href}
@@ -1854,6 +2307,18 @@ export default function BaoBayClient() {
           </div>
         </div>
       </section>
+      {/* Ảnh sơ đồ phóng to — chạm bất kỳ đâu để đóng */}
+      {zoomImg ? (
+        <button
+          type="button"
+          onClick={() => setZoomImg("")}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-2"
+          aria-label="Close"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={zoomImg} alt="" className="max-h-full max-w-full object-contain" />
+        </button>
+      ) : null}
     </main>
   );
 }

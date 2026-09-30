@@ -11,10 +11,17 @@
  */
 import { after, NextResponse } from "next/server";
 
-import { baoBayRateLimit, memberLookupBlocked, recordMemberFailure } from "@/lib/bao-bay-rate";
+import {
+  baoBayRateLimit,
+  memberLookupBlocked,
+  memberPhoneBlocked,
+  recordMemberFailure,
+  recordMemberPhoneFailure,
+} from "@/lib/bao-bay-rate";
 import {
   BAO_BAY_SPOT_CONFIG,
   FEE_MODE_LABEL,
+  memberCodeKey,
   normalizeMemberCode,
   type BaoBayFee,
 } from "@/lib/bao-bay";
@@ -54,7 +61,8 @@ function adminMailHtml(n: IFlightNotice, fee: BaoBayFee): string {
     ["Quốc tịch", `${n.nationality || ""}${n.foreigner ? " (người nước ngoài)" : ""}`],
     ["Cánh dù", n.wingClass ? wingClassLabel(n.wingClass as WingClass) : ""],
     ["Bằng / cấp bay", n.licence || ""],
-    ["Mã hội viên HNAA", n.memberCode || ""],
+    ["Mã hội viên HNAA", n.memberCode ? `${n.memberCode}${n.memberPhoneUnverified ? " (chưa đối chiếu SĐT — danh sách hội chưa có số)" : ""}` : ""],
+    ["Nội quy", n.rulesAcceptedAt ? "Đã chấp nhận Nội quy điểm bay" : ""],
     ["Loại phí", FEE_MODE_LABEL[n.feeMode]],
     ["Vé mua", n.passFrom && n.passValidUntil ? `${formatVnDate(n.passFrom)} – ${formatVnDate(n.passValidUntil)}` : ""],
     ["Nội dung CK", n.transferNote || ""],
@@ -116,7 +124,7 @@ export async function POST(req: Request) {
   }
 
   if (normalizeMemberCode(body.memberCode)) {
-    const blocked = memberLookupBlocked(req);
+    const blocked = memberLookupBlocked(req) || memberPhoneBlocked(req, memberCodeKey(body.memberCode));
     if (blocked) return blocked;
   }
 
@@ -126,6 +134,7 @@ export async function POST(req: Request) {
   } catch (e) {
     if (e instanceof BaoBayError) {
       if (e.code === "memberInvalid") recordMemberFailure(req);
+      if (e.code === "phoneMismatch") recordMemberPhoneFailure(req, memberCodeKey(body.memberCode));
       return NextResponse.json({ ok: false, code: e.code, message: e.message, ...(e.data ?? {}) }, { status: e.status });
     }
     console.error("[BaoBay] save failed:", e);

@@ -129,6 +129,39 @@ export const BAO_BAY_KNOWLEDGE_LINKS = [
 
 export type BaoBayKnowledgeKey = (typeof BAO_BAY_KNOWLEDGE_LINKS)[number]["key"];
 
+/** Ba link chung giữ lại dưới nhóm bài của điểm bay (chủ 01/10: "2–3 link chung"). */
+export const BAO_BAY_GENERAL_KNOWLEDGE: BaoBayKnowledgeKey[] = ["weather", "active", "p3p4"];
+
+/**
+ * BÀI GẮN VỚI TỪNG ĐIỂM BAY — đứng ĐẦU khối "Kiến thức dù lượn", đổi theo điểm
+ * đang chọn (chủ 01/10).
+ *
+ * Cách chọn (01/10): truy vấn CHỈ ĐỌC các bài đã đăng (isPublished) có slug /
+ * tiêu đề / tag chứa tên điểm, cả có dấu lẫn không dấu (Viên Nam, Hà Nội, Đồi
+ * Bù · Khau Phạ, Mù Cang Chải, Tú Lệ · Quản Bạ, Hà Giang), rồi chọn tay 2–4 bài
+ * THỰC DỤNG cho phi công (hồ sơ điểm bay, gió, bãi cất/hạ, đường đi) trước bài
+ * du lịch. Ghi cứng ở đây — đổi slug bài nào thì phải sửa ở đây.
+ * Tiêu đề rút gọn từ tiêu đề bài; trang tiếng Việt hiện vi + en cùng dòng, bốn
+ * ngôn ngữ còn lại hiện bản en.
+ */
+export const BAO_BAY_SITE_POSTS: Record<BaoBaySpot, Array<{ href: string; icon: string; vi: string; en: string }>> = {
+  "vien-nam": [
+    { href: "/blog/du-luon-vien-nam", icon: "🏔️", vi: "Dù lượn đỉnh Viên Nam: độ cao, gói bay", en: "Vien Nam Peak paragliding: altitude and options" },
+    { href: "/blog/bay-du-luon-hanoi", icon: "🧭", vi: "Đường lên đỉnh Viên Nam và cắm trại", en: "The climb to Vien Nam Peak and camping" },
+    { href: "/blog/gia-ve-du-luon-ha-noi", icon: "🗺️", vi: "Hai điểm bay Hà Nội: Đồi Bù và Viên Nam", en: "Hanoi's two sites: Doi Bu and Vien Nam" },
+  ],
+  "khau-pha": [
+    { href: "/blog/ky-thuat-bay-deo-khau-pha-3-kich-ban-gio", icon: "🌬️", vi: "Kỹ thuật bay Khau Phạ — 3 kịch bản gió", en: "Flying Khau Pha — the three main wind scenarios" },
+    { href: "/blog/diem-cat-canh-ha-canh-du-luon-khau-pha", icon: "🪂", vi: "Bãi cất cánh và hạ cánh đèo Khau Phạ", en: "Khau Pha launch and landing sites" },
+    { href: "/blog/du-luon-deo-khau-pha", icon: "⛰️", vi: "Hồ sơ điểm bay đèo Khau Phạ", en: "Khau Pha Pass site profile" },
+    { href: "/blog/di-chuyen-den-diem-bay-du-luon-khau-pha", icon: "🚐", vi: "Đường tới điểm bay Khau Phạ", en: "Getting to the Khau Pha site" },
+  ],
+  "quan-ba": [
+    { href: "/blog/ha-giang-loop-paragliding", icon: "🏍️", vi: "Bay dù lượn Hà Giang Loop: dừng chân Quản Bạ", en: "Paragliding on the Ha Giang Loop: Quan Ba" },
+    { href: "/blog/best-time-for-paragliding-in-vietnam", icon: "📅", vi: "Mùa bay đẹp từng điểm (có Hà Giang)", en: "Best season for every site (incl. Ha Giang)" },
+  ],
+};
+
 /**
  * Số tiền KHÔNG BAO GIỜ bị bẻ dòng (chủ 30/09 thấy chữ "đ" rơi xuống dòng
  * riêng): giống formatVnd của /muavang nhưng khoảng trắng trước "đ" là khoảng
@@ -453,6 +486,25 @@ export function memberCodeKey(raw: unknown): string {
   if (m) return `HNAA${Number(m[1])}`;
   return s;
 }
+
+/**
+ * Mã hội viên dạng HIỂN THỊ chuẩn của bảng hội: "hnaa05", "HNAA 5", "5" →
+ * "HNAA-05" (đệm 2 chữ số như bảng). Trang dùng để tự sửa ô mã khi rời ô; mã
+ * lạ (không phải HNAA + số) thì trả lại đúng như đã làm sạch.
+ */
+export function memberCodeDisplay(raw: unknown): string {
+  const key = memberCodeKey(raw);
+  const m = key.match(/^HNAA(\d+)$/);
+  return m ? `HNAA-${m[1].padStart(2, "0")}` : key;
+}
+
+/**
+ * HỘI VIÊN CHƯA CÓ SĐT TRONG DANH SÁCH (80 người nhập 01/10 chưa có số):
+ * true = vẫn nhận mã, phi công tự khai SĐT, báo bay gắn cờ memberPhoneUnverified
+ * để admin thấy "chưa đối chiếu SĐT". Chủ muốn chặn hẳn thì đổi thành false —
+ * khi đó hội viên không có số trong danh sách sẽ không dùng được mã.
+ */
+export const ALLOW_MEMBER_WITHOUT_PHONE = true;
 
 /**
  * Quốc tịch trong bảng hội: "Việt Nam", "Vietnam", "Viet Nam", "VN" (hoặc bỏ

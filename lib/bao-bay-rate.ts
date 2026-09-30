@@ -71,3 +71,47 @@ export function baoBayRateLimit(
     { status: 429 },
   );
 }
+
+/* ---------------- SĐT xác nhận hội viên nhập SAI ---------------- */
+
+/**
+ * Sai SĐT xác nhận hội viên: khoá THEO MÃ (5 lần/15 phút) nằm ở cơ sở dữ liệu
+ * (services/bao-bay.service confirmMember) vì mỗi cửa API trên Vercel là một
+ * tiến trình riêng. Ở đây thêm lớp THEO IP / MÃ trong bộ nhớ (10 lần/15 phút)
+ * để chặn nhanh một máy dò lần lượt nhiều mã. Chỉ đếm lần SAI.
+ */
+const PHONE_FAIL_MAX_CODE = 5; // lớp bộ nhớ, khoá chính theo mã ở DB
+const PHONE_FAIL_MAX_IP = 10;
+const PHONE_FAIL_WINDOW_MS = 15 * 60_000;
+const phoneFails = new Map<string, { count: number; resetAt: number }>();
+
+function hit(key: string): { count: number; resetAt: number } | null {
+  const h = phoneFails.get(key);
+  if (!h || Date.now() > h.resetAt) return null;
+  return h;
+}
+
+export function memberPhoneBlocked(req: Request, codeKey: string): NextResponse | null {
+  const byCode = hit(`code:${codeKey}`);
+  const byIp = hit(`ip:${clientIp(req)}`);
+  if ((byCode && byCode.count >= PHONE_FAIL_MAX_CODE) || (byIp && byIp.count >= PHONE_FAIL_MAX_IP)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "phoneLocked",
+        message: "Nhập sai số điện thoại quá nhiều lần, mã hội viên này tạm khoá 15 phút",
+      },
+      { status: 429 },
+    );
+  }
+  return null;
+}
+
+export function recordMemberPhoneFailure(req: Request, codeKey: string): void {
+  const now = Date.now();
+  for (const key of [`code:${codeKey}`, `ip:${clientIp(req)}`]) {
+    const h = hit(key);
+    if (!h) phoneFails.set(key, { count: 1, resetAt: now + PHONE_FAIL_WINDOW_MS });
+    else h.count++;
+  }
+}

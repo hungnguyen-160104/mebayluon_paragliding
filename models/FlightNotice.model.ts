@@ -35,6 +35,14 @@ export interface IFlightNotice {
   /** Mã hội viên HNAA đã xác nhận đúng + bản ghi hội viên. */
   memberCode?: string;
   memberId?: Types.ObjectId;
+  /**
+   * Hội viên CHƯA có SĐT trong danh sách hội → không đối chiếu được, SĐT trên
+   * báo bay là phi công tự khai (ALLOW_MEMBER_WITHOUT_PHONE). Admin thấy
+   * "chưa đối chiếu SĐT".
+   */
+  memberPhoneUnverified?: boolean;
+  /** Lúc phi công tích "chấp nhận tuân thủ Nội quy điểm bay" (bắt buộc ở Viên Nam). */
+  rulesAcceptedAt?: Date;
 
   feeMode: FeeMode;
   /** Cách phi công chọn trả (day/month/year) — khác feeMode khi được miễn hết. */
@@ -82,6 +90,8 @@ const FlightNoticeSchema = new Schema<IFlightNotice>(
 
     memberCode: String,
     memberId: { type: Schema.Types.ObjectId, ref: "HnaaMember" },
+    memberPhoneUnverified: { type: Boolean, default: false },
+    rulesAcceptedAt: Date,
 
     feeMode: {
       type: String,

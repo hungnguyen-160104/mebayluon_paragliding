@@ -6,8 +6,14 @@
  */
 import { NextResponse } from "next/server";
 
-import { baoBayRateLimit, memberLookupBlocked, recordMemberFailure } from "@/lib/bao-bay-rate";
-import { normalizeMemberCode } from "@/lib/bao-bay";
+import {
+  baoBayRateLimit,
+  memberLookupBlocked,
+  memberPhoneBlocked,
+  recordMemberFailure,
+  recordMemberPhoneFailure,
+} from "@/lib/bao-bay-rate";
+import { memberCodeKey, normalizeMemberCode } from "@/lib/bao-bay";
 import { BaoBayError, quoteBaoBay } from "@/services/bao-bay.service";
 
 export const runtime = "nodejs";
@@ -22,7 +28,8 @@ export async function POST(req: Request) {
   // Có mã hội viên thì cửa này cũng là một cách dò mã — chịu chung giới hạn nhập sai
   const hasCode = Boolean(normalizeMemberCode(body?.memberCode));
   if (hasCode) {
-    const blocked = memberLookupBlocked(req);
+    // Sai SĐT hội viên quá nhiều lần thì mã đó bị khoá — báo giá cũng không đi đường vòng được
+    const blocked = memberLookupBlocked(req) || memberPhoneBlocked(req, memberCodeKey(body?.memberCode));
     if (blocked) return blocked;
   }
 
@@ -32,6 +39,7 @@ export async function POST(req: Request) {
   } catch (e) {
     if (e instanceof BaoBayError) {
       if (e.code === "memberInvalid") recordMemberFailure(req);
+      if (e.code === "phoneMismatch") recordMemberPhoneFailure(req, memberCodeKey(body?.memberCode));
       return NextResponse.json({ ok: false, code: e.code, message: e.message }, { status: e.status });
     }
     console.error("[BaoBay] quote failed:", e);

@@ -23,6 +23,10 @@ export type BaoBayErrKey =
   | "nationality"
   | "payConfirm"
   | "amountChanged"
+  | "memberPhone"
+  | "phoneMismatch"
+  | "phoneLocked"
+  | "rules"
   | "server"
   | "rate"
   | "network";
@@ -75,6 +79,17 @@ export type BaoBayDict = {
   memberId: string;
   memberPhone: string;
   memberNeedMore: string;
+  memberCodeFound: (code: string) => string;
+  memberPhoneLabel: string;
+  memberPhoneNoFile: string;
+  memberConfirm: string;
+  memberPhoneUnverified: string;
+  savedPrefilled: string;
+  savedClear: string;
+  savedNotYou: string;
+  rulesAccept: string;
+  rulesScrollHint: string;
+  rulesTapZoom: string;
 
   fFullName: string;
   fFullNamePh: string;
@@ -185,7 +200,7 @@ const vi: BaoBayDict = {
     "quan-ba": "Hà Giang",
   },
   priceShort: { day: "100k/ngày", month: "800k/tháng", year: "2,5tr/năm" },
-  hnaaTag: "HNAA miễn phí",
+  hnaaTag: "Hội viên HNAA Free",
 
   forecastOpen: (s) => `Xem dự báo thời tiết ${s}`,
   forecastClose: "Thu gọn dự báo",
@@ -203,8 +218,8 @@ const vi: BaoBayDict = {
   step3: "Thông tin báo bay",
   hnaaLabel: "Mã hội viên HNAA",
   hnaaHint: "Nếu bạn là Hội viên HNAA hãy điền mã hội viên để được miễn phí báo bay.",
-  hnaaCutoff: "Chỉ miễn phí khi báo bay TRƯỚC 9h00 sáng ngày bay (giờ Việt Nam). Báo cho các ngày sau thì lúc nào cũng được.",
-  hnaaWarn: "Báo bay ảo mà không đi bay, vi phạm nhiều lần sẽ bị từ chối báo bay.",
+  hnaaCutoff: "Chỉ miễn phí khi báo bay TRƯỚC 9h00 sáng ngày bay. Báo cho các ngày sau thì lúc nào cũng được.",
+  hnaaWarn: "Hội viên báo bay ảo mà không đi bay, vi phạm nhiều lần sẽ bị từ chối báo bay.",
   hnaaPh: "Ví dụ: HNAA-01",
   hnaaCheck: "Kiểm tra",
   hnaaChecking: "Đang kiểm tra…",
@@ -215,6 +230,17 @@ const vi: BaoBayDict = {
   memberId: "CCCD/Hộ chiếu",
   memberPhone: "Điện thoại",
   memberNeedMore: "Danh sách hội còn thiếu thông tin này, vui lòng điền thêm:",
+  memberCodeFound: (c) => `Mã ${c} hợp lệ`,
+  memberPhoneLabel: "Nhập số điện thoại đăng ký hội viên của bạn để xác nhận",
+  memberPhoneNoFile: "Danh sách hội chưa có số điện thoại của bạn — nhập số của bạn để tiếp tục.",
+  memberConfirm: "Xác nhận",
+  memberPhoneUnverified: "SĐT chưa có trong danh sách hội — ban điều phối sẽ đối chiếu sau.",
+  savedPrefilled: "Đã điền sẵn thông tin lần trước",
+  savedClear: "Xoá thông tin đã lưu",
+  savedNotYou: "Không phải bạn?",
+  rulesAccept: "Tôi chấp nhận tuân thủ nghiêm mọi Nội quy của điểm bay Núi Viên Nam",
+  rulesScrollHint: "Kéo trong khung để đọc hết nội quy",
+  rulesTapZoom: "Chạm để phóng to",
 
   fFullName: "Họ và tên",
   fFullNamePh: "Nguyễn Văn A",
@@ -260,7 +286,7 @@ const vi: BaoBayDict = {
 
   submit: "Gửi báo bay",
   submitting: "Đang gửi…",
-  submitFoot: "Phí tính theo giờ máy chủ (giờ Việt Nam) tại thời điểm bấm gửi.",
+  submitFoot: "Phí tính theo giờ máy chủ tại thời điểm bấm gửi.",
   needHelp: "Cần hỗ trợ, gọi",
 
   natAsk: "Bạn là",
@@ -303,6 +329,10 @@ const vi: BaoBayDict = {
     nationality: "Người nước ngoài phải khai quốc tịch",
     payConfirm: "Vui lòng thanh toán và tích ô xác nhận trước khi gửi",
     amountChanged: "Phí báo bay vừa thay đổi — vui lòng thanh toán theo mã QR mới rồi tích lại ô xác nhận",
+    memberPhone: "Nhập số điện thoại đăng ký hội viên để xác nhận",
+    phoneMismatch: "Số điện thoại không khớp với hội viên này",
+    phoneLocked: "Nhập sai số điện thoại quá nhiều lần — mã hội viên này tạm khoá 15 phút",
+    rules: "Vui lòng đọc và tích chấp nhận Nội quy điểm bay Núi Viên Nam",
     server: "Không gửi được báo bay, vui lòng thử lại",
     rate: "Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút",
     network: "Mất kết nối mạng, vui lòng thử lại",
@@ -353,7 +383,7 @@ const en: BaoBayDict = {
     "quan-ba": "Ha Giang",
   },
   priceShort: { day: "100k/day", month: "800k/month", year: "2.5M/year" },
-  hnaaTag: "HNAA free",
+  hnaaTag: "HNAA members Free",
 
   forecastOpen: (s) => `Weather forecast for ${s}`,
   forecastClose: "Hide forecast",
@@ -371,8 +401,8 @@ const en: BaoBayDict = {
   step3: "Pilot details",
   hnaaLabel: "HNAA member code",
   hnaaHint: "If you are an HNAA member, enter your member code to fly for free.",
-  hnaaCutoff: "Free only when the register is submitted BEFORE 09:00 on the flying day (Vietnam time). Registers for later days are always in time.",
-  hnaaWarn: "Registering flights without actually flying — repeat offenders will have their registers refused.",
+  hnaaCutoff: "Free only when the register is submitted BEFORE 09:00 on the flying day. Registers for later days are always in time.",
+  hnaaWarn: "Members who register flights but don't fly will be refused registration after repeated violations.",
   hnaaPh: "e.g. HNAA-01",
   hnaaCheck: "Check",
   hnaaChecking: "Checking…",
@@ -383,6 +413,17 @@ const en: BaoBayDict = {
   memberId: "ID / Passport",
   memberPhone: "Phone",
   memberNeedMore: "The member list is missing this information, please add it:",
+  memberCodeFound: (c) => `Code ${c} found`,
+  memberPhoneLabel: "Enter your registered phone number to confirm",
+  memberPhoneNoFile: "Your number isn't in the member list yet — enter your phone to continue.",
+  memberConfirm: "Confirm",
+  memberPhoneUnverified: "Phone not in the member list yet — the coordinators will check it later.",
+  savedPrefilled: "Filled from your last register",
+  savedClear: "Clear saved info",
+  savedNotYou: "Not you?",
+  rulesAccept: "I agree to strictly comply with all Vien Nam flying site regulations",
+  rulesScrollHint: "Scroll inside the box to read all the rules",
+  rulesTapZoom: "Tap to enlarge",
 
   fFullName: "Full name",
   fFullNamePh: "John Smith",
@@ -428,7 +469,7 @@ const en: BaoBayDict = {
 
   submit: "Submit flight register",
   submitting: "Submitting…",
-  submitFoot: "The fee is calculated with the server clock (Vietnam time) at the moment you submit.",
+  submitFoot: "The fee is calculated with the server clock at the moment you submit.",
   needHelp: "Need help? Call",
 
   natAsk: "You are",
@@ -471,6 +512,10 @@ const en: BaoBayDict = {
     nationality: "Foreign pilots must declare their nationality",
     payConfirm: "Please pay and tick the confirmation box before submitting",
     amountChanged: "The fee has just changed — please pay with the new QR code and tick the box again",
+    memberPhone: "Enter your registered member phone number to confirm",
+    phoneMismatch: "Phone number doesn't match this member",
+    phoneLocked: "Too many wrong phone numbers — this member code is locked for 15 minutes",
+    rules: "Please read and accept the Vien Nam flying site regulations",
     server: "Could not submit the register, please try again",
     rate: "Too many attempts, please try again in a few minutes",
     network: "Network error, please try again",
@@ -521,7 +566,7 @@ const fr: BaoBayDict = {
     "quan-ba": "Ha Giang",
   },
   priceShort: { day: "100k/jour", month: "800k/mois", year: "2,5M/an" },
-  hnaaTag: "HNAA gratuit",
+  hnaaTag: "Membres HNAA gratuit",
 
   forecastOpen: (s) => `Prévisions météo — ${s}`,
   forecastClose: "Masquer les prévisions",
@@ -539,8 +584,8 @@ const fr: BaoBayDict = {
   step3: "Informations du pilote",
   hnaaLabel: "Numéro de membre HNAA",
   hnaaHint: "Si vous êtes membre de la HNAA, saisissez votre numéro de membre pour voler gratuitement.",
-  hnaaCutoff: "Gratuit uniquement si l'enregistrement est envoyé AVANT 9h00 le jour du vol (heure du Vietnam). Pour les jours suivants, c'est toujours dans les temps.",
-  hnaaWarn: "Enregistrer un vol sans voler réellement : en cas de récidive, vos enregistrements seront refusés.",
+  hnaaCutoff: "Gratuit uniquement si l'enregistrement est envoyé AVANT 9h00 le jour du vol. Pour les jours suivants, c'est toujours dans les temps.",
+  hnaaWarn: "Les membres qui enregistrent un vol sans voler verront leurs enregistrements refusés en cas de récidive.",
   hnaaPh: "ex. HNAA-01",
   hnaaCheck: "Vérifier",
   hnaaChecking: "Vérification…",
@@ -551,6 +596,17 @@ const fr: BaoBayDict = {
   memberId: "Pièce d'identité / Passeport",
   memberPhone: "Téléphone",
   memberNeedMore: "La liste des membres ne contient pas cette information, merci de la compléter :",
+  memberCodeFound: (c) => `Code ${c} trouvé`,
+  memberPhoneLabel: "Saisissez votre numéro de téléphone enregistré pour confirmer",
+  memberPhoneNoFile: "Votre numéro n'est pas encore dans la liste des membres — saisissez votre téléphone pour continuer.",
+  memberConfirm: "Confirmer",
+  memberPhoneUnverified: "Téléphone absent de la liste des membres — les coordinateurs vérifieront plus tard.",
+  savedPrefilled: "Rempli avec votre dernier enregistrement",
+  savedClear: "Effacer les infos enregistrées",
+  savedNotYou: "Ce n'est pas vous ?",
+  rulesAccept: "J'accepte de respecter strictement le règlement du site de vol de Vien Nam",
+  rulesScrollHint: "Faites défiler le cadre pour lire tout le règlement",
+  rulesTapZoom: "Touchez pour agrandir",
 
   fFullName: "Nom complet",
   fFullNamePh: "Jean Dupont",
@@ -596,7 +652,7 @@ const fr: BaoBayDict = {
 
   submit: "Envoyer l'enregistrement",
   submitting: "Envoi…",
-  submitFoot: "Le tarif est calculé selon l'horloge du serveur (heure du Vietnam) au moment de l'envoi.",
+  submitFoot: "Le tarif est calculé selon l'horloge du serveur au moment de l'envoi.",
   needHelp: "Besoin d'aide ? Appelez le",
 
   natAsk: "Vous êtes",
@@ -639,6 +695,10 @@ const fr: BaoBayDict = {
     nationality: "Les pilotes étrangers doivent indiquer leur nationalité",
     payConfirm: "Veuillez payer et cocher la case de confirmation avant d'envoyer",
     amountChanged: "Le tarif vient de changer — payez avec le nouveau QR code puis recochez la case",
+    memberPhone: "Saisissez le téléphone enregistré du membre pour confirmer",
+    phoneMismatch: "Le numéro ne correspond pas à ce membre",
+    phoneLocked: "Trop de numéros erronés — ce code membre est bloqué 15 minutes",
+    rules: "Veuillez lire et accepter le règlement du site de Vien Nam",
     server: "Impossible d'envoyer l'enregistrement, veuillez réessayer",
     rate: "Trop de tentatives, réessayez dans quelques minutes",
     network: "Erreur réseau, veuillez réessayer",
@@ -689,7 +749,7 @@ const ru: BaoBayDict = {
     "quan-ba": "Хазянг",
   },
   priceShort: { day: "100k/день", month: "800k/мес", year: "2,5 млн/год" },
-  hnaaTag: "HNAA бесплатно",
+  hnaaTag: "Члены HNAA бесплатно",
 
   forecastOpen: (s) => `Прогноз погоды: ${s}`,
   forecastClose: "Скрыть прогноз",
@@ -707,8 +767,8 @@ const ru: BaoBayDict = {
   step3: "Данные пилота",
   hnaaLabel: "Членский номер HNAA",
   hnaaHint: "Если вы член HNAA, введите членский номер, чтобы летать бесплатно.",
-  hnaaCutoff: "Бесплатно, только если регистрация подана ДО 09:00 в день полёта (время Вьетнама). Регистрация на последующие дни всегда вовремя.",
-  hnaaWarn: "Регистрация без реального полёта: при повторных нарушениях регистрация будет отклоняться.",
+  hnaaCutoff: "Бесплатно, только если регистрация подана ДО 09:00 в день полёта. Регистрация на последующие дни всегда вовремя.",
+  hnaaWarn: "Членам, которые регистрируют полёты, но не летают, при повторных нарушениях будет отказано в регистрации.",
   hnaaPh: "напр. HNAA-01",
   hnaaCheck: "Проверить",
   hnaaChecking: "Проверка…",
@@ -719,6 +779,17 @@ const ru: BaoBayDict = {
   memberId: "Удостоверение / паспорт",
   memberPhone: "Телефон",
   memberNeedMore: "В списке членов нет этих данных, пожалуйста, дополните:",
+  memberCodeFound: (c) => `Код ${c} найден`,
+  memberPhoneLabel: "Введите зарегистрированный номер телефона для подтверждения",
+  memberPhoneNoFile: "Вашего номера ещё нет в списке членов — введите свой телефон, чтобы продолжить.",
+  memberConfirm: "Подтвердить",
+  memberPhoneUnverified: "Телефона нет в списке членов — координаторы проверят позже.",
+  savedPrefilled: "Заполнено по вашей прошлой регистрации",
+  savedClear: "Удалить сохранённые данные",
+  savedNotYou: "Это не вы?",
+  rulesAccept: "Я обязуюсь строго соблюдать все правила площадки Вьен Нам",
+  rulesScrollHint: "Прокрутите окно, чтобы прочитать все правила",
+  rulesTapZoom: "Нажмите, чтобы увеличить",
 
   fFullName: "Полное имя",
   fFullNamePh: "Иван Иванов",
@@ -764,7 +835,7 @@ const ru: BaoBayDict = {
 
   submit: "Отправить регистрацию",
   submitting: "Отправка…",
-  submitFoot: "Сумма рассчитывается по времени сервера (время Вьетнама) в момент отправки.",
+  submitFoot: "Сумма рассчитывается по времени сервера в момент отправки.",
   needHelp: "Нужна помощь? Звоните",
 
   natAsk: "Вы",
@@ -807,6 +878,10 @@ const ru: BaoBayDict = {
     nationality: "Иностранные пилоты обязаны указать гражданство",
     payConfirm: "Оплатите и отметьте подтверждение перед отправкой",
     amountChanged: "Сумма изменилась — оплатите по новому QR-коду и снова отметьте поле",
+    memberPhone: "Введите зарегистрированный телефон члена для подтверждения",
+    phoneMismatch: "Номер телефона не совпадает с этим членом",
+    phoneLocked: "Слишком много неверных номеров — код члена заблокирован на 15 минут",
+    rules: "Прочитайте и примите правила площадки Вьен Нам",
     server: "Не удалось отправить регистрацию, попробуйте ещё раз",
     rate: "Слишком много попыток, попробуйте через несколько минут",
     network: "Ошибка сети, попробуйте ещё раз",
@@ -857,7 +932,7 @@ const zh: BaoBayDict = {
     "quan-ba": "河江",
   },
   priceShort: { day: "10万/天", month: "80万/月", year: "250万/年" },
-  hnaaTag: "HNAA 免费",
+  hnaaTag: "HNAA 会员免费",
 
   forecastOpen: (s) => `${s} 天气预报`,
   forecastClose: "收起预报",
@@ -875,8 +950,8 @@ const zh: BaoBayDict = {
   step3: "飞行员信息",
   hnaaLabel: "HNAA 会员编号",
   hnaaHint: "如果您是 HNAA 会员，请填写会员编号以免费登记。",
-  hnaaCutoff: "仅在飞行当天 09:00（越南时间）之前登记才免费。登记之后日期的飞行则随时都来得及。",
-  hnaaWarn: "登记后不飞行属虚假登记，多次违规将被拒绝登记。",
+  hnaaCutoff: "仅在飞行当天 09:00 之前登记才免费。登记之后日期的飞行则随时都来得及。",
+  hnaaWarn: "会员登记后不飞行属虚假登记，多次违规将被拒绝登记。",
   hnaaPh: "例如 HNAA-01",
   hnaaCheck: "验证",
   hnaaChecking: "验证中…",
@@ -887,6 +962,17 @@ const zh: BaoBayDict = {
   memberId: "身份证 / 护照",
   memberPhone: "电话",
   memberNeedMore: "会员名单缺少以下信息，请补充：",
+  memberCodeFound: (c) => `会员编号 ${c} 有效`,
+  memberPhoneLabel: "请输入您登记的会员电话号码以确认",
+  memberPhoneNoFile: "会员名单中尚无您的电话号码——请输入您的电话以继续。",
+  memberConfirm: "确认",
+  memberPhoneUnverified: "会员名单中尚无该电话——调度人员稍后核对。",
+  savedPrefilled: "已按您上次登记预填",
+  savedClear: "清除已保存的信息",
+  savedNotYou: "不是您？",
+  rulesAccept: "我同意严格遵守 Vien Nam 飞行场地的全部规章",
+  rulesScrollHint: "在框内滚动以阅读全部规章",
+  rulesTapZoom: "点击放大",
 
   fFullName: "姓名",
   fFullNamePh: "张三",
@@ -932,7 +1018,7 @@ const zh: BaoBayDict = {
 
   submit: "提交登记",
   submitting: "提交中…",
-  submitFoot: "费用按提交时服务器时间（越南时间）计算。",
+  submitFoot: "费用按提交时服务器时间计算。",
   needHelp: "需要帮助请致电",
 
   natAsk: "您是",
@@ -975,6 +1061,10 @@ const zh: BaoBayDict = {
     nationality: "外国飞行员必须填写国籍",
     payConfirm: "提交前请先付款并勾选确认框",
     amountChanged: "费用刚刚发生变化——请按新的二维码付款并重新勾选确认框",
+    memberPhone: "请输入会员登记的电话号码以确认",
+    phoneMismatch: "电话号码与该会员不符",
+    phoneLocked: "电话号码错误次数过多——该会员编号锁定 15 分钟",
+    rules: "请阅读并同意 Vien Nam 飞行场地规章",
     server: "登记提交失败，请重试",
     rate: "操作过于频繁，请几分钟后再试",
     network: "网络错误，请重试",
@@ -1025,7 +1115,7 @@ const hi: BaoBayDict = {
     "quan-ba": "हा जियांग",
   },
   priceShort: { day: "100k/दिन", month: "800k/माह", year: "2.5M/वर्ष" },
-  hnaaTag: "HNAA निःशुल्क",
+  hnaaTag: "HNAA सदस्य निःशुल्क",
 
   forecastOpen: (s) => `${s} का मौसम पूर्वानुमान`,
   forecastClose: "पूर्वानुमान छिपाएँ",
@@ -1043,8 +1133,8 @@ const hi: BaoBayDict = {
   step3: "पायलट विवरण",
   hnaaLabel: "HNAA सदस्य कोड",
   hnaaHint: "यदि आप HNAA सदस्य हैं, तो निःशुल्क उड़ान पंजीकरण के लिए अपना सदस्य कोड दर्ज करें।",
-  hnaaCutoff: "निःशुल्क केवल तब, जब पंजीकरण उड़ान वाले दिन सुबह 09:00 (वियतनाम समय) से पहले किया जाए। आगे की तारीखों के लिए पंजीकरण हमेशा समय पर है।",
-  hnaaWarn: "बिना उड़े फ़र्ज़ी पंजीकरण करना — बार-बार उल्लंघन पर पंजीकरण अस्वीकार कर दिया जाएगा।",
+  hnaaCutoff: "निःशुल्क केवल तब, जब पंजीकरण उड़ान वाले दिन सुबह 09:00 से पहले किया जाए। आगे की तारीखों के लिए पंजीकरण हमेशा समय पर है।",
+  hnaaWarn: "जो सदस्य पंजीकरण करके उड़ान नहीं भरते, बार-बार उल्लंघन पर उनका पंजीकरण अस्वीकार कर दिया जाएगा।",
   hnaaPh: "जैसे HNAA-01",
   hnaaCheck: "जाँचें",
   hnaaChecking: "जाँच हो रही है…",
@@ -1055,6 +1145,17 @@ const hi: BaoBayDict = {
   memberId: "पहचान पत्र / पासपोर्ट",
   memberPhone: "फ़ोन",
   memberNeedMore: "सदस्य सूची में यह जानकारी नहीं है, कृपया जोड़ें:",
+  memberCodeFound: (c) => `कोड ${c} मिला`,
+  memberPhoneLabel: "पुष्टि के लिए अपना पंजीकृत फ़ोन नंबर दर्ज करें",
+  memberPhoneNoFile: "सदस्य सूची में अभी आपका नंबर नहीं है — जारी रखने के लिए अपना फ़ोन दर्ज करें।",
+  memberConfirm: "पुष्टि करें",
+  memberPhoneUnverified: "फ़ोन सदस्य सूची में नहीं है — समन्वयक बाद में जाँचेंगे।",
+  savedPrefilled: "आपके पिछले पंजीकरण से भरा गया",
+  savedClear: "सहेजी जानकारी हटाएँ",
+  savedNotYou: "आप नहीं हैं?",
+  rulesAccept: "मैं विएन नाम उड़ान स्थल के सभी नियमों का सख़्ती से पालन करने के लिए सहमत हूँ",
+  rulesScrollHint: "सभी नियम पढ़ने के लिए बॉक्स में स्क्रॉल करें",
+  rulesTapZoom: "बड़ा करने के लिए टैप करें",
 
   fFullName: "पूरा नाम",
   fFullNamePh: "राहुल शर्मा",
@@ -1100,7 +1201,7 @@ const hi: BaoBayDict = {
 
   submit: "उड़ान पंजीकरण भेजें",
   submitting: "भेजा जा रहा है…",
-  submitFoot: "शुल्क भेजने के समय सर्वर घड़ी (वियतनाम समय) के अनुसार गिना जाता है।",
+  submitFoot: "शुल्क भेजने के समय सर्वर घड़ी के अनुसार गिना जाता है।",
   needHelp: "मदद चाहिए? कॉल करें",
 
   natAsk: "आप हैं",
@@ -1143,6 +1244,10 @@ const hi: BaoBayDict = {
     nationality: "विदेशी पायलटों को राष्ट्रीयता बतानी होगी",
     payConfirm: "भेजने से पहले भुगतान करें और पुष्टि बॉक्स टिक करें",
     amountChanged: "शुल्क अभी बदल गया है — नए QR कोड से भुगतान करें और बॉक्स फिर से टिक करें",
+    memberPhone: "पुष्टि के लिए सदस्य का पंजीकृत फ़ोन दर्ज करें",
+    phoneMismatch: "फ़ोन नंबर इस सदस्य से मेल नहीं खाता",
+    phoneLocked: "बहुत बार ग़लत फ़ोन नंबर — यह सदस्य कोड 15 मिनट के लिए लॉक है",
+    rules: "कृपया विएन नाम उड़ान स्थल के नियम पढ़कर स्वीकार करें",
     server: "पंजीकरण नहीं भेजा जा सका, कृपया फिर कोशिश करें",
     rate: "बहुत अधिक प्रयास, कुछ मिनट बाद फिर कोशिश करें",
     network: "नेटवर्क त्रुटि, कृपया फिर कोशिश करें",
@@ -1197,20 +1302,43 @@ export type BiText = { main: string; sub?: string };
  * Không chép thêm bảng chữ nào: `pick` là hàm lấy đúng một ô trong bảng, gọi
  * trên cả bảng vi lẫn en — thêm câu mới vào bảng là tự có đủ hai thứ tiếng.
  */
+function boDau(x: string): string {
+  return String(x ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
 export function baoBayBilingual(lang: unknown) {
   const T = baoBayDict(lang);
   const isVi = String(lang ?? "vi").slice(0, 2).toLowerCase() === "vi" || T === vi;
   const E = isVi ? en : null;
 
+  /**
+   * BỎ BẢN TIẾNG ANH khi nó chỉ là tiếng Việt bỏ dấu (chủ 01/10: "Khau Phạ /
+   * Khau Pha", "Hà Giang / Ha Giang" lặp chữ vô ích) — so sau khi bỏ dấu, đổi
+   * đ→d, chữ thường, bỏ dấu câu/khoảng trắng.
+   */
+  const trung = (a: string, c: string) => boDau(a) === boDau(c);
+
   /** Cho chỗ vẽ được hai tầng (tiêu đề, nhãn, nút, dòng phí…). */
-  const b = (pick: (d: BaoBayDict) => string): BiText => ({
-    main: pick(T),
-    ...(E ? { sub: pick(E) } : {}),
-  });
+  const b = (pick: (d: BaoBayDict) => string): BiText => {
+    const main = pick(T);
+    if (!E) return { main };
+    const sub = pick(E);
+    return trung(main, sub) ? { main } : { main, sub };
+  };
 
   /** Cho chỗ chỉ nhận một chuỗi (placeholder, thông báo lỗi, alt ảnh). */
-  const s = (pick: (d: BaoBayDict) => string, sep = " · "): string =>
-    E ? `${pick(T)}${sep}${pick(E)}` : pick(T);
+  const s = (pick: (d: BaoBayDict) => string, sep = " · "): string => {
+    const main = pick(T);
+    if (!E) return main;
+    const sub = pick(E);
+    return trung(main, sub) ? main : `${main}${sep}${sub}`;
+  };
 
   return { T, isVi, b, s };
 }

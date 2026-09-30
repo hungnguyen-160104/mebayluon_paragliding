@@ -33,6 +33,9 @@ type Notice = {
   phone: string;
   emergencyPhone: string;
   memberCode?: string;
+  /** Hội viên chưa có SĐT trong danh sách hội — SĐT là tự khai. */
+  memberPhoneUnverified?: boolean;
+  rulesAcceptedAt?: string;
   feeMode: FeeMode;
   amount: number;
   passFrom?: string;
@@ -377,7 +380,17 @@ function NoticesTab() {
                     </div>
                     {n.note ? <div className="mt-0.5 text-xs italic text-slate-500">“{n.note}”</div> : null}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs">{n.memberCode || "—"}</td>
+                  <td className="px-3 py-2 font-mono text-xs">
+                    {n.memberCode || "—"}
+                    {n.memberCode && n.memberPhoneUnverified ? (
+                      <div className="mt-0.5 whitespace-nowrap font-sans text-[10px] font-semibold text-amber-700">chưa đối chiếu SĐT</div>
+                    ) : null}
+                    {n.rulesAcceptedAt ? (
+                      <div className="mt-0.5 whitespace-nowrap font-sans text-[10px] text-slate-500" title={`Chấp nhận Nội quy lúc ${vnTime(n.rulesAcceptedAt)}`}>
+                        ✓ Nội quy
+                      </div>
+                    ) : null}
+                  </td>
                   <td className="px-3 py-2">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${MODE_STYLE[n.feeMode]}`}>
                       {FEE_MODE_LABEL[n.feeMode]}
