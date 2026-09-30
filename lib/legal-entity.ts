@@ -62,7 +62,8 @@ export const LEGAL_ENTITY = {
    * pháp nhân ở footer và trang chính sách dùng bộ đăng ký này.
    */
   registeredPhone: "0964 073 555",
-  registeredEmail: "dangvm@gmail.com",
+  /** Web hiện mebayluon@gmail.com thay hộp in trên giấy ĐKDN (chủ 30/09/2026). */
+  registeredEmail: "mebayluon@gmail.com",
   /** Các địa chỉ hoạt động / nơi tiếp khách. */
   operatingAddresses: [
     "Thôn Lìm Thái, xã Tú Lệ, tỉnh Lào Cai",

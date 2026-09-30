@@ -276,7 +276,7 @@ const privacy = `
 <p>You can edit your booking details on the <a href="/en/booking/sua">Manage booking</a> page or send a request via the channels in section 7. We respond within the time limits set by law.</p>
 
 <h2>7. Contact about personal data</h2>
-<p>Email ${E.email} or ${E.registeredEmail} — Hotline ${HOTLINE} — Head office: ${E.registeredOffice}.</p>
+<p>Email ${E.email} — Hotline ${HOTLINE} — Head office: ${E.registeredOffice}.</p>
 
 <h2>8. Company information</h2>
 ${entityInfoHtml("en")}
@@ -288,7 +288,7 @@ const complaints = `
 <h2>1. Where to complain</h2>
 <ul>
   <li><b>Hotline:</b> +84 964 073 555 (chief pilot) – +84 385 907 789 (flight dispatch); call, Zalo, WhatsApp. For issues at the flying site, please call directly for immediate help.</li>
-  <li><b>Email:</b> ${E.email} or ${E.registeredEmail}.</li>
+  <li><b>Email:</b> ${E.email}.</li>
   <li><b>In person:</b> at the flying site, or at our head office, ${E.registeredOffice}.</li>
 </ul>
 

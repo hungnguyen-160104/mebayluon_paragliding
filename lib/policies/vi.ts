@@ -277,7 +277,7 @@ const baoMat = `
 <p>Bạn có thể tự sửa thông tin booking tại trang <a href="/booking/sua">Sửa booking</a> hoặc gửi yêu cầu qua các kênh ở mục 7. Chúng tôi phản hồi yêu cầu trong thời hạn pháp luật quy định.</p>
 
 <h2>7. Liên hệ về dữ liệu cá nhân</h2>
-<p>Email ${E.email} hoặc ${E.registeredEmail} — Hotline ${HOTLINE} — Trụ sở: ${E.registeredOffice}.</p>
+<p>Email ${E.email} — Hotline ${HOTLINE} — Trụ sở: ${E.registeredOffice}.</p>
 
 <h2>8. Thông tin doanh nghiệp</h2>
 ${entityInfoHtml("vi")}
@@ -289,7 +289,7 @@ const khieuNai = `
 <h2>1. Kênh tiếp nhận</h2>
 <ul>
   <li><b>Hotline:</b> 0964 073 555 (phi công trưởng) – 0385 907 789 (điều phối bay); gọi, Zalo, WhatsApp. Phản ánh tại điểm bay nên gọi trực tiếp để được hỗ trợ kịp thời.</li>
-  <li><b>Email:</b> ${E.email} hoặc ${E.registeredEmail}.</li>
+  <li><b>Email:</b> ${E.email}.</li>
   <li><b>Trực tiếp:</b> tại điểm bay, hoặc trụ sở ${E.registeredOffice}.</li>
 </ul>
 
