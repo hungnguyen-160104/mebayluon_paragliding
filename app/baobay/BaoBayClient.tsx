@@ -20,6 +20,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 
 import Link from "@/components/locale-link";
+import CameraGallery from "@/components/baobay/CameraGallery";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useLanguage } from "@/contexts/language-context";
@@ -1508,6 +1509,7 @@ export default function BaoBayClient() {
                     />
                   </div>
                 ) : null}
+                {spot === "vien-nam" && <CameraGallery cam="vien-nam" />}
               </div>
 
               {/* --- 2. ngày bay --- */}
