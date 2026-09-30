@@ -106,6 +106,8 @@ type FooterDict = {
   followUs: string;
   /** Link tới trang đăng ký bay dành cho phi công (sự kiện Mùa Vàng). */
   pilotEvent: string;
+  /** Link /baobay cho phi công bay đơn — thay chỗ /muavang ở footer (chủ 30/09/2026). */
+  pilotReport: string;
   spotsInfo: string;
   /** Tiêu đề dải link đặt qua nơi uy tín. */
   trustTitle: string;
@@ -150,6 +152,7 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Liên hệ",
     followUs: "Theo dõi chúng tôi",
     pilotEvent: "Đăng ký Mùa vàng 2026",
+    pilotReport: "Báo bay cho phi công",
     spotsInfo: "Thông tin điểm bay",
     trustTitle: "Đặt qua nơi uy tín",
     trustNoteBefore: "Hoặc đặt thẳng ",
@@ -181,6 +184,7 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Contact",
     followUs: "Follow Us",
     pilotEvent: "Golden Season 2026 registration",
+    pilotReport: "Pilot flight register",
     spotsInfo: "Flying Spots Info",
     trustTitle: "Book on trusted platforms",
     trustNoteBefore: "Or book direct ",
@@ -212,6 +216,7 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Contact",
     followUs: "Suivez-nous",
     pilotEvent: "Inscription Mùa Vàng 2026",
+    pilotReport: "Déclaration de vol (pilotes)",
     spotsInfo: "Infos sites de vol",
     trustTitle: "Réserver sur des plateformes de confiance",
     trustNoteBefore: "Ou réservez en direct ",
@@ -243,6 +248,7 @@ const DICT: Record<Language, FooterDict> = {
     contact: "Контакты",
     followUs: "Подписывайтесь",
     pilotEvent: "Регистрация Mùa Vàng 2026",
+    pilotReport: "Регистрация полёта (пилоты)",
     spotsInfo: "О местах полётов",
     trustTitle: "Бронирование на проверенных площадках",
     trustNoteBefore: "Или бронируйте напрямую ",
@@ -274,6 +280,7 @@ const DICT: Record<Language, FooterDict> = {
     contact: "联系方式",
     followUs: "关注我们",
     pilotEvent: "Mùa Vàng 2026 报名",
+    pilotReport: "飞行员飞行登记",
     spotsInfo: "飞行点信息",
     trustTitle: "在可信平台预订",
     trustNoteBefore: "或",
@@ -304,6 +311,7 @@ const DICT: Record<Language, FooterDict> = {
     contact: "संपर्क",
     followUs: "हमें फ़ॉलो करें",
     pilotEvent: "Mùa Vàng 2026 पंजीकरण",
+    pilotReport: "पायलट उड़ान पंजीकरण",
     spotsInfo: "उड़ान स्थल जानकारी",
     trustTitle: "भरोसेमंद प्लेटफ़ॉर्म पर बुक करें",
     trustNoteBefore: "सबसे अच्छे दाम के लिए ",
@@ -698,11 +706,14 @@ export default function Footer() {
                   cách nhau 8px nên dòng cuối bắt đầu ở 168px dưới tiêu đề; bên
                   này lưới logo cao 88px (2 hàng 40px + khe 8px), nên cần đẩy
                   thêm 80px. Sửa số hàng ở một trong hai cột thì tính lại. */}
+              {/* /muavang (đăng ký sự kiện Mùa vàng) tạm ẩn khỏi footer — trang vẫn còn,
+                  dùng lại cho sự kiện năm sau: đổi href về "/muavang" và nhãn về
+                  t.pilotEvent (chủ 30/09/2026). */}
               <Link
-                href={makeLocalizedHref("/muavang", pathname)}
+                href={makeLocalizedHref("/baobay", pathname)}
                 className="mt-20 inline-block text-[15px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
               >
-                {t.pilotEvent}
+                {t.pilotReport}
               </Link>
             </div>
           </div>
