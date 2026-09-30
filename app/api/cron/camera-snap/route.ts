@@ -14,9 +14,9 @@ export const maxDuration = 60;
  * CHỤP ẢNH CAMERA BÃI CAO VIÊN NAM — 08:00–18:00 giờ VN (chủ 30/09/2026): 1 ảnh/phút
  * 10:00–15:00, 3 phút/ảnh 08–10h và 15–18h (chủ 01/10).
  *
- * Ai gọi: Cloudflare Worker (scripts/cloudflare-camera-cron/) mỗi phút, kèm
- * `Authorization: Bearer <CRON_SECRET>`; gọi tay/scheduler ngoài thì `?key=`.
- * KHÔNG khai trong vercel.json — gói Hobby không cho cron mỗi phút, deploy sẽ lỗi.
+ * Ai gọi: Vercel cron trong vercel.json ("* 1-11 * * *" = mỗi phút 08–18h VN; gói
+ * Pro), kèm `Authorization: Bearer <CRON_SECRET>` — đây là lịch DUY NHẤT (Cloudflare
+ * Worker trong scripts/ không deploy). Gọi tay thì `?key=`.
  *
  * Luồng: ngoài giờ → skip. Trong giờ: setDeviceSnapEnhanced (tự bindDevice
  * một lần nếu Imou báo chưa gắn) → chờ URL ảnh tải được → Cloudinary (thu về
