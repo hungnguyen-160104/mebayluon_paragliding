@@ -64,6 +64,22 @@ export function inCamActiveHours(t: Date | number = Date.now()): boolean {
   return m >= CAM_ACTIVE.fromMin && m <= CAM_ACTIVE.toMin;
 }
 
+/**
+ * NHỊP CHỤP (chủ 01/10/2026, cho đỡ tốn lượt gọi): 10:00–15:00 giờ VN chụp MỖI
+ * PHÚT (giờ bay chính); 08:00–10:00 và 15:00–18:00 chỉ chụp phút chia hết cho 3
+ * (3 phút/lần). ≈ 300 + 100 = 400 ảnh/ngày thay vì ~600. Lịch gọi vẫn mỗi phút,
+ * route tự bỏ qua các phút không cần chụp.
+ */
+export const CAM_PEAK = { fromMin: 10 * 60, toMin: 15 * 60 } as const;
+export const CAM_OFFPEAK_EVERY_MIN = 3;
+
+export function shouldSnapNow(t: Date | number = Date.now()): boolean {
+  if (!inCamActiveHours(t)) return false;
+  const m = vnMinuteOfDay(t);
+  if (m >= CAM_PEAK.fromMin && m < CAM_PEAK.toMin) return true;
+  return m % CAM_OFFPEAK_EVERY_MIN === 0;
+}
+
 /** "08:41" theo giờ Việt Nam */
 export function vnHHMM(t: Date | number | string): string {
   const d = new Date(new Date(t).getTime() + VN_OFFSET_MS);

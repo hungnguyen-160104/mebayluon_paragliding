@@ -517,6 +517,12 @@ export default function BaoBayClient() {
   const hnaaSpot = Boolean(cfg?.hnaa);
   /** Hội viên đã xác nhận VÀ đang ở điểm bay có thoả thuận HNAA. */
   const verifiedMember = hnaaSpot && memberState.status === "ok" ? memberState.member : null;
+  /**
+   * ĐÃ GÕ MÃ HỘI VIÊN mà chưa xác nhận đúng SĐT (sai SĐT, mã sai, chưa bấm xác
+   * nhận…) → KHOÁ nút gửi (chủ 01/10: nhập sai SĐT thì không nhận). Muốn báo
+   * như phi công thường thì xoá mã đi.
+   */
+  const memberPending = hnaaSpot && memberCode.trim() !== "" && !verifiedMember;
 
   const loadToday = useCallback(async (sp: BaoBaySpot) => {
     try {
@@ -901,6 +907,7 @@ export default function BaoBayClient() {
   };
 
   const submit = async () => {
+    if (memberPending) return;
     setServerError("");
     // Nút đã khoá khi chưa tích, đây chỉ là chốt thứ hai
     if (needsPay && !paidConfirmed) {
@@ -2255,6 +2262,7 @@ export default function BaoBayClient() {
                   type="button"
                   disabled={
                     submitting ||
+                    memberPending ||
                     (needsPay && (!paidConfirmed || quote.loading)) ||
                     // Viên Nam: phải tích chấp nhận Nội quy mới gửi được
                     (spot === "vien-nam" && !rulesAccepted)
@@ -2264,6 +2272,11 @@ export default function BaoBayClient() {
                 >
                   <Bi t={b((d) => (submitting ? d.submitting : d.submit))} />
                 </button>
+                {memberPending ? (
+                  <p className="text-center text-sm font-semibold text-red-300">
+                    <Bi t={b((d) => d.memberPendingBlock)} />
+                  </p>
+                ) : null}
                 {needsPay && !paidConfirmed ? (
                   <p className="text-center text-sm text-amber-200">
                     <Bi t={b((d) => d.payConfirmFirst)} />

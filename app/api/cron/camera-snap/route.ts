@@ -1,7 +1,7 @@
 // app/api/cron/camera-snap/route.ts
 import { NextResponse } from "next/server";
 
-import { CAMERAS, inCamActiveHours, isCamId, vnHHMM, type CamId } from "@/lib/imou/cameras";
+import { CAMERAS, inCamActiveHours, isCamId, shouldSnapNow, vnHHMM, type CamId } from "@/lib/imou/cameras";
 import { ImouError, downloadSnap, imouConfigured, snapWithAutoBind } from "@/lib/imou/client";
 import { ensureSnapIndex, pruneSnaps, storeSnap } from "@/lib/imou/snaps";
 
@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * CHỤP ẢNH CAMERA BÃI CAO VIÊN NAM — 1 ảnh/phút, 08:00–18:00 giờ VN (chủ 30/09/2026).
+ * CHỤP ẢNH CAMERA BÃI CAO VIÊN NAM — 08:00–18:00 giờ VN (chủ 30/09/2026): 1 ảnh/phút
+ * 10:00–15:00, 3 phút/ảnh 08–10h và 15–18h (chủ 01/10).
  *
  * Ai gọi: Cloudflare Worker (scripts/cloudflare-camera-cron/) mỗi phút, kèm
  * `Authorization: Bearer <CRON_SECRET>`; gọi tay/scheduler ngoài thì `?key=`.
@@ -40,6 +41,10 @@ export async function GET(req: Request) {
   const force = url.searchParams.get("force") === "1";
   if (!force && !inCamActiveHours(now)) {
     return NextResponse.json({ ok: true, skip: "ngoài giờ chụp 08:00–18:00", vn: vnHHMM(now) });
+  }
+  /** Ngoài 10:00–15:00 chỉ chụp 3 phút/lần — xem shouldSnapNow (chủ 01/10). */
+  if (!force && !shouldSnapNow(now)) {
+    return NextResponse.json({ ok: true, skip: "ngoài giờ cao điểm: 3 phút/lần", vn: vnHHMM(now) });
   }
 
   const sn = (process.env[cfg.snEnv] || "").trim();

@@ -166,6 +166,8 @@ export type BaoBayDict = {
   payNeedPhone: string;
   payConfirmLabel: string;
   payConfirmFirst: string;
+  /** Đã gõ mã hội viên nhưng chưa xác nhận đúng SĐT → khoá nút gửi (chủ 01/10). */
+  memberPendingBlock: string;
   okPendingPay: string;
   okPendingPayDesc: string;
 
@@ -332,6 +334,7 @@ const vi: BaoBayDict = {
   payNeedPhone: "Nhập số điện thoại ở bước 3 để hiện mã QR thanh toán.",
   payConfirmLabel: "Tôi đã thanh toán phí báo bay",
   payConfirmFirst: "Hãy thanh toán và tích ô “Tôi đã thanh toán phí báo bay” để gửi.",
+  memberPendingBlock: "Hãy xác nhận đúng số điện thoại hội viên, hoặc xoá mã hội viên nếu bạn không phải hội viên HNAA.",
   okPendingPay: "Đã nhận báo bay, chờ xác nhận thanh toán",
   okPendingPayDesc: "Ban điều phối sẽ đối chiếu chuyển khoản và xác nhận.",
 
@@ -525,6 +528,7 @@ const en: BaoBayDict = {
   payNeedPhone: "Enter your phone number in step 3 to show the payment QR code.",
   payConfirmLabel: "I have paid the register fee",
   payConfirmFirst: "Please pay and tick “I have paid the register fee” to submit.",
+  memberPendingBlock: "Confirm the member's registered phone number, or clear the member code if you are not an HNAA member.",
   okPendingPay: "Register received, awaiting payment confirmation",
   okPendingPayDesc: "The coordinators will check your transfer and confirm.",
 
@@ -718,6 +722,7 @@ const fr: BaoBayDict = {
   payNeedPhone: "Saisissez votre téléphone à l'étape 3 pour afficher le QR code de paiement.",
   payConfirmLabel: "J'ai payé la taxe d'enregistrement",
   payConfirmFirst: "Payez puis cochez « J'ai payé la taxe d'enregistrement » pour envoyer.",
+  memberPendingBlock: "Confirmez le numéro de téléphone du membre, ou effacez le code membre si vous n'êtes pas membre HNAA.",
   okPendingPay: "Enregistrement reçu, paiement en attente de confirmation",
   okPendingPayDesc: "Les coordinateurs vérifieront votre virement et confirmeront.",
 
@@ -911,6 +916,7 @@ const ru: BaoBayDict = {
   payNeedPhone: "Введите телефон на шаге 3, чтобы показать QR-код для оплаты.",
   payConfirmLabel: "Я оплатил(а) сбор за регистрацию",
   payConfirmFirst: "Оплатите и отметьте «Я оплатил(а) сбор за регистрацию», чтобы отправить.",
+  memberPendingBlock: "Подтвердите номер телефона члена HNAA или удалите код, если вы не член HNAA.",
   okPendingPay: "Регистрация принята, ожидается подтверждение оплаты",
   okPendingPayDesc: "Координаторы проверят перевод и подтвердят.",
 
@@ -1104,6 +1110,7 @@ const zh: BaoBayDict = {
   payNeedPhone: "请在第 3 步填写电话号码以显示付款二维码。",
   payConfirmLabel: "我已支付登记费",
   payConfirmFirst: "请先付款并勾选“我已支付登记费”再提交。",
+  memberPendingBlock: "请确认会员登记的电话号码；若您不是 HNAA 会员，请清除会员编号。",
   okPendingPay: "已收到登记，等待付款确认",
   okPendingPayDesc: "调度人员将核对转账并确认。",
 
@@ -1297,6 +1304,7 @@ const hi: BaoBayDict = {
   payNeedPhone: "भुगतान QR कोड देखने के लिए चरण 3 में फ़ोन नंबर दर्ज करें।",
   payConfirmLabel: "मैंने पंजीकरण शुल्क चुका दिया है",
   payConfirmFirst: "भेजने के लिए भुगतान करें और “मैंने पंजीकरण शुल्क चुका दिया है” टिक करें।",
+  memberPendingBlock: "सदस्य का पंजीकृत फ़ोन नंबर पुष्टि करें, या यदि आप HNAA सदस्य नहीं हैं तो सदस्य कोड हटा दें।",
   okPendingPay: "पंजीकरण मिल गया, भुगतान की पुष्टि बाकी है",
   okPendingPayDesc: "समन्वयक आपका ट्रांसफ़र जाँचकर पुष्टि करेंगे।",
 
