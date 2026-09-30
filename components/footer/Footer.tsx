@@ -124,11 +124,8 @@ type FooterDict = {
   legal: {
     title: string;
     code: string;
-    firstIssued: string;
-    issuedBy: string;
-    office: string;
-    representative: string;
-    phone: string;
+    license: string;
+    no: string;
     policies: string;
   };
 };
@@ -158,12 +155,9 @@ const DICT: Record<Language, FooterDict> = {
     rightsReserved: "Đã đăng ký bản quyền.",
     legal: {
       title: "Thông tin doanh nghiệp",
-      code: "Mã số doanh nghiệp / MST",
-      firstIssued: "đăng ký lần đầu ngày",
-      issuedBy: "Nơi cấp",
-      office: "Trụ sở chính",
-      representative: "Người đại diện theo pháp luật",
-      phone: "Điện thoại",
+      code: "Mã số thuế",
+      license: "Giấy chứng nhận đủ điều kiện kinh doanh hoạt động dù lượn",
+      no: "số",
       policies: "Chính sách & điều khoản",
     },
   },
@@ -191,12 +185,9 @@ const DICT: Record<Language, FooterDict> = {
     rightsReserved: "All rights reserved.",
     legal: {
       title: "Company information",
-      code: "Enterprise code / Tax code",
-      firstIssued: "first registered on",
-      issuedBy: "Issued by",
-      office: "Head office",
-      representative: "Legal representative",
-      phone: "Phone",
+      code: "Tax code",
+      license: "Paragliding business eligibility certificates",
+      no: "No.",
       policies: "Policies & terms",
     },
   },
@@ -224,12 +215,9 @@ const DICT: Record<Language, FooterDict> = {
     rightsReserved: "Tous droits réservés.",
     legal: {
       title: "Informations sur l’entreprise",
-      code: "Code d’entreprise / N° fiscal",
-      firstIssued: "première immatriculation le",
-      issuedBy: "Délivré par",
-      office: "Siège social",
-      representative: "Représentant légal",
-      phone: "Téléphone",
+      code: "N° fiscal",
+      license: "Certificats d’aptitude à l’exploitation du parapente",
+      no: "n°",
       policies: "Politiques & conditions",
     },
   },
@@ -257,12 +245,9 @@ const DICT: Record<Language, FooterDict> = {
     rightsReserved: "Все права защищены.",
     legal: {
       title: "Сведения о компании",
-      code: "Код предприятия / ИНН",
-      firstIssued: "первичная регистрация",
-      issuedBy: "Выдан",
-      office: "Головной офис",
-      representative: "Законный представитель",
-      phone: "Телефон",
+      code: "ИНН",
+      license: "Свидетельства о праве на коммерческую деятельность по парапланеризму",
+      no: "№",
       policies: "Политики и условия",
     },
   },
@@ -289,12 +274,9 @@ const DICT: Record<Language, FooterDict> = {
     rightsReserved: "保留所有权利。",
     legal: {
       title: "企业信息",
-      code: "企业编码 / 税号",
-      firstIssued: "首次登记日期",
-      issuedBy: "签发机关",
-      office: "总部地址",
-      representative: "法定代表人",
-      phone: "电话",
+      code: "税号",
+      license: "滑翔伞经营资格证书",
+      no: "编号",
       policies: "政策与条款",
     },
   },
@@ -322,13 +304,10 @@ const DICT: Record<Language, FooterDict> = {
     rightsReserved: "सर्वाधिकार सुरक्षित।",
     legal: {
       title: "कंपनी की जानकारी",
-      code: "उद्यम कोड / कर संख्या",
-      firstIssued: "पहला पंजीकरण",
-      issuedBy: "जारीकर्ता",
-      office: "मुख्य कार्यालय",
-      representative: "कानूनी प्रतिनिधि",
-      phone: "फ़ोन",
-      policies: "नीतियाँ और शर्तें",
+      code: "कर संख्या",
+      license: "पैराग्लाइडिंग व्यवसाय पात्रता प्रमाणपत्र",
+      no: "सं.",
+      policies: "नीतियाँ व शर्तें",
     },
   },
 };
@@ -781,49 +760,23 @@ export default function Footer() {
               trên giữ nguyên; khối này là thông tin ĐĂNG KÝ doanh nghiệp. */}
           <div className="mt-4 border-t border-white/15 pt-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+              {/* NGẮN GỌN như flysapa.com (chủ 30/09/2026): tên công ty, MST,
+                  số giấy phép. Điện thoại/email đã có ở cột thương hiệu phía
+                  trên; thông tin đầy đủ (trụ sở, người đại diện, nơi cấp ĐKDN)
+                  nằm ở các trang /chinh-sach. */}
               <div className="min-w-0 space-y-1 text-[13px] leading-5 text-slate-300">
-                <h3 className="text-[15px] font-semibold text-white">
-                  {t.legal.title}
-                </h3>
                 <p className="font-semibold text-slate-100">
                   {LEGAL_ENTITY.legalName}
                   {language !== "vi" ? ` (${LEGAL_ENTITY.legalNameEn})` : ""}
                 </p>
                 <p>
-                  {t.legal.code}: {LEGAL_ENTITY.taxCode} — {t.legal.firstIssued}{" "}
-                  {LEGAL_ENTITY.registration.firstIssuedDate},{" "}
-                  {language === "vi"
-                    ? LEGAL_ENTITY.registration.latestChange
-                    : LEGAL_ENTITY.registration.latestChangeEn}
-                  . {t.legal.issuedBy}:{" "}
-                  {language === "vi"
-                    ? LEGAL_ENTITY.registration.issuer
-                    : LEGAL_ENTITY.registration.issuerEn}
+                  {t.legal.code}: {LEGAL_ENTITY.taxCode}
                 </p>
                 <p>
-                  {t.legal.office}: {LEGAL_ENTITY.registeredOffice}
-                </p>
-                <p>
-                  {t.legal.representative}: {LEGAL_ENTITY.legalRepresentative.name} –{" "}
-                  {language === "vi"
-                    ? LEGAL_ENTITY.legalRepresentative.title
-                    : LEGAL_ENTITY.legalRepresentative.titleEn}
-                </p>
-                <p>
-                  {t.legal.phone}:{" "}
-                  <a
-                    href="tel:+84964073555"
-                    className="transition-colors hover:text-white"
-                  >
-                    {LEGAL_ENTITY.registeredPhone}
-                  </a>{" "}
-                  — Email:{" "}
-                  <a
-                    href={`mailto:${LEGAL_ENTITY.registeredEmail}`}
-                    className="transition-colors hover:text-white"
-                  >
-                    {LEGAL_ENTITY.registeredEmail}
-                  </a>
+                  {t.legal.license}:{" "}
+                  {LEGAL_ENTITY.sportLicenses
+                    .map((g) => `${t.legal.no} ${g.no} (${g.issuer})`)
+                    .join("; ")}
                 </p>
               </div>
 
