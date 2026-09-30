@@ -43,7 +43,7 @@ export const FEE_MODE_LABEL: Record<FeeMode, string> = {
 
 export const BAO_BAY_FEE_PER_DAY = 100_000;
 export const BAO_BAY_FEE_PER_MONTH = 800_000;
-/** Vé năm CHỈ có ở Viên Nam. */
+/** Vé năm (bay đơn) — áp cho CẢ BA điểm (chủ 30/09; trước đây chỉ Viên Nam). Vé nào điểm nấy. */
 export const BAO_BAY_FEE_PER_YEAR = 2_500_000;
 
 type SpotConfig = {
@@ -80,7 +80,7 @@ export const BAO_BAY_SPOT_CONFIG: Record<BaoBaySpot, SpotConfig> = {
     key: "khau-pha",
     name: "Khau Phạ",
     short: "Khau Pha",
-    purchaseModes: ["day", "month"],
+    purchaseModes: ["day", "month", "year"],
     hnaa: false,
     weatherSlug: "khau-pha",
   },
@@ -88,7 +88,7 @@ export const BAO_BAY_SPOT_CONFIG: Record<BaoBaySpot, SpotConfig> = {
     key: "quan-ba",
     name: "Quản Bạ",
     short: "Quan Ba",
-    purchaseModes: ["day", "month"],
+    purchaseModes: ["day", "month", "year"],
     hnaa: false,
     weatherSlug: "ha-giang",
   },
@@ -101,6 +101,33 @@ export const BAO_BAY_SPOT_CONFIG: Record<BaoBaySpot, SpotConfig> = {
  * nên bỏ hẳn chuyện đổi ảnh theo điểm bay.
  */
 export const BAO_BAY_BG = "/muavang/gallery/1757074008862-552366886798627704-5523668.jpg";
+
+/**
+ * TẦN SỐ BỘ ĐÀM THÔNG DỤNG + HOTLINE KHẨN CẤP (chủ 30/09) — hiện trên trang
+ * báo bay và màn hình gửi xong, để phi công lưu trước khi lên bãi.
+ */
+export const BAO_BAY_RADIO = [
+  { name: "HNAA", freq: "170.500" },
+  { name: "HNPG", freq: "148.770" },
+  { name: "VWs", freq: "164.500" },
+] as const;
+
+export const BAO_BAY_HOTLINE = { display: "0964 073 555", tel: "tel:+84964073555" } as const;
+
+/**
+ * LIÊN KẾT KIẾN THỨC cho phi công bay đơn (chủ 30/09). Chỉ trỏ tới trang/bài
+ * CÓ THẬT: bốn mục con của /knowledge (SUB_DB trong app/knowledge/[sub]) và
+ * bài đã đăng — đổi slug bài nào thì phải sửa ở đây, không có cơ chế tự dò.
+ */
+export const BAO_BAY_KNOWLEDGE_LINKS = [
+  { key: "weather", href: "/knowledge/weather", icon: "🌦️" },
+  { key: "wind", href: "/blog/khi-tuong-du-luon-phan-2", icon: "🌬️" },
+  { key: "thermal", href: "/knowledge/thermal", icon: "🌀" },
+  { key: "active", href: "/blog/bay-chu-dong-phan-1-xu-ly-bo", icon: "🪂" },
+  { key: "p3p4", href: "/blog/ky-thuat-bay-du-luon-p3-p4-lo-trinh-chung-chi", icon: "🎓" },
+] as const;
+
+export type BaoBayKnowledgeKey = (typeof BAO_BAY_KNOWLEDGE_LINKS)[number]["key"];
 
 export function isBaoBaySpot(v: unknown): v is BaoBaySpot {
   return typeof v === "string" && (BAO_BAY_SPOTS as string[]).includes(v);
@@ -261,10 +288,11 @@ export function computeBaoBayFee(input: {
   const dates = [...new Set(input.dates)].sort();
   const passes = input.passes ?? [];
 
-  // Điểm không có vé năm mà gửi "year" lên thì hạ về vé tháng — không bán thứ không có.
-  let purchase: PurchaseMode = cfg.purchaseModes.includes(input.purchase)
-    ? input.purchase
-    : "month";
+  /**
+   * Cả ba điểm đều bán đủ ngày/tháng/năm (chủ 30/09 mở vé năm cho Khau Phạ,
+   * Quản Bạ) nên KHÔNG còn hạ "năm" về "tháng". Giá trị lạ thì về theo ngày.
+   */
+  let purchase: PurchaseMode = cfg.purchaseModes.includes(input.purchase) ? input.purchase : "day";
 
   const passDays: string[] = [];
   const hnaaDays: string[] = [];

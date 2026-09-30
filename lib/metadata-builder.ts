@@ -85,6 +85,8 @@ const OG_CARD_BY_SECTION: Record<string, string> = {
   knowledge: "knowledge",
   muavang: "muavang",
   "pre-notice": "pre-notice",
+  // Trang báo bay phi công bay đơn — thẻ riêng, trước đây mượn thẻ Mùa Vàng
+  baobay: "baobay",
 };
 
 const DEFAULT_IMAGE = `${SITE_URL}/og/cards/home.jpg`;

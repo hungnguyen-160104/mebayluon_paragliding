@@ -6,7 +6,7 @@
  * không bao giờ đụng tới trang kia. Thư nội bộ và trang quản trị vẫn tiếng
  * Việt — chúng lấy nhãn từ lib/bao-bay.ts.
  */
-import type { BaoBayLineKey, BaoBaySpot, FeeMode, PurchaseMode } from "@/lib/bao-bay";
+import type { BaoBayKnowledgeKey, BaoBayLineKey, BaoBaySpot, FeeMode, PurchaseMode } from "@/lib/bao-bay";
 
 export type BaoBayLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
@@ -125,6 +125,17 @@ export type BaoBayDict = {
   fPassport: string;
   fPassportPh: string;
 
+  knowTitle: string;
+  knowMain: string;
+  knowLinks: Record<BaoBayKnowledgeKey, string>;
+
+  radioTitle: string;
+  emergencyTitle: string;
+  calLegendFaces: string;
+  calLegendWind: string;
+  calLegendSky: string;
+  calFullForecast: string;
+
   todayTitle: (n: number) => string;
   todayNone: string;
 
@@ -231,7 +242,7 @@ const vi: BaoBayDict = {
   modeMonth: (p) => `Vé tháng · ${p}`,
   modeMonthDesc: "Từ ngày bay đầu tiên tới cùng ngày tháng sau, bay không giới hạn.",
   modeYear: (p) => `Vé năm · ${p}`,
-  modeYearDesc: "Trọn một năm tại Viên Nam, bay không giới hạn.",
+  modeYearDesc: "Trọn một năm tại điểm bay đã chọn, bay không giới hạn.",
 
   feeTitle: "Chi phí báo bay",
   feeLine: {
@@ -262,6 +273,17 @@ const vi: BaoBayDict = {
   fNationalityPh: "Ví dụ: Pháp, Hàn Quốc",
   fPassport: "Số hộ chiếu",
   fPassportPh: "Số hộ chiếu",
+
+  knowTitle: "Kiến thức dù lượn",
+  knowMain: "Xem tất cả kiến thức dù lượn",
+  knowLinks: {"weather": "Khí tượng dù lượn", "wind": "Gió và gradient gió", "thermal": "Bay thermal", "active": "Bay chủ động: kiểm soát bổ ngửa", "p3p4": "Kỹ thuật P3–P4 & lộ trình chứng chỉ"},
+
+  radioTitle: "Tần số bộ đàm thông dụng",
+  emergencyTitle: "Hotline khẩn cấp",
+  calLegendFaces: "😊 bay tốt · 😐 cân nhắc · 😢 nên nghỉ",
+  calLegendWind: "mũi tên: hướng gió thổi tới (6h–18h)",
+  calLegendSky: "☀️ nắng · ⛅ nhiều mây · 🌧️ mưa giờ bay",
+  calFullForecast: "Xem dự báo chi tiết",
 
   todayTitle: (n) => `Hôm nay đã có ${n} phi công báo bay:`,
   todayNone: "Chưa có ai báo bay hôm nay.",
@@ -321,12 +343,12 @@ const en: BaoBayDict = {
   altHero: "Paragliding site",
   altQr: "Bank transfer QR code",
   heroBadge: "🪂 For solo pilots",
-  heroTitle: "Flight notice",
+  heroTitle: "Flight register",
   heroPlaces: "Vien Nam Mountain · Khau Pha · Quan Ba",
-  heroNote: "Submit your flight notice and pay the site fee before take-off",
-  heroCta: "Submit a notice",
+  heroNote: "Submit your flight register and pay the site fee before take-off",
+  heroCta: "Register a flight",
 
-  formTitle: "Flight notice form",
+  formTitle: "Flight register form",
   formSubtitle: "Choose a site and dates, fill in your details — the fee and QR code appear right below.",
 
   step1: "Choose a flying site",
@@ -355,8 +377,8 @@ const en: BaoBayDict = {
   step3: "Pilot details",
   hnaaLabel: "HNAA member code",
   hnaaHint: "If you are an HNAA member, enter your member code to fly for free.",
-  hnaaCutoff: "Free only when the notice is submitted BEFORE 08:00 on the flying day (Vietnam time). Notices for later days are always in time.",
-  hnaaWarn: "Submitting notices without actually flying — repeat offenders will have their notices refused.",
+  hnaaCutoff: "Free only when the register is submitted BEFORE 08:00 on the flying day (Vietnam time). Registers for later days are always in time.",
+  hnaaWarn: "Registering flights without actually flying — repeat offenders will have their registers refused.",
   hnaaPh: "e.g. HN123",
   hnaaCheck: "Check",
   hnaaChecking: "Checking…",
@@ -391,9 +413,9 @@ const en: BaoBayDict = {
   modeMonth: (p) => `Month pass · ${p}`,
   modeMonthDesc: "From your first flying day to the same day next month, unlimited flying.",
   modeYear: (p) => `Year pass · ${p}`,
-  modeYearDesc: "A full year at Vien Nam, unlimited flying.",
+  modeYearDesc: "A full year at the selected site, unlimited flying.",
 
-  feeTitle: "Notice fee",
+  feeTitle: "Register fee",
   feeLine: {
     hnaaFree: (n) => `HNAA member, submitted before 08:00 × ${n} day${n === 1 ? "" : "s"}`,
     passCovered: (n) => `Valid month/year pass × ${n} day${n === 1 ? "" : "s"}`,
@@ -406,11 +428,11 @@ const en: BaoBayDict = {
   feeLoading: "Calculating…",
   feeEmpty: "Choose a site and dates to see the fee.",
   passNotice: (d) => `Month/year pass valid until ${d}`,
-  newPassNotice: (f, t) => `Your pass is valid from ${f} through ${t}. Later notices within this period are free automatically.`,
+  newPassNotice: (f, t) => `Your pass is valid from ${f} through ${t}. Later registers within this period are free automatically.`,
   autoMonthNotice: "From 8 days a month pass is cheaper — switched to a month pass for you.",
   hnaaLateNotice: "It is already past 08:00 on the flying day, so HNAA members pay the normal fee for that day.",
 
-  submit: "Submit flight notice",
+  submit: "Submit flight register",
   submitting: "Submitting…",
   submitFoot: "The fee is calculated with the server clock (Vietnam time) at the moment you submit.",
   needHelp: "Need help? Call",
@@ -423,21 +445,32 @@ const en: BaoBayDict = {
   fPassport: "Passport number",
   fPassportPh: "Passport number",
 
-  todayTitle: (n) => `${n} pilot${n === 1 ? "" : "s"} filed a notice today:`,
-  todayNone: "No one has filed a notice today yet.",
+  knowTitle: "Paragliding knowledge",
+  knowMain: "All paragliding knowledge",
+  knowLinks: {"weather": "Paragliding meteorology", "wind": "Wind and wind gradient", "thermal": "Thermal flying", "active": "Active flying: pitch control", "p3p4": "P3–P4 skills & licence roadmap"},
+
+  radioTitle: "Common radio frequencies",
+  emergencyTitle: "Emergency hotline",
+  calLegendFaces: "😊 good · 😐 marginal · 😢 bad",
+  calLegendWind: "arrow: direction the wind blows to (6am–6pm)",
+  calLegendSky: "☀️ sunny · ⛅ cloudy · 🌧️ rain in flying hours",
+  calFullForecast: "See full forecast",
+
+  todayTitle: (n) => `${n} pilot${n === 1 ? "" : "s"} registered a flight today:`,
+  todayNone: "No one has registered a flight today yet.",
 
   payBeforeTitle: "Pay before submitting",
-  payBeforeHint: "Scan the QR code to transfer, then tick the box below to submit your notice.",
+  payBeforeHint: "Scan the QR code to transfer, then tick the box below to submit your register.",
   payNeedPhone: "Enter your phone number in step 3 to show the payment QR code.",
-  payConfirmLabel: "I have paid the notice fee",
-  payConfirmFirst: "Please pay and tick “I have paid the notice fee” to submit.",
-  okPendingPay: "Notice received, awaiting payment confirmation",
+  payConfirmLabel: "I have paid the register fee",
+  payConfirmFirst: "Please pay and tick “I have paid the register fee” to submit.",
+  okPendingPay: "Register received, awaiting payment confirmation",
   okPendingPayDesc: "The coordinators will check your transfer and confirm.",
 
   err: {
     spot: "Please choose a flying site",
     dates: "Please choose your flying dates",
-    datesPast: "You cannot submit a notice for a past date",
+    datesPast: "You cannot register a flight for a past date",
     memberInvalid: "Incorrect member code",
     name: "Please enter your full name",
     id: "Please enter your ID/passport number",
@@ -447,14 +480,14 @@ const en: BaoBayDict = {
     nationality: "Foreign pilots must declare their nationality",
     payConfirm: "Please pay and tick the confirmation box before submitting",
     amountChanged: "The fee has just changed — please pay with the new QR code and tick the box again",
-    server: "Could not submit the notice, please try again",
+    server: "Could not submit the register, please try again",
     rate: "Too many attempts, please try again in a few minutes",
     network: "Network error, please try again",
   },
 
-  okTitle: "Flight notice received!",
-  okSubtitle: "Have a safe flight. Keep the notice code below.",
-  okCode: "Notice code",
+  okTitle: "Flight register received!",
+  okSubtitle: "Have a safe flight. Keep the register code below.",
+  okCode: "Register code",
   okSpot: "Site",
   okDates: "Flying dates",
   okFeeMode: {
@@ -472,8 +505,8 @@ const en: BaoBayDict = {
   payOwner: "Account holder",
   payNote: "Message",
   noFeeTitle: "No fee to pay",
-  noFeeDesc: "Your flight notice has been recorded.",
-  againBtn: "Submit another notice",
+  noFeeDesc: "Your flight register has been recorded.",
+  againBtn: "Register another flight",
   callBtn: "Call the coordinator",
 };
 
@@ -481,12 +514,12 @@ const fr: BaoBayDict = {
   altHero: "Site de parapente",
   altQr: "QR code de virement",
   heroBadge: "🪂 Pour les pilotes solo",
-  heroTitle: "Déclaration de vol",
+  heroTitle: "Enregistrement de vol",
   heroPlaces: "Vien Nam · Khau Pha · Quan Ba",
-  heroNote: "Déclarez votre vol et réglez la taxe de site avant de décoller",
-  heroCta: "Déclarer un vol",
+  heroNote: "Enregistrez votre vol et réglez la taxe de site avant de décoller",
+  heroCta: "Enregistrer un vol",
 
-  formTitle: "Formulaire de déclaration",
+  formTitle: "Formulaire d'enregistrement",
   formSubtitle: "Choisissez le site et les dates, remplissez vos informations — le tarif et le QR code s'affichent juste en dessous.",
 
   step1: "Choisissez le site",
@@ -515,14 +548,14 @@ const fr: BaoBayDict = {
   step3: "Informations du pilote",
   hnaaLabel: "Numéro de membre HNAA",
   hnaaHint: "Si vous êtes membre de la HNAA, saisissez votre numéro de membre pour voler gratuitement.",
-  hnaaCutoff: "Gratuit uniquement si la déclaration est envoyée AVANT 8h00 le jour du vol (heure du Vietnam). Pour les jours suivants, c'est toujours dans les temps.",
-  hnaaWarn: "Déclarer sans voler réellement : en cas de récidive, vos déclarations seront refusées.",
+  hnaaCutoff: "Gratuit uniquement si l'enregistrement est envoyé AVANT 8h00 le jour du vol (heure du Vietnam). Pour les jours suivants, c'est toujours dans les temps.",
+  hnaaWarn: "Enregistrer un vol sans voler réellement : en cas de récidive, vos enregistrements seront refusés.",
   hnaaPh: "ex. HN123",
   hnaaCheck: "Vérifier",
   hnaaChecking: "Vérification…",
   hnaaOk: "Adhésion HNAA confirmée",
   hnaaWrong: "Numéro de membre incorrect",
-  hnaaWrongContinue: "Vous pouvez tout de même déclarer en remplissant vos informations ci-dessous et en payant la taxe.",
+  hnaaWrongContinue: "Vous pouvez tout de même vous enregistrer en remplissant vos informations ci-dessous et en payant la taxe.",
   hnaaChange: "Saisir un autre numéro",
   memberId: "Pièce d'identité / Passeport",
   memberPhone: "Téléphone",
@@ -551,11 +584,11 @@ const fr: BaoBayDict = {
   modeMonth: (p) => `Forfait mois · ${p}`,
   modeMonthDesc: "Du premier jour de vol au même jour du mois suivant, vols illimités.",
   modeYear: (p) => `Forfait année · ${p}`,
-  modeYearDesc: "Une année complète à Vien Nam, vols illimités.",
+  modeYearDesc: "Une année complète sur le site choisi, vols illimités.",
 
-  feeTitle: "Coût de la déclaration",
+  feeTitle: "Coût de l'enregistrement",
   feeLine: {
-    hnaaFree: (n) => `Membre HNAA, déclaré avant 8h00 × ${n} jour${n > 1 ? "s" : ""}`,
+    hnaaFree: (n) => `Membre HNAA, enregistré avant 8h00 × ${n} jour${n > 1 ? "s" : ""}`,
     passCovered: (n) => `Forfait mois/année valide × ${n} jour${n > 1 ? "s" : ""}`,
     day: (n) => `Taxe de site × ${n} jour${n > 1 ? "s" : ""}`,
     month: () => "Forfait mois",
@@ -566,11 +599,11 @@ const fr: BaoBayDict = {
   feeLoading: "Calcul en cours…",
   feeEmpty: "Choisissez un site et des dates pour voir le tarif.",
   passNotice: (d) => `Forfait mois/année valable jusqu'au ${d}`,
-  newPassNotice: (f, t) => `Votre forfait est valable du ${f} au ${t} inclus. Les déclarations suivantes sur cette période seront gratuites automatiquement.`,
+  newPassNotice: (f, t) => `Votre forfait est valable du ${f} au ${t} inclus. Les enregistrements suivants sur cette période seront gratuits automatiquement.`,
   autoMonthNotice: "À partir de 8 jours, le forfait mois est moins cher — nous l'avons choisi pour vous.",
   hnaaLateNotice: "Il est déjà plus de 8h00 le jour du vol : ce jour-là, les membres HNAA paient la taxe normale.",
 
-  submit: "Envoyer la déclaration",
+  submit: "Envoyer l'enregistrement",
   submitting: "Envoi…",
   submitFoot: "Le tarif est calculé selon l'horloge du serveur (heure du Vietnam) au moment de l'envoi.",
   needHelp: "Besoin d'aide ? Appelez le",
@@ -583,21 +616,32 @@ const fr: BaoBayDict = {
   fPassport: "Numéro de passeport",
   fPassportPh: "Numéro de passeport",
 
-  todayTitle: (n) => `${n} pilote${n > 1 ? "s ont" : " a"} déclaré un vol aujourd'hui :`,
-  todayNone: "Personne n'a encore déclaré de vol aujourd'hui.",
+  knowTitle: "Connaissances parapente",
+  knowMain: "Toutes les connaissances parapente",
+  knowLinks: {"weather": "Météo pour le parapente", "wind": "Vent et gradient de vent", "thermal": "Vol en thermique", "active": "Pilotage actif : contrôle du tangage", "p3p4": "Techniques P3–P4 et brevets"},
+
+  radioTitle: "Fréquences radio courantes",
+  emergencyTitle: "Numéro d'urgence",
+  calLegendFaces: "😊 bon · 😐 limite · 😢 mauvais",
+  calLegendWind: "flèche : sens vers lequel souffle le vent (6h–18h)",
+  calLegendSky: "☀️ soleil · ⛅ nuageux · 🌧️ pluie aux heures de vol",
+  calFullForecast: "Voir les prévisions détaillées",
+
+  todayTitle: (n) => `${n} pilote${n > 1 ? "s ont" : " a"} enregistré un vol aujourd'hui :`,
+  todayNone: "Personne n'a encore enregistré de vol aujourd'hui.",
 
   payBeforeTitle: "Payer avant d'envoyer",
-  payBeforeHint: "Scannez le QR code pour virer, puis cochez la case ci-dessous pour envoyer la déclaration.",
+  payBeforeHint: "Scannez le QR code pour virer, puis cochez la case ci-dessous pour envoyer l'enregistrement.",
   payNeedPhone: "Saisissez votre téléphone à l'étape 3 pour afficher le QR code de paiement.",
-  payConfirmLabel: "J'ai payé la taxe de déclaration",
-  payConfirmFirst: "Payez puis cochez « J'ai payé la taxe de déclaration » pour envoyer.",
-  okPendingPay: "Déclaration reçue, paiement en attente de confirmation",
+  payConfirmLabel: "J'ai payé la taxe d'enregistrement",
+  payConfirmFirst: "Payez puis cochez « J'ai payé la taxe d'enregistrement » pour envoyer.",
+  okPendingPay: "Enregistrement reçu, paiement en attente de confirmation",
   okPendingPayDesc: "Les coordinateurs vérifieront votre virement et confirmeront.",
 
   err: {
     spot: "Veuillez choisir un site",
     dates: "Veuillez choisir vos dates de vol",
-    datesPast: "Impossible de déclarer un vol pour une date passée",
+    datesPast: "Impossible d'enregistrer un vol pour une date passée",
     memberInvalid: "Numéro de membre incorrect",
     name: "Veuillez saisir votre nom complet",
     id: "Veuillez saisir votre n° de pièce d'identité/passeport",
@@ -607,14 +651,14 @@ const fr: BaoBayDict = {
     nationality: "Les pilotes étrangers doivent indiquer leur nationalité",
     payConfirm: "Veuillez payer et cocher la case de confirmation avant d'envoyer",
     amountChanged: "Le tarif vient de changer — payez avec le nouveau QR code puis recochez la case",
-    server: "Impossible d'envoyer la déclaration, veuillez réessayer",
+    server: "Impossible d'envoyer l'enregistrement, veuillez réessayer",
     rate: "Trop de tentatives, réessayez dans quelques minutes",
     network: "Erreur réseau, veuillez réessayer",
   },
 
-  okTitle: "Déclaration reçue !",
-  okSubtitle: "Bon vol. Conservez le code de déclaration ci-dessous.",
-  okCode: "Code de déclaration",
+  okTitle: "Enregistrement reçu !",
+  okSubtitle: "Bon vol. Conservez le code d'enregistrement ci-dessous.",
+  okCode: "Code d'enregistrement",
   okSpot: "Site",
   okDates: "Dates de vol",
   okFeeMode: {
@@ -632,8 +676,8 @@ const fr: BaoBayDict = {
   payOwner: "Titulaire",
   payNote: "Message",
   noFeeTitle: "Rien à payer",
-  noFeeDesc: "Votre déclaration de vol est enregistrée.",
-  againBtn: "Nouvelle déclaration",
+  noFeeDesc: "Votre enregistrement de vol est pris en compte.",
+  againBtn: "Nouvel enregistrement",
   callBtn: "Appeler le coordinateur",
 };
 
@@ -641,12 +685,12 @@ const ru: BaoBayDict = {
   altHero: "Парапланерный старт",
   altQr: "QR-код для перевода",
   heroBadge: "🪂 Для самостоятельных пилотов",
-  heroTitle: "Заявка на полёт",
+  heroTitle: "Регистрация полёта",
   heroPlaces: "Вьен Нам · Кхау Фа · Куан Ба",
-  heroNote: "Подайте заявку и оплатите сбор за площадку до старта",
-  heroCta: "Подать заявку",
+  heroNote: "Зарегистрируйте полёт и оплатите сбор за площадку до старта",
+  heroCta: "Зарегистрировать полёт",
 
-  formTitle: "Форма заявки на полёт",
+  formTitle: "Форма регистрации полёта",
   formSubtitle: "Выберите площадку и даты, заполните данные — сумма и QR-код появятся ниже.",
 
   step1: "Выберите площадку",
@@ -675,14 +719,14 @@ const ru: BaoBayDict = {
   step3: "Данные пилота",
   hnaaLabel: "Членский номер HNAA",
   hnaaHint: "Если вы член HNAA, введите членский номер, чтобы летать бесплатно.",
-  hnaaCutoff: "Бесплатно, только если заявка подана ДО 08:00 в день полёта (время Вьетнама). Заявки на последующие дни всегда вовремя.",
-  hnaaWarn: "Фиктивные заявки без полёта: при повторных нарушениях заявки будут отклоняться.",
+  hnaaCutoff: "Бесплатно, только если регистрация подана ДО 08:00 в день полёта (время Вьетнама). Регистрация на последующие дни всегда вовремя.",
+  hnaaWarn: "Регистрация без реального полёта: при повторных нарушениях регистрация будет отклоняться.",
   hnaaPh: "напр. HN123",
   hnaaCheck: "Проверить",
   hnaaChecking: "Проверка…",
   hnaaOk: "Членство HNAA подтверждено",
   hnaaWrong: "Неверный членский номер",
-  hnaaWrongContinue: "Вы можете подать заявку, заполнив данные ниже и оплатив сбор.",
+  hnaaWrongContinue: "Вы можете зарегистрироваться, заполнив данные ниже и оплатив сбор.",
   hnaaChange: "Ввести другой номер",
   memberId: "Удостоверение / паспорт",
   memberPhone: "Телефон",
@@ -711,11 +755,11 @@ const ru: BaoBayDict = {
   modeMonth: (p) => `Абонемент на месяц · ${p}`,
   modeMonthDesc: "С первого дня полёта до того же числа следующего месяца, без ограничений.",
   modeYear: (p) => `Абонемент на год · ${p}`,
-  modeYearDesc: "Целый год во Вьен Нам, без ограничений.",
+  modeYearDesc: "Целый год на выбранной площадке, без ограничений.",
 
-  feeTitle: "Стоимость",
+  feeTitle: "Стоимость регистрации",
   feeLine: {
-    hnaaFree: (n) => `Член HNAA, заявка до 08:00 × ${n} дн.`,
+    hnaaFree: (n) => `Член HNAA, регистрация до 08:00 × ${n} дн.`,
     passCovered: (n) => `Действующий абонемент × ${n} дн.`,
     day: (n) => `Сбор за площадку × ${n} дн.`,
     month: () => "Абонемент на месяц",
@@ -726,11 +770,11 @@ const ru: BaoBayDict = {
   feeLoading: "Расчёт…",
   feeEmpty: "Выберите площадку и даты, чтобы увидеть стоимость.",
   passNotice: (d) => `Абонемент действует до ${d}`,
-  newPassNotice: (f, t) => `Ваш абонемент действует с ${f} по ${t} включительно. Последующие заявки в этот период будут бесплатными автоматически.`,
+  newPassNotice: (f, t) => `Ваш абонемент действует с ${f} по ${t} включительно. Последующие регистрации в этот период будут бесплатными автоматически.`,
   autoMonthNotice: "От 8 дней абонемент на месяц выгоднее — мы переключили вас на него.",
   hnaaLateNotice: "В день полёта уже больше 08:00, поэтому за этот день члены HNAA платят обычный сбор.",
 
-  submit: "Отправить заявку",
+  submit: "Отправить регистрацию",
   submitting: "Отправка…",
   submitFoot: "Сумма рассчитывается по времени сервера (время Вьетнама) в момент отправки.",
   needHelp: "Нужна помощь? Звоните",
@@ -743,21 +787,32 @@ const ru: BaoBayDict = {
   fPassport: "Номер паспорта",
   fPassportPh: "Номер паспорта",
 
-  todayTitle: (n) => `Сегодня заявку подали пилотов: ${n} —`,
-  todayNone: "Сегодня ещё никто не подал заявку.",
+  knowTitle: "Знания о парапланеризме",
+  knowMain: "Все материалы о парапланеризме",
+  knowLinks: {"weather": "Метеорология для пилотов", "wind": "Ветер и градиент ветра", "thermal": "Полёты в термиках", "active": "Активное пилотирование: тангаж", "p3p4": "Техника P3–P4 и путь к лицензии"},
+
+  radioTitle: "Основные частоты раций",
+  emergencyTitle: "Экстренная горячая линия",
+  calLegendFaces: "😊 хорошо · 😐 на грани · 😢 плохо",
+  calLegendWind: "стрелка: куда дует ветер (6–18 ч)",
+  calLegendSky: "☀️ солнце · ⛅ облачно · 🌧️ дождь в лётные часы",
+  calFullForecast: "Подробный прогноз",
+
+  todayTitle: (n) => `Сегодня зарегистрировались пилотов: ${n} —`,
+  todayNone: "Сегодня ещё никто не зарегистрировал полёт.",
 
   payBeforeTitle: "Оплата до отправки",
-  payBeforeHint: "Отсканируйте QR-код и переведите оплату, затем отметьте поле ниже, чтобы отправить заявку.",
+  payBeforeHint: "Отсканируйте QR-код и переведите оплату, затем отметьте поле ниже, чтобы отправить регистрацию.",
   payNeedPhone: "Введите телефон на шаге 3, чтобы показать QR-код для оплаты.",
-  payConfirmLabel: "Я оплатил(а) сбор за заявку",
-  payConfirmFirst: "Оплатите и отметьте «Я оплатил(а) сбор за заявку», чтобы отправить.",
-  okPendingPay: "Заявка принята, ожидается подтверждение оплаты",
+  payConfirmLabel: "Я оплатил(а) сбор за регистрацию",
+  payConfirmFirst: "Оплатите и отметьте «Я оплатил(а) сбор за регистрацию», чтобы отправить.",
+  okPendingPay: "Регистрация принята, ожидается подтверждение оплаты",
   okPendingPayDesc: "Координаторы проверят перевод и подтвердят.",
 
   err: {
     spot: "Выберите площадку",
     dates: "Выберите даты полётов",
-    datesPast: "Нельзя подать заявку на прошедшую дату",
+    datesPast: "Нельзя зарегистрировать полёт на прошедшую дату",
     memberInvalid: "Неверный членский номер",
     name: "Введите полное имя",
     id: "Введите номер удостоверения/паспорта",
@@ -767,14 +822,14 @@ const ru: BaoBayDict = {
     nationality: "Иностранные пилоты обязаны указать гражданство",
     payConfirm: "Оплатите и отметьте подтверждение перед отправкой",
     amountChanged: "Сумма изменилась — оплатите по новому QR-коду и снова отметьте поле",
-    server: "Не удалось отправить заявку, попробуйте ещё раз",
+    server: "Не удалось отправить регистрацию, попробуйте ещё раз",
     rate: "Слишком много попыток, попробуйте через несколько минут",
     network: "Ошибка сети, попробуйте ещё раз",
   },
 
-  okTitle: "Заявка принята!",
-  okSubtitle: "Удачного полёта. Сохраните код заявки ниже.",
-  okCode: "Код заявки",
+  okTitle: "Регистрация принята!",
+  okSubtitle: "Удачного полёта. Сохраните код регистрации ниже.",
+  okCode: "Код регистрации",
   okSpot: "Площадка",
   okDates: "Даты полётов",
   okFeeMode: {
@@ -792,8 +847,8 @@ const ru: BaoBayDict = {
   payOwner: "Владелец счёта",
   payNote: "Назначение",
   noFeeTitle: "Оплата не требуется",
-  noFeeDesc: "Ваша заявка на полёт записана.",
-  againBtn: "Ещё одна заявка",
+  noFeeDesc: "Ваша регистрация полёта записана.",
+  againBtn: "Ещё одна регистрация",
   callBtn: "Позвонить координатору",
 };
 
@@ -801,12 +856,12 @@ const zh: BaoBayDict = {
   altHero: "滑翔伞飞行场地",
   altQr: "转账二维码",
   heroBadge: "🪂 独立飞行员专用",
-  heroTitle: "飞行报备",
+  heroTitle: "飞行登记",
   heroPlaces: "Vien Nam · 考帕 · 管坝",
-  heroNote: "起飞前完成飞行报备并缴纳场地费",
-  heroCta: "立即报备",
+  heroNote: "起飞前完成飞行登记并缴纳场地费",
+  heroCta: "立即登记",
 
-  formTitle: "飞行报备表",
+  formTitle: "飞行登记表",
   formSubtitle: "选择场地和日期、填写信息——费用和二维码会立即显示在下方。",
 
   step1: "选择飞行场地",
@@ -834,15 +889,15 @@ const zh: BaoBayDict = {
 
   step3: "飞行员信息",
   hnaaLabel: "HNAA 会员编号",
-  hnaaHint: "如果您是 HNAA 会员，请填写会员编号以免费报备。",
-  hnaaCutoff: "仅在飞行当天 08:00（越南时间）之前报备才免费。报备之后日期的飞行则随时都来得及。",
-  hnaaWarn: "报备后不飞行属虚假报备，多次违规将被拒绝报备。",
+  hnaaHint: "如果您是 HNAA 会员，请填写会员编号以免费登记。",
+  hnaaCutoff: "仅在飞行当天 08:00（越南时间）之前登记才免费。登记之后日期的飞行则随时都来得及。",
+  hnaaWarn: "登记后不飞行属虚假登记，多次违规将被拒绝登记。",
   hnaaPh: "例如 HN123",
   hnaaCheck: "验证",
   hnaaChecking: "验证中…",
   hnaaOk: "已确认 HNAA 会员身份",
   hnaaWrong: "会员编号不正确",
-  hnaaWrongContinue: "您仍可在下方自行填写信息并缴费完成报备。",
+  hnaaWrongContinue: "您仍可在下方自行填写信息并缴费完成登记。",
   hnaaChange: "输入其他编号",
   memberId: "身份证 / 护照",
   memberPhone: "电话",
@@ -871,11 +926,11 @@ const zh: BaoBayDict = {
   modeMonth: (p) => `月票 · ${p}`,
   modeMonthDesc: "从第一个飞行日到下月同一天，不限次数。",
   modeYear: (p) => `年票 · ${p}`,
-  modeYearDesc: "在 Vien Nam 整年不限次数飞行。",
+  modeYearDesc: "在所选场地整年不限次数飞行。",
 
-  feeTitle: "报备费用",
+  feeTitle: "登记费用",
   feeLine: {
-    hnaaFree: (n) => `HNAA 会员 08:00 前报备 × ${n} 天`,
+    hnaaFree: (n) => `HNAA 会员 08:00 前登记 × ${n} 天`,
     passCovered: (n) => `有效月票/年票 × ${n} 天`,
     day: (n) => `场地费 × ${n} 天`,
     month: () => "月票",
@@ -886,11 +941,11 @@ const zh: BaoBayDict = {
   feeLoading: "计算中…",
   feeEmpty: "选择场地和日期即可查看费用。",
   passNotice: (d) => `月票/年票有效期至 ${d}`,
-  newPassNotice: (f, t) => `您的票自 ${f} 起至 ${t}（含）有效。此期间内之后的报备将自动免费。`,
+  newPassNotice: (f, t) => `您的票自 ${f} 起至 ${t}（含）有效。此期间内之后的登记将自动免费。`,
   autoMonthNotice: "满 8 天时月票更划算——已自动为您改为月票。",
   hnaaLateNotice: "飞行当天已过 08:00，因此当天 HNAA 会员也需按普通标准缴费。",
 
-  submit: "提交报备",
+  submit: "提交登记",
   submitting: "提交中…",
   submitFoot: "费用按提交时服务器时间（越南时间）计算。",
   needHelp: "需要帮助请致电",
@@ -903,21 +958,32 @@ const zh: BaoBayDict = {
   fPassport: "护照号码",
   fPassportPh: "护照号码",
 
-  todayTitle: (n) => `今天已有 ${n} 位飞行员报备：`,
-  todayNone: "今天还没有人报备。",
+  knowTitle: "滑翔伞知识",
+  knowMain: "查看全部滑翔伞知识",
+  knowLinks: {"weather": "滑翔伞气象", "wind": "风与风梯度", "thermal": "热气流飞行", "active": "主动飞行：俯仰控制", "p3p4": "P3–P4 技术与执照路线"},
+
+  radioTitle: "常用对讲机频率",
+  emergencyTitle: "紧急热线",
+  calLegendFaces: "😊 适飞 · 😐 需斟酌 · 😢 不宜",
+  calLegendWind: "箭头：风吹向的方向（6–18 时）",
+  calLegendSky: "☀️ 晴 · ⛅ 多云 · 🌧️ 飞行时段有雨",
+  calFullForecast: "查看详细预报",
+
+  todayTitle: (n) => `今天已有 ${n} 位飞行员登记：`,
+  todayNone: "今天还没有人登记。",
 
   payBeforeTitle: "先付款再提交",
-  payBeforeHint: "扫描二维码转账，然后勾选下方确认框即可提交报备。",
+  payBeforeHint: "扫描二维码转账，然后勾选下方确认框即可提交登记。",
   payNeedPhone: "请在第 3 步填写电话号码以显示付款二维码。",
-  payConfirmLabel: "我已支付报备费",
-  payConfirmFirst: "请先付款并勾选“我已支付报备费”再提交。",
-  okPendingPay: "已收到报备，等待付款确认",
+  payConfirmLabel: "我已支付登记费",
+  payConfirmFirst: "请先付款并勾选“我已支付登记费”再提交。",
+  okPendingPay: "已收到登记，等待付款确认",
   okPendingPayDesc: "调度人员将核对转账并确认。",
 
   err: {
     spot: "请选择飞行场地",
     dates: "请选择飞行日期",
-    datesPast: "不能为已过去的日期报备",
+    datesPast: "不能为已过去的日期登记",
     memberInvalid: "会员编号不正确",
     name: "请填写姓名",
     id: "请填写身份证/护照号码",
@@ -927,14 +993,14 @@ const zh: BaoBayDict = {
     nationality: "外国飞行员必须填写国籍",
     payConfirm: "提交前请先付款并勾选确认框",
     amountChanged: "费用刚刚发生变化——请按新的二维码付款并重新勾选确认框",
-    server: "报备提交失败，请重试",
+    server: "登记提交失败，请重试",
     rate: "操作过于频繁，请几分钟后再试",
     network: "网络错误，请重试",
   },
 
-  okTitle: "已收到飞行报备！",
-  okSubtitle: "祝您飞行平安。请保存下方的报备编号。",
-  okCode: "报备编号",
+  okTitle: "已收到飞行登记！",
+  okSubtitle: "祝您飞行平安。请保存下方的登记编号。",
+  okCode: "登记编号",
   okSpot: "场地",
   okDates: "飞行日期",
   okFeeMode: {
@@ -952,8 +1018,8 @@ const zh: BaoBayDict = {
   payOwner: "户名",
   payNote: "附言",
   noFeeTitle: "无需缴费",
-  noFeeDesc: "您的飞行报备已记录。",
-  againBtn: "再报备一次",
+  noFeeDesc: "您的飞行登记已记录。",
+  againBtn: "再登记一次",
   callBtn: "致电调度",
 };
 
@@ -961,12 +1027,12 @@ const hi: BaoBayDict = {
   altHero: "पैराग्लाइडिंग साइट",
   altQr: "बैंक ट्रांसफ़र QR कोड",
   heroBadge: "🪂 सोलो पायलटों के लिए",
-  heroTitle: "उड़ान सूचना",
+  heroTitle: "उड़ान पंजीकरण",
   heroPlaces: "विएन नाम · खाउ फ़ा · क्वान बा",
-  heroNote: "टेक-ऑफ़ से पहले उड़ान सूचना दें और साइट शुल्क चुकाएँ",
-  heroCta: "सूचना दें",
+  heroNote: "टेक-ऑफ़ से पहले उड़ान पंजीकरण करें और साइट शुल्क चुकाएँ",
+  heroCta: "पंजीकरण करें",
 
-  formTitle: "उड़ान सूचना फ़ॉर्म",
+  formTitle: "उड़ान पंजीकरण फ़ॉर्म",
   formSubtitle: "साइट और तारीखें चुनें, विवरण भरें — शुल्क और QR कोड नीचे तुरंत दिखेंगे।",
 
   step1: "उड़ान साइट चुनें",
@@ -994,15 +1060,15 @@ const hi: BaoBayDict = {
 
   step3: "पायलट विवरण",
   hnaaLabel: "HNAA सदस्य कोड",
-  hnaaHint: "यदि आप HNAA सदस्य हैं, तो निःशुल्क उड़ान सूचना के लिए अपना सदस्य कोड दर्ज करें।",
-  hnaaCutoff: "निःशुल्क केवल तब, जब सूचना उड़ान वाले दिन सुबह 08:00 (वियतनाम समय) से पहले दी जाए। आगे की तारीखों के लिए सूचना हमेशा समय पर है।",
-  hnaaWarn: "बिना उड़े फ़र्ज़ी सूचना देना — बार-बार उल्लंघन पर सूचना अस्वीकार कर दी जाएगी।",
+  hnaaHint: "यदि आप HNAA सदस्य हैं, तो निःशुल्क उड़ान पंजीकरण के लिए अपना सदस्य कोड दर्ज करें।",
+  hnaaCutoff: "निःशुल्क केवल तब, जब पंजीकरण उड़ान वाले दिन सुबह 08:00 (वियतनाम समय) से पहले किया जाए। आगे की तारीखों के लिए पंजीकरण हमेशा समय पर है।",
+  hnaaWarn: "बिना उड़े फ़र्ज़ी पंजीकरण करना — बार-बार उल्लंघन पर पंजीकरण अस्वीकार कर दिया जाएगा।",
   hnaaPh: "जैसे HN123",
   hnaaCheck: "जाँचें",
   hnaaChecking: "जाँच हो रही है…",
   hnaaOk: "HNAA सदस्यता की पुष्टि हुई",
   hnaaWrong: "सदस्य कोड ग़लत है",
-  hnaaWrongContinue: "आप नीचे अपना विवरण भरकर और शुल्क चुकाकर फिर भी सूचना दे सकते हैं।",
+  hnaaWrongContinue: "आप नीचे अपना विवरण भरकर और शुल्क चुकाकर फिर भी पंजीकरण कर सकते हैं।",
   hnaaChange: "दूसरा कोड डालें",
   memberId: "पहचान पत्र / पासपोर्ट",
   memberPhone: "फ़ोन",
@@ -1031,11 +1097,11 @@ const hi: BaoBayDict = {
   modeMonth: (p) => `मासिक पास · ${p}`,
   modeMonthDesc: "पहले उड़ान दिवस से अगले महीने की उसी तारीख तक, असीमित उड़ान।",
   modeYear: (p) => `वार्षिक पास · ${p}`,
-  modeYearDesc: "विएन नाम में पूरा एक वर्ष, असीमित उड़ान।",
+  modeYearDesc: "चुनी गई साइट पर पूरा एक वर्ष, असीमित उड़ान।",
 
-  feeTitle: "सूचना शुल्क",
+  feeTitle: "पंजीकरण शुल्क",
   feeLine: {
-    hnaaFree: (n) => `HNAA सदस्य, 08:00 से पहले सूचना × ${n} दिन`,
+    hnaaFree: (n) => `HNAA सदस्य, 08:00 से पहले पंजीकरण × ${n} दिन`,
     passCovered: (n) => `मान्य मासिक/वार्षिक पास × ${n} दिन`,
     day: (n) => `साइट शुल्क × ${n} दिन`,
     month: () => "मासिक पास",
@@ -1046,11 +1112,11 @@ const hi: BaoBayDict = {
   feeLoading: "गणना हो रही है…",
   feeEmpty: "शुल्क देखने के लिए साइट और तारीखें चुनें।",
   passNotice: (d) => `मासिक/वार्षिक पास ${d} तक मान्य`,
-  newPassNotice: (f, t) => `आपका पास ${f} से ${t} तक (सहित) मान्य है। इस अवधि में आगे की सूचनाएँ अपने-आप निःशुल्क होंगी।`,
+  newPassNotice: (f, t) => `आपका पास ${f} से ${t} तक (सहित) मान्य है। इस अवधि में आगे के पंजीकरण अपने-आप निःशुल्क होंगे।`,
   autoMonthNotice: "8 दिन या अधिक पर मासिक पास सस्ता है — आपके लिए मासिक पास चुन लिया गया।",
   hnaaLateNotice: "उड़ान वाले दिन 08:00 बज चुके हैं, इसलिए उस दिन HNAA सदस्य भी सामान्य शुल्क देंगे।",
 
-  submit: "उड़ान सूचना भेजें",
+  submit: "उड़ान पंजीकरण भेजें",
   submitting: "भेजा जा रहा है…",
   submitFoot: "शुल्क भेजने के समय सर्वर घड़ी (वियतनाम समय) के अनुसार गिना जाता है।",
   needHelp: "मदद चाहिए? कॉल करें",
@@ -1063,21 +1129,32 @@ const hi: BaoBayDict = {
   fPassport: "पासपोर्ट नंबर",
   fPassportPh: "पासपोर्ट नंबर",
 
-  todayTitle: (n) => `आज ${n} पायलटों ने उड़ान सूचना दी:`,
-  todayNone: "आज अभी तक किसी ने सूचना नहीं दी।",
+  knowTitle: "पैराग्लाइडिंग ज्ञान",
+  knowMain: "पैराग्लाइडिंग का पूरा ज्ञान",
+  knowLinks: {"weather": "पैराग्लाइडिंग मौसम विज्ञान", "wind": "हवा और हवा का ग्रेडिएंट", "thermal": "थर्मल उड़ान", "active": "सक्रिय उड़ान: पिच नियंत्रण", "p3p4": "P3–P4 तकनीक और लाइसेंस मार्ग"},
+
+  radioTitle: "सामान्य रेडियो आवृत्तियाँ",
+  emergencyTitle: "आपातकालीन हेल्पलाइन",
+  calLegendFaces: "😊 अच्छा · 😐 सीमांत · 😢 खराब",
+  calLegendWind: "तीर: हवा जिस ओर बह रही है (6–18 बजे)",
+  calLegendSky: "☀️ धूप · ⛅ बादल · 🌧️ उड़ान समय में बारिश",
+  calFullForecast: "पूरा पूर्वानुमान देखें",
+
+  todayTitle: (n) => `आज ${n} पायलटों ने उड़ान पंजीकरण किया:`,
+  todayNone: "आज अभी तक किसी ने पंजीकरण नहीं किया।",
 
   payBeforeTitle: "भेजने से पहले भुगतान करें",
-  payBeforeHint: "QR कोड स्कैन करके ट्रांसफ़र करें, फिर सूचना भेजने के लिए नीचे का बॉक्स टिक करें।",
+  payBeforeHint: "QR कोड स्कैन करके ट्रांसफ़र करें, फिर पंजीकरण भेजने के लिए नीचे का बॉक्स टिक करें।",
   payNeedPhone: "भुगतान QR कोड देखने के लिए चरण 3 में फ़ोन नंबर दर्ज करें।",
-  payConfirmLabel: "मैंने सूचना शुल्क चुका दिया है",
-  payConfirmFirst: "भेजने के लिए भुगतान करें और “मैंने सूचना शुल्क चुका दिया है” टिक करें।",
-  okPendingPay: "सूचना मिल गई, भुगतान की पुष्टि बाकी है",
+  payConfirmLabel: "मैंने पंजीकरण शुल्क चुका दिया है",
+  payConfirmFirst: "भेजने के लिए भुगतान करें और “मैंने पंजीकरण शुल्क चुका दिया है” टिक करें।",
+  okPendingPay: "पंजीकरण मिल गया, भुगतान की पुष्टि बाकी है",
   okPendingPayDesc: "समन्वयक आपका ट्रांसफ़र जाँचकर पुष्टि करेंगे।",
 
   err: {
     spot: "कृपया साइट चुनें",
     dates: "कृपया उड़ान की तारीखें चुनें",
-    datesPast: "बीती तारीख के लिए सूचना नहीं दी जा सकती",
+    datesPast: "बीती तारीख के लिए पंजीकरण नहीं किया जा सकता",
     memberInvalid: "सदस्य कोड ग़लत है",
     name: "कृपया पूरा नाम दर्ज करें",
     id: "कृपया पहचान पत्र/पासपोर्ट नंबर दर्ज करें",
@@ -1087,14 +1164,14 @@ const hi: BaoBayDict = {
     nationality: "विदेशी पायलटों को राष्ट्रीयता बतानी होगी",
     payConfirm: "भेजने से पहले भुगतान करें और पुष्टि बॉक्स टिक करें",
     amountChanged: "शुल्क अभी बदल गया है — नए QR कोड से भुगतान करें और बॉक्स फिर से टिक करें",
-    server: "सूचना नहीं भेजी जा सकी, कृपया फिर कोशिश करें",
+    server: "पंजीकरण नहीं भेजा जा सका, कृपया फिर कोशिश करें",
     rate: "बहुत अधिक प्रयास, कुछ मिनट बाद फिर कोशिश करें",
     network: "नेटवर्क त्रुटि, कृपया फिर कोशिश करें",
   },
 
-  okTitle: "उड़ान सूचना मिल गई!",
-  okSubtitle: "सुरक्षित उड़ान हो। नीचे दिया सूचना कोड सँभाल कर रखें।",
-  okCode: "सूचना कोड",
+  okTitle: "उड़ान पंजीकरण मिल गया!",
+  okSubtitle: "सुरक्षित उड़ान हो। नीचे दिया पंजीकरण कोड सँभाल कर रखें।",
+  okCode: "पंजीकरण कोड",
   okSpot: "साइट",
   okDates: "उड़ान की तारीखें",
   okFeeMode: {
@@ -1112,8 +1189,8 @@ const hi: BaoBayDict = {
   payOwner: "खाताधारक",
   payNote: "संदेश",
   noFeeTitle: "कोई शुल्क नहीं",
-  noFeeDesc: "आपकी उड़ान सूचना दर्ज हो गई है।",
-  againBtn: "एक और सूचना दें",
+  noFeeDesc: "आपका उड़ान पंजीकरण दर्ज हो गया है।",
+  againBtn: "एक और पंजीकरण करें",
   callBtn: "समन्वयक को कॉल करें",
 };
 

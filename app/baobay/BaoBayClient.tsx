@@ -18,6 +18,8 @@
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+
+import Link from "@/components/locale-link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useLanguage } from "@/contexts/language-context";
@@ -26,6 +28,9 @@ import {
   BAO_BAY_FEE_PER_DAY,
   BAO_BAY_FEE_PER_MONTH,
   BAO_BAY_FEE_PER_YEAR,
+  BAO_BAY_HOTLINE,
+  BAO_BAY_KNOWLEDGE_LINKS,
+  BAO_BAY_RADIO,
   BAO_BAY_SPOTS,
   BAO_BAY_SPOT_CONFIG,
   vnParts,
@@ -43,7 +48,9 @@ import {
   wingClassLabel,
   type WingClass,
 } from "@/lib/pilot-event";
+import { huongTroiNgay } from "@/lib/baobay/thoi-tiet";
 import { buildVietQrPayload } from "@/lib/vietqr";
+import { WindArrow } from "@/components/weather/WindArrow";
 
 /**
  * Bảng dự báo dùng lại nguyên khối của trang điểm bay (/spots/…), nạp ĐỘNG:
@@ -271,8 +278,40 @@ const SERVER_ERR_FIELD: Partial<Record<BaoBayErrKey, ErrorKey>> = {
   nationality: "nationality",
 };
 
-const SUPPORT_PHONE = "0964 073 555";
-const SUPPORT_TEL = "tel:+84964073555";
+const SUPPORT_PHONE = BAO_BAY_HOTLINE.display;
+const SUPPORT_TEL = BAO_BAY_HOTLINE.tel;
+
+/**
+ * TÓM TẮT DỰ BÁO MỘT NGÀY cho ô lịch (chủ 30/09): mặt cười theo mức ngày,
+ * mũi tên hướng gió thổi TỚI trong khung 6h–18h, nắng/mây/mưa.
+ * Bảng đầy đủ vẫn ở khối dự báo — ô lịch chỉ đủ chỗ cho ba ký hiệu.
+ */
+type CalDay = { face: string; wind: number | null; sky: string };
+
+const MAT_NGAY: Record<string, string> = { xanh: "😊", vang: "😐", do: "😢" };
+
+type NgayApi = {
+  ngay: string;
+  muc: string;
+  gioMuaBay?: number;
+  gio?: Array<{ gio: string; huong: number; gio10m: number; may?: number }>;
+};
+
+function tomTatNgay(n: NgayApi): CalDay {
+  const gio = Array.isArray(n.gio) ? n.gio : [];
+  // Mây trung bình trong giờ bay (8h–17h) — đủ để chia nắng / nhiều mây
+  const bay = gio.filter((g) => {
+    const h = Number(String(g.gio).slice(11, 13));
+    return h >= 8 && h <= 17 && Number.isFinite(g.may);
+  });
+  const may = bay.length ? bay.reduce((t, g) => t + (g.may as number), 0) / bay.length : 0;
+  return {
+    face: MAT_NGAY[n.muc] ?? "",
+    // Cùng hàm và cùng khung 6h–18h với ô ngày của bảng dự báo (huongTroiCuaNgay)
+    wind: huongTroiNgay(gio as never, [6, 18]),
+    sky: (n.gioMuaBay ?? 0) > 0 ? "🌧️" : may < 50 ? "☀️" : "⛅",
+  };
+}
 
 const SPOT_ICON: Record<BaoBaySpot, string> = { "vien-nam": "🏞️", "khau-pha": "🌾", "quan-ba": "⛰️" };
 
@@ -336,6 +375,10 @@ export default function BaoBayClient() {
   const [serverError, setServerError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  /** Tóm tắt dự báo theo ngày cho ô lịch — nhớ theo mã điểm, mỗi điểm tải MỘT lần. */
+  const [calFc, setCalFc] = useState<Record<string, Record<string, CalDay>>>({});
+  const forecastCardRef = useRef<HTMLDivElement>(null);
+
   /** Dự báo đang mở: dưới ô chọn điểm (điểm đang chọn) và ở khối "3 điểm bay". */
   const [forecastSelectedOpen, setForecastSelectedOpen] = useState(false);
   const [forecastOpen, setForecastOpen] = useState<Partial<Record<BaoBaySpot, boolean>>>({});
@@ -382,6 +425,38 @@ export default function BaoBayClient() {
   useEffect(() => {
     if (spot) void loadToday(spot);
   }, [spot, loadToday]);
+
+  /**
+   * Dự báo cho Ô LỊCH: 15 ngày (mô hình mặc định cho tới 15–16 ngày, API cache
+   * 30 phút ở biên). Tải ngầm — lịch vẫn bấm được trong lúc chờ; hỏng thì lịch
+   * cứ trơn như cũ, không báo lỗi gì.
+   */
+  const weatherSlug = spot ? BAO_BAY_SPOT_CONFIG[spot].weatherSlug : "";
+  useEffect(() => {
+    if (!weatherSlug || calFc[weatherSlug]) return;
+    let alive = true;
+    (async () => {
+      const res = await fetch(`/api/thoi-tiet?spot=${encodeURIComponent(weatherSlug)}&days=15`);
+      if (!res.ok) return;
+      const j = (await res.json()) as { ngay?: NgayApi[] };
+      const map: Record<string, CalDay> = {};
+      for (const n of j.ngay ?? []) map[n.ngay] = tomTatNgay(n);
+      if (alive) setCalFc((c) => ({ ...c, [weatherSlug]: map }));
+    })().catch(() => {
+      /* không có dự báo thì lịch trơn */
+    });
+    return () => {
+      alive = false;
+    };
+  }, [weatherSlug, calFc]);
+
+  const openFullForecast = () => {
+    setForecastSelectedOpen(true);
+    window.setTimeout(
+      () => forecastCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      60,
+    );
+  };
 
   // Điểm bay không bán vé năm thì hạ lựa chọn về theo ngày
   useEffect(() => {
@@ -726,6 +801,33 @@ export default function BaoBayClient() {
     </div>
   );
 
+  /** Tần số bộ đàm + hotline khẩn cấp — trên phiếu và trên màn hình gửi xong. */
+  const radioBox = () => (
+    <div className="rounded-2xl border border-sky-300/30 bg-sky-400/[0.08] px-4 py-3 text-left text-sm text-white/85">
+      <div className="text-xs font-bold uppercase tracking-[.12em] text-sky-200">
+        📻 <Bi t={b((d) => d.radioTitle)} inline />
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+        {BAO_BAY_RADIO.map((r) => (
+          <span key={r.name} className="whitespace-nowrap">
+            <b className="text-white">{r.name}</b> <span className="font-mono text-sky-100">{r.freq}</span>
+          </span>
+        ))}
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2.5">
+        <span className="text-xs font-bold uppercase tracking-[.12em] text-red-200">
+          🚨 <Bi t={b((d) => d.emergencyTitle)} inline />
+        </span>
+        <a
+          href={BAO_BAY_HOTLINE.tel}
+          className="rounded-lg bg-red-500 px-3 py-1.5 font-mono text-base font-extrabold text-white hover:bg-red-400"
+        >
+          📞 {BAO_BAY_HOTLINE.display}
+        </a>
+      </div>
+    </div>
+  );
+
   /** Dòng "Hôm nay đã có N phi công báo bay: 1. N.G. Ngọc; 2. …". */
   const todayBox = (list: { count: number; names: string[] }) => (
     <div className="rounded-xl border border-white/15 bg-white/[0.07] px-4 py-3 text-sm leading-relaxed text-white/80">
@@ -865,6 +967,8 @@ export default function BaoBayClient() {
             <div className="mt-5 w-full text-left">{todayBox(todayList)}</div>
           ) : null}
 
+          <div className="mt-5 w-full">{radioBox()}</div>
+
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a
               href={SUPPORT_TEL}
@@ -939,6 +1043,8 @@ export default function BaoBayClient() {
 
       {/* ============ PHIẾU BÁO BAY ============ */}
       <section className="relative bg-[#0B0A08] pb-12 pt-6">
+        {/* Bộ đàm + hotline khẩn cấp ngay trên phiếu: thứ phi công cần lưu trước khi lên bãi */}
+        <div className="mx-auto mb-4 max-w-3xl px-4">{radioBox()}</div>
         <div ref={formRef} className="mx-auto max-w-3xl scroll-mt-20 px-4">
           <div className="overflow-hidden rounded-3xl border-2 border-amber-400/50 bg-[#28344A] shadow-[0_0_70px_rgba(251,191,36,.22),0_24px_60px_rgba(0,0,0,.55)]">
             <div className="border-b border-white/15 bg-gradient-to-r from-amber-400/30 via-amber-400/15 to-transparent px-5 py-5 sm:px-7">
@@ -1019,7 +1125,7 @@ export default function BaoBayClient() {
                 {/* Dự báo của ĐIỂM ĐANG CHỌN, ngay dưới ô chọn: phi công chọn điểm
                     xong là hỏi "mai bay được không" trước khi chọn ngày. */}
                 {spot ? (
-                  <div className="mt-3">
+                  <div ref={forecastCardRef} className="mt-3 scroll-mt-24">
                     <ForecastToggle
                       key={spot}
                       open={forecastSelectedOpen}
@@ -1040,7 +1146,7 @@ export default function BaoBayClient() {
                 }}
               >
                 <SectionTitle step={2} title={b((d) => d.step2)} hint={b((d) => d.step2Hint)} />
-                <div className="rounded-2xl border border-white/20 bg-white/[0.10] p-4">
+                <div className="rounded-2xl border border-white/20 bg-white/[0.10] p-2.5 sm:p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <button
                       type="button"
@@ -1071,7 +1177,7 @@ export default function BaoBayClient() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1 text-center">
+                  <div className="grid grid-cols-7 gap-0.5 text-center sm:gap-1">
                     {T.weekdays.map((w, i) => (
                       <div key={w} className="pb-1 text-xs font-semibold text-white/40">
                         {w}
@@ -1084,6 +1190,7 @@ export default function BaoBayClient() {
                       const selected = dates.includes(iso);
                       const past = iso < todayISO;
                       const isToday = iso === todayISO;
+                      const fc = !past && weatherSlug ? calFc[weatherSlug]?.[iso] : undefined;
                       return (
                         <button
                           key={iso}
@@ -1091,7 +1198,8 @@ export default function BaoBayClient() {
                           disabled={past}
                           onClick={() => toggleDate(iso)}
                           className={[
-                            "aspect-square rounded-lg text-sm font-semibold transition",
+                            // Cao cố định (không vuông) để chứa số ngày + ba ký hiệu dự báo xếp chồng
+                            "flex min-h-[3.1rem] flex-col items-center justify-start rounded-lg pb-0.5 pt-1 text-sm font-semibold leading-none transition",
                             selected
                               ? "bg-amber-400 text-black shadow-[0_0_18px_rgba(251,191,36,.4)]"
                               : past
@@ -1100,11 +1208,47 @@ export default function BaoBayClient() {
                             isToday && !selected ? "ring-1 ring-amber-400/60" : "",
                           ].join(" ")}
                         >
-                          {Number(iso.slice(-2))}
+                          <span>{Number(iso.slice(-2))}</span>
+                          {fc ? (
+                            <>
+                              <span className="mt-0.5 text-[12px] leading-none">{fc.face}</span>
+                              <span className="mt-0.5 flex items-center gap-px text-[9px] leading-none">
+                                {fc.wind !== null ? <WindArrow deg={fc.wind} className="!h-2.5 !w-2.5" /> : null}
+                                <span>{fc.sky}</span>
+                              </span>
+                            </>
+                          ) : null}
                         </button>
                       );
                     })}
                   </div>
+
+                  {/* Chú thích ký hiệu dự báo trong ô lịch + lối mở bảng dự báo đầy đủ */}
+                  {weatherSlug && calFc[weatherSlug] && Object.keys(calFc[weatherSlug]).length ? (
+                    <div className="mt-2 border-t border-white/10 pt-2 text-[11px] leading-relaxed text-white/55">
+                      {/* Mỗi nhóm ký hiệu một dòng — ghép chung một dòng thì bản tiếng Anh
+                          nhỏ bên dưới bị xé lẻ, đọc không ra cặp nào với cặp nào */}
+                      <span className="block">
+                        <Bi t={b((d) => d.calLegendFaces)} />
+                      </span>
+                      <span className="mt-1 block">
+                        <Bi t={b((d) => d.calLegendSky)} />
+                      </span>
+                      <span className="mt-1 flex items-start gap-1">
+                        <WindArrow deg={180} className="!h-3 !w-3 mt-0.5 shrink-0" />
+                        <span>
+                          <Bi t={b((d) => d.calLegendWind)} />
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={openFullForecast}
+                        className="mt-1 font-semibold text-sky-300 underline underline-offset-2"
+                      >
+                        ⛅ <Bi t={b((d) => d.calFullForecast)} inline />
+                      </button>
+                    </div>
+                  ) : null}
 
                   {dates.length ? (
                     <div className="mt-3 border-t border-white/10 pt-3 text-sm text-white/70">
@@ -1573,6 +1717,37 @@ export default function BaoBayClient() {
                   </span>
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ KIẾN THỨC DÙ LƯỢN ============
+          Link công khai qua locale-link để giữ tiền tố /en, /fr… */}
+      <section className="relative bg-[#0B0A08] pb-10">
+        <div className="mx-auto max-w-3xl px-4">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-lg font-bold text-white">
+                📚 <Bi t={b((d) => d.knowTitle)} inline />
+              </h2>
+              <Link href="/knowledge" className="text-sm font-semibold text-amber-300 underline underline-offset-4">
+                <Bi t={b((d) => d.knowMain)} inline /> →
+              </Link>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {BAO_BAY_KNOWLEDGE_LINKS.map((k) => (
+                <Link
+                  key={k.key}
+                  href={k.href}
+                  className="flex items-start gap-2 rounded-xl border border-white/12 bg-white/[0.05] px-3 py-2.5 text-sm font-semibold text-white/90 transition hover:border-amber-400/50 hover:bg-white/[0.1]"
+                >
+                  <span>{k.icon}</span>
+                  <span className="min-w-0">
+                    <Bi t={b((d) => d.knowLinks[k.key])} />
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
