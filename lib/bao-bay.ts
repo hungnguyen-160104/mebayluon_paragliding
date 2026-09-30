@@ -59,18 +59,22 @@ type SpotConfig = {
    * nếu báo bay TRƯỚC 8h00 sáng ngày bay. Hai điểm còn lại không có thoả thuận.
    */
   hnaa: boolean;
-  /** Ảnh nền đầu trang khi chọn điểm bay này. */
-  image: string;
+  /**
+   * Mã điểm trong lib/weather-spots.ts để mở dự báo (SpotWeatherWidget).
+   * Quản Bạ trong sổ thời tiết mang mã "ha-giang" — đúng là bãi Quản Bạ.
+   */
+  weatherSlug: string;
 };
 
 export const BAO_BAY_SPOT_CONFIG: Record<BaoBaySpot, SpotConfig> = {
   "vien-nam": {
     key: "vien-nam",
-    name: "Viên Nam",
+    // Chủ gọi là "Núi Viên Nam" (30/09) — tên hiện ở thư nội bộ và trang quản trị
+    name: "Núi Viên Nam",
     short: "Vien Nam",
     purchaseModes: ["day", "month", "year"],
     hnaa: true,
-    image: "/spots/ha-noi/hero.jpg",
+    weatherSlug: "vien-nam",
   },
   "khau-pha": {
     key: "khau-pha",
@@ -78,7 +82,7 @@ export const BAO_BAY_SPOT_CONFIG: Record<BaoBaySpot, SpotConfig> = {
     short: "Khau Pha",
     purchaseModes: ["day", "month"],
     hnaa: false,
-    image: "/spots/khau-pha/hero.jpg",
+    weatherSlug: "khau-pha",
   },
   "quan-ba": {
     key: "quan-ba",
@@ -86,9 +90,17 @@ export const BAO_BAY_SPOT_CONFIG: Record<BaoBaySpot, SpotConfig> = {
     short: "Quan Ba",
     purchaseModes: ["day", "month"],
     hnaa: false,
-    image: "/spots/ha-giang/quan-ba-hero.jpg",
+    weatherSlug: "ha-giang",
   },
 };
+
+/**
+ * ẢNH NỀN DUY NHẤT của trang (chủ 30/09): một cánh dù đơn đỏ lúc hoàng hôn,
+ * phi công nhỏ xíu, không thấy mặt ai. Ảnh riêng từng điểm trước đây đều là
+ * ảnh bay đôi chụp selfie có mặt khách — không hợp trang của phi công bay đơn,
+ * nên bỏ hẳn chuyện đổi ảnh theo điểm bay.
+ */
+export const BAO_BAY_BG = "/muavang/gallery/1757074008862-552366886798627704-5523668.jpg";
 
 export function isBaoBaySpot(v: unknown): v is BaoBaySpot {
   return typeof v === "string" && (BAO_BAY_SPOTS as string[]).includes(v);
@@ -412,32 +424,83 @@ export function buildNoticeCode(dates: string[], phone: string): string {
 }
 
 /**
- * Nội dung chuyển khoản: mã báo bay đứng đầu để đối chiếu sao kê là tìm ra ngay
- * bản ghi, sau đó tới tên và điểm bay. Ô nội dung chỉ chứa ~99 ký tự nên cắt
- * đuôi phần ngày chứ không cắt mã.
+ * Tên viết gọn để công bố danh sách báo bay: chữ cái đầu của mọi chữ trừ chữ
+ * cuối, mỗi chữ cái một dấu chấm, rồi tên gọi đầy đủ (chủ 30/09):
+ *   "Nguyễn Gia Ngọc" → "N.G. Ngọc",  "Đặng Văn Mỹ" → "Đ.V. Mỹ"
+ *
+ * Khác shortenPilotName của /muavang ("NG.Ngọc") ở dấu chấm sau TỪNG chữ cái
+ * và khoảng trắng trước tên — nên viết riêng, không sửa hàm của /muavang.
  */
-export function buildBaoBayTransferNote(input: {
-  code: string;
-  fullName: string;
-  spot: BaoBaySpot;
+export function shortPilotName(raw: unknown): string {
+  const parts = String(raw ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts.join("");
+  const last = parts[parts.length - 1];
+  const initials = parts
+    .slice(0, -1)
+    .map((w) => `${w.charAt(0).toLocaleUpperCase("vi-VN")}.`)
+    .join("");
+  return `${initials} ${last}`;
+}
+
+/**
+ * NỘI DUNG CHUYỂN KHOẢN — biết được TRƯỚC khi gửi báo bay (chủ 30/09: trả tiền
+ * rồi mới gửi), nên dựng từ dữ liệu đã có trên phiếu chứ không từ mã đã lưu
+ * (mã lưu có thể thêm đuôi -2 khi trùng):
+ *   BB + yyMMdd ngày bay đầu + "." + 4 số cuối SĐT   (hội viên: + mã hội viên,
+ *   để khỏi lộ thêm số điện thoại của họ ra trình duyệt)
+ *   + tên gọn không dấu + điểm bay + ngày / "ve thang" / "ve nam".
+ *
+ * Toàn chữ không dấu và gọn dưới 70 ký tự: nhiều app ngân hàng cắt ô nội
+ * dung sớm hơn mức 99 ký tự của chuẩn VietQR. Dài quá thì rút phần ngày thành
+ * "01/10-15/10 6n" chứ không cắt mã ở đầu.
+ */
+export function buildPaymentNote(input: {
   dates: string[];
+  phone?: string;
+  memberCode?: string;
+  fullName?: string;
+  spot: BaoBaySpot;
   feeMode: FeeMode;
 }): string {
-  const who = String(input.fullName || "").trim() || "phi cong";
+  const dates = [...input.dates].sort();
+  const base = input.memberCode
+    ? `${buildNoticeCode(dates, "").split(".")[0]}.${input.memberCode}`
+    : buildNoticeCode(dates, input.phone || "");
+  const who = toAsciiNote(shortPilotName(input.fullName)).replace(/\s+/g, "");
   const spot = BAO_BAY_SPOT_CONFIG[input.spot].short;
-  const when =
+  const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+
+  let when =
     input.feeMode === "year"
       ? "ve nam"
       : input.feeMode === "month"
         ? "ve thang"
-        : input.dates.map((d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`).join(" ");
+        : dates.map(dm).join(" ");
 
-  // Bỏ dấu ngay ở đây (không đợi lúc dựng QR): phi công chuyển khoản tay thì
-  // gõ theo đúng chữ hiện trên màn hình, có dấu là nhiều app ngân hàng từ chối.
-  const head = toAsciiNote(`${input.code} ${who} ${spot}`);
-  const room = 99 - head.length - 1;
-  const tail = when.length > room ? when.slice(0, Math.max(0, room)) : when;
-  return `${head} ${tail}`.trim();
+  const head = toAsciiNote([base, who, spot].filter(Boolean).join(" "));
+  if (head.length + 1 + when.length > 70 && dates.length > 1) {
+    when = `${dm(dates[0])}-${dm(dates[dates.length - 1])} ${dates.length}n`;
+  }
+  return `${head} ${when}`.trim().slice(0, 90);
+}
+
+/* ------------------------------------------------------------------ *
+ * Quốc tịch
+ * ------------------------------------------------------------------ */
+
+/** Người Việt thì quốc tịch mặc định là chữ này — cũng là giá trị lưu vào báo bay. */
+export const VN_NATIONALITY = "Việt Nam";
+
+/**
+ * Quốc tịch trong các cột phụ của danh sách hội viên (nếu bảng hội có cột đó):
+ * tìm cột tên "Quốc tịch"/"Nationality", không có thì rỗng.
+ */
+export function nationalityFromExtra(extra: unknown): string {
+  if (!extra || typeof extra !== "object") return "";
+  for (const [k, v] of Object.entries(extra as Record<string, unknown>)) {
+    if (/quoc tich|nationality|country/.test(plain(k))) return String(v ?? "").trim();
+  }
+  return "";
 }
 
 /* ------------------------------------------------------------------ *

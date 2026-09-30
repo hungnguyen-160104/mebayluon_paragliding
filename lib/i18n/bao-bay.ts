@@ -6,7 +6,7 @@
  * không bao giờ đụng tới trang kia. Thư nội bộ và trang quản trị vẫn tiếng
  * Việt — chúng lấy nhãn từ lib/bao-bay.ts.
  */
-import type { BaoBayLineKey, BaoBaySpot, FeeMode } from "@/lib/bao-bay";
+import type { BaoBayLineKey, BaoBaySpot, FeeMode, PurchaseMode } from "@/lib/bao-bay";
 
 export type BaoBayLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
@@ -20,6 +20,9 @@ export type BaoBayErrKey =
   | "phone"
   | "phoneBad"
   | "emergencyPhone"
+  | "nationality"
+  | "payConfirm"
+  | "amountChanged"
   | "server"
   | "rate"
   | "network";
@@ -39,8 +42,16 @@ export type BaoBayDict = {
   step1: string;
   spotName: Record<BaoBaySpot, string>;
   spotArea: Record<BaoBaySpot, string>;
-  spotPrices: Record<BaoBaySpot, string>;
-  hnaaBadge: string;
+  /** Giá gọn cho thẻ chọn điểm (3 thẻ một hàng trên điện thoại nên phải thật ngắn). */
+  priceShort: Record<PurchaseMode, string>;
+  /** Nhãn nhỏ trên thẻ Viên Nam. */
+  hnaaTag: string;
+
+  forecastOpen: (site: string) => string;
+  forecastClose: string;
+  forecastLoading: string;
+  forecastSectionTitle: string;
+  forecastSectionHint: string;
 
   step2: string;
   step2Hint: string;
@@ -106,6 +117,25 @@ export type BaoBayDict = {
   submitFoot: string;
   needHelp: string;
 
+  natAsk: string;
+  natVn: string;
+  natForeign: string;
+  natForeignHint: string;
+  fNationalityPh: string;
+  fPassport: string;
+  fPassportPh: string;
+
+  todayTitle: (n: number) => string;
+  todayNone: string;
+
+  payBeforeTitle: string;
+  payBeforeHint: string;
+  payNeedPhone: string;
+  payConfirmLabel: string;
+  payConfirmFirst: string;
+  okPendingPay: string;
+  okPendingPayDesc: string;
+
   err: Record<BaoBayErrKey, string>;
 
   okTitle: string;
@@ -121,7 +151,6 @@ export type BaoBayDict = {
   payAccount: string;
   payOwner: string;
   payNote: string;
-  payLater: string;
   noFeeTitle: string;
   noFeeDesc: string;
   againBtn: string;
@@ -133,7 +162,7 @@ const vi: BaoBayDict = {
   altQr: "Mã QR chuyển khoản",
   heroBadge: "🪂 Dành cho phi công bay đơn",
   heroTitle: "Báo bay",
-  heroPlaces: "Viên Nam · Khau Phạ · Quản Bạ",
+  heroPlaces: "Núi Viên Nam · Khau Phạ · Quản Bạ",
   heroNote: "Báo bay và đóng phí điểm bay trước khi cất cánh",
   heroCta: "Báo bay ngay",
 
@@ -141,18 +170,20 @@ const vi: BaoBayDict = {
   formSubtitle: "Chọn điểm bay, ngày bay, điền thông tin — phí và mã QR hiện ngay bên dưới.",
 
   step1: "Chọn điểm bay",
-  spotName: { "vien-nam": "Viên Nam", "khau-pha": "Khau Phạ", "quan-ba": "Quản Bạ" },
+  spotName: { "vien-nam": "Núi Viên Nam", "khau-pha": "Khau Phạ", "quan-ba": "Quản Bạ" },
   spotArea: {
     "vien-nam": "Gần Hà Nội",
     "khau-pha": "Mù Cang Chải",
     "quan-ba": "Hà Giang",
   },
-  spotPrices: {
-    "vien-nam": "100.000 đ/ngày · 800.000 đ/tháng · 2.500.000 đ/năm",
-    "khau-pha": "100.000 đ/ngày · 800.000 đ/tháng",
-    "quan-ba": "100.000 đ/ngày · 800.000 đ/tháng",
-  },
-  hnaaBadge: "Hội viên HNAA miễn phí",
+  priceShort: { day: "100k/ngày", month: "800k/tháng", year: "2,5tr/năm" },
+  hnaaTag: "HNAA miễn phí",
+
+  forecastOpen: (s) => `Xem dự báo thời tiết ${s}`,
+  forecastClose: "Thu gọn dự báo",
+  forecastLoading: "Đang tải dự báo…",
+  forecastSectionTitle: "Dự báo 3 điểm bay",
+  forecastSectionHint: "Bấm vào từng điểm để mở dự báo đầy đủ.",
 
   step2: "Chọn ngày bay",
   step2Hint: "Bấm vào các ngày bạn sẽ bay, không cần liền nhau.",
@@ -224,6 +255,25 @@ const vi: BaoBayDict = {
   submitFoot: "Phí tính theo giờ máy chủ (giờ Việt Nam) tại thời điểm bấm gửi.",
   needHelp: "Cần hỗ trợ, gọi",
 
+  natAsk: "Bạn là",
+  natVn: "Người Việt Nam",
+  natForeign: "Người nước ngoài",
+  natForeignHint: "Người nước ngoài bắt buộc khai quốc tịch và số hộ chiếu.",
+  fNationalityPh: "Ví dụ: Pháp, Hàn Quốc",
+  fPassport: "Số hộ chiếu",
+  fPassportPh: "Số hộ chiếu",
+
+  todayTitle: (n) => `Hôm nay đã có ${n} phi công báo bay:`,
+  todayNone: "Chưa có ai báo bay hôm nay.",
+
+  payBeforeTitle: "Thanh toán trước khi gửi",
+  payBeforeHint: "Quét mã QR để chuyển khoản, rồi tích ô xác nhận bên dưới mới gửi được báo bay.",
+  payNeedPhone: "Nhập số điện thoại ở bước 3 để hiện mã QR thanh toán.",
+  payConfirmLabel: "Tôi đã thanh toán phí báo bay",
+  payConfirmFirst: "Hãy thanh toán và tích ô “Tôi đã thanh toán phí báo bay” để gửi.",
+  okPendingPay: "Đã nhận báo bay, chờ xác nhận thanh toán",
+  okPendingPayDesc: "Ban điều phối sẽ đối chiếu chuyển khoản và xác nhận.",
+
   err: {
     spot: "Chưa chọn điểm bay",
     dates: "Chưa chọn ngày bay",
@@ -234,6 +284,9 @@ const vi: BaoBayDict = {
     phone: "Chưa nhập số điện thoại",
     phoneBad: "Số điện thoại chưa đúng",
     emergencyPhone: "Chưa nhập số điện thoại khẩn cấp",
+    nationality: "Người nước ngoài phải khai quốc tịch",
+    payConfirm: "Vui lòng thanh toán và tích ô xác nhận trước khi gửi",
+    amountChanged: "Phí báo bay vừa thay đổi — vui lòng thanh toán theo mã QR mới rồi tích lại ô xác nhận",
     server: "Không gửi được báo bay, vui lòng thử lại",
     rate: "Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút",
     network: "Mất kết nối mạng, vui lòng thử lại",
@@ -258,7 +311,6 @@ const vi: BaoBayDict = {
   payAccount: "Số tài khoản",
   payOwner: "Chủ tài khoản",
   payNote: "Nội dung",
-  payLater: "Chưa chuyển được ngay thì có thể trả tại bãi — báo bay vẫn được ghi nhận.",
   noFeeTitle: "Không phải đóng phí",
   noFeeDesc: "Báo bay của bạn đã được ghi nhận.",
   againBtn: "Báo bay khác",
@@ -270,7 +322,7 @@ const en: BaoBayDict = {
   altQr: "Bank transfer QR code",
   heroBadge: "🪂 For solo pilots",
   heroTitle: "Flight notice",
-  heroPlaces: "Vien Nam · Khau Pha · Quan Ba",
+  heroPlaces: "Vien Nam Mountain · Khau Pha · Quan Ba",
   heroNote: "Submit your flight notice and pay the site fee before take-off",
   heroCta: "Submit a notice",
 
@@ -278,18 +330,20 @@ const en: BaoBayDict = {
   formSubtitle: "Choose a site and dates, fill in your details — the fee and QR code appear right below.",
 
   step1: "Choose a flying site",
-  spotName: { "vien-nam": "Vien Nam", "khau-pha": "Khau Pha", "quan-ba": "Quan Ba" },
+  spotName: { "vien-nam": "Vien Nam Mountain", "khau-pha": "Khau Pha", "quan-ba": "Quan Ba" },
   spotArea: {
     "vien-nam": "Near Hanoi",
     "khau-pha": "Mu Cang Chai",
     "quan-ba": "Ha Giang",
   },
-  spotPrices: {
-    "vien-nam": "100,000 đ/day · 800,000 đ/month · 2,500,000 đ/year",
-    "khau-pha": "100,000 đ/day · 800,000 đ/month",
-    "quan-ba": "100,000 đ/day · 800,000 đ/month",
-  },
-  hnaaBadge: "Free for HNAA members",
+  priceShort: { day: "100k/day", month: "800k/month", year: "2.5M/year" },
+  hnaaTag: "HNAA free",
+
+  forecastOpen: (s) => `Weather forecast for ${s}`,
+  forecastClose: "Hide forecast",
+  forecastLoading: "Loading forecast…",
+  forecastSectionTitle: "Forecast for the 3 sites",
+  forecastSectionHint: "Tap a site to open its full forecast.",
 
   step2: "Choose your flying dates",
   step2Hint: "Tap every day you will fly — they don't need to be consecutive.",
@@ -361,6 +415,25 @@ const en: BaoBayDict = {
   submitFoot: "The fee is calculated with the server clock (Vietnam time) at the moment you submit.",
   needHelp: "Need help? Call",
 
+  natAsk: "You are",
+  natVn: "Vietnamese",
+  natForeign: "Foreigner",
+  natForeignHint: "Foreign pilots must declare their nationality and passport number.",
+  fNationalityPh: "e.g. France, Korea",
+  fPassport: "Passport number",
+  fPassportPh: "Passport number",
+
+  todayTitle: (n) => `${n} pilot${n === 1 ? "" : "s"} filed a notice today:`,
+  todayNone: "No one has filed a notice today yet.",
+
+  payBeforeTitle: "Pay before submitting",
+  payBeforeHint: "Scan the QR code to transfer, then tick the box below to submit your notice.",
+  payNeedPhone: "Enter your phone number in step 3 to show the payment QR code.",
+  payConfirmLabel: "I have paid the notice fee",
+  payConfirmFirst: "Please pay and tick “I have paid the notice fee” to submit.",
+  okPendingPay: "Notice received, awaiting payment confirmation",
+  okPendingPayDesc: "The coordinators will check your transfer and confirm.",
+
   err: {
     spot: "Please choose a flying site",
     dates: "Please choose your flying dates",
@@ -371,6 +444,9 @@ const en: BaoBayDict = {
     phone: "Please enter your phone number",
     phoneBad: "This phone number doesn't look right",
     emergencyPhone: "Please enter an emergency phone number",
+    nationality: "Foreign pilots must declare their nationality",
+    payConfirm: "Please pay and tick the confirmation box before submitting",
+    amountChanged: "The fee has just changed — please pay with the new QR code and tick the box again",
     server: "Could not submit the notice, please try again",
     rate: "Too many attempts, please try again in a few minutes",
     network: "Network error, please try again",
@@ -395,7 +471,6 @@ const en: BaoBayDict = {
   payAccount: "Account number",
   payOwner: "Account holder",
   payNote: "Message",
-  payLater: "Can't transfer now? You can pay at the site — your notice is already recorded.",
   noFeeTitle: "No fee to pay",
   noFeeDesc: "Your flight notice has been recorded.",
   againBtn: "Submit another notice",
@@ -421,12 +496,14 @@ const fr: BaoBayDict = {
     "khau-pha": "Mu Cang Chai",
     "quan-ba": "Ha Giang",
   },
-  spotPrices: {
-    "vien-nam": "100 000 đ/jour · 800 000 đ/mois · 2 500 000 đ/an",
-    "khau-pha": "100 000 đ/jour · 800 000 đ/mois",
-    "quan-ba": "100 000 đ/jour · 800 000 đ/mois",
-  },
-  hnaaBadge: "Gratuit pour les membres HNAA",
+  priceShort: { day: "100k/jour", month: "800k/mois", year: "2,5M/an" },
+  hnaaTag: "HNAA gratuit",
+
+  forecastOpen: (s) => `Prévisions météo — ${s}`,
+  forecastClose: "Masquer les prévisions",
+  forecastLoading: "Chargement des prévisions…",
+  forecastSectionTitle: "Prévisions des 3 sites",
+  forecastSectionHint: "Touchez un site pour ouvrir ses prévisions complètes.",
 
   step2: "Choisissez vos dates de vol",
   step2Hint: "Touchez chaque jour où vous volerez — pas besoin de jours consécutifs.",
@@ -498,6 +575,25 @@ const fr: BaoBayDict = {
   submitFoot: "Le tarif est calculé selon l'horloge du serveur (heure du Vietnam) au moment de l'envoi.",
   needHelp: "Besoin d'aide ? Appelez le",
 
+  natAsk: "Vous êtes",
+  natVn: "Vietnamien",
+  natForeign: "Étranger",
+  natForeignHint: "Les pilotes étrangers doivent indiquer leur nationalité et leur numéro de passeport.",
+  fNationalityPh: "ex. France, Corée",
+  fPassport: "Numéro de passeport",
+  fPassportPh: "Numéro de passeport",
+
+  todayTitle: (n) => `${n} pilote${n > 1 ? "s ont" : " a"} déclaré un vol aujourd'hui :`,
+  todayNone: "Personne n'a encore déclaré de vol aujourd'hui.",
+
+  payBeforeTitle: "Payer avant d'envoyer",
+  payBeforeHint: "Scannez le QR code pour virer, puis cochez la case ci-dessous pour envoyer la déclaration.",
+  payNeedPhone: "Saisissez votre téléphone à l'étape 3 pour afficher le QR code de paiement.",
+  payConfirmLabel: "J'ai payé la taxe de déclaration",
+  payConfirmFirst: "Payez puis cochez « J'ai payé la taxe de déclaration » pour envoyer.",
+  okPendingPay: "Déclaration reçue, paiement en attente de confirmation",
+  okPendingPayDesc: "Les coordinateurs vérifieront votre virement et confirmeront.",
+
   err: {
     spot: "Veuillez choisir un site",
     dates: "Veuillez choisir vos dates de vol",
@@ -508,6 +604,9 @@ const fr: BaoBayDict = {
     phone: "Veuillez saisir votre numéro de téléphone",
     phoneBad: "Ce numéro de téléphone semble incorrect",
     emergencyPhone: "Veuillez saisir un téléphone d'urgence",
+    nationality: "Les pilotes étrangers doivent indiquer leur nationalité",
+    payConfirm: "Veuillez payer et cocher la case de confirmation avant d'envoyer",
+    amountChanged: "Le tarif vient de changer — payez avec le nouveau QR code puis recochez la case",
     server: "Impossible d'envoyer la déclaration, veuillez réessayer",
     rate: "Trop de tentatives, réessayez dans quelques minutes",
     network: "Erreur réseau, veuillez réessayer",
@@ -532,7 +631,6 @@ const fr: BaoBayDict = {
   payAccount: "N° de compte",
   payOwner: "Titulaire",
   payNote: "Message",
-  payLater: "Impossible de virer maintenant ? Vous pouvez payer sur place — votre déclaration est déjà enregistrée.",
   noFeeTitle: "Rien à payer",
   noFeeDesc: "Votre déclaration de vol est enregistrée.",
   againBtn: "Nouvelle déclaration",
@@ -558,12 +656,14 @@ const ru: BaoBayDict = {
     "khau-pha": "Мукангчай",
     "quan-ba": "Хазянг",
   },
-  spotPrices: {
-    "vien-nam": "100 000 ₫/день · 800 000 ₫/месяц · 2 500 000 ₫/год",
-    "khau-pha": "100 000 ₫/день · 800 000 ₫/месяц",
-    "quan-ba": "100 000 ₫/день · 800 000 ₫/месяц",
-  },
-  hnaaBadge: "Бесплатно для членов HNAA",
+  priceShort: { day: "100k/день", month: "800k/мес", year: "2,5 млн/год" },
+  hnaaTag: "HNAA бесплатно",
+
+  forecastOpen: (s) => `Прогноз погоды: ${s}`,
+  forecastClose: "Скрыть прогноз",
+  forecastLoading: "Загрузка прогноза…",
+  forecastSectionTitle: "Прогноз для 3 площадок",
+  forecastSectionHint: "Нажмите на площадку, чтобы открыть полный прогноз.",
 
   step2: "Выберите даты полётов",
   step2Hint: "Отметьте все дни, когда будете летать, — не обязательно подряд.",
@@ -635,6 +735,25 @@ const ru: BaoBayDict = {
   submitFoot: "Сумма рассчитывается по времени сервера (время Вьетнама) в момент отправки.",
   needHelp: "Нужна помощь? Звоните",
 
+  natAsk: "Вы",
+  natVn: "Гражданин Вьетнама",
+  natForeign: "Иностранец",
+  natForeignHint: "Иностранные пилоты обязаны указать гражданство и номер паспорта.",
+  fNationalityPh: "напр. Россия, Корея",
+  fPassport: "Номер паспорта",
+  fPassportPh: "Номер паспорта",
+
+  todayTitle: (n) => `Сегодня заявку подали пилотов: ${n} —`,
+  todayNone: "Сегодня ещё никто не подал заявку.",
+
+  payBeforeTitle: "Оплата до отправки",
+  payBeforeHint: "Отсканируйте QR-код и переведите оплату, затем отметьте поле ниже, чтобы отправить заявку.",
+  payNeedPhone: "Введите телефон на шаге 3, чтобы показать QR-код для оплаты.",
+  payConfirmLabel: "Я оплатил(а) сбор за заявку",
+  payConfirmFirst: "Оплатите и отметьте «Я оплатил(а) сбор за заявку», чтобы отправить.",
+  okPendingPay: "Заявка принята, ожидается подтверждение оплаты",
+  okPendingPayDesc: "Координаторы проверят перевод и подтвердят.",
+
   err: {
     spot: "Выберите площадку",
     dates: "Выберите даты полётов",
@@ -645,6 +764,9 @@ const ru: BaoBayDict = {
     phone: "Введите номер телефона",
     phoneBad: "Номер телефона указан неверно",
     emergencyPhone: "Введите экстренный телефон",
+    nationality: "Иностранные пилоты обязаны указать гражданство",
+    payConfirm: "Оплатите и отметьте подтверждение перед отправкой",
+    amountChanged: "Сумма изменилась — оплатите по новому QR-коду и снова отметьте поле",
     server: "Не удалось отправить заявку, попробуйте ещё раз",
     rate: "Слишком много попыток, попробуйте через несколько минут",
     network: "Ошибка сети, попробуйте ещё раз",
@@ -669,7 +791,6 @@ const ru: BaoBayDict = {
   payAccount: "Номер счёта",
   payOwner: "Владелец счёта",
   payNote: "Назначение",
-  payLater: "Не получается перевести сейчас? Можно оплатить на площадке — заявка уже записана.",
   noFeeTitle: "Оплата не требуется",
   noFeeDesc: "Ваша заявка на полёт записана.",
   againBtn: "Ещё одна заявка",
@@ -695,12 +816,14 @@ const zh: BaoBayDict = {
     "khau-pha": "木江界",
     "quan-ba": "河江",
   },
-  spotPrices: {
-    "vien-nam": "100,000 越南盾/天 · 800,000 越南盾/月 · 2,500,000 越南盾/年",
-    "khau-pha": "100,000 越南盾/天 · 800,000 越南盾/月",
-    "quan-ba": "100,000 越南盾/天 · 800,000 越南盾/月",
-  },
-  hnaaBadge: "HNAA 会员免费",
+  priceShort: { day: "10万/天", month: "80万/月", year: "250万/年" },
+  hnaaTag: "HNAA 免费",
+
+  forecastOpen: (s) => `${s} 天气预报`,
+  forecastClose: "收起预报",
+  forecastLoading: "正在加载预报…",
+  forecastSectionTitle: "3 个场地的天气预报",
+  forecastSectionHint: "点击场地即可展开完整预报。",
 
   step2: "选择飞行日期",
   step2Hint: "点选所有要飞的日期，无需连续。",
@@ -772,6 +895,25 @@ const zh: BaoBayDict = {
   submitFoot: "费用按提交时服务器时间（越南时间）计算。",
   needHelp: "需要帮助请致电",
 
+  natAsk: "您是",
+  natVn: "越南公民",
+  natForeign: "外国人",
+  natForeignHint: "外国飞行员必须填写国籍和护照号码。",
+  fNationalityPh: "例如：中国、韩国",
+  fPassport: "护照号码",
+  fPassportPh: "护照号码",
+
+  todayTitle: (n) => `今天已有 ${n} 位飞行员报备：`,
+  todayNone: "今天还没有人报备。",
+
+  payBeforeTitle: "先付款再提交",
+  payBeforeHint: "扫描二维码转账，然后勾选下方确认框即可提交报备。",
+  payNeedPhone: "请在第 3 步填写电话号码以显示付款二维码。",
+  payConfirmLabel: "我已支付报备费",
+  payConfirmFirst: "请先付款并勾选“我已支付报备费”再提交。",
+  okPendingPay: "已收到报备，等待付款确认",
+  okPendingPayDesc: "调度人员将核对转账并确认。",
+
   err: {
     spot: "请选择飞行场地",
     dates: "请选择飞行日期",
@@ -782,6 +924,9 @@ const zh: BaoBayDict = {
     phone: "请填写电话号码",
     phoneBad: "电话号码格式不正确",
     emergencyPhone: "请填写紧急联系电话",
+    nationality: "外国飞行员必须填写国籍",
+    payConfirm: "提交前请先付款并勾选确认框",
+    amountChanged: "费用刚刚发生变化——请按新的二维码付款并重新勾选确认框",
     server: "报备提交失败，请重试",
     rate: "操作过于频繁，请几分钟后再试",
     network: "网络错误，请重试",
@@ -806,7 +951,6 @@ const zh: BaoBayDict = {
   payAccount: "账号",
   payOwner: "户名",
   payNote: "附言",
-  payLater: "暂时无法转账？可在场地现场支付——报备已记录。",
   noFeeTitle: "无需缴费",
   noFeeDesc: "您的飞行报备已记录。",
   againBtn: "再报备一次",
@@ -832,12 +976,14 @@ const hi: BaoBayDict = {
     "khau-pha": "मु कांग चाई",
     "quan-ba": "हा जियांग",
   },
-  spotPrices: {
-    "vien-nam": "100,000 đ/दिन · 800,000 đ/माह · 2,500,000 đ/वर्ष",
-    "khau-pha": "100,000 đ/दिन · 800,000 đ/माह",
-    "quan-ba": "100,000 đ/दिन · 800,000 đ/माह",
-  },
-  hnaaBadge: "HNAA सदस्यों के लिए निःशुल्क",
+  priceShort: { day: "100k/दिन", month: "800k/माह", year: "2.5M/वर्ष" },
+  hnaaTag: "HNAA निःशुल्क",
+
+  forecastOpen: (s) => `${s} का मौसम पूर्वानुमान`,
+  forecastClose: "पूर्वानुमान छिपाएँ",
+  forecastLoading: "पूर्वानुमान लोड हो रहा है…",
+  forecastSectionTitle: "3 साइटों का पूर्वानुमान",
+  forecastSectionHint: "पूरा पूर्वानुमान खोलने के लिए साइट पर टैप करें।",
 
   step2: "उड़ान की तारीखें चुनें",
   step2Hint: "जिन दिनों उड़ेंगे उन पर टैप करें — लगातार होना ज़रूरी नहीं।",
@@ -909,6 +1055,25 @@ const hi: BaoBayDict = {
   submitFoot: "शुल्क भेजने के समय सर्वर घड़ी (वियतनाम समय) के अनुसार गिना जाता है।",
   needHelp: "मदद चाहिए? कॉल करें",
 
+  natAsk: "आप हैं",
+  natVn: "वियतनामी",
+  natForeign: "विदेशी",
+  natForeignHint: "विदेशी पायलटों को राष्ट्रीयता और पासपोर्ट नंबर बताना अनिवार्य है।",
+  fNationalityPh: "जैसे भारत, कोरिया",
+  fPassport: "पासपोर्ट नंबर",
+  fPassportPh: "पासपोर्ट नंबर",
+
+  todayTitle: (n) => `आज ${n} पायलटों ने उड़ान सूचना दी:`,
+  todayNone: "आज अभी तक किसी ने सूचना नहीं दी।",
+
+  payBeforeTitle: "भेजने से पहले भुगतान करें",
+  payBeforeHint: "QR कोड स्कैन करके ट्रांसफ़र करें, फिर सूचना भेजने के लिए नीचे का बॉक्स टिक करें।",
+  payNeedPhone: "भुगतान QR कोड देखने के लिए चरण 3 में फ़ोन नंबर दर्ज करें।",
+  payConfirmLabel: "मैंने सूचना शुल्क चुका दिया है",
+  payConfirmFirst: "भेजने के लिए भुगतान करें और “मैंने सूचना शुल्क चुका दिया है” टिक करें।",
+  okPendingPay: "सूचना मिल गई, भुगतान की पुष्टि बाकी है",
+  okPendingPayDesc: "समन्वयक आपका ट्रांसफ़र जाँचकर पुष्टि करेंगे।",
+
   err: {
     spot: "कृपया साइट चुनें",
     dates: "कृपया उड़ान की तारीखें चुनें",
@@ -919,6 +1084,9 @@ const hi: BaoBayDict = {
     phone: "कृपया फ़ोन नंबर दर्ज करें",
     phoneBad: "फ़ोन नंबर सही नहीं लगता",
     emergencyPhone: "कृपया आपातकालीन फ़ोन दर्ज करें",
+    nationality: "विदेशी पायलटों को राष्ट्रीयता बतानी होगी",
+    payConfirm: "भेजने से पहले भुगतान करें और पुष्टि बॉक्स टिक करें",
+    amountChanged: "शुल्क अभी बदल गया है — नए QR कोड से भुगतान करें और बॉक्स फिर से टिक करें",
     server: "सूचना नहीं भेजी जा सकी, कृपया फिर कोशिश करें",
     rate: "बहुत अधिक प्रयास, कुछ मिनट बाद फिर कोशिश करें",
     network: "नेटवर्क त्रुटि, कृपया फिर कोशिश करें",
@@ -943,7 +1111,6 @@ const hi: BaoBayDict = {
   payAccount: "खाता संख्या",
   payOwner: "खाताधारक",
   payNote: "संदेश",
-  payLater: "अभी ट्रांसफ़र नहीं कर पा रहे? साइट पर भुगतान कर सकते हैं — आपकी सूचना दर्ज हो चुकी है।",
   noFeeTitle: "कोई शुल्क नहीं",
   noFeeDesc: "आपकी उड़ान सूचना दर्ज हो गई है।",
   againBtn: "एक और सूचना दें",
@@ -956,4 +1123,38 @@ const DICTS: Record<BaoBayLang, BaoBayDict> = { vi, en, fr, ru, zh, hi };
 export function baoBayDict(lang: unknown): BaoBayDict {
   const code = String(lang ?? "vi").slice(0, 2).toLowerCase() as BaoBayLang;
   return DICTS[code] ?? vi;
+}
+
+/* ------------------------------------------------------------------ *
+ * SONG NGỮ trên bản tiếng Việt
+ * ------------------------------------------------------------------ */
+
+/** Một câu hiện ra: chữ chính + (bản tiếng Anh đi kèm khi đang xem tiếng Việt). */
+export type BiText = { main: string; sub?: string };
+
+/**
+ * Bản tiếng Việt hiện KÈM tiếng Anh (chủ 30/09): Viên Nam có nhiều phi công
+ * nước ngoài ở Hà Nội mở link tiếng Việt do bạn bay gửi qua Zalo, không biết
+ * đổi ngôn ngữ. Tiếng Việt vẫn là chữ chính, tiếng Anh nhỏ và nhạt bên dưới.
+ * Năm ngôn ngữ còn lại giữ một thứ tiếng như cũ.
+ *
+ * Không chép thêm bảng chữ nào: `pick` là hàm lấy đúng một ô trong bảng, gọi
+ * trên cả bảng vi lẫn en — thêm câu mới vào bảng là tự có đủ hai thứ tiếng.
+ */
+export function baoBayBilingual(lang: unknown) {
+  const T = baoBayDict(lang);
+  const isVi = String(lang ?? "vi").slice(0, 2).toLowerCase() === "vi" || T === vi;
+  const E = isVi ? en : null;
+
+  /** Cho chỗ vẽ được hai tầng (tiêu đề, nhãn, nút, dòng phí…). */
+  const b = (pick: (d: BaoBayDict) => string): BiText => ({
+    main: pick(T),
+    ...(E ? { sub: pick(E) } : {}),
+  });
+
+  /** Cho chỗ chỉ nhận một chuỗi (placeholder, thông báo lỗi, alt ảnh). */
+  const s = (pick: (d: BaoBayDict) => string, sep = " · "): string =>
+    E ? `${pick(T)}${sep}${pick(E)}` : pick(T);
+
+  return { T, isVi, b, s };
 }

@@ -42,6 +42,10 @@ type Notice = {
   note?: string;
   transferNote?: string;
   submittedAt: string;
+  nationality?: string;
+  foreigner?: boolean;
+  /** Phi công tự tích "đã thanh toán" trước khi gửi — lời khai, chưa đối chiếu. */
+  paidClaimedAt?: string;
   paid: boolean;
   paidAt?: string;
 };
@@ -343,7 +347,18 @@ function NoticesTab() {
                     <div className="text-xs text-slate-500">{n.dates.map(formatVnDate).join(", ")}</div>
                   </td>
                   <td className="px-3 py-2">
-                    <div className="font-semibold text-slate-800">{n.fullName}</div>
+                    <div className="font-semibold text-slate-800">
+                      {n.fullName}
+                      {n.nationality ? (
+                        <span
+                          className={`ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                            n.foreigner ? "bg-sky-100 text-sky-800" : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {n.nationality}
+                        </span>
+                      ) : null}
+                    </div>
                     <div className="text-xs text-slate-500">
                       <a href={`tel:${n.phone}`} className="hover:underline">
                         {n.phone}
@@ -369,6 +384,13 @@ function NoticesTab() {
                   </td>
                   <td className="px-3 py-2 text-right font-semibold text-slate-800">{n.amount ? formatVnd(n.amount) : "0"}</td>
                   <td className="px-3 py-2">
+                    {/* HAI dấu tách bạch: khách tự báo đã CK (lời khai lúc gửi) và admin
+                        đã đối chiếu sao kê bấm "đã thu". */}
+                    {n.amount > 0 ? (
+                      <div className={`mb-1 text-[11px] font-semibold ${n.paidClaimedAt ? "text-amber-700" : "text-slate-400"}`}>
+                        {n.paidClaimedAt ? "Khách báo đã CK" : "Khách chưa báo CK"}
+                      </div>
+                    ) : null}
                     {n.amount > 0 ? (
                       <button
                         type="button"

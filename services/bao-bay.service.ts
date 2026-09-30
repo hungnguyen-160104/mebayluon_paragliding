@@ -11,15 +11,18 @@
 import { connectDB } from "@/lib/mongodb";
 import {
   BAO_BAY_SPOT_CONFIG,
-  buildBaoBayTransferNote,
   buildNoticeCode,
+  buildPaymentNote,
   computeBaoBayFee,
   isBaoBaySpot,
   maskTail,
+  nationalityFromExtra,
   normalizeIdNumber,
   normalizeMemberCode,
   normalizePhone,
+  shortPilotName,
   vnParts,
+  VN_NATIONALITY,
   type BaoBayFee,
   type BaoBaySpot,
   type ExistingPass,
@@ -41,6 +44,9 @@ export type BaoBayErrorCode =
   | "id"
   | "phone"
   | "emergencyPhone"
+  | "nationality"
+  | "payConfirm"
+  | "amountChanged"
   | "server";
 
 export class BaoBayError extends Error {
@@ -48,6 +54,8 @@ export class BaoBayError extends Error {
     public code: BaoBayErrorCode,
     message: string,
     public status = 400,
+    /** Dữ liệu kèm lỗi để trang tự sửa (vd. số tiền mới khi phí vừa đổi). */
+    public data?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -80,6 +88,8 @@ export function publicMemberView(m: MemberDoc) {
     needId: !normalizeIdNumber(m.idNumber),
     needPhone: normalizePhone(m.phone).length < 8,
     needEmergencyPhone: normalizePhone(m.emergencyPhone).length < 8,
+    /** Quốc tịch nếu bảng hội có cột đó — để điền sẵn, không phải dữ liệu nhạy cảm. */
+    nationality: nationalityFromExtra(m.extra),
   };
 }
 
@@ -142,6 +152,12 @@ export type BaoBayInput = {
   wingClass?: unknown;
   licence?: unknown;
   note?: unknown;
+  /** Chọn "Người nước ngoài" — bắt buộc khai quốc tịch. */
+  foreigner?: unknown;
+  /** Phi công đã tích "Tôi đã thanh toán phí báo bay". */
+  paidConfirmed?: unknown;
+  /** Số tiền trang đang hiện (và phi công đã chuyển) — máy chủ so với số tính lại. */
+  expectedAmount?: unknown;
 };
 
 function parseSpot(v: unknown): BaoBaySpot {
@@ -218,6 +234,12 @@ async function resolvePilot(input: BaoBayInput): Promise<ResolvedPilot> {
 
 export type BaoBayQuote = {
   fee: BaoBayFee;
+  /**
+   * Nội dung chuyển khoản — biết TRƯỚC khi gửi để phi công trả tiền rồi mới
+   * gửi (chủ 30/09). Rỗng khi chưa đủ thông tin (người thường chưa nhập SĐT)
+   * hoặc không phải trả đồng nào.
+   */
+  paymentNote: string;
   member: ReturnType<typeof publicMemberView> | null;
   /** Hôm nay và phút hiện tại theo giờ VN của máy chủ — trang dùng để nhắc mốc 8h. */
   serverToday: string;
@@ -253,7 +275,19 @@ export async function quoteBaoBay(input: BaoBayInput, now: Date): Promise<BaoBay
   });
 
   const { date, minutes } = vnParts(now);
+  const phoneReady = Boolean(pilot.member) || normalizePhone(pilot.phone).length >= 8;
   return {
+    paymentNote:
+      fee.total > 0 && phoneReady
+        ? buildPaymentNote({
+            dates,
+            phone: pilot.phone,
+            memberCode: pilot.member?.code,
+            fullName: pilot.fullName,
+            spot,
+            feeMode: fee.feeMode,
+          })
+        : "",
     // Báo giá ai gõ số nào cũng gọi được — chỉ nói "còn hạn tới", không lộ mã báo bay của người ta
     fee: fee.coveredByPass ? { ...fee, coveredByPass: { ...fee.coveredByPass, noticeCode: undefined } } : fee,
     member: pilot.member ? publicMemberView(pilot.member) : null,
@@ -294,6 +328,23 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
     throw new BaoBayError("emergencyPhone", "Số điện thoại khẩn cấp chưa đúng");
   }
 
+  /**
+   * QUỐC TỊCH: người nước ngoài BẮT BUỘC khai (chủ 30/09) — ghi "Việt Nam" hay
+   * để trống đều không nhận. Hội viên không gửi lựa chọn thì lấy theo cột quốc
+   * tịch trong bảng hội (nếu có).
+   */
+  const foreigner = input.foreigner === true || input.foreigner === "true";
+  let nationality = clean(input.nationality, 60);
+  if (foreigner) {
+    if (!nationality || /^vi[eệ]t ?nam$/i.test(nationality)) {
+      throw new BaoBayError("nationality", "Người nước ngoài phải khai quốc tịch");
+    }
+  } else {
+    nationality = pilot.member && input.foreigner === undefined
+      ? nationalityFromExtra(pilot.member.extra) || VN_NATIONALITY
+      : VN_NATIONALITY;
+  }
+
   const idNorm = normalizeIdNumber(pilot.idNumber);
   const phoneNorm = normalizePhone(pilot.phone);
 
@@ -309,6 +360,40 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
     now,
   });
 
+  /**
+   * TRẢ TIỀN RỒI MỚI GỬI (chủ 30/09). Tổng 0 đ thì không hỏi gì. Có tiền thì:
+   *  - số máy chủ tính lại phải KHỚP số trang đang hiện (phi công đã chuyển theo
+   *    số đó) — lệch (vd. vừa qua 8h00) thì báo số mới cho trang vẽ lại QR,
+   *    KHÔNG lặng lẽ lưu một số khác với số đã chuyển;
+   *  - phải có tích "đã thanh toán" — lưu thành lời khai paidClaimedAt, còn
+   *    `paid` vẫn chờ admin đối chiếu sao kê.
+   */
+  const paymentNote =
+    fee.total > 0
+      ? buildPaymentNote({
+          dates,
+          phone: pilot.phone,
+          memberCode: pilot.member?.code,
+          fullName: pilot.fullName,
+          spot,
+          feeMode: fee.feeMode,
+        })
+      : "";
+  if (fee.total > 0) {
+    const expected = Number(input.expectedAmount);
+    if (!Number.isFinite(expected) || expected !== fee.total) {
+      throw new BaoBayError(
+        "amountChanged",
+        `Phí báo bay đã đổi thành ${fee.total.toLocaleString("vi-VN")} đ — vui lòng thanh toán theo mã QR mới`,
+        409,
+        { amount: fee.total, fee, paymentNote },
+      );
+    }
+    if (input.paidConfirmed !== true) {
+      throw new BaoBayError("payConfirm", "Vui lòng thanh toán và tích ô xác nhận trước khi gửi");
+    }
+  }
+
   const wingRaw = clean(input.wingClass, 10) as WingClass;
   const baseCode = buildNoticeCode(dates, pilot.phone);
 
@@ -319,7 +404,8 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
     idNumber: pilot.idNumber,
     phone: pilot.phone,
     emergencyPhone: pilot.emergencyPhone,
-    nationality: clean(input.nationality, 60) || "Việt Nam",
+    nationality,
+    foreigner,
     wingClass: WING_CLASSES.includes(wingRaw) ? wingRaw : undefined,
     licence: clean(input.licence, 60) || undefined,
     idNorm,
@@ -334,26 +420,40 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
     passValidUntil: fee.passValidUntil,
     coveredByNotice: fee.coveredByPass?.noticeCode,
     submittedAt: now,
+    paidClaimedAt: fee.total > 0 ? now : undefined,
+    transferNote: paymentNote || undefined,
     // Không mất đồng nào thì coi như đã xong phần tiền — admin khỏi phải bấm
     paid: fee.total === 0,
     paidAt: fee.total === 0 ? now : undefined,
     note: clean(input.note, 500) || undefined,
   });
 
-  // Nội dung chuyển khoản cần mã THẬT (có thể đã thêm hậu tố né trùng)
-  const transferNote = fee.total > 0
-    ? buildBaoBayTransferNote({
-        code: saved.noticeCode,
-        fullName: pilot.fullName,
-        spot,
-        dates,
-        feeMode: fee.feeMode,
-      })
-    : "";
+  return { saved, fee, transferNote: paymentNote, member: pilot.member };
+}
 
-  if (transferNote) {
-    await FlightNotice.updateOne({ _id: saved._id }, { transferNote });
+/**
+ * DANH SÁCH BÁO BAY HÔM NAY của một điểm — cho trang công khai (chủ 30/09).
+ *
+ * CHỈ trả số người và tên viết gọn ("N.G. Ngọc"): không SĐT, CCCD, mã hội
+ * viên, tiền hay ngày nào khác. Một người báo hai lần trong ngày chỉ tính một.
+ */
+export async function listTodayPilots(spotRaw: unknown, now: Date): Promise<{ count: number; names: string[] }> {
+  const spot = parseSpot(spotRaw);
+  const today = vnParts(now).date;
+  await connectDB();
+  const docs = await FlightNotice.find({ spot, dates: today })
+    .sort({ submittedAt: 1 })
+    .select("fullName idNorm phoneNorm")
+    .limit(500)
+    .lean();
+
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const d of docs) {
+    const key = d.idNorm || d.phoneNorm || d.fullName;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(shortPilotName(d.fullName));
   }
-
-  return { saved, fee, transferNote, member: pilot.member };
+  return { count: names.length, names };
 }

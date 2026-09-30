@@ -16,11 +16,11 @@ import BaoBayClient from "./BaoBayClient";
  */
 const META: Record<string, { title: string; description: string }> = {
   vi: {
-    title: "Báo bay cho phi công — Viên Nam · Khau Phạ · Quản Bạ | Mebayluon",
-    description: "Báo bay và đóng phí điểm bay cho phi công bay đơn tại Viên Nam, Khau Phạ và Quản Bạ.",
+    title: "Báo bay cho phi công — Núi Viên Nam · Khau Phạ · Quản Bạ | Mebayluon",
+    description: "Báo bay và đóng phí điểm bay cho phi công bay đơn tại Núi Viên Nam, Khau Phạ và Quản Bạ.",
   },
   en: {
-    title: "Pilot flight notice — Vien Nam · Khau Pha · Quan Ba | Mebayluon",
+    title: "Pilot flight notice — Vien Nam Mountain · Khau Pha · Quan Ba | Mebayluon",
     description: "Flight notice and site fee for solo pilots at Vien Nam, Khau Pha and Quan Ba.",
   },
   fr: {

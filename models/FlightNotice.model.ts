@@ -21,6 +21,8 @@ export interface IFlightNotice {
   phone: string;
   emergencyPhone: string;
   nationality?: string;
+  /** Phi công nước ngoài — bắt buộc khai quốc tịch, số giấy tờ là hộ chiếu. */
+  foreigner?: boolean;
   /** Cấp cánh dù (EN A…D, PPG) — cùng thang với /muavang. */
   wingClass?: string;
   /** Bằng phi công / cấp bay tự khai (P2, P3, IPPI…). */
@@ -48,6 +50,11 @@ export interface IFlightNotice {
 
   transferNote?: string;
   submittedAt: Date;
+  /**
+   * Lúc phi công TỰ TÍCH "Tôi đã thanh toán phí báo bay" trước khi gửi — chỉ là
+   * lời khai. `paid` bên dưới mới là admin đã đối chiếu sao kê và bấm "đã thu".
+   */
+  paidClaimedAt?: Date;
   paid: boolean;
   paidAt?: Date;
   note?: string;
@@ -66,6 +73,7 @@ const FlightNoticeSchema = new Schema<IFlightNotice>(
     phone: { type: String, default: "" },
     emergencyPhone: { type: String, default: "" },
     nationality: String,
+    foreigner: { type: Boolean, default: false },
     wingClass: String,
     licence: String,
 
@@ -98,6 +106,7 @@ const FlightNoticeSchema = new Schema<IFlightNotice>(
 
     transferNote: String,
     submittedAt: { type: Date, required: true },
+    paidClaimedAt: Date,
     paid: { type: Boolean, default: false },
     paidAt: Date,
     note: String,

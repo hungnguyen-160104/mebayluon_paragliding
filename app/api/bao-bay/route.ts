@@ -51,13 +51,21 @@ function adminMailHtml(n: IFlightNotice, fee: BaoBayFee): string {
     ["CCCD/Hộ chiếu", n.idNumber],
     ["Điện thoại", n.phone],
     ["SĐT khẩn cấp", n.emergencyPhone],
-    ["Quốc tịch", n.nationality || ""],
+    ["Quốc tịch", `${n.nationality || ""}${n.foreigner ? " (người nước ngoài)" : ""}`],
     ["Cánh dù", n.wingClass ? wingClassLabel(n.wingClass as WingClass) : ""],
     ["Bằng / cấp bay", n.licence || ""],
     ["Mã hội viên HNAA", n.memberCode || ""],
     ["Loại phí", FEE_MODE_LABEL[n.feeMode]],
     ["Vé mua", n.passFrom && n.passValidUntil ? `${formatVnDate(n.passFrom)} – ${formatVnDate(n.passValidUntil)}` : ""],
     ["Nội dung CK", n.transferNote || ""],
+    [
+      "Thanh toán",
+      n.amount > 0
+        ? n.paidClaimedAt
+          ? "Phi công báo ĐÃ chuyển khoản — cần đối chiếu sao kê rồi bấm \"đã thu\""
+          : "Chưa báo chuyển khoản"
+        : "",
+    ],
     ["Ghi chú", n.note || ""],
   ];
 
@@ -118,7 +126,7 @@ export async function POST(req: Request) {
   } catch (e) {
     if (e instanceof BaoBayError) {
       if (e.code === "memberInvalid") recordMemberFailure(req);
-      return NextResponse.json({ ok: false, code: e.code, message: e.message }, { status: e.status });
+      return NextResponse.json({ ok: false, code: e.code, message: e.message, ...(e.data ?? {}) }, { status: e.status });
     }
     console.error("[BaoBay] save failed:", e);
     return NextResponse.json(
