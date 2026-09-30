@@ -118,15 +118,24 @@ type FooterDict = {
   trustNoteAfter: string;
   /** Nhãn link trang Điều khoản & Điều kiện ở dòng bản quyền. */
   terms: string;
+  /**
+   * Dòng 2 khối pháp nhân: giấy phép bay (chỉ số, KHÔNG ghi ngày — chủ
+   * 30/09/2026, theo mẫu web Sa Pa).
+   */
   license: string;
   rightsReserved: string;
-  /** Khối thông tin pháp nhân (bắt buộc với website TMĐT — NĐ 52/2013). */
+  /** Khối pháp nhân (bắt buộc với website TMĐT — NĐ 52/2013). */
   legal: {
-    title: string;
-    code: string;
-    license: string;
-    no: string;
     policies: string;
+    /** Dòng 3: giấy phép kinh doanh dù lượn — chỉ số + cơ quan cấp. */
+    bizLicense: (items: readonly { no: string; issuer: string }[]) => string;
+    /** Dòng 4 (chữ rất nhỏ): nhãn trụ sở · ĐT · người đại diện · ĐKDN. */
+    office: string;
+    phone: string;
+    rep: string;
+    /** "ĐKDN cấp {ngày} tại {nơi}" — tách 2 mảnh để chèn số liệu. */
+    regIssued: string;
+    regAt: string;
   };
 };
 
@@ -151,14 +160,17 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: " để được giá tốt nhất.",
     terms: "Điều khoản & Điều kiện",
     license:
-      "Giấy phép bay số 11323/TC-QC, Cục Tác chiến – Bộ Tổng Tham mưu, Bộ Quốc phòng, ngày 08/08/2026.",
+      "Đơn vị được cấp phép bay bởi Cục Tác chiến – Bộ Tổng Tham mưu, Bộ Quốc phòng Việt Nam, số giấy phép 11323/TC-QC",
     rightsReserved: "Đã đăng ký bản quyền.",
     legal: {
-      title: "Thông tin doanh nghiệp",
-      code: "Mã số thuế",
-      license: "Giấy chứng nhận đủ điều kiện kinh doanh hoạt động dù lượn",
-      no: "số",
       policies: "Chính sách & điều khoản",
+      bizLicense: (items) =>
+        `Giấy phép kinh doanh dù lượn ${items.map((g) => `số ${g.no} do ${g.issuer} cấp`).join(" và ")}`,
+      office: "Trụ sở",
+      phone: "ĐT",
+      rep: "Đại diện",
+      regIssued: "ĐKDN cấp",
+      regAt: "tại",
     },
   },
   en: {
@@ -181,14 +193,17 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: " for the best price.",
     terms: "Terms & Conditions",
     license:
-      "Flight permit No. 11323/TC-QC, Operations Department – General Staff, Ministry of National Defence of Vietnam, dated 08/08/2026.",
+      "Flight operations licensed by the Operations Department – General Staff, Ministry of National Defence of Vietnam, permit No. 11323/TC-QC",
     rightsReserved: "All rights reserved.",
     legal: {
-      title: "Company information",
-      code: "Tax code",
-      license: "Paragliding business eligibility certificates",
-      no: "No.",
       policies: "Policies & terms",
+      bizLicense: (items) =>
+        `Paragliding business licence ${items.map((g) => `No. ${g.no} issued by ${g.issuer}`).join(" and ")}`,
+      office: "Head office",
+      phone: "Tel",
+      rep: "Representative",
+      regIssued: "Business registration issued",
+      regAt: "by",
     },
   },
   fr: {
@@ -211,14 +226,17 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: " pour le meilleur tarif.",
     terms: "Conditions générales",
     license:
-      "Autorisation de vol n° 11323/TC-QC, Département des opérations – État-major général, Ministère de la Défense nationale du Vietnam, du 08/08/2026.",
+      "Vols autorisés par le Département des opérations – État-major général, Ministère de la Défense nationale du Vietnam, autorisation n° 11323/TC-QC",
     rightsReserved: "Tous droits réservés.",
     legal: {
-      title: "Informations sur l’entreprise",
-      code: "N° fiscal",
-      license: "Certificats d’aptitude à l’exploitation du parapente",
-      no: "n°",
       policies: "Politiques & conditions",
+      bizLicense: (items) =>
+        `Licence d’exploitation de parapente ${items.map((g) => `n° ${g.no} délivrée par ${g.issuer}`).join(" et ")}`,
+      office: "Siège",
+      phone: "Tél.",
+      rep: "Représentant",
+      regIssued: "Immatriculation délivrée le",
+      regAt: "par",
     },
   },
   ru: {
@@ -241,14 +259,17 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: " — так выгоднее всего.",
     terms: "Условия обслуживания",
     license:
-      "Разрешение на полёты № 11323/TC-QC, Оперативное управление Генерального штаба Министерства национальной обороны Вьетнама, от 08.08.2026.",
+      "Полёты разрешены Оперативным управлением Генерального штаба Министерства национальной обороны Вьетнама, разрешение № 11323/TC-QC",
     rightsReserved: "Все права защищены.",
     legal: {
-      title: "Сведения о компании",
-      code: "ИНН",
-      license: "Свидетельства о праве на коммерческую деятельность по парапланеризму",
-      no: "№",
       policies: "Политики и условия",
+      bizLicense: (items) =>
+        `Лицензия на коммерческую деятельность по парапланеризму ${items.map((g) => `№ ${g.no}, выдана: ${g.issuer}`).join(" и ")}`,
+      office: "Офис",
+      phone: "Тел.",
+      rep: "Представитель",
+      regIssued: "Регистрация предприятия от",
+      regAt: "—",
     },
   },
   zh: {
@@ -270,14 +291,17 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteLink: "直接在本站预订",
     trustNoteAfter: "，价格最优。",
     terms: "服务条款",
-    license: "飞行许可证编号 11323/TC-QC，越南国防部总参谋部作战局，2026年8月8日签发。",
+    license: "飞行业务经越南国防部总参谋部作战局许可，许可证编号 11323/TC-QC",
     rightsReserved: "保留所有权利。",
     legal: {
-      title: "企业信息",
-      code: "税号",
-      license: "滑翔伞经营资格证书",
-      no: "编号",
       policies: "政策与条款",
+      bizLicense: (items) =>
+        `滑翔伞经营许可证：${items.map((g) => `编号 ${g.no}（由 ${g.issuer} 颁发）`).join("、")}`,
+      office: "总部",
+      phone: "电话",
+      rep: "法定代表人",
+      regIssued: "企业登记日期",
+      regAt: "签发机关",
     },
   },
   hi: {
@@ -300,14 +324,17 @@ const DICT: Record<Language, FooterDict> = {
     trustNoteAfter: "।",
     terms: "नियम और शर्तें",
     license:
-      "उड़ान परमिट सं. 11323/TC-QC, ऑपरेशंस विभाग – जनरल स्टाफ, राष्ट्रीय रक्षा मंत्रालय, वियतनाम, दिनांक 08/08/2026।",
+      "उड़ान संचालन की अनुमति ऑपरेशंस विभाग – जनरल स्टाफ, राष्ट्रीय रक्षा मंत्रालय, वियतनाम द्वारा, परमिट सं. 11323/TC-QC",
     rightsReserved: "सर्वाधिकार सुरक्षित।",
     legal: {
-      title: "कंपनी की जानकारी",
-      code: "कर संख्या",
-      license: "पैराग्लाइडिंग व्यवसाय पात्रता प्रमाणपत्र",
-      no: "सं.",
       policies: "नीतियाँ व शर्तें",
+      bizLicense: (items) =>
+        `पैराग्लाइडिंग व्यवसाय लाइसेंस ${items.map((g) => `सं. ${g.no} (${g.issuer} द्वारा जारी)`).join(" और ")}`,
+      office: "मुख्यालय",
+      phone: "फ़ोन",
+      rep: "प्रतिनिधि",
+      regIssued: "व्यवसाय पंजीकरण",
+      regAt: "जारीकर्ता",
     },
   },
 };
@@ -510,10 +537,6 @@ export default function Footer() {
                 className={`${dancingScript.className} text-lg leading-6 text-[#0194F3] sm:text-xl`}
               >
                 {t.slogan}
-              </p>
-
-              <p className="max-w-[30rem] text-[14px] leading-6 text-slate-300">
-                {t.license}
               </p>
 
               {/* LIÊN HỆ — ghép vào cột thương hiệu */}
@@ -760,36 +783,51 @@ export default function Footer() {
               trên giữ nguyên; khối này là thông tin ĐĂNG KÝ doanh nghiệp. */}
           <div className="mt-4 border-t border-white/15 pt-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-              {/* NGẮN GỌN như flysapa.com (chủ 30/09/2026): tên công ty, MST,
-                  số giấy phép. Điện thoại/email đã có ở cột thương hiệu phía
-                  trên; thông tin đầy đủ (trụ sở, người đại diện, nơi cấp ĐKDN)
-                  nằm ở các trang /chinh-sach. */}
-              <div className="min-w-0 space-y-1 text-[13px] leading-5 text-slate-300">
-                <p className="font-semibold text-slate-100">
-                  {LEGAL_ENTITY.legalName}
-                  {language !== "vi" ? ` (${LEGAL_ENTITY.legalNameEn})` : ""}
+              {/* 3 DÒNG theo mẫu web Sa Pa + 1 dòng chữ rất nhỏ (chủ 30/09/2026),
+                  KHÔNG ghi ngày giấy phép: tên công ty (MST) · giấy phép bay ·
+                  giấy phép kinh doanh dù lượn. Dòng giấy phép bay trước nằm ở
+                  cột thương hiệu — đã dời xuống đây để khỏi lặp. Thông tin
+                  pháp nhân đầy đủ (trụ sở, người đại diện, ĐKDN…) ở /chinh-sach. */}
+              <div className="min-w-0 space-y-0.5 text-[11px] leading-4 text-slate-400">
+                <p className="text-[12px] font-semibold text-slate-200">
+                  {LEGAL_ENTITY.shortLegalName} ({LEGAL_ENTITY.taxCode})
                 </p>
-                <p>
-                  {t.legal.code}: {LEGAL_ENTITY.taxCode}
-                </p>
-                <p>
-                  {t.legal.license}:{" "}
-                  {LEGAL_ENTITY.sportLicenses
-                    .map((g) => `${t.legal.no} ${g.no} (${g.issuer})`)
-                    .join("; ")}
+                <p>{t.license}</p>
+                <p>{t.legal.bizLicense(LEGAL_ENTITY.sportLicenses)}</p>
+                {/* Dòng 4 (chủ duyệt 30/09: "cứ cho lên đủ, chữ nhỏ gọn"):
+                    TT 47/2014 buộc trang chủ hiện đủ thông tin chủ sở hữu.
+                    Ngày cấp ĐKDN lần đầu giữ vì luật đòi "số, ngày, nơi cấp". */}
+                <p className="text-slate-500">
+                  {t.legal.office}: {LEGAL_ENTITY.registeredOffice} · {t.legal.phone}{" "}
+                  <a href="tel:+84964073555" className="hover:text-white">
+                    {LEGAL_ENTITY.registeredPhone}
+                  </a>{" "}
+                  ·{" "}
+                  <a
+                    href={`mailto:${LEGAL_ENTITY.registeredEmail}`}
+                    className="hover:text-white"
+                  >
+                    {LEGAL_ENTITY.registeredEmail}
+                  </a>{" "}
+                  · {t.legal.rep}: {LEGAL_ENTITY.legalRepresentative.name} ·{" "}
+                  {t.legal.regIssued} {LEGAL_ENTITY.registration.firstIssuedDate}{" "}
+                  {t.legal.regAt}{" "}
+                  {language === "vi"
+                    ? LEGAL_ENTITY.registration.issuerShort
+                    : LEGAL_ENTITY.registration.issuerShortEn}
                 </p>
               </div>
 
-              <div className="shrink-0 space-y-3 lg:max-w-[22rem]">
-                <h3 className="text-[15px] font-semibold text-white">
+              <div className="shrink-0 space-y-2 lg:max-w-[22rem]">
+                <h3 className="text-[12px] font-semibold text-slate-200">
                   {t.legal.policies}
                 </h3>
-                <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px]">
+                <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] leading-4">
                   {POLICY_SLUGS.map((slug) => (
                     <li key={slug}>
                       <Link
                         href={makeLocalizedHref(`/chinh-sach/${slug}`, pathname)}
-                        className="text-slate-300 underline-offset-4 transition-colors hover:text-white hover:underline"
+                        className="text-slate-400 underline-offset-4 transition-colors hover:text-white hover:underline"
                       >
                         {POLICY_NAV_LABELS[language][slug]}
                       </Link>

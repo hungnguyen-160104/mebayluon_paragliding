@@ -156,7 +156,7 @@ function entityBlock(lang: LangCode): string {
     row(L.website, e.website) +
     nested(
       L.sportLicenses,
-      e.sportLicenses.map((lic) => `${lic.no} — ${lic.date} — ${lic.issuer}`),
+      e.sportLicenses.map((lic) => `${lic.no} — ${lic.issuer}`),
     );
 
   return (

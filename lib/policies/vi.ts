@@ -224,7 +224,7 @@ const cungCap = `
 
 <h2>8. Giấy chứng nhận đủ điều kiện kinh doanh</h2>
 <ul>
-${E.sportLicenses.map((l) => `  <li>Giấy chứng nhận đủ điều kiện kinh doanh hoạt động thể thao số ${l.no}, cấp ngày ${l.date}, nơi cấp: ${l.issuer}.</li>`).join("\n")}
+${E.sportLicenses.map((l) => `  <li>Giấy chứng nhận đủ điều kiện kinh doanh hoạt động thể thao số ${l.no} (${l.issuer}).</li>`).join("\n")}
   <li>Mỗi điểm bay có giấy phép hoạt động riêng; khách có thể yêu cầu xuất trình giấy phép của điểm bay tương ứng trước khi bay.</li>
 </ul>
 

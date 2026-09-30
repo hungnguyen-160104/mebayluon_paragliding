@@ -25,6 +25,8 @@ export const LEGAL_ENTITY = {
   tradeName: "Mebayluon Paragliding",
   /** Tên pháp nhân — NGUYÊN VĂN trên Giấy chứng nhận đăng ký doanh nghiệp. */
   legalName: "CÔNG TY CỔ PHẦN DU LỊCH VÀ THỂ THAO VIÊN NAM",
+  /** Tên viết tắt cho dòng đầu khối pháp nhân ở footer (mẫu web Sa Pa). */
+  shortLegalName: "CTCP DU LỊCH VÀ THỂ THAO VIÊN NAM",
   /** Tên tiếng Anh — nguyên văn trên Giấy CN ĐKDN. */
   legalNameEn: "VIEN NAM SPORT AND TOURISM JOINT STOCK COMPANY",
   /** Mã số doanh nghiệp, đồng thời là mã số thuế. */
@@ -35,14 +37,19 @@ export const LEGAL_ENTITY = {
    * cấp. Chép nguyên văn từ Giấy CN ĐKDN (đăng ký thay đổi lần 2).
    */
   registration: {
+    /**
+     * Ngày đăng ký lần đầu — GIỮ vì TT 47/2014 buộc công bố số, ngày cấp, nơi
+     * cấp Giấy CN ĐKDN. Lần thay đổi gần nhất (lần 2, 28/08/2025) KHÔNG hiển
+     * thị trên web (chủ 30/09/2026: bỏ bớt ngày cho gọn).
+     */
     firstIssuedDate: "01/04/2021",
-    /** Lần thay đổi gần nhất; đổi giấy thì sửa cả hai dòng này. */
-    latestChange: "đăng ký thay đổi lần 2 ngày 28/08/2025",
-    latestChangeEn: "2nd amendment registered on 28/08/2025",
     issuer:
       "Phòng Đăng ký kinh doanh và Tài chính doanh nghiệp – Sở Tài chính TP Hà Nội",
     issuerEn:
       "Business Registration and Corporate Finance Division – Hanoi Department of Finance",
+    /** Nơi cấp viết gọn cho dòng chữ nhỏ ở footer. */
+    issuerShort: "Phòng ĐKKD – Sở Tài chính Hà Nội",
+    issuerShortEn: "Business Registration Office – Hanoi Department of Finance",
   },
   /** Trụ sở chính — nguyên văn trên Giấy CN ĐKDN. */
   registeredOffice:
@@ -72,7 +79,10 @@ export const LEGAL_ENTITY = {
   /**
    * Giấy chứng nhận đủ điều kiện kinh doanh hoạt động thể thao. Kinh doanh
    * hoạt động thể thao mạo hiểm là ngành nghề có điều kiện, nên Nghị định
-   * 52/2013/NĐ-CP buộc phải công bố số giấy, ngày cấp và cơ quan cấp.
+   * 52/2013/NĐ-CP buộc phải công bố số giấy và cơ quan cấp.
+   *
+   * `date` chỉ để lưu hồ sơ — KHÔNG hiển thị ở footer, /terms hay trang chính
+   * sách (chủ 30/09/2026: bỏ ngày của các giấy phép, chỉ hiện số).
    */
   sportLicenses: [
     {

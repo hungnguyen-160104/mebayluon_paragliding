@@ -223,7 +223,7 @@ const service = `
 
 <h2>8. Business eligibility certificates</h2>
 <ul>
-${E.sportLicenses.map((l) => `  <li>Sports business eligibility certificate No. ${l.no}, issued on ${l.date} by ${l.issuer}.</li>`).join("\n")}
+${E.sportLicenses.map((l) => `  <li>Sports business eligibility certificate No. ${l.no} (${l.issuer}).</li>`).join("\n")}
   <li>Each flying site holds its own operating permit; you may ask us to show the permit for the relevant site before your flight.</li>
 </ul>
 

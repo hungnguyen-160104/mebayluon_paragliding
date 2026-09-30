@@ -65,7 +65,7 @@ export function entityInfoHtml(lang: PolicyLang): string {
     return `<ul>
 <li><b>Tên doanh nghiệp:</b> ${e.legalName} (${e.legalNameEn})</li>
 <li><b>Tên giao dịch:</b> ${e.tradeName}</li>
-<li><b>Mã số doanh nghiệp / Mã số thuế:</b> ${e.taxCode} — đăng ký lần đầu ngày ${r.firstIssuedDate}, ${r.latestChange}; nơi cấp: ${r.issuer}</li>
+<li><b>Mã số doanh nghiệp / Mã số thuế:</b> ${e.taxCode} — cấp lần đầu ngày ${r.firstIssuedDate} tại ${r.issuer}</li>
 <li><b>Trụ sở chính:</b> ${e.registeredOffice}</li>
 <li><b>Người đại diện theo pháp luật:</b> ${e.legalRepresentative.name} – ${e.legalRepresentative.title}</li>
 <li><b>Điện thoại:</b> ${e.registeredPhone} — <b>Email:</b> ${e.registeredEmail}</li>
@@ -76,7 +76,7 @@ export function entityInfoHtml(lang: PolicyLang): string {
   return `<ul>
 <li><b>Company:</b> ${e.legalNameEn} (${e.legalName})</li>
 <li><b>Trading name:</b> ${e.tradeName}</li>
-<li><b>Enterprise code / Tax code:</b> ${e.taxCode} — first registered on ${r.firstIssuedDate}, ${r.latestChangeEn}; issued by: ${r.issuerEn}</li>
+<li><b>Enterprise code / Tax code:</b> ${e.taxCode} — first issued on ${r.firstIssuedDate} by ${r.issuerEn}</li>
 <li><b>Head office:</b> ${e.registeredOffice}</li>
 <li><b>Legal representative:</b> ${e.legalRepresentative.name} – ${e.legalRepresentative.titleEn}</li>
 <li><b>Phone:</b> ${e.registeredPhone} — <b>Email:</b> ${e.registeredEmail}</li>
