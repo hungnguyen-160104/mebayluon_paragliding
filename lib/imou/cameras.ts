@@ -1,12 +1,15 @@
 // lib/imou/cameras.ts
 /**
  * DANH SÁCH CAMERA BÃI CẤT (chủ 30/09/2026) — dùng chung cho máy chủ lẫn trình
- * duyệt, nên ở đây TUYỆT ĐỐI không có bí mật: chỉ tên biến môi trường, thư mục
- * Cloudinary, khung giờ chụp.
+ * duyệt, nên ở đây TUYỆT ĐỐI không có bí mật: chỉ tên biến môi trường, khung giờ chụp.
  *
- * Camera Imou (AOV PT, 4G) ở bãi cất cánh cao Viên Nam chụp 1 ảnh/phút từ
- * 08:00 tới 18:00 giờ Việt Nam; trang /baobay hiện ảnh mới nhất + 60 phút gần
+ * Camera Imou (AOV PT, 4G) ở bãi cất cánh cao Viên Nam chụp 08:00–18:00 giờ Việt
+ * Nam (nhịp xem shouldSnapNow); trang /baobay hiện ảnh mới nhất + 60 phút gần
  * nhất. Thêm camera mới = thêm một mục vào CAMERAS, không phải sửa route.
+ *
+ * KHÔNG LƯU ẢNH (chủ 01/10/2026 — không để web đầy dung lượng/băng thông): web
+ * chỉ giữ LINK ảnh do Imou cấp (sống 7 ngày) trong MongoDB; trình duyệt tải ảnh
+ * thẳng từ máy chủ Imou, Vercel/Cloudinary không chứa và không chuyển byte ảnh nào.
  */
 
 export type CamId = "vien-nam";
@@ -21,8 +24,6 @@ export type CamConfig = {
   codeEnv: string;
   /** Kênh của camera — máy một ống kính luôn là "0" */
   channelId: string;
-  /** Thư mục Cloudinary giữ ảnh; ảnh cũ hơn KEEP_MINUTES bị xoá */
-  folder: string;
 };
 
 export const CAMERAS: Record<CamId, CamConfig> = {
@@ -32,7 +33,6 @@ export const CAMERAS: Record<CamId, CamConfig> = {
     snEnv: "IMOU_CAM_VIENNAM_SN",
     codeEnv: "IMOU_CAM_VIENNAM_CODE",
     channelId: "0",
-    folder: "baobay-cam/vien-nam",
   },
 };
 
@@ -44,9 +44,10 @@ export function isCamId(x: unknown): x is CamId {
 export const CAM_ACTIVE = { fromMin: 8 * 60, toMin: 18 * 60, label: "08:00–18:00" } as const;
 /** Trang hiện ảnh của bấy nhiêu phút gần nhất */
 export const CAM_WINDOW_MINUTES = 60;
-/** Cloudinary giữ ảnh bấy nhiêu phút rồi xoá (dư 30 phút cho khung 60 phút) */
+/** MongoDB giữ link ảnh bấy nhiêu phút rồi xoá (dư 30 phút cho khung 60 phút) */
 export const CAM_KEEP_MINUTES = 90;
-/** Ảnh mới nhất cũ hơn chừng này (trong giờ chụp) thì coi như camera mất kết nối */
+/** Ảnh mới nhất cũ hơn chừng này (trong giờ chụp) thì coi như camera mất kết nối —
+ *  ngoài 10–15h chụp 3 phút/ảnh nên 10 phút vẫn dư ba nhịp. */
 export const CAM_STALE_MINUTES = 10;
 
 const VN_OFFSET_MS = 7 * 3600_000;
@@ -86,7 +87,7 @@ export function vnHHMM(t: Date | number | string): string {
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
-/** Nhãn theo giờ VN dùng làm public_id: "20260930-0841" */
+/** Nhãn theo giờ VN dùng làm khoá bản ghi: "20260930-0841" */
 export function vnStamp(t: Date | number = Date.now()): string {
   const d = new Date((typeof t === "number" ? t : t.getTime()) + VN_OFFSET_MS);
   const p = (n: number) => String(n).padStart(2, "0");
@@ -94,7 +95,8 @@ export function vnStamp(t: Date | number = Date.now()): string {
 }
 
 /** Dữ liệu API /api/camera/[cam] trả về */
-export type CamShot = { url: string; thumb: string; takenAt: string };
+/** `url` là link ảnh của Imou (sống 7 ngày) — không có bản sao nào trên web */
+export type CamShot = { url: string; takenAt: string };
 export type CamFeed = {
   configured: boolean;
   activeHours: { from: string; to: string; tz: "Asia/Ho_Chi_Minh"; active: boolean };

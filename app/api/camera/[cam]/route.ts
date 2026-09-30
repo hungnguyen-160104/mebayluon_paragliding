@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * ẢNH CAMERA BÃI CẤT cho trang /baobay: ảnh mới nhất + ảnh 60 phút gần nhất
- * (MỚI → CŨ). Công khai, chỉ đọc danh mục MongoDB — không gọi Imou/Cloudinary.
+ * (MỚI → CŨ), mỗi ảnh chỉ { url, takenAt } — `url` là link ảnh của Imou, web
+ * không giữ bản sao (chủ 01/10/2026). Công khai, chỉ đọc danh mục MongoDB.
  * Cache CDN 30 giây: trang tự làm mới mỗi 60s, bao nhiêu người xem cũng chỉ
  * chạm cơ sở dữ liệu vài lần mỗi phút.
  */

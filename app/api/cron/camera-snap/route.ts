@@ -2,12 +2,12 @@
 import { NextResponse } from "next/server";
 
 import { CAMERAS, inCamActiveHours, isCamId, shouldSnapNow, vnHHMM, type CamId } from "@/lib/imou/cameras";
-import { ImouError, downloadSnap, imouConfigured, snapWithAutoBind } from "@/lib/imou/client";
-import { ensureSnapIndex, pruneSnaps, storeSnap } from "@/lib/imou/snaps";
+import { ImouError, imouConfigured, snapWithAutoBind, waitSnapReady } from "@/lib/imou/client";
+import { cleanupLegacySnaps, ensureSnapIndex, pruneSnaps, saveSnap } from "@/lib/imou/snaps";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-/** Chụp (≤15s) + chờ ảnh (≤~20s) + Cloudinary (≤20s) — vẫn dưới 60s */
+/** Chụp (≤15s) + chờ link ảnh dùng được (≤~20s) + ghi MongoDB — dưới 60s */
 export const maxDuration = 60;
 
 /**
@@ -19,8 +19,12 @@ export const maxDuration = 60;
  * Worker trong scripts/ không deploy). Gọi tay thì `?key=`.
  *
  * Luồng: ngoài giờ → skip. Trong giờ: setDeviceSnapEnhanced (tự bindDevice
- * một lần nếu Imou báo chưa gắn) → chờ URL ảnh tải được → Cloudinary (thu về
- * 1280px JPEG q70 + thumbnail) → ghi danh mục MongoDB → xoá ảnh cũ hơn 90 phút.
+ * một lần nếu Imou báo chưa gắn) → chờ link ảnh Imou mở được (chỉ đọc 1 KB đầu)
+ * → ghi { cam, url, takenAt } vào MongoDB → xoá bản ghi cũ hơn 90 phút.
+ *
+ * KHÔNG LƯU ẢNH (chủ 01/10/2026): không tải ảnh về, không đẩy Cloudinary — link
+ * Imou sống 7 ngày, trình duyệt tải thẳng từ Imou nên web không đầy dung lượng
+ * và không tốn băng thông ảnh. Còn bản ghi kiểu cũ (ảnh Cloudinary) thì dọn một lần.
  *
  * `?cam=vien-nam` (mặc định) chọn camera; `?force=1` (chỉ khi có key) chụp cả ngoài giờ để thử.
  */
@@ -55,12 +59,16 @@ export async function GET(req: Request) {
   const t0 = Date.now();
   try {
     const { url: snapUrl, bound } = await snapWithAutoBind(sn, cfg.channelId, (process.env[cfg.codeEnv] || "").trim());
-    const jpeg = await downloadSnap(snapUrl);
-    const shot = await storeSnap(cam, jpeg, now);
+    const ready = await waitSnapReady(snapUrl);
+    const shot = await saveSnap(cam, snapUrl, now);
     await ensureSnapIndex();
-    // Dọn ảnh cũ không được làm hỏng lượt chụp
+    // Dọn bản ghi cũ không được làm hỏng lượt chụp
     const pruned = await pruneSnaps(cam).catch((e) => {
-      console.warn("[camera-snap] dọn ảnh cũ lỗi:", e instanceof Error ? e.message : e);
+      console.warn("[camera-snap] dọn bản ghi cũ lỗi:", e instanceof Error ? e.message : e);
+      return 0;
+    });
+    const legacyCleaned = await cleanupLegacySnaps(cam).catch((e) => {
+      console.warn("[camera-snap] dọn ảnh Cloudinary kiểu cũ lỗi:", e instanceof Error ? e.message : e);
       return 0;
     });
     return NextResponse.json({
@@ -68,9 +76,10 @@ export async function GET(req: Request) {
       cam,
       vn: vnHHMM(now),
       bound,
-      bytes: jpeg.length,
+      tries: ready.attempts,
       url: shot.url,
       pruned,
+      ...(legacyCleaned ? { legacyCleaned } : {}),
       ms: Date.now() - t0,
     });
   } catch (err) {

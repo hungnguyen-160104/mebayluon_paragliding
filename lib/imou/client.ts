@@ -200,23 +200,37 @@ export async function snapWithAutoBind(deviceId: string, channelId: string, bind
   }
 }
 
-/** Tải ảnh chụp: URL có thể 404 vài giây đầu → chờ rồi thử lại. */
-export async function downloadSnap(url: string, { tries = 6, waitMs = 2000, timeoutMs = 10_000 } = {}): Promise<Buffer> {
+/**
+ * Chờ tới khi link ảnh Imou mở được: vài giây đầu link có thể 404 → chờ rồi thử lại.
+ * Chỉ xin 1 KB đầu (Range) rồi huỷ luồng — KHÔNG tải cả ảnh về máy chủ. Dùng GET
+ * chứ không HEAD vì link ký sẵn kiểu S3 thường chỉ ký cho GET.
+ */
+export async function waitSnapReady(
+  url: string,
+  { tries = 6, waitMs = 2000, timeoutMs = 8_000 } = {},
+): Promise<{ attempts: number; contentType: string }> {
   let last = "";
   for (let i = 0; i < tries; i++) {
     if (i > 0) await new Promise((r) => setTimeout(r, waitMs));
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), cache: "no-store" });
-      if (res.ok) {
-        const buf = Buffer.from(await res.arrayBuffer());
-        if (buf.length > 1000) return buf;
-        last = `ảnh rỗng (${buf.length} byte)`;
-      } else {
-        last = `HTTP ${res.status}`;
+      const res = await fetch(url, {
+        headers: { Range: "bytes=0-1023" },
+        signal: AbortSignal.timeout(timeoutMs),
+        cache: "no-store",
+      });
+      const contentType = res.headers.get("content-type") || "";
+      // Đọc tối đa một mẩu rồi huỷ — máy chủ bỏ qua Range thì cũng không kéo hết ảnh
+      const reader = res.body?.getReader();
+      const first = reader ? await reader.read() : null;
+      await reader?.cancel().catch(() => {});
+      const got = first?.value?.length ?? 0;
+      if ((res.status === 200 || res.status === 206) && got > 0 && !/json|html|xml/i.test(contentType)) {
+        return { attempts: i + 1, contentType };
       }
+      last = res.ok ? `phản hồi lạ (${contentType || "?"}, ${got} byte)` : `HTTP ${res.status}`;
     } catch (e) {
       last = e instanceof Error ? e.message : String(e);
     }
   }
-  throw new ImouError("DOWNLOAD", `Không tải được ảnh chụp sau ${tries} lần: ${last}`);
+  throw new ImouError("SNAPURL", `Link ảnh chụp chưa dùng được sau ${tries} lần: ${last}`);
 }
