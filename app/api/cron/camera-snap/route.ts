@@ -30,11 +30,19 @@ export const maxDuration = 60;
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
+  /**
+   * Cùng cách với /api/cron/thoi-tiet-mail: dự án chưa khai CRON_SECRET thì nhận
+   * lời gọi của Vercel Cron qua header `x-vercel-cron-schedule`; có CRON_SECRET
+   * thì bắt buộc Bearer (hoặc `?key=` khi gọi tay). Trước đây thiếu CRON_SECRET
+   * là trả 503 nên lịch chạy mỗi phút mà không chụp ảnh nào.
+   */
   const secret = (process.env.CRON_SECRET ?? "").trim();
-  if (!secret) return NextResponse.json({ message: "Chưa khai CRON_SECRET" }, { status: 503 });
   const key = url.searchParams.get("key") ?? "";
-  const ok = req.headers.get("authorization") === `Bearer ${secret}` || key === secret;
-  if (!ok) return NextResponse.json({ message: "Không có quyền" }, { status: 401 });
+  const goiTay = !!secret && key === secret;
+  const laCron = secret
+    ? req.headers.get("authorization") === `Bearer ${secret}`
+    : req.headers.get("x-vercel-cron-schedule") !== null;
+  if (!laCron && !goiTay) return NextResponse.json({ message: "Không có quyền" }, { status: 401 });
 
   const camParam = url.searchParams.get("cam") || "vien-nam";
   if (!isCamId(camParam)) return NextResponse.json({ message: "Không có camera này" }, { status: 404 });
@@ -42,7 +50,7 @@ export async function GET(req: Request) {
   const cfg = CAMERAS[cam];
 
   const now = new Date();
-  const force = url.searchParams.get("force") === "1";
+  const force = goiTay && url.searchParams.get("force") === "1";
   if (!force && !inCamActiveHours(now)) {
     return NextResponse.json({ ok: true, skip: "ngoài giờ chụp 08:00–18:00", vn: vnHHMM(now) });
   }
