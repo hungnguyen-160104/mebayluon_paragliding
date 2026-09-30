@@ -1,0 +1,359 @@
+// services/bao-bay.service.ts
+/**
+ * Nghiệp vụ BÁO BAY (/baobay) phía máy chủ: tra hội viên HNAA, tra vé
+ * tháng/năm còn hạn, báo giá và lưu báo bay.
+ *
+ * Mọi hàm nhận `now` từ ngoài vào thay vì tự gọi new Date(): route truyền giờ
+ * thật của máy chủ, còn phép thử truyền giờ cố định để kiểm được mốc 8h00 mà
+ * không phải chờ tới sáng.
+ */
+
+import { connectDB } from "@/lib/mongodb";
+import {
+  BAO_BAY_SPOT_CONFIG,
+  buildBaoBayTransferNote,
+  buildNoticeCode,
+  computeBaoBayFee,
+  isBaoBaySpot,
+  maskTail,
+  normalizeIdNumber,
+  normalizeMemberCode,
+  normalizePhone,
+  vnParts,
+  type BaoBayFee,
+  type BaoBaySpot,
+  type ExistingPass,
+  type PurchaseMode,
+} from "@/lib/bao-bay";
+import { WING_CLASSES, type WingClass } from "@/lib/pilot-event";
+import { ensureFlightNoticeIndexes, FlightNotice, type IFlightNotice } from "@/models/FlightNotice.model";
+import { HnaaMember, type IHnaaMember } from "@/models/HnaaMember.model";
+
+const clean = (v: unknown, max = 200) => String(v ?? "").trim().slice(0, max);
+
+/** Mã lỗi trả về trang — trang tra theo mã để hiện đúng ngôn ngữ. */
+export type BaoBayErrorCode =
+  | "spot"
+  | "dates"
+  | "datesPast"
+  | "memberInvalid"
+  | "name"
+  | "id"
+  | "phone"
+  | "emergencyPhone"
+  | "server";
+
+export class BaoBayError extends Error {
+  constructor(
+    public code: BaoBayErrorCode,
+    message: string,
+    public status = 400,
+  ) {
+    super(message);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Hội viên HNAA
+ * ------------------------------------------------------------------ */
+
+type MemberDoc = IHnaaMember & { _id: unknown };
+
+/** Hội viên còn hiệu lực theo mã; mã sai hoặc đã tắt đều trả null như nhau. */
+export async function findActiveMember(rawCode: unknown): Promise<MemberDoc | null> {
+  const code = normalizeMemberCode(rawCode);
+  if (!code || code.length > 40) return null;
+  await connectDB();
+  return (await HnaaMember.findOne({ code, active: true }).lean()) as MemberDoc | null;
+}
+
+/**
+ * Phần được phép gửi xuống trình duyệt khi mã đúng: họ tên và vài số cuối.
+ * Thiếu trường nào trong danh sách hội thì báo để trang hỏi thêm đúng trường đó.
+ */
+export function publicMemberView(m: MemberDoc) {
+  return {
+    code: m.code,
+    fullName: m.fullName,
+    idMasked: maskTail(m.idNumber),
+    phoneMasked: maskTail(m.phone),
+    needId: !normalizeIdNumber(m.idNumber),
+    needPhone: normalizePhone(m.phone).length < 8,
+    needEmergencyPhone: normalizePhone(m.emergencyPhone).length < 8,
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Vé tháng / năm
+ * ------------------------------------------------------------------ */
+
+/**
+ * Vé tháng/năm phi công đang có ở ĐÚNG điểm bay, nhận ra bằng CCCD HOẶC số
+ * điện thoại (một trong hai khớp là đủ — phi công hay đổi số, ít khi đổi CCCD).
+ *
+ * Khoá quá ngắn thì bỏ: ô CCCD gõ "1" mà đem đi tra là khớp bừa với người khác.
+ */
+export async function findPasses(input: {
+  spot: BaoBaySpot;
+  idNorm: string;
+  phoneNorm: string;
+  /** Chỉ lấy vé còn hạn tới ít nhất ngày này. */
+  fromDate: string;
+}): Promise<ExistingPass[]> {
+  const or: Array<Record<string, string>> = [];
+  if (input.idNorm.length >= 6) or.push({ idNorm: input.idNorm });
+  if (input.phoneNorm.length >= 8) or.push({ phoneNorm: input.phoneNorm });
+  if (!or.length) return [];
+
+  await connectDB();
+  const docs = await FlightNotice.find({
+    spot: input.spot,
+    passValidUntil: { $gte: input.fromDate },
+    passFrom: { $exists: true, $ne: null },
+    $or: or,
+  })
+    .select("noticeCode passFrom passValidUntil feeMode purchase")
+    .lean();
+
+  return docs
+    .filter((d) => d.passFrom && d.passValidUntil)
+    .map((d) => ({
+      from: d.passFrom as string,
+      until: d.passValidUntil as string,
+      mode: (d.purchase === "year" || d.feeMode === "year" ? "year" : "month") as "month" | "year",
+      noticeCode: d.noticeCode,
+    }));
+}
+
+/* ------------------------------------------------------------------ *
+ * Báo giá và lưu
+ * ------------------------------------------------------------------ */
+
+export type BaoBayInput = {
+  spot?: unknown;
+  dates?: unknown;
+  purchase?: unknown;
+  memberCode?: unknown;
+  fullName?: unknown;
+  idNumber?: unknown;
+  phone?: unknown;
+  emergencyPhone?: unknown;
+  nationality?: unknown;
+  wingClass?: unknown;
+  licence?: unknown;
+  note?: unknown;
+};
+
+function parseSpot(v: unknown): BaoBaySpot {
+  if (!isBaoBaySpot(v)) throw new BaoBayError("spot", "Chưa chọn điểm bay");
+  return v;
+}
+
+/**
+ * Ngày bay hợp lệ: đúng dạng, không ở quá khứ (theo giờ Việt Nam của máy chủ),
+ * không quá xa và không quá nhiều — chặn gửi bừa hàng nghìn ngày.
+ */
+function parseDates(v: unknown, now: Date): string[] {
+  const list = Array.isArray(v)
+    ? [...new Set(v.map((d) => clean(d, 10)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)))].sort()
+    : [];
+  if (!list.length) throw new BaoBayError("dates", "Chưa chọn ngày bay");
+  if (list.length > 62) throw new BaoBayError("dates", "Chọn quá nhiều ngày một lần");
+
+  const today = vnParts(now).date;
+  if (list[0] < today) throw new BaoBayError("datesPast", "Không báo bay cho ngày đã qua");
+
+  const limit = new Date(now.getTime() + 400 * 86_400_000);
+  if (list[list.length - 1] > vnParts(limit).date) {
+    throw new BaoBayError("dates", "Ngày bay quá xa");
+  }
+  return list;
+}
+
+function parsePurchase(v: unknown): PurchaseMode {
+  return v === "month" || v === "year" ? v : "day";
+}
+
+/** Thông tin phi công sau khi ghép dữ liệu hội viên (nếu có) với phần tự khai. */
+type ResolvedPilot = {
+  fullName: string;
+  idNumber: string;
+  phone: string;
+  emergencyPhone: string;
+  member: MemberDoc | null;
+};
+
+/**
+ * Hội viên: họ tên/CCCD/SĐT lấy từ danh sách hội, trang chỉ gửi bù trường nào
+ * danh sách còn thiếu. Người thường: lấy nguyên phần tự khai.
+ *
+ * `memberCode` gửi lên mà sai thì BÁO LỖI chứ không lặng lẽ bỏ qua — nếu không,
+ * phi công tưởng mình được miễn rồi mới thấy bị tính tiền.
+ */
+async function resolvePilot(input: BaoBayInput): Promise<ResolvedPilot> {
+  const typed = {
+    fullName: clean(input.fullName, 120),
+    idNumber: clean(input.idNumber, 40),
+    phone: clean(input.phone, 30),
+    emergencyPhone: clean(input.emergencyPhone, 30),
+  };
+
+  const rawCode = normalizeMemberCode(input.memberCode);
+  if (!rawCode) return { ...typed, member: null };
+
+  const member = await findActiveMember(rawCode);
+  if (!member) throw new BaoBayError("memberInvalid", "Mã hội viên không đúng");
+
+  return {
+    fullName: member.fullName || typed.fullName,
+    idNumber: normalizeIdNumber(member.idNumber) ? String(member.idNumber) : typed.idNumber,
+    phone: normalizePhone(member.phone).length >= 8 ? String(member.phone) : typed.phone,
+    emergencyPhone:
+      normalizePhone(member.emergencyPhone).length >= 8
+        ? String(member.emergencyPhone)
+        : typed.emergencyPhone,
+    member,
+  };
+}
+
+export type BaoBayQuote = {
+  fee: BaoBayFee;
+  member: ReturnType<typeof publicMemberView> | null;
+  /** Hôm nay và phút hiện tại theo giờ VN của máy chủ — trang dùng để nhắc mốc 8h. */
+  serverToday: string;
+  serverMinutes: number;
+};
+
+/**
+ * Báo giá trước khi gửi — cùng đường tính với lúc lưu, nên con số trang hiện
+ * chính là con số sẽ ghi (trừ khi phi công để trang qua mốc 8h00 rồi mới bấm
+ * gửi: lúc đó máy chủ tính lại và màn hình kết quả hiện số mới).
+ */
+export async function quoteBaoBay(input: BaoBayInput, now: Date): Promise<BaoBayQuote> {
+  const spot = parseSpot(input.spot);
+  const dates = parseDates(input.dates, now);
+  const purchase = parsePurchase(input.purchase);
+  const pilot = await resolvePilot(input);
+
+  const passes = await findPasses({
+    spot,
+    idNorm: normalizeIdNumber(pilot.idNumber),
+    phoneNorm: normalizePhone(pilot.phone),
+    fromDate: dates[0],
+  });
+
+  const fee = computeBaoBayFee({
+    spot,
+    dates,
+    purchase,
+    // Thoả thuận HNAA chỉ có ở Viên Nam — mã đúng ở điểm khác cũng không miễn
+    hnaaMember: Boolean(pilot.member) && BAO_BAY_SPOT_CONFIG[spot].hnaa,
+    passes,
+    now,
+  });
+
+  const { date, minutes } = vnParts(now);
+  return {
+    // Báo giá ai gõ số nào cũng gọi được — chỉ nói "còn hạn tới", không lộ mã báo bay của người ta
+    fee: fee.coveredByPass ? { ...fee, coveredByPass: { ...fee.coveredByPass, noticeCode: undefined } } : fee,
+    member: pilot.member ? publicMemberView(pilot.member) : null,
+    serverToday: date,
+    serverMinutes: minutes,
+  };
+}
+
+/**
+ * Ghi báo bay mới, tự né mã trùng (cùng ngày bay + cùng 4 số đuôi điện thoại)
+ * bằng hậu tố -2, -3… — cùng cách làm với đăng ký /muavang.
+ */
+async function createWithUniqueCode(baseCode: string, doc: Partial<IFlightNotice>) {
+  await ensureFlightNoticeIndexes();
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const noticeCode = attempt === 0 ? baseCode : `${baseCode}-${attempt + 1}`;
+    try {
+      return await FlightNotice.create({ ...doc, noticeCode });
+    } catch (e: unknown) {
+      const dup = typeof e === "object" && e !== null && (e as { code?: number }).code === 11000;
+      if (!dup) throw e;
+    }
+  }
+  throw new Error("Không sinh được mã báo bay duy nhất");
+}
+
+export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
+  const spot = parseSpot(input.spot);
+  const dates = parseDates(input.dates, now);
+  const purchase = parsePurchase(input.purchase);
+  const pilot = await resolvePilot(input);
+
+  // Kiểm bắt buộc SAU khi ghép dữ liệu hội viên — hội viên không phải gõ lại
+  if (!pilot.fullName) throw new BaoBayError("name", "Chưa nhập họ tên");
+  if (!normalizeIdNumber(pilot.idNumber)) throw new BaoBayError("id", "Chưa nhập số CCCD/hộ chiếu");
+  if (normalizePhone(pilot.phone).length < 8) throw new BaoBayError("phone", "Số điện thoại chưa đúng");
+  if (normalizePhone(pilot.emergencyPhone).length < 8) {
+    throw new BaoBayError("emergencyPhone", "Số điện thoại khẩn cấp chưa đúng");
+  }
+
+  const idNorm = normalizeIdNumber(pilot.idNumber);
+  const phoneNorm = normalizePhone(pilot.phone);
+
+  await connectDB();
+  const passes = await findPasses({ spot, idNorm, phoneNorm, fromDate: dates[0] });
+
+  const fee = computeBaoBayFee({
+    spot,
+    dates,
+    purchase,
+    hnaaMember: Boolean(pilot.member) && BAO_BAY_SPOT_CONFIG[spot].hnaa,
+    passes,
+    now,
+  });
+
+  const wingRaw = clean(input.wingClass, 10) as WingClass;
+  const baseCode = buildNoticeCode(dates, pilot.phone);
+
+  const saved = await createWithUniqueCode(baseCode, {
+    spot,
+    dates,
+    fullName: pilot.fullName,
+    idNumber: pilot.idNumber,
+    phone: pilot.phone,
+    emergencyPhone: pilot.emergencyPhone,
+    nationality: clean(input.nationality, 60) || "Việt Nam",
+    wingClass: WING_CLASSES.includes(wingRaw) ? wingRaw : undefined,
+    licence: clean(input.licence, 60) || undefined,
+    idNorm,
+    phoneNorm,
+    memberCode: pilot.member?.code,
+    memberId: pilot.member?._id as IFlightNotice["memberId"],
+    feeMode: fee.feeMode,
+    purchase,
+    feeLines: fee.lines.map((l) => ({ key: l.key, label: l.label, dates: l.dates, amount: l.amount })),
+    amount: fee.total,
+    passFrom: fee.passFrom,
+    passValidUntil: fee.passValidUntil,
+    coveredByNotice: fee.coveredByPass?.noticeCode,
+    submittedAt: now,
+    // Không mất đồng nào thì coi như đã xong phần tiền — admin khỏi phải bấm
+    paid: fee.total === 0,
+    paidAt: fee.total === 0 ? now : undefined,
+    note: clean(input.note, 500) || undefined,
+  });
+
+  // Nội dung chuyển khoản cần mã THẬT (có thể đã thêm hậu tố né trùng)
+  const transferNote = fee.total > 0
+    ? buildBaoBayTransferNote({
+        code: saved.noticeCode,
+        fullName: pilot.fullName,
+        spot,
+        dates,
+        feeMode: fee.feeMode,
+      })
+    : "";
+
+  if (transferNote) {
+    await FlightNotice.updateOne({ _id: saved._id }, { transferNote });
+  }
+
+  return { saved, fee, transferNote, member: pilot.member };
+}

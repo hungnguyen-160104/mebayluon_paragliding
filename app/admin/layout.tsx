@@ -85,6 +85,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {level === "owner" && (
                 <NavLink href="/admin/baocao" currentPath={pathname}>Nhân sự báo bay</NavLink>
               )}
+              {/* Báo bay phi công bay đơn (/baobay) + hội viên HNAA — có CCCD/SĐT
+                  nên cũng chỉ tài khoản CHỦ (máy chủ chặn ở lib/bao-bay-admin-auth). */}
+              {level === "owner" && (
+                <NavLink href="/admin/baobay" currentPath={pathname}>Báo bay</NavLink>
+              )}
             </div>
           </div>
           {/* Góc tài khoản: đang là ai, đổi mật khẩu, đăng xuất */}
