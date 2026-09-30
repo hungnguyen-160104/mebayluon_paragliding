@@ -425,9 +425,24 @@ export function levelLabel(level: DayLevel, lang: string): string {
  * Câu tóm tắt KHÔNG kèm mặt: trang tự vẽ mặt tròn màu (SVG) đứng trước câu.
  */
 export function renderDaySummary(iso: string, p: DayParts, lang: string): string {
+  const { label, parts, sep } = renderDaySummaryParts(iso, p, lang);
+  return `${label}: ${parts.map((x) => x.text).join(sep)}`;
+}
+
+/**
+ * Như renderDaySummary nhưng trả từng MỤC kèm cờ `warn` để trang tô ĐỎ ĐẬM các
+ * mục nguy hiểm (chủ 01/10: "gió trên cao mạnh (11 m/s)" phải nổi bật):
+ * gió trên cao mạnh / cực mạnh / gió đứt, và nhiễu động mạnh.
+ */
+export function renderDaySummaryParts(
+  iso: string,
+  p: DayParts,
+  lang: string,
+): { label: string; parts: Array<{ text: string; warn: boolean }>; sep: string } {
   const w = words(lang);
   const fmt = (m: number) => m.toLocaleString(w.locale);
   const out: string[] = [];
+  const warn = new Set<number>();
   if (p.windAvg !== null) {
     const ms = p.windAvg.toFixed(1);
     out.push(
@@ -442,14 +457,18 @@ export function renderDaySummary(iso: string, p: DayParts, lang: string): string
   if (p.storm !== null) out.push(w.storm(p.storm));
   if (p.rainHours > 0) out.push(w.rain(p.rainHours));
   else if (p.drizzleHours > 0) out.push(w.drizzle(p.drizzleHours));
-  if (p.turb) out.push(w.turb[p.turb]);
+  if (p.turb) {
+    if (p.turb === "manh") warn.add(out.length);
+    out.push(w.turb[p.turb]);
+  }
   if (p.cloudBase !== null) out.push(w.cloudBase(fmt(p.cloudBase)));
   if (p.inversion === "none") out.push(w.noInversion);
   else if (p.inversion) out.push(p.inversion.kind === "nghich" ? w.inversion(fmt(p.inversion.m)) : w.stableLayer(fmt(p.inversion.m)));
   if (p.upper) {
     const l = w.upper[p.upper.level];
+    if (p.upper.level === "manh" || p.upper.level === "cucManh" || p.upper.level === "cat") warn.add(out.length);
     out.push(p.upper.ms !== null && p.upper.level !== "cat" ? w.upperMs(l, p.upper.ms) : l);
   }
   const sep = String(lang).startsWith("zh") ? "，" : ", ";
-  return `${shortDayLabel(iso, lang)}: ${out.join(sep)}`;
+  return { label: shortDayLabel(iso, lang), parts: out.map((text, i) => ({ text, warn: warn.has(i) })), sep };
 }

@@ -56,6 +56,7 @@ import {
   dayParts,
   levelLabel,
   renderDaySummary,
+  renderDaySummaryParts,
   type CalDay,
   type DayLevel,
   type DayParts,
@@ -1613,7 +1614,7 @@ export default function BaoBayClient() {
                     return (
                       <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
                         {rows.map((iso) => {
-                          const main = renderDaySummary(iso, fcMap[iso].parts, language);
+                          const mainParts = renderDaySummaryParts(iso, fcMap[iso].parts, language);
                           const sub = isVi ? renderDaySummary(iso, fcMap[iso].parts, "en") : "";
                           return (
                             <p key={iso} className="text-[13px] leading-snug text-white/85">
@@ -1624,7 +1625,14 @@ export default function BaoBayClient() {
                                   className="mr-1 inline-block h-4 w-4 align-[-3px]"
                                 />
                               ) : null}
-                              {main}
+                              {mainParts.label}:{" "}
+                              {/* Mục nguy hiểm (gió trên cao mạnh, gió đứt, nhiễu động mạnh) tô ĐỎ ĐẬM — chủ 01/10 */}
+                              {mainParts.parts.map((x, i) => (
+                                <span key={i}>
+                                  {i ? mainParts.sep : ""}
+                                  {x.warn ? <strong className="font-bold text-red-400">{x.text}</strong> : x.text}
+                                </span>
+                              ))}
                               {/* Bản tiếng Anh CÙNG DÒNG, nhỏ và nhạt (chủ 01/10) */}
                               {sub ? <span className="text-[11px] text-white/50"> / {sub}</span> : null}
                             </p>
