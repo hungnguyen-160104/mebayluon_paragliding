@@ -11,7 +11,11 @@
  * /baocao/cafe sang /cafe (06/09) là rơi ngay ra ngoài luật, trong khi hai
  * component kiểm tra riêng rẽ nên sửa một chỗ vẫn sót chỗ kia.
  */
-export const INTERNAL_PATH_PREFIXES = ["/baocao", "/cafe"] as const;
+/**
+ * /embed (30/09/2026): trang nhúng iframe camera cho web đối tác — cũng không
+ * được có menu/nút nổi (nó nằm lọt trong khung của web khác).
+ */
+export const INTERNAL_PATH_PREFIXES = ["/baocao", "/cafe", "/embed"] as const;
 
 export function isInternalPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

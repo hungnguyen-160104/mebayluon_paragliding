@@ -4,6 +4,7 @@ import { Roboto, Merriweather } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import Script from "next/script";
+import { headers } from "next/headers";
 
 import {
   LanguageProvider,
@@ -162,7 +163,9 @@ export default async function RootLayout({
    */
   const htmlLang = lang === "zh" ? "zh-CN" : lang;
 
-  const gaId = process.env.NEXT_PUBLIC_GA_ID?.trim();
+  /** Trang nhúng /embed/* (middleware gắn x-mbl-embed): không GA, không Vercel Analytics */
+  const isEmbed = (await headers()).get("x-mbl-embed") === "1";
+  const gaId = isEmbed ? undefined : process.env.NEXT_PUBLIC_GA_ID?.trim();
 
   const organizationSchema = generateOrganizationSchema();
   const localBusinessSchema = generateLocalBusinessSchema();
@@ -203,7 +206,7 @@ export default async function RootLayout({
           </UrlLocaleProvider>
         </LanguageProvider>
 
-        <Analytics />
+        {isEmbed ? null : <Analytics />}
 
         {gaId && (
           <>

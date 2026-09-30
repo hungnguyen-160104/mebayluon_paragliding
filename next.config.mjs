@@ -4,6 +4,15 @@ import { dirname } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * TRANG NHÚNG (/embed/*, 30/09/2026): web khác được đặt iframe camera bãi cất.
+ * Nguồn được phép nhúng — mặc định ["*"] = mọi web.
+ * Đổi thành danh sách domain đối tác nếu muốn giới hạn, ví dụ:
+ *   ['https://doitac-a.vn', 'https://*.doitac-b.com']
+ * CHỈ áp cho /embed/*; mọi trang khác vẫn X-Frame-Options: DENY như cũ.
+ */
+const EMBED_ALLOWED_ORIGINS = ['*'];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Pin the workspace root to this project so Next.js doesn't pick up a stray
@@ -147,8 +156,25 @@ const nextConfig = {
           },
         ],
       },
+      /**
+       * /embed/*: cho mọi nguồn (EMBED_ALLOWED_ORIGINS) nhúng iframe, KHÔNG gửi
+       * X-Frame-Options (DENY/SAMEORIGIN sẽ thắng frame-ancestors ở trình duyệt
+       * cũ). Luôn noindex: chỉ là khung nhúng, trang thật là /baobay.
+       */
+      ...['/embed', '/embed/:path*'].map((source) => ({
+        source,
+        headers: [
+          { key: 'Content-Security-Policy', value: `frame-ancestors ${EMBED_ALLOWED_ORIGINS.join(' ')}` },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Robots-Tag', value: 'noindex, follow' },
+        ],
+      })),
+      /**
+       * Mọi đường dẫn TRỪ /embed và /embed/* — Next không gỡ được header mà khối
+       * trước đã gắn, nên phải loại /embed ngay ở mẫu khớp.
+       */
       {
-        source: '/:path*',
+        source: '/:path((?!embed(?:/|$)).*)',
         headers: [
           {
             key: 'X-Content-Type-Options',

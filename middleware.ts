@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { BAOBAY_COOKIE } from "@/lib/baobay/cookie";
+import { isCamId } from "@/lib/imou/cameras";
 import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
 
 const LOCALE_PREFIX = /^\/(en|fr|ru|zh|hi)(\/.*)?$/;
@@ -130,6 +131,30 @@ export function middleware(request: NextRequest) {
     return internalHeaders(NextResponse.next());
   }
 
+  /**
+   * TRANG NHÚNG (/embed/*, 30/09/2026): báo cho app/layout.tsx qua header
+   * x-mbl-embed để bỏ GA/Vercel Analytics (khung nằm trong web khác — không
+   * đếm lượt xem ảo, không tải script nặng). Header chống nhúng cho /embed nằm
+   * ở next.config.mjs.
+   */
+  if (pathname === "/embed" || pathname.startsWith("/embed/")) {
+    /**
+     * Camera không tồn tại → 404 THẬT ở đây: layout bọc trang trong <Suspense>
+     * nên notFound() trong page chỉ cho 200 + noindex (soft 404).
+     */
+    const camMatch = pathname.match(/^\/embed\/camera\/([^/]+)\/?$/);
+    if (camMatch && !isCamId(camMatch[1])) {
+      return new NextResponse("Không có camera này / Camera not found", {
+        status: 404,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "X-Robots-Tag": "noindex" },
+      });
+    }
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.delete("x-locale");
+    requestHeaders.set("x-mbl-embed", "1");
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   const localeMatch = pathname.match(LOCALE_PREFIX);
 
   if (localeMatch) {
@@ -166,6 +191,7 @@ export function middleware(request: NextRequest) {
 
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-locale", locale);
+    requestHeaders.delete("x-mbl-embed");
 
     const response = NextResponse.rewrite(url, {
       request: { headers: requestHeaders },
@@ -195,11 +221,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301);
   }
 
-  // Chặn header x-locale giả mạo từ bên ngoài trên URL không prefix —
-  // header này chỉ được phép do chính middleware đặt ở nhánh trên
-  if (request.headers.has("x-locale")) {
+  // Chặn header x-locale / x-mbl-embed giả mạo từ bên ngoài trên URL không prefix —
+  // hai header này chỉ được phép do chính middleware đặt ở các nhánh trên
+  if (request.headers.has("x-locale") || request.headers.has("x-mbl-embed")) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.delete("x-locale");
+    requestHeaders.delete("x-mbl-embed");
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
