@@ -131,9 +131,6 @@ export type BaoBayDict = {
 
   radioTitle: string;
   emergencyTitle: string;
-  calLegendFaces: string;
-  calLegendWind: string;
-  calLegendSky: string;
   calFullForecast: string;
 
   todayTitle: (n: number) => string;
@@ -280,9 +277,6 @@ const vi: BaoBayDict = {
 
   radioTitle: "Tần số bộ đàm thông dụng",
   emergencyTitle: "Hotline khẩn cấp",
-  calLegendFaces: "😊 bay tốt · 😐 cân nhắc · 😢 nên nghỉ",
-  calLegendWind: "mũi tên: hướng gió thổi tới (6h–18h)",
-  calLegendSky: "☀️ nắng · ⛅ nhiều mây · 🌧️ mưa giờ bay",
   calFullForecast: "Xem dự báo chi tiết",
 
   todayTitle: (n) => `Hôm nay đã có ${n} phi công báo bay:`,
@@ -451,9 +445,6 @@ const en: BaoBayDict = {
 
   radioTitle: "Common radio frequencies",
   emergencyTitle: "Emergency hotline",
-  calLegendFaces: "😊 good · 😐 marginal · 😢 bad",
-  calLegendWind: "arrow: direction the wind blows to (6am–6pm)",
-  calLegendSky: "☀️ sunny · ⛅ cloudy · 🌧️ rain in flying hours",
   calFullForecast: "See full forecast",
 
   todayTitle: (n) => `${n} pilot${n === 1 ? "" : "s"} registered a flight today:`,
@@ -622,9 +613,6 @@ const fr: BaoBayDict = {
 
   radioTitle: "Fréquences radio courantes",
   emergencyTitle: "Numéro d'urgence",
-  calLegendFaces: "😊 bon · 😐 limite · 😢 mauvais",
-  calLegendWind: "flèche : sens vers lequel souffle le vent (6h–18h)",
-  calLegendSky: "☀️ soleil · ⛅ nuageux · 🌧️ pluie aux heures de vol",
   calFullForecast: "Voir les prévisions détaillées",
 
   todayTitle: (n) => `${n} pilote${n > 1 ? "s ont" : " a"} enregistré un vol aujourd'hui :`,
@@ -793,9 +781,6 @@ const ru: BaoBayDict = {
 
   radioTitle: "Основные частоты раций",
   emergencyTitle: "Экстренная горячая линия",
-  calLegendFaces: "😊 хорошо · 😐 на грани · 😢 плохо",
-  calLegendWind: "стрелка: куда дует ветер (6–18 ч)",
-  calLegendSky: "☀️ солнце · ⛅ облачно · 🌧️ дождь в лётные часы",
   calFullForecast: "Подробный прогноз",
 
   todayTitle: (n) => `Сегодня зарегистрировались пилотов: ${n} —`,
@@ -964,9 +949,6 @@ const zh: BaoBayDict = {
 
   radioTitle: "常用对讲机频率",
   emergencyTitle: "紧急热线",
-  calLegendFaces: "😊 适飞 · 😐 需斟酌 · 😢 不宜",
-  calLegendWind: "箭头：风吹向的方向（6–18 时）",
-  calLegendSky: "☀️ 晴 · ⛅ 多云 · 🌧️ 飞行时段有雨",
   calFullForecast: "查看详细预报",
 
   todayTitle: (n) => `今天已有 ${n} 位飞行员登记：`,
@@ -1135,9 +1117,6 @@ const hi: BaoBayDict = {
 
   radioTitle: "सामान्य रेडियो आवृत्तियाँ",
   emergencyTitle: "आपातकालीन हेल्पलाइन",
-  calLegendFaces: "😊 अच्छा · 😐 सीमांत · 😢 खराब",
-  calLegendWind: "तीर: हवा जिस ओर बह रही है (6–18 बजे)",
-  calLegendSky: "☀️ धूप · ⛅ बादल · 🌧️ उड़ान समय में बारिश",
   calFullForecast: "पूरा पूर्वानुमान देखें",
 
   todayTitle: (n) => `आज ${n} पायलटों ने उड़ान पंजीकरण किया:`,

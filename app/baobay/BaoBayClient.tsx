@@ -48,7 +48,7 @@ import {
   wingClassLabel,
   type WingClass,
 } from "@/lib/pilot-event";
-import { huongTroiNgay } from "@/lib/baobay/thoi-tiet";
+import { calDay, dayParts, renderDaySummary, type CalDay, type DayParts, type NgayApi } from "@/lib/bao-bay-weather";
 import { buildVietQrPayload } from "@/lib/vietqr";
 import { WindArrow } from "@/components/weather/WindArrow";
 
@@ -70,13 +70,42 @@ function toISO(y: number, m: number, d: number): string {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
-/** Lưới ngày của một tháng, bắt đầu từ Thứ 2, có ô trống đầu tháng để căn cột. */
-function monthGrid(year: number, month: number): Array<string | null> {
-  const first = new Date(year, month, 1);
-  const offset = (first.getDay() + 6) % 7;
+/** Cộng n ngày vào "YYYY-MM-DD" (tính theo lịch, không dính múi giờ). */
+function addDaysISO(iso: string, n: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + n));
+  return toISO(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate());
+}
+
+/**
+ * Lưới ngày của một tháng, bắt đầu từ Thứ 2 — KHÔNG CÓ Ô TRỐNG (chủ 30/09).
+ *
+ * Trước đây cuối tháng để trống (30/9 là thứ Tư thì T5–CN trống trơn), đúng
+ * chỗ phi công cần chọn nhất là mấy ngày tới. Nay:
+ *  - đầu tuần đầu điền ngày cuối tháng TRƯỚC, cuối tuần cuối điền ngày đầu
+ *    tháng SAU (hiện mờ, `inMonth: false`) — vẫn chọn được nếu chưa qua;
+ *  - `showUntil`: nếu tháng đang xem hết trước ngày này thì kéo thêm cả tuần
+ *    cho tới khi phủ ngày đó — cuối tháng mở trang vẫn thấy đủ ~2 tuần tới
+ *    (và dự báo) mà không phải bấm ›.
+ * Ô lưu theo ngày ISO nên một ngày hiện ở hai tháng liền nhau vẫn chỉ là một
+ * lựa chọn — chọn ở tháng này thì sang tháng kia cũng thấy đã chọn.
+ */
+function monthGrid(year: number, month: number, showUntil?: string): Array<{ iso: string; inMonth: boolean }> {
+  const first = toISO(year, month, 1);
+  const offset = (new Date(year, month, 1).getDay() + 6) % 7;
   const dayCount = new Date(year, month + 1, 0).getDate();
-  const cells: Array<string | null> = Array(offset).fill(null);
-  for (let d = 1; d <= dayCount; d++) cells.push(toISO(year, month, d));
+  const last = toISO(year, month, dayCount);
+
+  const cells: Array<{ iso: string; inMonth: boolean }> = [];
+  for (let i = offset; i > 0; i--) cells.push({ iso: addDaysISO(first, -i), inMonth: false });
+  for (let d = 1; d <= dayCount; d++) cells.push({ iso: toISO(year, month, d), inMonth: true });
+
+  let cur = last;
+  // Lấp nốt tuần cuối, rồi thêm tuần cho tới khi phủ `showUntil`
+  while (cells.length % 7 !== 0 || (showUntil && cur < showUntil)) {
+    cur = addDaysISO(cur, 1);
+    cells.push({ iso: cur, inMonth: false });
+  }
   return cells;
 }
 
@@ -281,43 +310,11 @@ const SERVER_ERR_FIELD: Partial<Record<BaoBayErrKey, ErrorKey>> = {
 const SUPPORT_PHONE = BAO_BAY_HOTLINE.display;
 const SUPPORT_TEL = BAO_BAY_HOTLINE.tel;
 
-/**
- * TÓM TẮT DỰ BÁO MỘT NGÀY cho ô lịch (chủ 30/09): mặt cười theo mức ngày,
- * mũi tên hướng gió thổi TỚI trong khung 6h–18h, nắng/mây/mưa.
- * Bảng đầy đủ vẫn ở khối dự báo — ô lịch chỉ đủ chỗ cho ba ký hiệu.
- */
-type CalDay = { face: string; wind: number | null; sky: string };
-
-const MAT_NGAY: Record<string, string> = { xanh: "😊", vang: "😐", do: "😢" };
-
-type NgayApi = {
-  ngay: string;
-  muc: string;
-  gioMuaBay?: number;
-  gio?: Array<{ gio: string; huong: number; gio10m: number; may?: number }>;
-};
-
-function tomTatNgay(n: NgayApi): CalDay {
-  const gio = Array.isArray(n.gio) ? n.gio : [];
-  // Mây trung bình trong giờ bay (8h–17h) — đủ để chia nắng / nhiều mây
-  const bay = gio.filter((g) => {
-    const h = Number(String(g.gio).slice(11, 13));
-    return h >= 8 && h <= 17 && Number.isFinite(g.may);
-  });
-  const may = bay.length ? bay.reduce((t, g) => t + (g.may as number), 0) / bay.length : 0;
-  return {
-    face: MAT_NGAY[n.muc] ?? "",
-    // Cùng hàm và cùng khung 6h–18h với ô ngày của bảng dự báo (huongTroiCuaNgay)
-    wind: huongTroiNgay(gio as never, [6, 18]),
-    sky: (n.gioMuaBay ?? 0) > 0 ? "🌧️" : may < 50 ? "☀️" : "⛅",
-  };
-}
-
 const SPOT_ICON: Record<BaoBaySpot, string> = { "vien-nam": "🏞️", "khau-pha": "🌾", "quan-ba": "⛰️" };
 
 export default function BaoBayClient() {
   const { language } = useLanguage();
-  const { T, b, s } = baoBayBilingual(language);
+  const { T, b, s, isVi } = baoBayBilingual(language);
 
   /** Lỗi theo mã (máy chủ trả về) → câu đúng ngôn ngữ; mã lạ thì null. */
   const errText = (code: string): string | null =>
@@ -376,7 +373,9 @@ export default function BaoBayClient() {
   const [submitting, setSubmitting] = useState(false);
 
   /** Tóm tắt dự báo theo ngày cho ô lịch — nhớ theo mã điểm, mỗi điểm tải MỘT lần. */
-  const [calFc, setCalFc] = useState<Record<string, Record<string, CalDay>>>({});
+  const [calFc, setCalFc] = useState<Record<string, Record<string, { cal: CalDay; parts: DayParts }>>>({});
+  /** Ngày vừa bấm gần nhất — dòng tóm tắt dự báo của nó đứng đầu. */
+  const [lastTapped, setLastTapped] = useState("");
   const forecastCardRef = useRef<HTMLDivElement>(null);
 
   /** Dự báo đang mở: dưới ô chọn điểm (điểm đang chọn) và ở khối "3 điểm bay". */
@@ -439,8 +438,8 @@ export default function BaoBayClient() {
       const res = await fetch(`/api/thoi-tiet?spot=${encodeURIComponent(weatherSlug)}&days=15`);
       if (!res.ok) return;
       const j = (await res.json()) as { ngay?: NgayApi[] };
-      const map: Record<string, CalDay> = {};
-      for (const n of j.ngay ?? []) map[n.ngay] = tomTatNgay(n);
+      const map: Record<string, { cal: CalDay; parts: DayParts }> = {};
+      for (const n of j.ngay ?? []) map[n.ngay] = { cal: calDay(n), parts: dayParts(n) };
       if (alive) setCalFc((c) => ({ ...c, [weatherSlug]: map }));
     })().catch(() => {
       /* không có dự báo thì lịch trơn */
@@ -469,6 +468,7 @@ export default function BaoBayClient() {
   };
 
   const toggleDate = (iso: string) => {
+    setLastTapped(iso);
     setDates((prev) => (prev.includes(iso) ? prev.filter((d) => d !== iso) : [...prev, iso].sort()));
     setErrors((e) => ({ ...e, dates: undefined }));
   };
@@ -990,7 +990,18 @@ export default function BaoBayClient() {
   }
 
   /* ---------------- phiếu báo bay ---------------- */
-  const grid = monthGrid(viewMonth.year, viewMonth.month);
+  const [todayYY, todayMM] = todayISO.split("-").map(Number);
+  // Đang xem tháng hiện tại thì lưới kéo tới ít nhất 13 ngày sau hôm nay
+  const isCurrentMonthView = viewMonth.year === todayYY && viewMonth.month === todayMM - 1;
+  const fullGrid = monthGrid(viewMonth.year, viewMonth.month, isCurrentMonthView ? addDaysISO(todayISO, 13) : undefined);
+  /**
+   * Tháng hiện tại: BỎ những hàng tuần đã qua trọn vẹn — cuối tháng mà giữ bốn
+   * hàng ngày cũ xám xịt thì hai tuần tới (chỗ có dự báo) bị đẩy khỏi màn hình
+   * điện thoại. Hàng có hôm nay vẫn giữ nguyên.
+   */
+  const grid = isCurrentMonthView
+    ? fullGrid.filter((_, i) => fullGrid[Math.floor(i / 7) * 7 + 6].iso >= todayISO)
+    : fullGrid;
   const [todayY, todayM] = todayISO.split("-").map(Number);
   const atCurrentMonth = viewMonth.year === todayY && viewMonth.month === todayM - 1;
 
@@ -1185,12 +1196,11 @@ export default function BaoBayClient() {
                         <Bi t={{ main: "", sub: b((d) => d.weekdays[i]).sub }} subClass="text-[9px]" />
                       </div>
                     ))}
-                    {grid.map((iso, i) => {
-                      if (!iso) return <div key={`empty-${i}`} />;
+                    {grid.map(({ iso, inMonth }) => {
                       const selected = dates.includes(iso);
                       const past = iso < todayISO;
                       const isToday = iso === todayISO;
-                      const fc = !past && weatherSlug ? calFc[weatherSlug]?.[iso] : undefined;
+                      const fc = !past && weatherSlug ? calFc[weatherSlug]?.[iso]?.cal : undefined;
                       return (
                         <button
                           key={iso}
@@ -1204,7 +1214,10 @@ export default function BaoBayClient() {
                               ? "bg-amber-400 text-black shadow-[0_0_18px_rgba(251,191,36,.4)]"
                               : past
                                 ? "cursor-not-allowed text-white/15"
-                                : "text-white/80 hover:bg-white/10",
+                                : inMonth
+                                  ? "text-white/80 hover:bg-white/10"
+                                  : // Ngày của tháng kề: mờ hơn nhưng vẫn đọc được và bấm được
+                                    "bg-white/[0.03] text-white/50 hover:bg-white/10",
                             isToday && !selected ? "ring-1 ring-amber-400/60" : "",
                           ].join(" ")}
                         >
@@ -1223,32 +1236,43 @@ export default function BaoBayClient() {
                     })}
                   </div>
 
-                  {/* Chú thích ký hiệu dự báo trong ô lịch + lối mở bảng dự báo đầy đủ */}
+                  {/* Bỏ chú thích ký hiệu (chủ 30/09) — thay bằng dòng tóm tắt khi bấm
+                      vào ngày; chỉ giữ lối mở bảng dự báo đầy đủ. */}
                   {weatherSlug && calFc[weatherSlug] && Object.keys(calFc[weatherSlug]).length ? (
-                    <div className="mt-2 border-t border-white/10 pt-2 text-[11px] leading-relaxed text-white/55">
-                      {/* Mỗi nhóm ký hiệu một dòng — ghép chung một dòng thì bản tiếng Anh
-                          nhỏ bên dưới bị xé lẻ, đọc không ra cặp nào với cặp nào */}
-                      <span className="block">
-                        <Bi t={b((d) => d.calLegendFaces)} />
-                      </span>
-                      <span className="mt-1 block">
-                        <Bi t={b((d) => d.calLegendSky)} />
-                      </span>
-                      <span className="mt-1 flex items-start gap-1">
-                        <WindArrow deg={180} className="!h-3 !w-3 mt-0.5 shrink-0" />
-                        <span>
-                          <Bi t={b((d) => d.calLegendWind)} />
-                        </span>
-                      </span>
+                    <div className="mt-2 border-t border-white/10 pt-2 text-[12px]">
                       <button
                         type="button"
                         onClick={openFullForecast}
-                        className="mt-1 font-semibold text-sky-300 underline underline-offset-2"
+                        className="font-semibold text-sky-300 underline underline-offset-2"
                       >
                         ⛅ <Bi t={b((d) => d.calFullForecast)} inline />
                       </button>
                     </div>
                   ) : null}
+
+                  {/* TÓM TẮT DỰ BÁO của ngày đã chọn (chủ 30/09): ngày vừa bấm đứng
+                      đầu, tối đa 5 ngày; ngày ngoài tầm dự báo thì không có dòng. */}
+                  {(() => {
+                    const fcMap = weatherSlug ? calFc[weatherSlug] : undefined;
+                    if (!fcMap) return null;
+                    const order = [...dates].sort((x, y) => (x === lastTapped ? -1 : y === lastTapped ? 1 : x < y ? -1 : 1));
+                    const rows = order.filter((iso) => fcMap[iso]).slice(0, 5);
+                    if (!rows.length) return null;
+                    return (
+                      <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
+                        {rows.map((iso) => {
+                          const main = renderDaySummary(iso, fcMap[iso].parts, language);
+                          const sub = isVi ? renderDaySummary(iso, fcMap[iso].parts, "en") : "";
+                          return (
+                            <p key={iso} className="text-[13px] leading-snug text-white/85">
+                              {main}
+                              {sub ? <span className="mt-0.5 block text-[11px] leading-snug text-white/50">{sub}</span> : null}
+                            </p>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
 
                   {dates.length ? (
                     <div className="mt-3 border-t border-white/10 pt-3 text-sm text-white/70">
