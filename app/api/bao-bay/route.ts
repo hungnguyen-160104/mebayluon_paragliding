@@ -25,6 +25,7 @@ import {
   normalizeMemberCode,
   type BaoBayFee,
 } from "@/lib/bao-bay";
+import { baoBayPilotMail } from "@/lib/email/bao-bay-pilot";
 import { sendSmtpMail } from "@/lib/mailer";
 import { formatVnDate, formatVnd, wingClassLabel, type WingClass } from "@/lib/pilot-event";
 import { pilotAdminRecipients } from "@/lib/pilot-sheet";
@@ -59,6 +60,7 @@ function adminMailHtml(n: IFlightNotice, fee: BaoBayFee): string {
     ["Điện thoại", n.phone],
     ["SĐT khẩn cấp", n.emergencyPhone],
     ["Quốc tịch", `${n.nationality || ""}${n.foreigner ? " (người nước ngoài)" : ""}`],
+    ["Email", n.email || ""],
     ["Cánh dù", n.wingClass ? wingClassLabel(n.wingClass as WingClass) : ""],
     ["Bằng / cấp bay", n.licence || ""],
     ["Mã hội viên HNAA", n.memberCode ? `${n.memberCode}${n.memberPhoneUnverified ? " (chưa đối chiếu SĐT — danh sách hội chưa có số)" : ""}` : ""],
@@ -144,8 +146,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const { saved, fee, transferNote } = result;
+  const { saved, fee, transferNote, member } = result;
   const notice = { ...(saved.toObject() as IFlightNotice), transferNote };
+
+  /**
+   * Thư XÁC NHẬN cho phi công: email tự điền, bỏ trống thì hội viên HNAA dùng
+   * email trong danh sách hội (không bao giờ hiện ra trang). Không có email nào
+   * thì thôi. Ngôn ngữ theo trang phi công đang xem.
+   */
+  const pilotEmail = notice.email || (member?.email ? String(member.email) : "");
+  const lang = String(body.lang ?? "vi").slice(0, 2);
 
   // Thư báo về ban tổ chức: chạy sau khi đã trả lời, hỏng cũng chỉ ghi log
   after(async () => {
@@ -159,6 +169,18 @@ export async function POST(req: Request) {
       console.warn("[BaoBay] admin mail failed:", e);
     }
   });
+
+  if (pilotEmail) {
+    after(async () => {
+      try {
+        const mail = baoBayPilotMail({ notice, fee, transferNote, lang });
+        // Gửi từ hộp dangky.mebayluon (chưa có mật khẩu thì hộp mặc định + Reply-To dangky)
+        await sendSmtpMail({ to: pilotEmail, subject: mail.subject, html: mail.html, sender: "dangky" });
+      } catch (e) {
+        console.warn("[BaoBay] pilot confirmation mail failed:", e);
+      }
+    });
+  }
 
   return NextResponse.json({
     ok: true,

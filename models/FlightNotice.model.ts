@@ -21,6 +21,8 @@ export interface IFlightNotice {
   phone: string;
   emergencyPhone: string;
   nationality?: string;
+  /** Email phi công tự điền (không bắt buộc) — gửi thư xác nhận báo bay. */
+  email?: string;
   /** Phi công nước ngoài — bắt buộc khai quốc tịch, số giấy tờ là hộ chiếu. */
   foreigner?: boolean;
   /** Cấp cánh dù (EN A…D, PPG) — cùng thang với /muavang. */
@@ -81,6 +83,7 @@ const FlightNoticeSchema = new Schema<IFlightNotice>(
     phone: { type: String, default: "" },
     emergencyPhone: { type: String, default: "" },
     nationality: String,
+    email: String,
     foreigner: { type: Boolean, default: false },
     wingClass: String,
     licence: String,

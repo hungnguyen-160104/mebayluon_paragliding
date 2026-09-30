@@ -27,6 +27,7 @@ export type BaoBayErrKey =
   | "phoneMismatch"
   | "phoneLocked"
   | "rules"
+  | "email"
   | "server"
   | "rate"
   | "network";
@@ -103,6 +104,15 @@ export type BaoBayDict = {
   fEmergencyPhonePh: string;
   fWing: string;
   wingPpg: string;
+  fEmail: string;
+  fEmailHint: string;
+  fEmailPh: string;
+  mailSubject: string;
+  mailIntro: string;
+  mailRulesTitle: string;
+  mailRulesGeneric: string;
+  mailRulesLink: string;
+  mailBack: string;
   fLicence: string;
   fLicencePh: string;
   fNote: string;
@@ -254,6 +264,15 @@ const vi: BaoBayDict = {
   fEmergencyPhonePh: "Người thân / bạn bay",
   fWing: "Cấp cánh dù",
   wingPpg: "Dù PPG",
+  fEmail: "Email",
+  fEmailHint: "không bắt buộc — để nhận thư xác nhận",
+  fEmailPh: "ban@email.com",
+  mailSubject: "Xác nhận báo bay",
+  mailIntro: "Cảm ơn bạn đã báo bay. Đây là thông tin báo bay của bạn:",
+  mailRulesTitle: "Nhắc nội quy điểm bay",
+  mailRulesGeneric: "Hãy tuân thủ nội quy điểm bay và hướng dẫn của điều phối; chỉ bay trong vùng được phép, đủ mũ bảo hiểm, bộ đàm, dù phụ.",
+  mailRulesLink: "Xem đầy đủ Nội quy điểm bay",
+  mailBack: "Báo bay lần sau tại",
   fLicence: "Bằng / cấp phi công",
   fLicencePh: "Ví dụ: P3, IPPI 4",
   fNote: "Ghi chú",
@@ -333,6 +352,7 @@ const vi: BaoBayDict = {
     phoneMismatch: "Số điện thoại không khớp với hội viên này",
     phoneLocked: "Nhập sai số điện thoại quá nhiều lần — mã hội viên này tạm khoá 15 phút",
     rules: "Vui lòng đọc và tích chấp nhận Nội quy điểm bay Núi Viên Nam",
+    email: "Email chưa đúng định dạng",
     server: "Không gửi được báo bay, vui lòng thử lại",
     rate: "Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút",
     network: "Mất kết nối mạng, vui lòng thử lại",
@@ -437,6 +457,15 @@ const en: BaoBayDict = {
   fEmergencyPhonePh: "Family member / flying buddy",
   fWing: "Wing class",
   wingPpg: "PPG wing",
+  fEmail: "Email",
+  fEmailHint: "optional — to receive a confirmation",
+  fEmailPh: "you@email.com",
+  mailSubject: "Flight register confirmation",
+  mailIntro: "Thank you for registering your flight. Here are your details:",
+  mailRulesTitle: "Site rules reminder",
+  mailRulesGeneric: "Follow the site rules and the coordinators' instructions; fly only inside the permitted zone, with helmet, radio and reserve.",
+  mailRulesLink: "Read the full site regulations",
+  mailBack: "Register your next flight at",
   fLicence: "Licence / pilot level",
   fLicencePh: "e.g. P3, IPPI 4",
   fNote: "Notes",
@@ -516,6 +545,7 @@ const en: BaoBayDict = {
     phoneMismatch: "Phone number doesn't match this member",
     phoneLocked: "Too many wrong phone numbers — this member code is locked for 15 minutes",
     rules: "Please read and accept the Vien Nam flying site regulations",
+    email: "This email address doesn't look right",
     server: "Could not submit the register, please try again",
     rate: "Too many attempts, please try again in a few minutes",
     network: "Network error, please try again",
@@ -620,6 +650,15 @@ const fr: BaoBayDict = {
   fEmergencyPhonePh: "Proche / compagnon de vol",
   fWing: "Classe de voile",
   wingPpg: "Voile PPG",
+  fEmail: "Email",
+  fEmailHint: "facultatif — pour recevoir une confirmation",
+  fEmailPh: "vous@email.com",
+  mailSubject: "Confirmation d'enregistrement de vol",
+  mailIntro: "Merci pour votre enregistrement. Voici vos informations :",
+  mailRulesTitle: "Rappel du règlement du site",
+  mailRulesGeneric: "Respectez le règlement du site et les consignes des coordinateurs ; volez uniquement dans la zone autorisée, avec casque, radio et secours.",
+  mailRulesLink: "Lire le règlement complet du site",
+  mailBack: "Enregistrez votre prochain vol sur",
   fLicence: "Brevet / niveau de pilote",
   fLicencePh: "ex. P3, IPPI 4",
   fNote: "Remarques",
@@ -699,6 +738,7 @@ const fr: BaoBayDict = {
     phoneMismatch: "Le numéro ne correspond pas à ce membre",
     phoneLocked: "Trop de numéros erronés — ce code membre est bloqué 15 minutes",
     rules: "Veuillez lire et accepter le règlement du site de Vien Nam",
+    email: "Cette adresse email semble incorrecte",
     server: "Impossible d'envoyer l'enregistrement, veuillez réessayer",
     rate: "Trop de tentatives, réessayez dans quelques minutes",
     network: "Erreur réseau, veuillez réessayer",
@@ -803,6 +843,15 @@ const ru: BaoBayDict = {
   fEmergencyPhonePh: "Родственник / напарник по полётам",
   fWing: "Класс крыла",
   wingPpg: "Крыло PPG",
+  fEmail: "Email",
+  fEmailHint: "необязательно — для письма-подтверждения",
+  fEmailPh: "vy@email.com",
+  mailSubject: "Подтверждение регистрации полёта",
+  mailIntro: "Спасибо за регистрацию полёта. Ваши данные:",
+  mailRulesTitle: "Напоминание о правилах площадки",
+  mailRulesGeneric: "Соблюдайте правила площадки и указания координаторов; летайте только в разрешённой зоне, со шлемом, рацией и запаской.",
+  mailRulesLink: "Полные правила площадки",
+  mailBack: "Следующую регистрацию можно сделать на",
   fLicence: "Свидетельство / уровень пилота",
   fLicencePh: "напр. P3, IPPI 4",
   fNote: "Примечание",
@@ -882,6 +931,7 @@ const ru: BaoBayDict = {
     phoneMismatch: "Номер телефона не совпадает с этим членом",
     phoneLocked: "Слишком много неверных номеров — код члена заблокирован на 15 минут",
     rules: "Прочитайте и примите правила площадки Вьен Нам",
+    email: "Адрес email указан неверно",
     server: "Не удалось отправить регистрацию, попробуйте ещё раз",
     rate: "Слишком много попыток, попробуйте через несколько минут",
     network: "Ошибка сети, попробуйте ещё раз",
@@ -986,6 +1036,15 @@ const zh: BaoBayDict = {
   fEmergencyPhonePh: "家人 / 飞友",
   fWing: "伞翼级别",
   wingPpg: "动力伞翼",
+  fEmail: "电子邮箱",
+  fEmailHint: "选填——用于接收确认邮件",
+  fEmailPh: "you@email.com",
+  mailSubject: "飞行登记确认",
+  mailIntro: "感谢您的飞行登记。以下是您的登记信息：",
+  mailRulesTitle: "场地规章提醒",
+  mailRulesGeneric: "请遵守场地规章和调度指示；只在允许区域内飞行，并配备头盔、对讲机和备份伞。",
+  mailRulesLink: "查看完整场地规章",
+  mailBack: "下次登记请访问",
   fLicence: "执照 / 飞行员等级",
   fLicencePh: "例如 P3、IPPI 4",
   fNote: "备注",
@@ -1065,6 +1124,7 @@ const zh: BaoBayDict = {
     phoneMismatch: "电话号码与该会员不符",
     phoneLocked: "电话号码错误次数过多——该会员编号锁定 15 分钟",
     rules: "请阅读并同意 Vien Nam 飞行场地规章",
+    email: "电子邮箱格式不正确",
     server: "登记提交失败，请重试",
     rate: "操作过于频繁，请几分钟后再试",
     network: "网络错误，请重试",
@@ -1169,6 +1229,15 @@ const hi: BaoBayDict = {
   fEmergencyPhonePh: "परिजन / उड़ान साथी",
   fWing: "विंग श्रेणी",
   wingPpg: "PPG विंग",
+  fEmail: "ईमेल",
+  fEmailHint: "वैकल्पिक — पुष्टि पाने के लिए",
+  fEmailPh: "you@email.com",
+  mailSubject: "उड़ान पंजीकरण की पुष्टि",
+  mailIntro: "उड़ान पंजीकरण के लिए धन्यवाद। आपका विवरण:",
+  mailRulesTitle: "साइट नियमों की याद",
+  mailRulesGeneric: "साइट नियमों और समन्वयकों के निर्देशों का पालन करें; केवल अनुमत क्षेत्र में, हेलमेट, रेडियो और रिज़र्व के साथ उड़ें।",
+  mailRulesLink: "साइट के पूरे नियम पढ़ें",
+  mailBack: "अगला पंजीकरण यहाँ करें",
   fLicence: "लाइसेंस / पायलट स्तर",
   fLicencePh: "जैसे P3, IPPI 4",
   fNote: "टिप्पणी",
@@ -1248,6 +1317,7 @@ const hi: BaoBayDict = {
     phoneMismatch: "फ़ोन नंबर इस सदस्य से मेल नहीं खाता",
     phoneLocked: "बहुत बार ग़लत फ़ोन नंबर — यह सदस्य कोड 15 मिनट के लिए लॉक है",
     rules: "कृपया विएन नाम उड़ान स्थल के नियम पढ़कर स्वीकार करें",
+    email: "ईमेल पता सही नहीं लगता",
     server: "पंजीकरण नहीं भेजा जा सका, कृपया फिर कोशिश करें",
     rate: "बहुत अधिक प्रयास, कुछ मिनट बाद फिर कोशिश करें",
     network: "नेटवर्क त्रुटि, कृपया फिर कोशिश करें",

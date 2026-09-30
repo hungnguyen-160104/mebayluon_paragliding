@@ -54,6 +54,7 @@ export type BaoBayErrorCode =
   | "phoneMismatch"
   | "phoneLocked"
   | "rules"
+  | "email"
   | "server";
 
 export class BaoBayError extends Error {
@@ -244,6 +245,8 @@ export type BaoBayInput = {
   memberPhone?: unknown;
   /** Đã tích "chấp nhận tuân thủ Nội quy" — bắt buộc ở Viên Nam. */
   rulesAccepted?: unknown;
+  /** Email (không bắt buộc) — có thì kiểm định dạng, gửi thư xác nhận. */
+  email?: unknown;
   fullName?: unknown;
   idNumber?: unknown;
   phone?: unknown;
@@ -448,6 +451,12 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
    * NỘI QUY VIÊN NAM (chủ 01/10): phi công phải tích "chấp nhận tuân thủ" —
    * trang có ô bắt buộc, máy chủ kiểm lại và lưu lúc chấp nhận.
    */
+  /** EMAIL không bắt buộc; có điền thì phải đúng dạng cơ bản a@b.c. */
+  const email = clean(input.email, 120).toLowerCase();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    throw new BaoBayError("email", "Email chưa đúng định dạng");
+  }
+
   if (spot === "vien-nam" && input.rulesAccepted !== true) {
     throw new BaoBayError("rules", "Vui lòng đọc và chấp nhận Nội quy điểm bay Núi Viên Nam");
   }
@@ -544,6 +553,7 @@ export async function createBaoBayNotice(input: BaoBayInput, now: Date) {
     phone: pilot.phone,
     emergencyPhone: pilot.emergencyPhone,
     nationality,
+    email: email || undefined,
     foreigner,
     wingClass: WING_CLASSES.includes(wingRaw) ? wingRaw : undefined,
     licence: clean(input.licence, 60) || undefined,

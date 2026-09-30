@@ -334,7 +334,7 @@ type MemberState =
   | { status: "wrong" }
   | { status: "rate" };
 
-const ERROR_ORDER = ["spot", "dates", "fullName", "nationality", "idNumber", "phone", "emergencyPhone", "rules"] as const;
+const ERROR_ORDER = ["spot", "dates", "fullName", "nationality", "idNumber", "phone", "emergencyPhone", "email", "rules"] as const;
 type ErrorKey = (typeof ERROR_ORDER)[number];
 type Errors = Partial<Record<ErrorKey, string>>;
 
@@ -349,6 +349,7 @@ const SERVER_ERR_FIELD: Partial<Record<BaoBayErrKey, ErrorKey>> = {
   emergencyPhone: "emergencyPhone",
   nationality: "nationality",
   rules: "rules",
+  email: "email",
 };
 
 const SUPPORT_PHONE = BAO_BAY_HOTLINE.display;
@@ -373,6 +374,7 @@ type SavedPilot = {
   phone?: string;
   emergencyPhone?: string;
   licence?: string;
+  email?: string;
   wingClass?: string;
   memberCode?: string;
   memberPhone?: string;
@@ -468,6 +470,8 @@ export default function BaoBayClient() {
   const [emergencyPhone, setEmergencyPhone] = useState("");
   const [wingClass, setWingClass] = useState<WingClass | "">("");
   const [licence, setLicence] = useState("");
+  /** Email không bắt buộc — có thì máy chủ gửi thư xác nhận (từ hộp dangky). */
+  const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   /** Phiếu đang được điền sẵn từ lần báo bay trước (localStorage). */
   const [prefilled, setPrefilled] = useState(false);
@@ -694,6 +698,7 @@ export default function BaoBayClient() {
     setPhone(str(o.phone, 30));
     setEmergencyPhone(str(o.emergencyPhone, 30));
     setLicence(str(o.licence, 60));
+    setEmail(str(o.email, 120));
     if (o.wingClass && (WING_CLASSES as string[]).includes(o.wingClass)) setWingClass(o.wingClass as WingClass);
     const mc = str(o.memberCode, 40);
     const mp = str(o.memberPhone, 30);
@@ -719,6 +724,7 @@ export default function BaoBayClient() {
     setPhone("");
     setEmergencyPhone("");
     setLicence("");
+    setEmail("");
     setWingClass("");
     setMemberCode("");
     setMemberPhone("");
@@ -888,6 +894,8 @@ export default function BaoBayClient() {
       if (!emergencyPhone.trim()) next.emergencyPhone = err((d) => d.err.emergencyPhone);
       else if (emergencyPhone.replace(/\D/g, "").length < 8) next.emergencyPhone = err((d) => d.err.phoneBad);
     }
+    // Email không bắt buộc — chỉ kiểm khi đã điền
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) next.email = err((d) => d.err.email);
     return next;
   };
 
@@ -927,6 +935,9 @@ export default function BaoBayClient() {
           expectedAmount: payTotal,
           wingClass,
           licence: licence.trim(),
+          email: email.trim(),
+          // Ngôn ngữ trang — thư xác nhận viết đúng thứ tiếng phi công đang đọc
+          lang: language,
           note: note.trim(),
         }),
       });
@@ -979,6 +990,7 @@ export default function BaoBayClient() {
         phone: phone.trim(),
         emergencyPhone: emergencyPhone.trim(),
         licence: licence.trim(),
+        email: email.trim() || undefined,
         wingClass: wingClass || undefined,
         memberCode: verifiedMember ? verifiedMember.code : undefined,
         memberPhone: verifiedMember ? memberPhone.trim() : undefined,
@@ -1995,6 +2007,32 @@ export default function BaoBayClient() {
                     </div>
                   ) : null}
 
+                  {/* EMAIL: không bắt buộc, hiện cả với hội viên HNAA (các ô khác của hội
+                      viên đã ẩn). Hội viên để trống thì máy chủ dùng email trong danh sách
+                      hội để gửi thư — email ấy KHÔNG bao giờ hiện ra đây. */}
+                  <div
+                    className="scroll-mt-24"
+                    ref={(el) => {
+                      fieldRefs.current.email = el;
+                    }}
+                  >
+                    <Field label={b((d) => d.fEmail)} hint={b((d) => d.fEmailHint)} error={errors.email}>
+                      <input
+                        className={inputClass}
+                        value={email}
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        maxLength={120}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setErrors((er) => ({ ...er, email: undefined }));
+                        }}
+                        placeholder={T.fEmailPh}
+                      />
+                    </Field>
+                  </div>
+
                   <Field label={b((d) => d.fLicence)}>
                     <input
                       className={inputClass}
@@ -2101,6 +2139,7 @@ export default function BaoBayClient() {
                     khung cuộn chứa toàn văn nội quy + hai sơ đồ (chạm để phóng to). */}
                 {spot === "vien-nam" ? (
                   <div
+                    id="rules"
                     className="mt-5 scroll-mt-24"
                     ref={(el) => {
                       fieldRefs.current.rules = el;

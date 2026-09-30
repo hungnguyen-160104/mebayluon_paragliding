@@ -32,6 +32,7 @@ type Notice = {
   idNumber: string;
   phone: string;
   emergencyPhone: string;
+  email?: string;
   memberCode?: string;
   /** Hội viên chưa có SĐT trong danh sách hội — SĐT là tự khai. */
   memberPhoneUnverified?: boolean;
@@ -374,6 +375,14 @@ function NoticesTab() {
                         {n.phone}
                       </a>
                       {n.emergencyPhone ? ` · KC ${n.emergencyPhone}` : ""}
+                      {n.email ? (
+                        <>
+                          {" · "}
+                          <a href={`mailto:${n.email}`} className="hover:underline">
+                            {n.email}
+                          </a>
+                        </>
+                      ) : null}
                     </div>
                     <div className="text-xs text-slate-400">
                       {[n.idNumber, n.wingClass ? wingClassLabel(n.wingClass as WingClass) : "", n.licence].filter(Boolean).join(" · ")}
