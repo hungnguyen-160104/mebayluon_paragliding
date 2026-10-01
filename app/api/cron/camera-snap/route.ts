@@ -11,10 +11,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * CHỤP ẢNH CAMERA BÃI CAO VIÊN NAM — 08:00–18:00 giờ VN (chủ 30/09/2026): 1 ảnh/phút
+ * CHỤP ẢNH CAMERA BÃI CAO VIÊN NAM — 05:30–19:30 giờ VN (chủ 01/10; trước 08:00–18:00) (chủ 30/09/2026): 1 ảnh/phút
  * 10:00–15:00, 3 phút/ảnh 08–10h và 15–18h (chủ 01/10).
  *
- * Ai gọi: Vercel cron trong vercel.json ("* 1-11 * * *" = mỗi phút 08–18h VN; gói
+ * Ai gọi: Vercel cron trong vercel.json ("* 0-12,22-23 * * *" = mỗi phút 05–19h59 VN, route tự bỏ phút ngoài 05:30–19:30; gói
  * Pro), kèm `Authorization: Bearer <CRON_SECRET>` — đây là lịch DUY NHẤT (Cloudflare
  * Worker trong scripts/ không deploy). Gọi tay thì `?key=`.
  *
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
   const now = new Date();
   const force = goiTay && url.searchParams.get("force") === "1";
   if (!force && !inCamActiveHours(now)) {
-    return NextResponse.json({ ok: true, skip: "ngoài giờ chụp 08:00–18:00", vn: vnHHMM(now) });
+    return NextResponse.json({ ok: true, skip: "ngoài giờ chụp 05:30–19:30", vn: vnHHMM(now) });
   }
   /** Ngoài 10:00–15:00 chỉ chụp 3 phút/lần — xem shouldSnapNow (chủ 01/10). */
   if (!force && !shouldSnapNow(now)) {

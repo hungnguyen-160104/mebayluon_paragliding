@@ -3,7 +3,7 @@
  * DANH SÁCH CAMERA BÃI CẤT (chủ 30/09/2026) — dùng chung cho máy chủ lẫn trình
  * duyệt, nên ở đây TUYỆT ĐỐI không có bí mật: chỉ tên biến môi trường, khung giờ chụp.
  *
- * Camera Imou (AOV PT, 4G) ở bãi cất cánh cao Viên Nam chụp 08:00–18:00 giờ Việt
+ * Camera Imou (AOV PT, 4G) ở bãi cất cánh cao Viên Nam chụp 05:30–19:30 giờ Việt
  * Nam (nhịp xem shouldSnapNow); trang /baobay hiện ảnh mới nhất + 60 phút gần
  * nhất. Thêm camera mới = thêm một mục vào CAMERAS, không phải sửa route.
  *
@@ -40,8 +40,8 @@ export function isCamId(x: unknown): x is CamId {
   return typeof x === "string" && Object.prototype.hasOwnProperty.call(CAMERAS, x);
 }
 
-/** Giờ chụp theo giờ Việt Nam: [08:00, 18:00] — phút 18:00 vẫn chụp. */
-export const CAM_ACTIVE = { fromMin: 8 * 60, toMin: 18 * 60, label: "08:00–18:00" } as const;
+/** Giờ chụp theo giờ Việt Nam: [05:30, 19:30] — phút 19:30 vẫn chụp (chủ 01/10: trước là 08:00–18:00). */
+export const CAM_ACTIVE = { fromMin: 5 * 60 + 30, toMin: 19 * 60 + 30, label: "05:30–19:30" } as const;
 /** Trang hiện ảnh của bấy nhiêu phút gần nhất */
 export const CAM_WINDOW_MINUTES = 60;
 /** MongoDB giữ link ảnh bấy nhiêu phút rồi xoá (dư 30 phút cho khung 60 phút) */
@@ -59,7 +59,7 @@ export function vnMinuteOfDay(t: Date | number = Date.now()): number {
   return d.getUTCHours() * 60 + d.getUTCMinutes();
 }
 
-/** Đang trong giờ chụp (08:00–18:00 giờ VN)? */
+/** Đang trong giờ chụp (05:30–19:30 giờ VN)? */
 export function inCamActiveHours(t: Date | number = Date.now()): boolean {
   const m = vnMinuteOfDay(t);
   return m >= CAM_ACTIVE.fromMin && m <= CAM_ACTIVE.toMin;
@@ -67,8 +67,8 @@ export function inCamActiveHours(t: Date | number = Date.now()): boolean {
 
 /**
  * NHỊP CHỤP (chủ 01/10/2026, cho đỡ tốn lượt gọi): 10:00–15:00 giờ VN chụp MỖI
- * PHÚT (giờ bay chính); 08:00–10:00 và 15:00–18:00 chỉ chụp phút chia hết cho 3
- * (3 phút/lần). ≈ 300 + 100 = 400 ảnh/ngày thay vì ~600. Lịch gọi vẫn mỗi phút,
+ * PHÚT (giờ bay chính); 05:30–10:00 và 15:00–19:30 chỉ chụp phút chia hết cho 3
+ * (3 phút/lần). ≈ 481 ảnh/ngày. Lịch gọi vẫn mỗi phút,
  * route tự bỏ qua các phút không cần chụp.
  */
 export const CAM_PEAK = { fromMin: 10 * 60, toMin: 15 * 60 } as const;

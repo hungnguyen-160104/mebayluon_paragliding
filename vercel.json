@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/camera-snap",
-      "schedule": "* 1-11 * * *"
+      "schedule": "* 0-12,22-23 * * *"
     }
   ]
 }
