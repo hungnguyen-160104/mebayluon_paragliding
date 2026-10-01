@@ -14,6 +14,7 @@ import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
 import { bookingHrefForSpot } from "@/lib/booking/spot-to-location";
 import { ShareButtons } from "@/components/share-buttons";
 import SpotPartnerLinks from "@/components/spots/SpotPartnerLinks";
+import SpotSisterSite from "@/components/spots/SpotSisterSite";
 import SpotVideos from "@/components/spots/SpotVideos";
 import { SpotTagline, SPOT_I18N_KEY_BY_SLUG } from "@/components/spots/SpotTagline";
 import {
@@ -3616,6 +3617,9 @@ export function SpotDetailClient({
           </div>
         </motion.div>
       </section>
+
+      {/* Hà Giang, bản tiếng nước ngoài: dẫn khách quốc tế sang hagiangparamotor.com */}
+      <SpotSisterSite slug={spotSlug} lang={lang} />
 
       {/* About This Flying Spot - Premium Redesign */}
       <section className="relative z-10 py-12 md:py-16">
