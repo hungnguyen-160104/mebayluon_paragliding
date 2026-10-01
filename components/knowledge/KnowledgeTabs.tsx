@@ -4,26 +4,15 @@
 import Link from "@/components/locale-link";
 import clsx from "clsx";
 import { useLanguage } from "@/contexts/language-context";
+import { KNOWLEDGE_TOPICS, type KnowledgeUrlKey } from "@/lib/knowledge";
 
-export type KnowledgeSub =
-  | "basic"
-  | "advanced"
-  | "thermal"
-  | "xc"
-  | "weather";
+/** Mã mục con trên URL /knowledge/<mã> — danh sách ở lib/knowledge.ts. */
+export type KnowledgeSub = KnowledgeUrlKey;
 
 type TabLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
-const TAB_KEYS: KnowledgeSub[] = ["basic", "advanced", "thermal", "xc", "weather"];
-
-/** Nhãn tab dịch đủ 6 ngôn ngữ (trước đây chỉ có tiếng Việt). */
-const LABELS: Record<TabLang, Record<KnowledgeSub | "all", string>> = {
-  vi: { all: "Tất cả", basic: "Dù lượn căn bản", advanced: "Dù lượn nâng cao", thermal: "Bay thermal", xc: "Bay XC", weather: "Khí tượng bay" },
-  en: { all: "All", basic: "Basic paragliding", advanced: "Advanced paragliding", thermal: "Thermal flying", xc: "Cross-country", weather: "Aviation weather" },
-  fr: { all: "Tous", basic: "Parapente débutant", advanced: "Parapente avancé", thermal: "Vol en thermique", xc: "Vol de distance", weather: "Météo de vol" },
-  ru: { all: "Все", basic: "Начальный уровень", advanced: "Продвинутый уровень", thermal: "Полёт в термиках", xc: "Маршрутные полёты", weather: "Погода для полётов" },
-  zh: { all: "全部", basic: "滑翔伞基础", advanced: "滑翔伞进阶", thermal: "热气流飞行", xc: "越野飞行", weather: "飞行气象" },
-  hi: { all: "सभी", basic: "बेसिक पैराग्लाइडिंग", advanced: "एडवांस्ड पैराग्लाइडिंग", thermal: "थर्मल फ्लाइंग", xc: "क्रॉस-कंट्री", weather: "उड़ान मौसम" },
+const ALL_LABEL: Record<TabLang, string> = {
+  vi: "Tất cả", en: "All", fr: "Tous", ru: "Все", zh: "全部", hi: "सभी",
 };
 
 function toTabLang(v: unknown): TabLang {
@@ -31,9 +20,22 @@ function toTabLang(v: unknown): TabLang {
   return (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(code) ? code : "vi";
 }
 
-export default function KnowledgeTabs({ active }: { active?: KnowledgeSub | "all" }) {
+/**
+ * `available`: mã DB (subCategory) đang có bài — tab không có bài bị ẩn.
+ * Không truyền (hoặc null) thì hiện đủ tab. Tab đang mở luôn hiện.
+ */
+export default function KnowledgeTabs({
+  active,
+  available,
+}: {
+  active?: KnowledgeSub | "all";
+  available?: string[] | null;
+}) {
   const { language } = useLanguage();
-  const label = LABELS[toTabLang(language)];
+  const lang = toTabLang(language);
+  const topics = KNOWLEDGE_TOPICS.filter(
+    (t) => !available || available.includes(t.db) || t.url === active,
+  );
 
   return (
     <div className="flex flex-wrap gap-3 rounded-2xl bg-white/10 p-3 backdrop-blur">
@@ -46,10 +48,10 @@ export default function KnowledgeTabs({ active }: { active?: KnowledgeSub | "all
             : "bg-white/15 text-white border-white/30 hover:bg-white/25 hover:-translate-y-0.5 hover:shadow-md"
         )}
       >
-        {label.all}
+        {ALL_LABEL[lang]}
       </Link>
 
-      {TAB_KEYS.map((key) => (
+      {topics.map(({ url: key, label }) => (
         <Link
           key={key}
           href={`/knowledge/${key}`}
@@ -60,7 +62,7 @@ export default function KnowledgeTabs({ active }: { active?: KnowledgeSub | "all
               : "bg-white/10 text-white hover:bg-white/20"
           )}
         >
-          {label[key]}
+          {label[lang]}
         </Link>
       ))}
     </div>

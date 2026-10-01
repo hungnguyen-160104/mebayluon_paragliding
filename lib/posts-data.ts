@@ -8,7 +8,12 @@ export interface GetPostsOptions {
   category?: string;
   subCategory?: string;
   isPublished?: boolean;
-  type?: "blog" | "product";
+  /** "all" = cả bài blog lẫn sản phẩm (dùng cho mục bài viết ở trang điểm bay). */
+  type?: "blog" | "product" | "all";
+  /** Chỉ lấy bài gắn MỘT TRONG các điểm bay này (trường `spots`). */
+  spots?: string[];
+  /** Chỉ lấy các bài có slug trong danh sách này. */
+  slugs?: string[];
   page?: number;
   limit?: number;
   /** Số bài bỏ qua — ưu tiên hơn page. Dùng cho "Xem thêm" (25 + 15n). */
@@ -150,6 +155,7 @@ function normalizePostRecord(raw: RawPostLike): Post {
     subCategory: raw?.subCategory ? String(raw.subCategory) as any : undefined,
     blogCategory: raw?.blogCategory ? String(raw.blogCategory) as any : undefined,
     tags: normalizeTags(raw?.tags),
+    spots: normalizeTags(raw?.spots),
 
     language:
       raw?.language === "vi" || raw?.language === "en" || raw?.language === "bilingual"
@@ -205,6 +211,8 @@ export async function getPosts(options: GetPostsOptions = {}) {
     excludeSlug,
     excludeId,
     fixed,
+    spots,
+    slugs,
   } = options;
 
   try {
@@ -212,8 +220,16 @@ export async function getPosts(options: GetPostsOptions = {}) {
 
     const andFilters: Record<string, any>[] = [];
 
-    if (type) {
+    if (type && type !== "all") {
       andFilters.push({ type });
+    }
+
+    if (Array.isArray(slugs)) {
+      andFilters.push({ slug: { $in: slugs.map(String) } });
+    }
+
+    if (Array.isArray(spots) && spots.length > 0) {
+      andFilters.push({ spots: { $in: spots.map(String) } });
     }
 
     if (category) {
@@ -389,3 +405,24 @@ export async function findPostSlugInsensitive(
     return null;
   }
 }
+/**
+ * Số bài kiến thức ĐÃ XUẤT BẢN theo từng mục con (subCategory).
+ * Dùng để ẩn tab trống ở /knowledge và loại trang mục con trống khỏi sitemap
+ * (trang danh sách rỗng là "nội dung mỏng" với Google).
+ * Lỗi DB thì trả null — nơi gọi coi như không biết, hiện đủ tab như cũ.
+ */
+export const getKnowledgeSubCounts = cache(async function getKnowledgeSubCounts(): Promise<Record<string, number> | null> {
+  try {
+    await connectDB();
+    const rows = await PostModel.aggregate<{ _id: string | null; n: number }>([
+      { $match: { category: "knowledge", isPublished: true } },
+      { $group: { _id: "$subCategory", n: { $sum: 1 } } },
+    ]);
+    const out: Record<string, number> = {};
+    for (const r of rows) if (r._id) out[String(r._id)] = r.n;
+    return out;
+  } catch (error) {
+    console.error("Error in getKnowledgeSubCounts:", error);
+    return null;
+  }
+});

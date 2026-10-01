@@ -11,7 +11,11 @@ export type KnowledgeSubCategory =
   | "nang-cao"
   | "thermal"
   | "xc"
-  | "khi-tuong";
+  | "khi-tuong"
+  | "thiet-bi"
+  | "ppg"
+  | "hoc-bay"
+  | "quy-dinh";
 
 export type PostCategory = "news" | "knowledge" | "store";
 export type PostType = "blog" | "product";
@@ -92,7 +96,13 @@ export interface IPost {
   category?: PostCategory | string;
   subCategory?: KnowledgeSubCategory;
   /** Chuyên mục bài blog: tin-tuc | su-kien | tip | du-lich. */
-  blogCategory?: "tin-tuc" | "su-kien" | "tip" | "du-lich";
+  blogCategory?: "tin-tuc" | "su-kien" | "tip" | "du-lich" | "dich-vu";
+  /**
+   * Điểm bay liên quan (slug trong lib/spot-hub.ts — SPOT_TAGS, trùng slug ở
+   * lib/weather-spots.ts). Trang /spots/<slug> gom bài theo trường này thành
+   * mục "Cẩm nang & bài viết"; KHÔNG ảnh hưởng URL bài (luôn /blog/<slug>).
+   */
+  spots?: string[];
   tags?: string[];
 
   language?: "bilingual" | "vi" | "en";
@@ -189,16 +199,18 @@ const PostSchema = new Schema<IPost>(
     },
     subCategory: {
       type: String,
-      enum: ["can-ban", "nang-cao", "thermal", "xc", "khi-tuong"],
+      enum: ["can-ban", "nang-cao", "thermal", "xc", "khi-tuong", "thiet-bi", "ppg", "hoc-bay", "quy-dinh"],
       required: false,
     },
     // Chuyên mục của bài blog. Bài cũ chưa có giá trị -> trang /blog tự xếp
     // theo bảng slug trong lib/blog-categories.ts.
     blogCategory: {
       type: String,
-      enum: ["tin-tuc", "su-kien", "tip", "du-lich"],
+      enum: ["tin-tuc", "su-kien", "tip", "du-lich", "dich-vu"],
       required: false,
     },
+    // Điểm bay liên quan — xem chú thích ở IPost.spots
+    spots: { type: [String], default: [] },
     tags: [{ type: String }],
 
     language: {
@@ -253,6 +265,7 @@ PostSchema.index({ category: 1, blogCategory: 1, isPublished: 1, publishedAt: -1
 PostSchema.index({ type: 1, storeCategory: 1, isPublished: 1, createdAt: -1 });
 PostSchema.index({ isPublished: 1, publishedAt: -1, createdAt: -1 });
 PostSchema.index({ fixed: 1, fixedKey: 1, isPublished: 1, createdAt: -1 });
+PostSchema.index({ spots: 1, isPublished: 1, publishedAt: -1 });
 
 PostSchema.index(
   { fixedKey: 1 },

@@ -12,6 +12,10 @@ import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getPostBySlug, getPosts, findPostSlugInsensitive, findPostByPreviousSlug } from "@/lib/posts-data";
 import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
+import { SPOT_TAGS } from "@/lib/spot-tags";
+import { clusterOf } from "@/lib/spot-hub";
+import { categoryOfPost } from "@/lib/blog-categories";
+import { bookingHrefForSpot, bookingLocationForSpot } from "@/lib/booking/spot-to-location";
 import { postLocales } from "@/lib/post-locales";
 import { ShareButtons } from "@/components/share-buttons";
 import {
@@ -637,6 +641,10 @@ const UI: Record<
     views: (n: number) => string;
     noContent: string;
     previewLabel: string;
+    /** Thẻ "Điểm bay liên quan" cuối bài (bài có trường `spots`). */
+    relatedSpots: string;
+    viewSpot: string;
+    bookSpot: string;
   }
 > = {
   vi: {
@@ -647,6 +655,9 @@ const UI: Record<
     views: (n) => `${n} lượt xem`,
     noContent: "Bài viết chưa có nội dung.",
     previewLabel: "Đang xem bản nháp",
+    relatedSpots: "Điểm bay liên quan",
+    viewSpot: "Xem điểm bay",
+    bookSpot: "Đặt bay",
   },
   en: {
     back: "Back",
@@ -656,6 +667,9 @@ const UI: Record<
     views: (n) => `${n} views`,
     noContent: "This article has no content yet.",
     previewLabel: "Draft preview",
+    relatedSpots: "Related flying sites",
+    viewSpot: "View site",
+    bookSpot: "Book a flight",
   },
   fr: {
     back: "Retour",
@@ -665,6 +679,9 @@ const UI: Record<
     views: (n) => `${n} vues`,
     noContent: "Cet article n’a pas encore de contenu.",
     previewLabel: "Aperçu du brouillon",
+    relatedSpots: "Sites de vol associés",
+    viewSpot: "Voir le site",
+    bookSpot: "Réserver un vol",
   },
   ru: {
     back: "Назад",
@@ -674,6 +691,9 @@ const UI: Record<
     views: (n) => `${n} просмотров`,
     noContent: "У этой статьи пока нет содержимого.",
     previewLabel: "Предпросмотр черновика",
+    relatedSpots: "Связанные места полётов",
+    viewSpot: "Смотреть место",
+    bookSpot: "Забронировать полёт",
   },
   zh: {
     back: "返回",
@@ -683,6 +703,9 @@ const UI: Record<
     views: (n) => `${n} 次浏览`,
     noContent: "这篇文章还没有内容。",
     previewLabel: "草稿预览",
+    relatedSpots: "相关飞行点",
+    viewSpot: "查看飞行点",
+    bookSpot: "预订飞行",
   },
   hi: {
     back: "वापस जाएँ",
@@ -692,6 +715,9 @@ const UI: Record<
     views: (n) => `${n} व्यूज़`,
     noContent: "इस लेख में अभी सामग्री नहीं है।",
     previewLabel: "ड्राफ्ट प्रीव्यू",
+    relatedSpots: "संबंधित उड़ान स्थल",
+    viewSpot: "स्थल देखें",
+    bookSpot: "उड़ान बुक करें",
   },
 };
 
@@ -875,7 +901,61 @@ export default async function BlogPostPage({
   // vị trí bài hiện tại nếu nó nằm trong danh sách (danh sách sắp mới → cũ)
   let cut = sorted.findIndex((x) => new Date(x.publishedAt || x.createdAt || 0).getTime() <= myTime);
   if (cut < 0) cut = sorted.length;
-  const relatedPosts = [...sorted.slice(cut), ...sorted.slice(0, cut)];
+  const rotation = [...sorted.slice(cut), ...sorted.slice(0, cut)];
+
+  /**
+   * XẾP HẠNG BÀI LIÊN QUAN (10/2026): (1) bài cùng ĐIỂM BAY (trường spots,
+   * khác chuyên mục cũng được — nối kỹ thuật ↔ cẩm nang ↔ dịch vụ), tối đa 4;
+   * (2) bài cùng CỤM + cùng mục con, lấy đủ 6; (3) phần còn lại giữ vòng
+   * xoay theo ngày như trên, để bài cũ vẫn được link tới.
+   */
+  const mySpots = Array.isArray(post.spots) ? post.spots : [];
+  const sameSpotResp = mySpots.length
+    ? await getPosts({
+        forList: true,
+        type: "blog",
+        isPublished: true,
+        spots: mySpots,
+        excludeSlug: post.slug,
+        limit: 24,
+        sort: "-publishedAt,-createdAt",
+      })
+    : { items: [] as Post[] };
+  const myCluster = clusterOf(post);
+  const overlap = (x: Post) => (x.spots ?? []).filter((s) => mySpots.includes(s)).length;
+  // Thứ tự: cùng cụm trước (cẩm nang ↔ cẩm nang), rồi trùng nhiều điểm hơn,
+  // rồi bài chuyên một điểm trước bài tổng hợp nhiều điểm; còn lại giữ ngày mới → cũ
+  const sameSpot = ((sameSpotResp.items ?? []) as Post[])
+    .slice()
+    .sort(
+      (a, b) =>
+        Number(clusterOf(a) !== myCluster) - Number(clusterOf(b) !== myCluster) ||
+        overlap(b) - overlap(a) ||
+        (a.spots?.length ?? 0) - (b.spots?.length ?? 0),
+    )
+    .slice(0, 4);
+  const sameSub = (x: Post) =>
+    post.category === "knowledge"
+      ? x.subCategory === post.subCategory
+      : categoryOfPost(x) === categoryOfPost(post);
+  const picked = new Set(sameSpot.map((x) => x.slug));
+  const sameCluster = rotation
+    .filter((x) => !picked.has(x.slug) && clusterOf(x) === myCluster && sameSub(x))
+    .slice(0, Math.max(0, 6 - sameSpot.length));
+  for (const x of sameCluster) picked.add(x.slug);
+  const relatedPosts = [...sameSpot, ...sameCluster, ...rotation.filter((x) => !picked.has(x.slug))];
+
+  // Thẻ "Điểm bay liên quan": mỗi trang /spots một thẻ (Đồi Bù + Viên Nam
+  // cùng về /spots/doi-bu); điểm chưa có trang (Đại Tuệ) thì bỏ.
+  const spotCards: { page: string; name: string }[] = [];
+  for (const key of mySpots) {
+    const info = SPOT_TAGS.find((x) => x.key === key);
+    if (!info?.page) continue;
+    const name = info.name[lang as keyof typeof info.name] ?? info.name.en;
+    const existing = spotCards.find((c) => c.page === info.page);
+    if (existing) existing.name = `${existing.name} · ${name}`;
+    else spotCards.push({ page: info.page, name });
+  }
 
   const title = pickTitle(post, lang);
   const excerpt = pickExcerpt(post, lang);
@@ -1073,6 +1153,40 @@ export default async function BlogPostPage({
                     </span>
                   ))}
                 </div>
+              )}
+
+              {/* Điểm bay liên quan — trang điểm bay + đặt bay (bài có `spots`) */}
+              {spotCards.length > 0 && (
+                <section className="mt-10 rounded-2xl border border-white/15 bg-black/25 p-5 text-white backdrop-blur-lg">
+                  <h2 className="mb-4 text-xl font-bold">{ui.relatedSpots}</h2>
+                  <ul className="space-y-3">
+                    {spotCards.map((c) => (
+                      <li
+                        key={c.page}
+                        className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <span className="font-semibold leading-snug">{c.name}</span>
+                        <span className="flex shrink-0 flex-wrap gap-2">
+                          <Link
+                            href={`/spots/${c.page}`}
+                            className="rounded-lg border border-white/30 px-4 py-2 text-sm font-medium hover:bg-white/10"
+                          >
+                            {ui.viewSpot}
+                          </Link>
+                          {/* Điểm chưa mở đặt online (Trạm Tấu) thì không có nút đặt */}
+                          {bookingLocationForSpot(c.page) && (
+                            <Link
+                              href={bookingHrefForSpot(c.page)}
+                              className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400"
+                            >
+                              {ui.bookSpot}
+                            </Link>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               )}
 
               {/* related posts — chỉ hiện trên MOBILE (lg ẩn, vì desktop có sidebar) */}

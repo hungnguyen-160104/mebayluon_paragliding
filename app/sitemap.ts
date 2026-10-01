@@ -1,6 +1,8 @@
 import { MetadataRoute } from "next";
 import { connectDB } from "@/lib/mongodb";
 import { Post as PostModel } from "@/models/Post.model";
+import { getKnowledgeSubCounts } from "@/lib/posts-data";
+import { KNOWLEDGE_TOPICS } from "@/lib/knowledge";
 import { SITE_URL, languageAlternates, type Locale } from "@/lib/site-config";
 import { postLocales } from "@/lib/post-locales";
 import { SPOT_SLUGS } from "@/lib/spots-slugs";
@@ -242,7 +244,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    * trong sitemap thì bài kiến thức và sản phẩm chỉ còn đúng một đường vào,
    * và đó là lý do /store/khoa-hoc-du-luon/... nằm mãi ở nhóm chưa index.
    */
-  const KNOWLEDGE_SUBS = ["basic", "advanced", "thermal", "xc", "weather"] as const;
+  // Mục con kiến thức lấy từ lib/knowledge.ts; mục chưa có bài nào (vd /knowledge/xc
+  // lúc này) KHÔNG đưa vào sitemap — trang rỗng là nội dung mỏng.
+  const knowledgeCounts = await getKnowledgeSubCounts();
+  const KNOWLEDGE_SUBS = KNOWLEDGE_TOPICS.filter(
+    (t) => knowledgeCounts === null || (knowledgeCounts[t.db] ?? 0) > 0,
+  ).map((t) => t.url);
 
   const sectionRoutes: MetadataRoute.Sitemap = [
     ...KNOWLEDGE_SUBS.map((sub) => `/knowledge/${sub}`),

@@ -38,7 +38,11 @@ export default function BlogTabs({
   );
 
   const cur = (current || "all").toLowerCase();
-  const tabs: (BlogCategory | "all")[] = ["all", ...BLOG_CATEGORIES];
+  // Chuyên mục chưa có bài (số đếm = 0) thì ẩn, trừ tab đang mở
+  const tabs: (BlogCategory | "all")[] = [
+    "all",
+    ...BLOG_CATEGORIES.filter((k) => counts?.[k] !== 0 || cur === k),
+  ];
 
   return (
     <nav className="flex w-full justify-center px-4">

@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "@/components/locale-link";
-import { getPosts } from "@/lib/posts-data";
+import { getPosts, getKnowledgeSubCounts } from "@/lib/posts-data";
 import { KnowledgeTabs } from "./KnowledgeTabs";
 import { LazyPostCards } from "@/components/lazy-post-cards";
 import { buildMetadata } from "@/lib/metadata-builder";
@@ -244,9 +244,10 @@ export default async function KnowledgeAllPage({
     : (params?.sub as string | undefined);
   const sub = raw?.toString().toLowerCase() || "all";
 
-  const [{ items, total, pinnedSlugs }, lang] = await Promise.all([
+  const [{ items, total, pinnedSlugs }, lang, subCounts] = await Promise.all([
     getData(sub),
     getLangFromCookies(),
+    getKnowledgeSubCounts(),
   ]);
   const t = I18N[lang] ?? I18N.vi;
 
@@ -310,7 +311,7 @@ export default async function KnowledgeAllPage({
 
         <div className="container mx-auto px-4">
           <div className="mb-12 flex justify-center">
-            <KnowledgeTabs current={sub} />
+            <KnowledgeTabs current={sub} available={subCounts ? Object.keys(subCounts) : null} />
           </div>
 
           {items.length === 0 ? (

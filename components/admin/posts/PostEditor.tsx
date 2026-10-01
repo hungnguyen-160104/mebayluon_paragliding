@@ -25,6 +25,7 @@ import {
   Table as TableIcon,
 } from "lucide-react";
 import api from "@/lib/api";
+import { SPOT_TAGS, cleanSpotTags } from "@/lib/spot-tags";
 import { authHeader } from "@/lib/auth";
 import type {
   ContentBlock,
@@ -51,6 +52,8 @@ type EditorForm = {
   storeCategory: "" | StoreCategory;
   price: string;
   tags: string;
+  /** Điểm bay liên quan (slug ở lib/spot-tags.ts). */
+  spots: string[];
 };
 
 interface PostEditorProps {
@@ -73,7 +76,8 @@ const BLOG_CATEGORY_OPTIONS: { value: "" | BlogCategoryKey; label: string }[] = 
   { value: "tin-tuc", label: "Tin tức" },
   { value: "su-kien", label: "Sự kiện" },
   { value: "tip", label: "Tip" },
-  { value: "du-lich", label: "Du lịch" },
+  { value: "du-lich", label: "Cẩm nang điểm bay" },
+  { value: "dich-vu", label: "Dịch vụ & giá" },
 ];
 
 const KNOWLEDGE_OPTIONS: { value: "" | KnowledgeSubCategory; label: string }[] = [
@@ -83,6 +87,10 @@ const KNOWLEDGE_OPTIONS: { value: "" | KnowledgeSubCategory; label: string }[] =
   { value: "thermal", label: "Bay thermal" },
   { value: "xc", label: "Bay XC" },
   { value: "khi-tuong", label: "Khí tượng bay" },
+  { value: "thiet-bi", label: "Thiết bị dù lượn" },
+  { value: "ppg", label: "Dù lượn gắn động cơ (PPG)" },
+  { value: "hoc-bay", label: "Học bay & chứng chỉ" },
+  { value: "quy-dinh", label: "Quy định & không phận" },
 ];
 
 const STORE_OPTIONS: { value: "" | StoreCategory; label: string }[] = [
@@ -106,6 +114,7 @@ const EMPTY_FORM: EditorForm = {
   storeCategory: "",
   price: "",
   tags: "",
+  spots: [],
 };
 
 function createId() {
@@ -614,6 +623,7 @@ export default function PostEditor({
         storeCategory: (post.storeCategory as "" | StoreCategory) || "",
         price: typeof post.price === "number" ? String(post.price) : "",
         tags: Array.isArray(post.tags) ? post.tags.join(", ") : "",
+        spots: cleanSpotTags(post.spots),
       };
 
       setForm(nextForm);
@@ -1150,6 +1160,8 @@ export default function PostEditor({
         .map((tag) => tag.trim())
         .filter(Boolean),
 
+      spots: cleanSpotTags(form.spots),
+
       isPublished: publish,
     };
 
@@ -1406,6 +1418,43 @@ export default function PostEditor({
                   placeholder="du-luon, sapa"
                 />
               </div>
+            </div>
+
+            {/* Điểm bay liên quan: bài hiện ở mục "Cẩm nang & bài viết" của
+                trang /spots/<điểm> và có thẻ "Điểm bay liên quan" cuối bài.
+                Không đổi URL bài. */}
+            <div className="mt-4">
+              <label className={labelClass}>Điểm bay liên quan</label>
+              <div className="flex flex-wrap gap-2">
+                {SPOT_TAGS.map((s) => {
+                  const checked = form.spots.includes(s.key);
+                  return (
+                    <label
+                      key={s.key}
+                      className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm ${
+                        checked ? "border-emerald-500 bg-emerald-50 text-emerald-800" : "border-gray-200 bg-white text-gray-700"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            spots: e.target.checked
+                              ? [...prev.spots, s.key]
+                              : prev.spots.filter((k) => k !== s.key),
+                          }))
+                        }
+                      />
+                      {s.name.vi}
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Chỉ tick điểm mà bài thật sự nói về (cẩm nang, sự kiện, giá tại điểm đó). Bài kiến thức chung để trống.
+              </p>
             </div>
           </section>
 

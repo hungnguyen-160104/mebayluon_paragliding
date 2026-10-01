@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { cleanSpotTags } from "@/lib/spot-tags";
 import { Post } from "@/models/Post.model";
 import { toSlug } from "@/utils/slug";
 import { estimateReadTime } from "@/utils/readTime";
@@ -25,6 +26,8 @@ export type PostInput = {
   subCategory?: string;
   blogCategory?: string;
   tags?: string[];
+  /** Điểm bay liên quan — chỉ nhận slug có trong lib/spot-tags.ts. */
+  spots?: string[];
   slug?: string;
   isPublished?: boolean;
 
@@ -510,6 +513,7 @@ export async function createPost(data: PostInput, _auth?: any) {
     subCategory: data.subCategory,
     blogCategory: data.blogCategory,
     tags: data.tags || [],
+    spots: cleanSpotTags(data.spots),
     language: "bilingual",
     readTime: computeReadTime(normalizedContent, normalizedContentVi),
 
@@ -547,6 +551,9 @@ export async function updatePost(id: string, data: Partial<PostInput>, _auth?: a
   }
 
   const patch: any = { ...data };
+
+  // Điểm bay liên quan: chỉ giữ slug hợp lệ; không gửi thì giữ nguyên như cũ
+  if (patch.spots !== undefined) patch.spots = cleanSpotTags(patch.spots);
 
   const nextTitle = typeof patch.title === "string" ? patch.title.trim() : current.title;
   const nextTitleVi =

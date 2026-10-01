@@ -1,9 +1,10 @@
 // app/knowledge/[sub]/page.tsx
-import { getPosts } from "@/lib/posts-data";
+import { getPosts, getKnowledgeSubCounts } from "@/lib/posts-data";
 import Image from "next/image";
 import Link from "@/components/locale-link";
 import { notFound } from "next/navigation";
-import KnowledgeTabs, { KnowledgeSub } from "@/components/knowledge/KnowledgeTabs";
+import KnowledgeTabs from "@/components/knowledge/KnowledgeTabs";
+import { knowledgeTopicByUrl, type KnowledgeDbKey } from "@/lib/knowledge";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { buildMetadata } from "@/lib/metadata-builder";
 
@@ -22,27 +23,7 @@ type Item = {
   contentVi?: string;
 };
 
-// Map slug → giá trị subCategory đang lưu trong DB (KHÔNG dịch — đây là
-// giá trị dùng để truy vấn, không phải chữ hiển thị)
-const SUB_MAP: Record<KnowledgeSub, string> = {
-  basic: "Dù lượn căn bản",
-  advanced: "Dù lượn nâng cao",
-  thermal: "Bay thermal",
-  xc: "Bay XC",
-  weather: "Khí tượng bay",
-};
-
 type PageLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
-
-/** Tên chuyên mục hiển thị cho khách, dịch đủ 6 ngôn ngữ. */
-const SUB_LABEL: Record<PageLang, Record<KnowledgeSub, string>> = {
-  vi: { basic: "Dù lượn căn bản", advanced: "Dù lượn nâng cao", thermal: "Bay thermal", xc: "Bay XC", weather: "Khí tượng bay" },
-  en: { basic: "Basic paragliding", advanced: "Advanced paragliding", thermal: "Thermal flying", xc: "Cross-country flying", weather: "Aviation weather" },
-  fr: { basic: "Parapente débutant", advanced: "Parapente avancé", thermal: "Vol en thermique", xc: "Vol de distance", weather: "Météo de vol" },
-  ru: { basic: "Парапланеризм для начинающих", advanced: "Продвинутый парапланеризм", thermal: "Полёт в термиках", xc: "Маршрутные полёты", weather: "Погода для полётов" },
-  zh: { basic: "滑翔伞基础", advanced: "滑翔伞进阶", thermal: "热气流飞行", xc: "越野飞行", weather: "飞行气象" },
-  hi: { basic: "बेसिक पैराग्लाइडिंग", advanced: "एडवांस्ड पैराग्लाइडिंग", thermal: "थर्मल फ्लाइंग", xc: "क्रॉस-कंट्री उड़ान", weather: "उड़ान मौसम" },
-};
 
 /** Chữ giao diện của trang. */
 const UI: Record<PageLang, { heading: string; empty: string; notFound: string; dateLocale: string; metaDesc: (label: string) => string }> = {
@@ -73,20 +54,23 @@ export async function generateMetadata({
   const { sub } = await params;
   const lang = toPageLang(await getRequestLang());
   const t = UI[lang];
-  const key = sub as KnowledgeSub;
+  const topic = knowledgeTopicByUrl(sub);
 
-  if (!SUB_MAP[key]) {
+  if (!topic) {
     return {
       title: `${t.notFound} | Mebayluon`,
       robots: { index: false, follow: false },
     };
   }
 
-  const label = SUB_LABEL[lang][key];
+  const label = topic.label[lang];
+  // Mục con chưa có bài: vẫn mở được nhưng không cho index (trang rỗng = mỏng)
+  const counts = await getKnowledgeSubCounts();
+  const empty = counts !== null && !counts[topic.db];
 
   // Canonical + hreflang dựng theo ngôn ngữ đang xem; trước đây cắm cứng URL
   // tiếng Việt nên các bản ngôn ngữ khác bị coi là trang trùng lặp.
-  return buildMetadata({
+  const meta = buildMetadata({
     title: `${label} — ${t.heading} | Mebayluon`,
     description: t.metaDesc(label),
     image: "/knowledge.jpg",
@@ -95,6 +79,7 @@ export async function generateMetadata({
     type: "website",
     locale: await getUrlLocale(),
   });
+  return empty ? { ...meta, robots: { index: false, follow: true } } : meta;
 }
 
 async function getLangFromCookies(): Promise<string> {
@@ -136,20 +121,11 @@ function pickExcerpt(post: Item, isVietnamese: boolean) {
  * bằng đường dẫn tương đối — phía máy chủ không phân giải được, trang ném
  * "Failed to parse URL" và Google nhận trang lỗi (mã 200, không H1, không bài).
  */
-/** Mã mục con lưu trong DB (lib/knowledge.ts) — URL dùng mã tiếng Anh. */
-const SUB_DB: Record<KnowledgeSub, string> = {
-  basic: "can-ban",
-  advanced: "nang-cao",
-  thermal: "thermal",
-  xc: "xc",
-  weather: "khi-tuong",
-};
-
-async function getData(sub: KnowledgeSub): Promise<Item[]> {
+async function getData(subDb: KnowledgeDbKey): Promise<Item[]> {
   const data = await getPosts({
     forList: true,
     category: "knowledge",
-    subCategory: SUB_DB[sub],
+    subCategory: subDb,
     isPublished: true,
     sort: "-publishedAt,-createdAt",
     limit: 24,
@@ -163,12 +139,14 @@ export default async function KnowledgeSubPage({
   params: Promise<{ sub: string }>;
 }) {
   const { sub } = await params;
-  const key = sub as KnowledgeSub;
-  if (!(key in SUB_MAP)) notFound();
+  const topic = knowledgeTopicByUrl(sub);
+  if (!topic) notFound();
+  const key = topic.url;
 
-  const [items, lang] = await Promise.all([
-    getData(key),
+  const [items, lang, counts] = await Promise.all([
+    getData(topic.db),
     getLangFromCookies(),
+    getKnowledgeSubCounts(),
   ]);
   const isVietnamese = lang === "vi";
   const pageLang = toPageLang(lang);
@@ -177,10 +155,13 @@ export default async function KnowledgeSubPage({
   return (
     <div className="container mx-auto px-4 py-10 text-white">
       <h1 className="mb-6 text-4xl font-extrabold">
-        {t.heading}: <span className="text-accent">{SUB_LABEL[pageLang][key]}</span>
+        {t.heading}: <span className="text-accent">{topic.label[pageLang]}</span>
       </h1>
 
-      <KnowledgeTabs active={key} />
+      <KnowledgeTabs
+        active={key}
+        available={counts ? Object.keys(counts) : null}
+      />
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((p) => {

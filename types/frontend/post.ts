@@ -5,14 +5,18 @@ export type StoreCategory =
   | "khoa-hoc-du-luon";
 
 /** Chuyên mục bài blog — khớp với BlogCategory ở lib/blog-categories.ts. */
-export type BlogCategoryKey = "tin-tuc" | "su-kien" | "tip" | "du-lich";
+export type BlogCategoryKey = "tin-tuc" | "su-kien" | "tip" | "du-lich" | "dich-vu";
 
 export type KnowledgeSubCategory =
   | "can-ban"
   | "nang-cao"
   | "thermal"
   | "xc"
-  | "khi-tuong";
+  | "khi-tuong"
+  | "thiet-bi"
+  | "ppg"
+  | "hoc-bay"
+  | "quy-dinh";
 
 export type PostCategory = "news" | "knowledge" | "store";
 export type PostType = "blog" | "product";
@@ -126,6 +130,8 @@ export type Post = {
   category?: PostCategory | string;
   subCategory?: KnowledgeSubCategory;
   blogCategory?: BlogCategoryKey;
+  /** Điểm bay liên quan — slug ở lib/spot-hub.ts (SPOT_TAGS). */
+  spots?: string[];
   tags?: string[];
 
   language?: "bilingual" | "vi" | "en";
@@ -181,6 +187,8 @@ export type PostPayload = {
 
   coverImage?: string;
   tags?: string[];
+  /** Điểm bay liên quan (slug) — xem lib/spot-hub.ts. */
+  spots?: string[];
 
   isPublished?: boolean;
   fixed?: boolean;

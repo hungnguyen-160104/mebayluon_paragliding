@@ -26,14 +26,23 @@ export type SpotArticleSet = {
 
 export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
   "khau-pha": {
+    // 10/2026: bài trụ cột Khau Phạ (28 link nội bộ trỏ về). Trước đây là
+    // "deokhaupha" — slug CŨ, mỗi lần bấm phải đi qua một bước chuyển 301.
     featured: {
-      slug: "deokhaupha",
+      slug: "du-luon-mu-cang-chai",
       title: {
-        vi: "Điểm bay dù lượn Đèo Khau Phạ (Mù Cang Chải) — Điểm bay đẹp vào top 10 thế giới",
-        en: "Khau Pha Pass Paragliding Site (Mu Cang Chai) - Top 10 most beautiful flying sites in the world",
+        vi: "Dù Lượn Mù Cang Chải 2026: Giá Vé, Mùa Bay Đẹp Nhất Và Toàn Bộ Kinh Nghiệm Từ Đội Bay Khau Phạ",
+        en: "Paragliding in Mu Cang Chai 2026: Prices, Best Season and the Complete Guide from the Khau Pha Flight Team",
       },
     },
     articles: [
+      {
+        slug: "du-luon-deo-khau-pha",
+      title: {
+        vi: "Dù Lượn Đèo Khau Phạ: Hồ Sơ Điểm Bay Top 10 Thế Giới",
+        en: "Khau Pha Pass Paragliding: Profile of a World Top-10 Flying Site",
+      },
+      },
       {
         slug: "diem-cat-canh-ha-canh-du-luon-khau-pha",
       title: {
@@ -96,13 +105,8 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
         en: "Paragliding Above Sapa's Sea of Clouds – Fansipan From the Air",
       },
       },
-      {
-        slug: "cam-nang-du-lich-mu-cang-chai-lao-cai",
-      title: {
-        vi: "Cẩm nang du lịch Mù Cang Chải - Lào Cai",
-        en: "Mu Cang Chai - Lao Cai Travel Guide",
-      },
-      },
+      // (10/2026) Bỏ "cam-nang-du-lich-mu-cang-chai-lao-cai" — bài về Mù Cang
+      // Chải, không phải Sa Pa.
       {
         slug: "thoi-tiet-bay-du-luon",
       title: {
@@ -129,14 +133,22 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
 
   // Thẻ "Hà Nội" (Đồi Bù | Viên Nam) — trang /spots/doi-bu
   "doi-bu": {
+    // 10/2026: bài giá vé + so sánh hai bãi Hà Nội làm bài nổi bật.
     featured: {
-      slug: "bay-du-luon-doi-bu",
+      slug: "gia-ve-du-luon-ha-noi",
+      title: {
+        vi: "Dù lượn Hà Nội 2026: tất tần tật giá vé và hai điểm bay Đồi Bù, Viên Nam",
+        en: "Paragliding in Hanoi 2026: Ticket Prices and the Two Flying Sites (Doi Bu & Vien Nam)",
+      },
+    },
+    articles: [
+      {
+        slug: "bay-du-luon-doi-bu",
       title: {
         vi: "Bay dù lượn Đồi Bù – điểm bay gần Hà Nội",
         en: "Paragliding at Doi Bu – A Flying Site Near Hanoi",
       },
-    },
-    articles: [
+      },
       {
         slug: "du-luon-vien-nam",
       title: {
@@ -191,6 +203,30 @@ export const SPOT_ARTICLE_NAMES: Record<string, Record<string, string>> = {
     zh: "布山 | 员南",
     hi: "डोई बू | विएन नाम",
   },
+  "ha-giang": {
+    vi: "Quản Bạ (Hà Giang)",
+    en: "Quan Ba (Ha Giang)",
+    fr: "Quan Ba (Ha Giang)",
+    ru: "Куан Ба (Хазянг)",
+    zh: "管坝（河江）",
+    hi: "क्वान बा (हा जियांग)",
+  },
+  "tram-tau": {
+    vi: "Phình Hồ – Trạm Tấu",
+    en: "Phinh Ho – Tram Tau",
+    fr: "Phinh Ho – Tram Tau",
+    ru: "Пхинь Хо – Чам Тау",
+    zh: "平湖 – 站濑",
+    hi: "फिन्ह हो – ट्राम ताउ",
+  },
+  "son-tra": {
+    vi: "Sơn Trà (Đà Nẵng)",
+    en: "Son Tra (Da Nang)",
+    fr: "Son Tra (Da Nang)",
+    ru: "Шонча (Дананг)",
+    zh: "山茶（岘港）",
+    hi: "सोन ट्रा (दा नांग)",
+  },
   "muong-hoa-sapa": {
     vi: "Mường Hoa (Sa Pa)",
     en: "Muong Hoa Valley (Sapa)",
@@ -218,27 +254,85 @@ export const SPOT_ARTICLES_HEADING: Record<
   { title: string; subtitle: string }
 > = {
   vi: {
-    title: "Đọc thêm về\nDù lượn {name}",
-    subtitle: "Cẩm nang, mùa đẹp và cách di chuyển — chọn bài để xem chi tiết",
+    title: "Cẩm nang & bài viết\nDù lượn {name}",
+    subtitle: "Cẩm nang điểm bay, kỹ thuật cho phi công, giá dịch vụ và sự kiện",
   },
   en: {
-    title: "Read more about\nParagliding at {name}",
-    subtitle: "Guides, best seasons and how to get there",
+    title: "Guides & articles\nParagliding at {name}",
+    subtitle: "Site guides, pilot technique, prices and events",
   },
   fr: {
-    title: "En savoir plus sur\nle parapente : {name}",
-    subtitle: "Guides, meilleures saisons et accès",
+    title: "Guides et articles\nParapente : {name}",
+    subtitle: "Guides du site, technique de pilotage, tarifs et événements",
   },
   ru: {
-    title: "Подробнее о\nпарапланеризме: {name}",
-    subtitle: "Гиды, лучшие сезоны и как добраться",
+    title: "Гиды и статьи\nПарапланеризм: {name}",
+    subtitle: "Путеводители, техника пилотирования, цены и события",
   },
   zh: {
-    title: "了解更多\n{name}滑翔伞信息",
-    subtitle: "攻略、最佳季节与交通方式",
+    title: "攻略与文章\n{name}滑翔伞",
+    subtitle: "飞行点攻略、飞行技术、价格与活动",
   },
   hi: {
-    title: "{name} में पैराग्लाइडिंग\nके बारे में और पढ़ें",
-    subtitle: "गाइड, सर्वोत्तम मौसम और पहुँचने का तरीका",
+    title: "गाइड और लेख\n{name} में पैराग्लाइडिंग",
+    subtitle: "उड़ान स्थल गाइड, पायलट तकनीक, कीमतें और आयोजन",
   },
+};
+
+/** Tiêu đề từng nhóm trong mục "Cẩm nang & bài viết" (xem lib/spot-hub.ts). */
+export type SpotHubGroupKey = "guides" | "compare" | "pilot" | "services" | "events";
+
+export const SPOT_HUB_GROUP_LABELS: Record<string, Record<SpotHubGroupKey, string>> = {
+  vi: {
+    guides: "Cẩm nang điểm bay",
+    compare: "So sánh các điểm bay",
+    pilot: "Cho phi công: kỹ thuật & học bay",
+    services: "Giá & dịch vụ",
+    events: "Tin tức & sự kiện",
+  },
+  en: {
+    guides: "Site guide",
+    compare: "Compare flying sites",
+    pilot: "For pilots: technique & training",
+    services: "Prices & services",
+    events: "News & events",
+  },
+  fr: {
+    guides: "Guide du site",
+    compare: "Comparer les sites de vol",
+    pilot: "Pour les pilotes : technique et formation",
+    services: "Tarifs et services",
+    events: "Actualités et événements",
+  },
+  ru: {
+    guides: "Путеводитель по месту",
+    compare: "Сравнение мест полётов",
+    pilot: "Для пилотов: техника и обучение",
+    services: "Цены и услуги",
+    events: "Новости и события",
+  },
+  zh: {
+    guides: "飞行点攻略",
+    compare: "飞行点对比",
+    pilot: "飞行员专栏：技术与培训",
+    services: "价格与服务",
+    events: "新闻与活动",
+  },
+  hi: {
+    guides: "उड़ान स्थल गाइड",
+    compare: "उड़ान स्थलों की तुलना",
+    pilot: "पायलटों के लिए: तकनीक और प्रशिक्षण",
+    services: "कीमतें और सेवाएँ",
+    events: "समाचार और आयोजन",
+  },
+};
+
+/** Nút mở phần còn lại của một nhóm dài (trang điểm bay, điện thoại đỡ phải cuộn). */
+export const SPOT_HUB_MORE_LABEL: Record<string, (n: number) => string> = {
+  vi: (n) => `Xem thêm ${n} bài`,
+  en: (n) => `Show ${n} more`,
+  fr: (n) => `Voir ${n} de plus`,
+  ru: (n) => `Показать ещё ${n}`,
+  zh: (n) => `再看 ${n} 篇`,
+  hi: (n) => `${n} और देखें`,
 };

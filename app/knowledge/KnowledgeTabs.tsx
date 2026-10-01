@@ -1,70 +1,13 @@
 "use client";
 
 import Link from "@/components/locale-link";
-import { useMemo } from "react";
 import { useLanguage } from "@/contexts/language-context";
+import { KNOWLEDGE_TOPICS } from "@/lib/knowledge";
 
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
-type TabKey = "all" | "can-ban" | "nang-cao" | "xc" | "thermal" | "khi-tuong";
 
-const TABS: { key: TabKey }[] = [
-  { key: "all" },
-  { key: "can-ban" },
-  { key: "nang-cao" },
-  { key: "xc" },
-  { key: "thermal" },
-  { key: "khi-tuong" },
-];
-
-const TAB_LABELS: Record<Lang, Record<TabKey, string>> = {
-  vi: {
-    all: "Tất cả",
-    "can-ban": "Dù lượn cơ bản",
-    "nang-cao": "Dù lượn nâng cao",
-    xc: "PPG/TRIKE",
-    thermal: "Bay Thermal & XC",
-    "khi-tuong": "Khí tượng bay",
-  },
-  en: {
-    all: "All",
-    "can-ban": "Basic course",
-    "nang-cao": "Advanced course",
-    xc: "Powered paragliding",
-    thermal: "Thermal flying",
-    "khi-tuong": "Aviation weather",
-  },
-  fr: {
-    all: "Tous",
-    "can-ban": "Cours de base",
-    "nang-cao": "Cours avancé",
-    xc: "Parapente motorisé",
-    thermal: "Vol en thermique",
-    "khi-tuong": "Météo de vol",
-  },
-  ru: {
-    all: "Все",
-    "can-ban": "Базовый курс",
-    "nang-cao": "Продвинутый курс",
-    xc: "Моторный параплан",
-    thermal: "Полёт в термиках",
-    "khi-tuong": "Погодные условия",
-  },
-  zh: {
-    all: "全部",
-    "can-ban": "基础课程",
-    "nang-cao": "进阶课程",
-    xc: "动力滑翔伞",
-    thermal: "热气流飞行",
-    "khi-tuong": "飞行气象",
-  },
-  hi: {
-    all: "सभी",
-    "can-ban": "बेसिक कोर्स",
-    "nang-cao": "एडवांस्ड कोर्स",
-    xc: "पावर्ड पैराग्लाइडिंग",
-    thermal: "थर्मल फ्लाइंग",
-    "khi-tuong": "उड़ान मौसम",
-  },
+const ALL_LABEL: Record<Lang, string> = {
+  vi: "Tất cả", en: "All", fr: "Tous", ru: "Все", zh: "全部", hi: "सभी",
 };
 
 function toLang(v: unknown): Lang {
@@ -76,18 +19,34 @@ function toLang(v: unknown): Lang {
     : "vi";
 }
 
-export function KnowledgeTabs({ current = "all" }: { current?: string }) {
+/**
+ * Tab mục con của /knowledge (dùng ?sub=<mã DB>). Danh sách + nhãn 6 ngôn ngữ
+ * ở lib/knowledge.ts. `available`: mã đang có bài — tab trống bị ẩn (tab đang
+ * mở luôn hiện); không truyền thì hiện đủ.
+ */
+export function KnowledgeTabs({
+  current = "all",
+  available,
+}: {
+  current?: string;
+  available?: string[] | null;
+}) {
   const { language } = useLanguage();
   const lang = toLang(language);
-
-  const labels = useMemo(() => TAB_LABELS[lang] ?? TAB_LABELS.vi, [lang]);
   const cur = (current || "all").toLowerCase();
+
+  const tabs: { key: string; label: string }[] = [
+    { key: "all", label: ALL_LABEL[lang] },
+    ...KNOWLEDGE_TOPICS.filter(
+      (t) => !available || available.includes(t.db) || t.db === cur,
+    ).map((t) => ({ key: t.db as string, label: t.label[lang] })),
+  ];
 
   return (
     <nav className="w-full flex justify-center px-4">
       <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-1.5 max-w-full overflow-hidden shadow-lg">
         <ul className="flex items-center gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const href =
               tab.key === "all"
                 ? "/knowledge"
@@ -110,7 +69,7 @@ export function KnowledgeTabs({ current = "all" }: { current?: string }) {
                     }
                   `}
                 >
-                  {labels[tab.key]}
+                  {tab.label}
                 </Link>
               </li>
             );

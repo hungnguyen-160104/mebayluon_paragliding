@@ -10,13 +10,20 @@
  * danh sách.
  */
 
-export type BlogCategory = "tin-tuc" | "su-kien" | "tip" | "du-lich";
+/**
+ * Khoá giữ nguyên (URL /blog?cat=… đã được index); chỉ nhãn đổi:
+ *  - "du-lich" hiển thị là "Cẩm nang điểm bay" (10/2026),
+ *  - "tip" là hỏi đáp cho khách trước chuyến bay,
+ *  - "dich-vu" (mới 10/2026): giá, gói bay, quà tặng, khoá học.
+ */
+export type BlogCategory = "tin-tuc" | "su-kien" | "tip" | "du-lich" | "dich-vu";
 
 export const BLOG_CATEGORIES: BlogCategory[] = [
   "tin-tuc",
   "su-kien",
-  "tip",
   "du-lich",
+  "tip",
+  "dich-vu",
 ];
 
 /** Lễ hội, giải đấu, tập huấn — những gì diễn ra vào một thời điểm cụ thể. */
@@ -54,7 +61,7 @@ const DU_LICH = [
   "bay-du-luon-doi-bu",
   "du-luon-vien-nam",
   "bay-du-luon-hanoi",
-  "deokhaupha",
+  "du-luon-deo-khau-pha",
   "diem-cat-canh-ha-canh-du-luon-khau-pha",
 ];
 
@@ -122,42 +129,48 @@ export const BLOG_CATEGORY_LABELS: Record<
     all: "Tất cả",
     "tin-tuc": "Tin tức",
     "su-kien": "Sự kiện",
-    tip: "Tip",
-    "du-lich": "Du lịch",
+    tip: "Hỏi đáp",
+    "du-lich": "Cẩm nang điểm bay",
+    "dich-vu": "Dịch vụ & giá",
   },
   en: {
     all: "All",
     "tin-tuc": "News",
     "su-kien": "Events",
-    tip: "Tips",
-    "du-lich": "Travel",
+    tip: "FAQ",
+    "du-lich": "Site guides",
+    "dich-vu": "Prices & services",
   },
   fr: {
     all: "Tout",
     "tin-tuc": "Actualités",
     "su-kien": "Événements",
-    tip: "Conseils",
-    "du-lich": "Voyage",
+    tip: "FAQ",
+    "du-lich": "Guides des sites",
+    "dich-vu": "Tarifs et services",
   },
   ru: {
     all: "Все",
     "tin-tuc": "Новости",
     "su-kien": "События",
-    tip: "Советы",
-    "du-lich": "Путешествия",
+    tip: "Вопросы и ответы",
+    "du-lich": "Гиды по местам полётов",
+    "dich-vu": "Цены и услуги",
   },
   zh: {
     all: "全部",
     "tin-tuc": "新闻",
     "su-kien": "活动",
-    tip: "小贴士",
-    "du-lich": "旅行",
+    tip: "常见问答",
+    "du-lich": "飞行点指南",
+    "dich-vu": "价格与服务",
   },
   hi: {
     all: "सभी",
     "tin-tuc": "समाचार",
     "su-kien": "आयोजन",
-    tip: "सुझाव",
-    "du-lich": "यात्रा",
+    tip: "सवाल-जवाब",
+    "du-lich": "उड़ान स्थल गाइड",
+    "dich-vu": "कीमतें और सेवाएँ",
   },
 };

@@ -3,7 +3,7 @@ import { PageBackground } from "@/components/page-background";
 import Image from "next/image";
 import Link from "@/components/locale-link";
 import { KnowledgeTabs } from "../KnowledgeTabs";
-import { getPosts } from "@/lib/posts-data";
+import { getPosts, getKnowledgeSubCounts } from "@/lib/posts-data";
 import type { Metadata } from "next";
 
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
@@ -149,7 +149,11 @@ async function fetchPosts() {
 }
 
 export default async function KnowledgeAllPage() {
-  const [lang, data] = await Promise.all([getLangFromCookies(), fetchPosts()]);
+  const [lang, data, subCounts] = await Promise.all([
+    getLangFromCookies(),
+    fetchPosts(),
+    getKnowledgeSubCounts(),
+  ]);
   const t = I18N[lang] ?? I18N.vi;
 
   return (
@@ -161,7 +165,7 @@ export default async function KnowledgeAllPage() {
           {t.title}
         </h1>
 
-        <KnowledgeTabs current="all" />
+        <KnowledgeTabs current="all" available={subCounts ? Object.keys(subCounts) : null} />
 
         {data.items?.length ? (
           <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">

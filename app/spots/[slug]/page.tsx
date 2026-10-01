@@ -21,7 +21,10 @@ import {
   SPOT_ARTICLES,
   SPOT_ARTICLES_HEADING,
   SPOT_ARTICLE_NAMES,
+  SPOT_HUB_GROUP_LABELS,
+  SPOT_HUB_MORE_LABEL,
 } from "@/lib/spot-articles";
+import { getSpotHub } from "@/lib/spot-hub";
 import { ArrowRight, BookOpen, Star } from "lucide-react";
 import { SPOT_SECTION_HEADING } from "@/components/spots/section-heading";
 
@@ -615,6 +618,14 @@ export default async function SpotDetailPage({
   const heading =
     SPOT_ARTICLES_HEADING[spotLocale] ?? SPOT_ARTICLES_HEADING.vi;
 
+  // Mục "Cẩm nang & bài viết": gom từ DB theo trường `spots` (lib/spot-hub.ts).
+  // Không có bài / DB lỗi thì rơi về danh sách tĩnh SPOT_ARTICLES như trước.
+  const hub = await getSpotHub(canonicalSpotSlug(slug), spotLocale);
+  const groupLabels = SPOT_HUB_GROUP_LABELS[spotLocale] ?? SPOT_HUB_GROUP_LABELS.vi;
+  const moreLabel = SPOT_HUB_MORE_LABEL[spotLocale] ?? SPOT_HUB_MORE_LABEL.vi;
+  /** Mỗi nhóm hiện sẵn bấy nhiêu bài; phần còn lại nằm trong <details> (link vẫn có trong HTML). */
+  const HUB_VISIBLE = 4;
+
   /* ===== JSON-LD: TouristAttraction + Product (giá tour) + Breadcrumb =====
    * Giúp Google hiển thị rich result (giá, breadcrumb) trên kết quả tìm kiếm.
    * Alias (vd /spots/sapa) dùng URL chuẩn để gộp tín hiệu về một trang.
@@ -647,11 +658,31 @@ export default async function SpotDetailPage({
     JSON.stringify(data).replace(/</g, "\\u003c");
 
 
+  /** Thẻ một bài trong mục "Cẩm nang & bài viết". */
+  const hubCard = (item: { slug: string; href: string; title: string }) => (
+    <Link
+      key={item.slug}
+      href={item.href}
+      className="group flex items-center gap-3 rounded-xl border border-white/20 bg-black/20 p-4 text-white backdrop-blur-lg transition-all hover:border-accent/70 hover:bg-black/35"
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">
+        <BookOpen size={17} className="text-accent" />
+      </span>
+      <span className="min-w-0 flex-1 text-[15px] font-medium leading-snug [overflow-wrap:anywhere]">
+        {item.title}
+      </span>
+      <ArrowRight
+        size={18}
+        className="shrink-0 text-white/50 transition-all group-hover:translate-x-1 group-hover:text-accent"
+      />
+    </Link>
+  );
+
   /**
    * Section "Đọc thêm về điểm bay" — truyền vào SpotDetailClient qua slot
    * để đặt TRƯỚC mục "Khám phá thêm các điểm bay khác".
    */
-  const articlesSection = articleSet ? (
+  const articlesSection = hub || articleSet ? (
         <section className="relative z-10 py-16">
           <div className="container mx-auto max-w-5xl px-4">
             <div className="mb-8 text-center text-white">
@@ -681,6 +712,56 @@ export default async function SpotDetailPage({
               </p>
             </div>
 
+            {hub ? (
+              <>
+                {hub.featured && (
+                  <Link
+                    href={hub.featured.href}
+                    className="group mb-8 flex items-center gap-4 rounded-2xl border-2 border-accent/60 bg-black/30 p-5 text-white shadow-lg backdrop-blur-lg transition-all hover:border-accent hover:bg-black/40 hover:shadow-2xl sm:p-6"
+                  >
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent/90">
+                      <Star size={22} className="text-white" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-lg font-bold leading-snug sm:text-xl">
+                        {hub.featured.title}
+                      </span>
+                    </span>
+                    <ArrowRight
+                      size={22}
+                      className="shrink-0 text-accent transition-transform group-hover:translate-x-1"
+                    />
+                  </Link>
+                )}
+
+                <div className="space-y-8">
+                  {hub.groups.map((group) => (
+                    <div key={group.key}>
+                      <h3
+                        className="mb-3 text-lg font-bold text-white sm:text-xl"
+                        style={{ textShadow: "1px 1px 6px rgba(0,0,0,.7)" }}
+                      >
+                        {groupLabels[group.key]}
+                      </h3>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                        {group.items.slice(0, HUB_VISIBLE).map(hubCard)}
+                      </div>
+                      {group.items.length > HUB_VISIBLE && (
+                        <details className="group/more mt-3">
+                          <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-lg border border-white/25 bg-black/25 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-black/40 group-open/more:hidden [&::-webkit-details-marker]:hidden">
+                            {moreLabel(group.items.length - HUB_VISIBLE)}
+                          </summary>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                            {group.items.slice(HUB_VISIBLE).map(hubCard)}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : articleSet ? (
+              <>
             {/* Bài nổi bật */}
             <Link
               href={`/blog/${articleSet.featured.slug}`}
@@ -721,6 +802,8 @@ export default async function SpotDetailPage({
                 </Link>
               ))}
             </div>
+              </>
+            ) : null}
           </div>
         </section>
 ) : null;
