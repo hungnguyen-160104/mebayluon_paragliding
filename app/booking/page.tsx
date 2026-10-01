@@ -18,22 +18,22 @@ const META: Record<Lang, { title: string; description: string }> = {
   vi: {
     title: "Đặt Bay Dù Lượn Online: Giữ Chỗ & Huỷ Miễn Phí | Mebayluon",
     description:
-      "Đặt bay dù lượn online tại Hà Nội, Mù Cang Chải, Sapa và các điểm bay trên khắp Việt Nam. Chọn điểm bay, chọn gói, xác nhận trong 2 phút. Phi công chuyên nghiệp, bảo hiểm đầy đủ, dịch vụ tận tình.",
+      "Đặt bay dù lượn online tại Hà Nội, Mù Cang Chải, Sapa và khắp Việt Nam. Chọn điểm bay và gói, xác nhận trong 2 phút. Phi công chuyên nghiệp, bảo hiểm đầy đủ.",
   },
   en: {
     title: "Book Paragliding Online in Vietnam: Free Cancellation | Mebayluon",
     description:
-      "Book your paragliding flight online in Hanoi, Mu Cang Chai, Sapa and flying sites across Vietnam. Pick a site, pick a package, confirm in 2 minutes. Certified pilots, full insurance, attentive service.",
+      "Book paragliding online in Hanoi, Mu Cang Chai, Sapa and across Vietnam. Pick a site and package, confirm in 2 minutes. Certified pilots, full insurance.",
   },
   fr: {
     title: "Réserver un vol en parapente : annulation gratuite | Mebayluon",
     description:
-      "Réservez votre vol en parapente en ligne à Hanoï, Mu Cang Chai, Sapa et sur les sites de vol partout au Vietnam. Choisissez un site et une formule, confirmez en 2 minutes. Pilotes certifiés, assurance complète, service attentionné.",
+      "Réservez en ligne votre vol en parapente à Hanoï, Mu Cang Chai, Sapa ou ailleurs au Vietnam. Site et formule au choix, confirmé en 2 minutes, assurance incluse.",
   },
   ru: {
     title: "Онлайн-бронь полёта на параплане: отмена бесплатно | Mebayluon",
     description:
-      "Онлайн-бронирование полётов на параплане в Ханое, Мукангчае, Сапе и на площадках по всему Вьетнаму. Выберите место и пакет, подтвердите за 2 минуты. Сертифицированные пилоты, полная страховка, внимательный сервис.",
+      "Онлайн-бронь полёта на параплане в Ханое, Мукангчае, Сапе и по всему Вьетнаму: место и пакет на выбор, подтверждение за 2 минуты, страховка включена.",
   },
   zh: {
     title: "越南滑翔伞飞行预订 — 在线预订 | Mebayluon",
@@ -43,7 +43,7 @@ const META: Record<Lang, { title: string; description: string }> = {
   hi: {
     title: "वियतनाम में पैराग्लाइडिंग उड़ान बुक करें — ऑनलाइन | Mebayluon",
     description:
-      "हनोई, मु कांग चाई, सापा और पूरे वियतनाम के उड़ान स्थलों पर ऑनलाइन पैराग्लाइडिंग उड़ान बुक करें। स्थल और पैकेज चुनें, 2 मिनट में पुष्टि करें। प्रमाणित पायलट, पूर्ण बीमा, चौकस सेवा।",
+      "ऑनलाइन पैराग्लाइडिंग बुकिंग: हनोई, मु कांग चाई, सापा और पूरे वियतनाम में। स्थल और पैकेज चुनें, 2 मिनट में पुष्टि करें। प्रमाणित पायलट, पूर्ण बीमा।",
   },
 };
 

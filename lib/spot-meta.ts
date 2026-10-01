@@ -158,11 +158,11 @@ const SEO_TITLE: Record<string, Record<Locale, string>> = {
 const HIGHLIGHT: Record<string, Record<Locale, string>> = {
   "khau-pha": {
     vi: "ruộng bậc thang mùa vàng, một trong tứ đại đỉnh đèo Tây Bắc",
-    en: "golden rice terraces, one of Northwest Vietnam's four great passes",
-    fr: "rizières en terrasses dorées, l'un des quatre grands cols du Nord-Ouest",
-    ru: "золотые рисовые террасы, один из четырёх великих перевалов северо-запада",
+    en: "golden terraces, one of the Northwest's four great passes",
+    fr: "rizières dorées, un des quatre grands cols du Nord-Ouest",
+    ru: "золотые рисовые террасы Северо-Запада",
     zh: "金色梯田，西北四大山口之一",
-    hi: "सुनहरे सीढ़ीनुमा खेत, उत्तर-पश्चिम वियतनाम के चार महान दर्रों में से एक",
+    hi: "सुनहरे सीढ़ीनुमा खेत, उत्तर-पश्चिम के चार महान दर्रों में से एक",
   },
   "doi-bu": {
     vi: "điểm bay gần Hà Nội nhất, bay được quanh năm",
@@ -183,7 +183,7 @@ const HIGHLIGHT: Record<string, Record<Locale, string>> = {
   "muong-hoa-sapa": {
     vi: "thung lũng Mường Hoa, biển mây và đỉnh Fansipan",
     en: "the Muong Hoa valley, sea of clouds and Fansipan peak",
-    fr: "la vallée de Muong Hoa, mer de nuages et le pic Fansipan",
+    fr: "vallée de Muong Hoa, mer de nuages et pic Fansipan",
     ru: "долина Мыонг Хоа, море облаков и пик Фансипан",
     zh: "孟花谷、云海与番西邦峰",
     hi: "मुओंग होआ घाटी, बादलों का समुद्र और फैनसिपन चोटी",
@@ -191,43 +191,50 @@ const HIGHLIGHT: Record<string, Record<Locale, string>> = {
   "son-tra": {
     vi: "bán đảo Sơn Trà, rừng nguyên sinh và biển Mỹ Khê",
     en: "the Son Tra peninsula, primeval forest and My Khe beach",
-    fr: "la péninsule de Son Tra, forêt primaire et plage de My Khe",
+    fr: "péninsule de Son Tra, forêt primaire et plage de My Khe",
     ru: "полуостров Шонча, девственный лес и пляж Микхе",
     zh: "山茶半岛、原始森林与美溪海滩",
     hi: "सोन ट्रा प्रायद्वीप, प्राचीन वन और माई खे समुद्र तट",
   },
   "ha-giang": {
-    vi: "thung lũng Quản Bạ, Núi Đôi, Cổng Trời và cao nguyên đá Đồng Văn",
-    en: "the Quan Ba valley, Twin Mountains, Heaven's Gate and the Dong Van karst plateau",
-    fr: "la vallée de Quan Ba, les Montagnes Jumelles, la Porte du Ciel et le plateau karstique de Dong Van",
-    ru: "долину Куанба, гору Близнецы, Небесные врата и каменное плато Донгван",
-    zh: "管坝山谷、双子山、天门与同文岩石高原",
-    hi: "क्वान बा घाटी, ट्विन माउंटेन, हेवन्स गेट और डोंग वान चट्टानी पठार",
+    vi: "thung lũng Quản Bạ, Núi Đôi và Cổng Trời",
+    en: "the Quan Ba valley, Twin Mountains and Heaven's Gate",
+    fr: "vallée de Quan Ba, Montagnes Jumelles et Porte du Ciel",
+    ru: "долина Куанба, гора Близнецы и Небесные врата",
+    zh: "管坝山谷、双子山与天门",
+    hi: "क्वान बा घाटी, ट्विन माउंटेन और हेवन्स गेट",
   },
   "tram-tau": {
-    vi: "Phình Hồ – Trạm Tấu, săn mây trên đồi núi trùng điệp",
-    en: "Phinh Ho – Tram Tau, cloud hunting over endless ridges",
-    fr: "Phinh Ho – Tram Tau, chasse aux nuages sur des crêtes infinies",
-    ru: "Финьхо – Чамтау, охота за облаками над бесконечными хребтами",
-    zh: "Phinh Ho – 占秋，在连绵山峦上追云",
-    hi: "फिन्ह हो – त्राम ताउ, अनंत पहाड़ियों पर बादलों का पीछा",
+    vi: "săn mây trên đồi núi trùng điệp Trạm Tấu",
+    en: "cloud hunting over the endless ridges of Tram Tau",
+    fr: "chasse aux nuages sur les crêtes infinies de Tram Tau",
+    ru: "охота за облаками над бесконечными хребтами Чамтау",
+    zh: "在占秋连绵山峦上追云",
+    hi: "त्राम ताउ की अनंत पहाड़ियों पर बादलों का पीछा",
   },
 };
 
-/** Khuôn mô tả theo ngôn ngữ. */
+/**
+ * Khuôn mô tả theo ngôn ngữ — từ khoá chính (SEO_NAME, giữ nguyên chữ hoa
+ * của địa danh) đứng ĐẦU câu, rồi điểm nhấn, rồi giá + cam kết.
+ *
+ * Giữ 120–160 ký tự (01/10/2026): bản cũ "Đặt tour … cùng Mebayluon — …"
+ * dài 160–200 ký tự nên Google cắt mất phần giá; tên thương hiệu đã có ở
+ * đuôi title nên bỏ khỏi mô tả. Sửa HIGHLIGHT thì đo lại độ dài cả 6 ngôn ngữ.
+ */
 const DESCRIPTION: Record<Locale, (name: string, hl: string, price: string) => string> = {
   vi: (n, h, p) =>
-    `Đặt tour ${n.toLowerCase()} cùng Mebayluon — ${h}. Giá từ ${p}đ, phi công chuyên nghiệp, bảo hiểm và video GoPro miễn phí.`,
+    `${n}: ${h}. Giá từ ${p}đ, phi công chuyên nghiệp, có bảo hiểm và tặng video GoPro.`,
   en: (n, h, p) =>
-    `Book ${n.toLowerCase()} with Mebayluon — ${h}. From ${p} VND, certified pilots, insurance and free GoPro footage.`,
-  fr: (_n, h, p) =>
-    `Réservez votre vol — ${h}. À partir de ${p} VND, pilotes certifiés, assurance et vidéo GoPro offerte.`,
-  ru: (_n, h, p) =>
-    `Забронируйте полёт с Mebayluon — ${h}. От ${p} VND, сертифицированные пилоты, страховка и съёмка на GoPro бесплатно.`,
-  zh: (_n, h, p) =>
-    `与 Mebayluon 一起飞行——${h}。${p} 越南盾起，专业持证飞行员，含保险与免费 GoPro 拍摄。`,
-  hi: (_n, h, p) =>
-    `Mebayluon के साथ उड़ान बुक करें — ${h}। ${p} VND से शुरू, प्रमाणित पायलट, बीमा और मुफ़्त GoPro रिकॉर्डिंग।`,
+    `${n}: ${h}. From ${p} VND: certified pilots, insurance and free GoPro video.`,
+  fr: (n, h, p) =>
+    `${n} : ${h}. Dès ${p} VND : pilotes certifiés, assurance, vidéo GoPro offerte.`,
+  ru: (n, h, p) =>
+    `${n}: ${h}. От ${p} VND: сертифицированные пилоты, страховка и бесплатное видео GoPro.`,
+  zh: (n, h, p) =>
+    `${n}：${h}。${p} 越南盾起，专业持证飞行员，含保险与免费 GoPro 拍摄。`,
+  hi: (n, h, p) =>
+    `${n}: ${h}। ${p} VND से: प्रमाणित पायलट, बीमा और मुफ़्त GoPro वीडियो।`,
 };
 
 const LOCALE_NUMBER: Record<Locale, string> = {

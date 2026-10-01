@@ -159,22 +159,22 @@ const META: Record<PageKey, Record<Locale, PageMeta>> = {
     vi: {
       title: "Homestay Khau Phạ: Ngủ Ngay Bãi Hạ Cánh Dù Lượn | Mebayluon",
       description:
-        "Homestay Mebayluon nằm ngay tại bãi hạ cánh dù lượn đèo Khau Phạ — café check-in view ruộng bậc thang, ngắm dù lượn hạ cánh trước mắt. Phòng nghỉ truyền thống, combo bay + nghỉ tiết kiệm.",
+        "Homestay Khau Phạ của Mebayluon ngay bãi hạ cánh dù lượn: café view ruộng bậc thang, ngắm dù hạ cánh trước mắt. Phòng truyền thống, combo bay + nghỉ tiết kiệm.",
     },
     en: {
       title: "Khau Pha Homestay by the Paragliding Landing Zone | Mebayluon",
       description:
-        "Mebayluon homestay right at the Khau Pha Pass paragliding landing zone — a check-in café overlooking the rice terraces, with paragliders touching down before your eyes. Flight + stay combos available.",
+        "Khau Pha homestay right at the Mebayluon paragliding landing zone: a café over the rice terraces, paragliders landing before your eyes. Flight + stay combos.",
     },
     fr: {
       title: "Homestay Khau Pha, au bord de l'aire d'atterrissage | Mebayluon",
       description:
-        "Le homestay Mebayluon, situé sur la zone d'atterrissage des parapentes du col de Khau Pha — café avec vue sur les rizières, atterrissages sous vos yeux. Formules vol + séjour.",
+        "Homestay Mebayluon sur l'aire d'atterrissage de parapente du col de Khau Pha : café face aux rizières, atterrissages sous vos yeux. Formules vol + séjour.",
     },
     ru: {
       title: "Хоумстей Кхау Фа у зоны приземления парапланов | Mebayluon",
       description:
-        "Хоумстей Mebayluon прямо у зоны приземления парапланов перевала Кхау Фа — кафе с видом на рисовые террасы, парапланы приземляются у вас на глазах. Пакеты «полёт + проживание».",
+        "Хоумстей Mebayluon у зоны приземления парапланов на перевале Кхау Фа: кафе с видом на рисовые террасы, посадки прямо перед вами. Пакеты «полёт + проживание».",
     },
     zh: {
       title: "考帕民宿：就在滑翔伞降落场旁，含打卡咖啡馆 | Mebayluon",
@@ -184,7 +184,7 @@ const META: Record<PageKey, Record<Locale, PageMeta>> = {
     hi: {
       title: "खाउ फ़ा होमस्टे: पैराग्लाइडिंग लैंडिंग ज़ोन पर | Mebayluon",
       description:
-        "Mebayluon होमस्टे खाउ फ़ा दर्रे के पैराग्लाइडिंग लैंडिंग ज़ोन पर ही स्थित है — सीढ़ीनुमा खेतों के नज़ारे वाला चेक-इन कैफ़े, आँखों के सामने उतरते पैराग्लाइडर। उड़ान + ठहराव कॉम्बो उपलब्ध।",
+        "खाउ फ़ा होमस्टे, Mebayluon के पैराग्लाइडिंग लैंडिंग ज़ोन पर: सीढ़ीनुमा खेतों के नज़ारे वाला कैफ़े, सामने उतरते पैराग्लाइडर। उड़ान + ठहराव कॉम्बो उपलब्ध।",
     },
   },
 
@@ -258,22 +258,22 @@ const META: Record<PageKey, Record<Locale, PageMeta>> = {
     vi: {
       title: "Lưu Ý Trước Khi Bay Dù Lượn: Chuẩn Bị & Quy Định | Mebayluon",
       description:
-        "Cần chuẩn bị gì trước chuyến bay dù lượn: trang phục, đồ mang theo, đồ không nên mang, điều kiện sức khoẻ và cân nặng, quy trình bay và cách đặt vé tại Mebayluon.",
+        "Cần chuẩn bị gì trước khi bay dù lượn: trang phục, đồ mang theo và không nên mang, điều kiện sức khoẻ, cân nặng, quy trình bay và cách đặt vé tại Mebayluon.",
     },
     en: {
       title: "Before Your Paragliding Flight: What to Wear & Bring | Mebayluon",
       description:
-        "Everything to prepare before a tandem paragliding flight: what to wear, what to bring, what to leave behind, health and weight requirements, how the flight runs and how to book with Mebayluon.",
+        "What to prepare before a tandem paragliding flight: what to wear and bring, what to leave behind, health and weight limits, the flight process and booking.",
     },
     fr: {
       title: "Avant Votre Vol en Parapente : Tenue et Règles | Mebayluon",
       description:
-        "Tout ce qu'il faut préparer avant un vol en parapente biplace : tenue, affaires à emporter, objets à laisser, conditions de santé et de poids, déroulement du vol et réservation chez Mebayluon.",
+        "Préparer un vol en parapente biplace : tenue, affaires à emporter ou à laisser, conditions de santé et de poids, déroulement du vol, réservation Mebayluon.",
     },
     ru: {
       title: "Перед полётом на параплане: подготовка и правила | Mebayluon",
       description:
-        "Что подготовить перед полётом на параплане: одежда, что взять с собой, что оставить, требования к здоровью и весу, как проходит полёт и как забронировать в Mebayluon.",
+        "Подготовка к полёту на параплане: одежда, что взять и что оставить, требования к здоровью и весу, как проходит полёт и как забронировать в Mebayluon.",
     },
     zh: {
       title: "滑翔伞飞行前须知：着装、携带物品与规定 | Mebayluon",
@@ -283,7 +283,7 @@ const META: Record<PageKey, Record<Locale, PageMeta>> = {
     hi: {
       title: "पैराग्लाइडिंग से पहले: पहनावा, सामान और नियम | Mebayluon",
       description:
-        "टेंडेम पैराग्लाइडिंग उड़ान से पहले क्या तैयार करें: पहनावा, साथ ले जाने का सामान, जो न लाएँ, स्वास्थ्य और वज़न की शर्तें, उड़ान की प्रक्रिया और Mebayluon पर बुकिंग।",
+        "टेंडेम पैराग्लाइडिंग उड़ान से पहले की तैयारी: पहनावा, क्या लाएँ और क्या न लाएँ, स्वास्थ्य व वज़न की शर्तें, उड़ान की प्रक्रिया और Mebayluon पर बुकिंग।",
     },
   },
 };
