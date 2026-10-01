@@ -52,7 +52,7 @@ export type SpotLinkGroup = {
 /** Hai điểm bay có trường dạy dù đều dẫn về cùng bộ bài khoá học. */
 const SCHOOL_COURSES: SpotCourseLink[] = [
   { href: "/blog/khoa-hoc-du-luon-p1-p2", labelKey: "courseP1P2" },
-  { href: "/blog/khoa-hoc-du-luon-1-kem-1", labelKey: "courseOneOnOne" },
+  { href: "/blog/paragliding-course-vietnam", labelKey: "courseOneOnOne" },
 ];
 
 export const CLUBHOUSE_MAP_URL =

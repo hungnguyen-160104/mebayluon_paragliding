@@ -53,8 +53,8 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
       {
         slug: "di-chuyen-den-diem-bay-du-luon-khau-pha",
       title: {
-        vi: "Cách di chuyển đến điểm bay dù lượn đèo Khau Phạ",
-        en: "How to Get to the Khau Pha Pass (Mu Cang Chai) Paragliding Site",
+        vi: "Cách di chuyển đến điểm bay dù lượn đèo Khau Phạ: chặng cuối từ Nghĩa Lộ, Tú Lệ và Mù Cang Chải",
+        en: "Getting to the Khau Pha Launch: The Last Leg From Nghia Lo, Tu Le and Mu Cang Chai Town",
       },
       },
       {
@@ -67,8 +67,8 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
       {
         slug: "bay-du-luon-mua-nuoc-do-mu-cang-chai",
       title: {
-        vi: "Bay dù lượn mùa nước đổ – góc nhìn đẹp nhất Tây Bắc",
-        en: "Paragliding Over Mu Cang Chai's Water-Pouring Season – The Best View in Northwest Vietnam",
+        vi: "Mùa nước đổ Mù Cang Chải (tháng 5–6): bay dù lượn trên thung lũng Lìm Mông",
+        en: "Mu Cang Chai Water-Pouring Season (May–June): Paragliding Over the Lim Mong Valley",
       },
       },
       {
@@ -93,32 +93,26 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
     featured: {
       slug: "bay-du-luon-sa-pa-muong-hoa",
       title: {
-        vi: "Bay dù lượn Sa Pa – ngắm thung lũng Mường Hoa từ trên cao",
-        en: "Paragliding in Sa Pa – Muong Hoa Valley Seen From Above",
+        vi: "Bay dù lượn Sa Pa: thung lũng Mường Hoa, biển mây và Fansipan từ trên cao",
+        en: "Paragliding in Sa Pa: Muong Hoa Valley, the Sea of Clouds and Fansipan From Above",
       },
     },
     articles: [
-      {
-        slug: "bay-du-luon-bien-may-sa-pa",
-      title: {
-        vi: "Bay dù lượn trên biển mây Sa Pa – ngắm Fansipan từ trên cao",
-        en: "Paragliding Above Sapa's Sea of Clouds – Fansipan From the Air",
-      },
-      },
+      // (01/10/2026) "bay-du-luon-bien-may-sa-pa" đã gộp vào bài nổi bật ở trên (301).
       // (10/2026) Bỏ "cam-nang-du-lich-mu-cang-chai-lao-cai" — bài về Mù Cang
       // Chải, không phải Sa Pa.
       {
         slug: "thoi-tiet-bay-du-luon",
       title: {
-        vi: "Thời tiết bay dù lượn: trời mưa có bay được không?",
-        en: "Paragliding Weather: Can You Fly in the Rain?",
+        vi: "Trời mưa có bay dù lượn được không? Khi nào chuyến bay phải hoãn",
+        en: "Can You Paraglide in the Rain? When a Flight Gets Postponed",
       },
       },
       {
         slug: "cac-diem-bay-du-luon-mebayluon",
       title: {
-        vi: "Nên bay dù lượn ở đâu? So sánh 7 điểm bay của Mebayluon",
-        en: "Where Should You Fly? Mebayluon's 7 Sites Compared",
+        vi: "Địa điểm bay dù lượn đẹp nhất Việt Nam: so sánh 7 điểm bay để chọn nơi hợp với bạn",
+        en: "The Best Places to Paraglide in Vietnam: 7 Flying Sites Compared",
       },
       },
       {
@@ -145,31 +139,19 @@ export const SPOT_ARTICLES: Record<string, SpotArticleSet> = {
       {
         slug: "bay-du-luon-doi-bu",
       title: {
-        vi: "Bay dù lượn Đồi Bù – điểm bay gần Hà Nội",
-        en: "Paragliding at Doi Bu – A Flying Site Near Hanoi",
+        vi: "Bay dù lượn Đồi Bù (Hà Nội): vị trí, độ cao, mùa đẹp, đường đi và giá",
+        en: "Paragliding at Doi Bu (Hanoi): Location, Altitude, Best Season, Getting There and Prices",
       },
       },
       {
         slug: "du-luon-vien-nam",
       title: {
-        vi: "Dù lượn đỉnh Viên Nam (Hà Nội): độ cao, gói bay và giá",
-        en: "Vien Nam Peak Paragliding (Hanoi): Altitude, Options, Prices",
+        vi: "Dù lượn đỉnh Viên Nam (Hà Nội): độ cao, gói bay, đường đi và cắm trại",
+        en: "Vien Nam Peak Paragliding (Hanoi): Altitude, Flight Options, Getting There and Camping",
       },
       },
-      {
-        slug: "bay-du-luon-hanoi",
-      title: {
-        vi: "Bay dù lượn Hà Nội: đường lên đỉnh Viên Nam và cắm trại",
-        en: "Paragliding Near Hanoi: The Climb to Vien Nam Peak and Camping",
-      },
-      },
-      {
-        slug: "diem-bay-du-luon-doi-bu",
-      title: {
-        vi: "Điểm bay dù lượn Đồi Bù: vị trí, độ cao và mùa đẹp nhất",
-        en: "Doi Bu Paragliding Site: Location, Altitude and Best Season",
-      },
-      },
+      // (01/10/2026) "bay-du-luon-hanoi" gộp vào du-luon-vien-nam, "diem-bay-du-luon-doi-bu"
+      // gộp vào bay-du-luon-doi-bu (301 ở lib/legacy-slug-redirects.ts).
       {
         slug: "the-thao-ngoai-troi-ha-noi-du-luon",
       title: {

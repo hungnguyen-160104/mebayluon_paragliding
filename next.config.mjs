@@ -249,7 +249,7 @@ const nextConfig = {
       { source: '/2024/08/14/cach-di-chuyen-toi-tram-tau-yen-bai', destination: '/blog/di-chuyen-den-tram-tau', permanent: true },
       { source: '/2024/08/15/10-dia-diem-du-lich-o-mu-cang-chai-khong-nen-bo-qua', destination: '/blog/cam-nang-du-lich-mu-cang-chai-lao-cai', permanent: true },
       { source: '/2024/08/14/bay-du-luon-thu-hut-dan-van-phong', destination: '/blog/the-thao-ngoai-troi-ha-noi-du-luon', permanent: true },
-      { source: '/2024/08/14/cach-di-chuyen-toi-doi-bu-chuong-my-ha-noi', destination: '/blog/diem-bay-du-luon-doi-bu', permanent: true },
+      { source: '/2024/08/14/cach-di-chuyen-toi-doi-bu-chuong-my-ha-noi', destination: '/blog/bay-du-luon-doi-bu', permanent: true },
       { source: '/2025/08/10/phi-cong-pilot-dinh-the-anh', destination: '/pilots/dinh-the-anh', permanent: true },
       { source: '/2025/08/06/phi-cong-pilot-du-luon-dang-van-my', destination: '/pilots/dang-van-my', permanent: true },
       { source: '/2025/02/06/du-lich-sapa', destination: '/spots/muong-hoa-sapa', permanent: true },
