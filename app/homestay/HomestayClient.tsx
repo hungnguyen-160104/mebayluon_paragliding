@@ -273,7 +273,7 @@ export default function HomestayPage({
 
               <h1 className="mx-auto w-fit rounded-2xl bg-black/50 px-6 py-3 text-4xl md:text-6xl font-extrabold text-white leading-tight shadow-lg mb-4 mt-8">
                 {/* Dòng trên dịch theo ngôn ngữ, dòng dưới là TÊN THƯƠNG HIỆU — giữ nguyên */}
-                <span className="block text-2xl font-bold md:text-4xl">{t.homestay.intro.title}</span>
+                <span className="block text-2xl font-bold md:text-4xl">{t.homestay.intro.title}</span>{" "}
                 <span className="block">MEBAYLUON HOMESTAY</span>
               </h1>
 

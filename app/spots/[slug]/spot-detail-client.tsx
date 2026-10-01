@@ -3592,6 +3592,8 @@ export function SpotDetailClient({
                     : "block"
                 }
               >
+                {/* Khoảng trắng để Google đọc "Cao Nguyên Đá Cổng Trời", không dính "ĐáCổng". */}
+                {i > 0 ? " " : null}
                 {part}
               </span>
             ))}
