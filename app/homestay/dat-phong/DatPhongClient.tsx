@@ -22,7 +22,6 @@ import { PageBackground } from "@/components/page-background";
 import { NgayGon } from "@/components/ui/ngay-gon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Footer } from "@/components/footer";
 import { useLanguage } from "@/contexts/language-context";
 import {
   CHECK_IN_TIME,
@@ -945,7 +944,6 @@ export default function DatPhongClient() {
             </Button>
           </div>
         </main>
-        <Footer />
       </>
     );
   }
@@ -1364,7 +1362,6 @@ export default function DatPhongClient() {
           </Link>
         </div>
       </main>
-      <Footer />
     </>
   );
 }

@@ -2,7 +2,6 @@
 import { PageBackground } from "@/components/page-background";
 
 import { Navigation } from "@/components/navigation";
-import Footer from "@/components/footer/Footer";
 import { Button } from "@/components/ui/button";
 import { useLanguage, type Language } from "@/contexts/language-context";
 import Link from "@/components/locale-link";
@@ -582,9 +581,6 @@ export default function PilotsPage() {
           </div>
         </section>
 
-        <div className="relative z-10">
-          <Footer />
-        </div>
       </div>
     </main>
   );

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Navigation } from "@/components/navigation";
-import { Button } from "@/components/ui/button";
 import Link from "@/components/locale-link";
 import { SpotDetailClient } from "./spot-detail-client";
 import { SpotReviewBadges } from "@/components/reviews/SpotReviewBadges";
@@ -12,7 +11,12 @@ import {
   generateSpotSchema,
   generateProductSchema,
   generateBreadcrumbSchema,
+  generateBranchSchema,
 } from "@/lib/metadata-builder";
+import { notFound } from "next/navigation";
+import { branchesForSpot } from "@/lib/legal-entity";
+import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
+import { localizedUrl, type Locale } from "@/lib/site-config";
 import { canonicalSpotSlug } from "@/lib/spots-slugs";
 import { spotSeoMeta } from "@/lib/spot-meta";
 import { getSpotTranslation, type SpotLanguage } from "@/lib/i18n/spots";
@@ -494,6 +498,20 @@ const ALIAS_SPOTS: Record<string, SpotData> = {
    ============================================================ */
 const SPOTS: Record<string, SpotData> = Object.assign({}, BASE_SPOTS, ALIAS_SPOTS);
 
+/**
+ * Chữ trong JSON-LD theo ngôn ngữ URL (SEO 01/10/2026): trước đây /en/spots/…
+ * khai TouristAttraction/Product/Breadcrumb bằng tiếng Việt ("Trang chủ",
+ * "Tour trải nghiệm bay dù lượn tại …") và URL bản tiếng Việt.
+ */
+const SPOT_JSONLD_TEXT: Record<Locale, { home: string; spots: string; tour: (n: string) => string }> = {
+  vi: { home: "Trang chủ", spots: "Điểm bay", tour: (n) => `Tour trải nghiệm bay dù lượn tại ${n}` },
+  en: { home: "Home", spots: "Flying sites", tour: (n) => `Tandem paragliding tour at ${n}` },
+  fr: { home: "Accueil", spots: "Sites de vol", tour: (n) => `Baptême de parapente biplace – ${n}` },
+  ru: { home: "Главная", spots: "Места полётов", tour: (n) => `Тандемный полёт на параплане – ${n}` },
+  zh: { home: "首页", spots: "飞行点", tour: (n) => `${n}双人滑翔伞体验` },
+  hi: { home: "होम", spots: "उड़ान स्थल", tour: (n) => `${n} में टैंडम पैराग्लाइडिंग टूर` },
+};
+
 /* ====== Pre-render ====== */
 export function generateStaticParams() {
   return Object.keys(SPOTS).map((slug) => ({ slug }));
@@ -576,18 +594,9 @@ export default async function SpotDetailPage({
    * trong generateMetadata để Google không đưa vào kết quả tìm kiếm.
    */
   if (!spot) {
-    const t = getSpotTranslation((await getRequestLang()) as SpotLanguage);
-
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6 text-center">
-        <div>
-          <h1 className="text-2xl font-bold mb-4">{t.spotDetail.notFoundTitle}</h1>
-          <Button asChild>
-            <Link href="/spots">{t.spotDetail.backToList}</Link>
-          </Button>
-        </div>
-      </div>
-    );
+    // 404 THẬT (01/10/2026): layout không còn bọc trang trong <Suspense> nên
+    // notFound() trả HTTP 404 trước khi HTML stream ra (app/not-found.tsx).
+    notFound();
   }
 
   // Nhận diện 2 trang cần hiện badge nổi cố định
@@ -630,18 +639,28 @@ export default async function SpotDetailPage({
    * Giúp Google hiển thị rich result (giá, breadcrumb) trên kết quả tìm kiếm.
    * Alias (vd /spots/sapa) dùng URL chuẩn để gộp tín hiệu về một trang.
    */
-  const spotUrl = `/spots/${canonicalSpotSlug(slug)}`;
+  const canonicalSlug = canonicalSpotSlug(slug);
+  /** JSON-LD theo ngôn ngữ URL (canonical/hreflang cũng theo URL). */
+  const urlLocale = await getUrlLocale();
+  const spotUrl = localizedUrl(`/spots/${canonicalSlug}`, urlLocale);
+  const ldText = SPOT_JSONLD_TEXT[urlLocale];
+  const localName = SPOT_ARTICLE_NAMES[canonicalSlug]?.[urlLocale] ?? spot.name;
+  const seoMeta = spotSeoMeta(canonicalSlug, urlLocale, spot.name, spot.basePrice);
+  const geo = diemThoiTietTheoSlug(canonicalSlug);
 
   const spotSchema = generateSpotSchema({
-    name: spot.name,
-    description: spot.landscape,
+    name: localName,
+    description: urlLocale === "vi" ? spot.landscape : seoMeta.description,
     image: spot.image,
     url: spotUrl,
+    latitude: geo?.lat,
+    longitude: geo?.lon,
+    inLanguage: urlLocale,
   });
 
   const productSchema = generateProductSchema({
-    name: `Tour trải nghiệm bay dù lượn tại ${spot.name}`,
-    description: spotMetaDescription(spot),
+    name: ldText.tour(localName),
+    description: urlLocale === "vi" ? spotMetaDescription(spot) : seoMeta.description,
     image: spot.image,
     price: spot.basePrice,
     currency: "VND",
@@ -649,10 +668,20 @@ export default async function SpotDetailPage({
   });
 
   const breadcrumbSchema = generateBreadcrumbSchema([
-    { name: "Trang chủ", url: "/" },
-    { name: "Điểm bay", url: "/spots" },
-    { name: spot.name, url: spotUrl },
+    { name: ldText.home, url: localizedUrl("/", urlLocale) },
+    { name: ldText.spots, url: localizedUrl("/spots", urlLocale) },
+    { name: localName, url: spotUrl },
   ]);
+
+  /**
+   * LocalBusiness của chi nhánh phục vụ điểm bay này (lib/legal-entity.ts):
+   * Đồi Bù = trụ sở + chi nhánh Phú Thọ (Viên Nam), Khau Phạ = chi nhánh Tây
+   * Bắc (Clubhouse Tú Lệ), Sa Pa, Quản Bạ. Sơn Trà / Trạm Tấu không có chi
+   * nhánh nên không khai.
+   */
+  const branchSchemas = branchesForSpot(canonicalSlug).map((b) =>
+    generateBranchSchema(b, { locale: urlLocale, image: spot.image }),
+  );
 
   const serializeJsonLd = (data: unknown) =>
     JSON.stringify(data).replace(/</g, "\\u003c");
@@ -822,6 +851,13 @@ export default async function SpotDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
+      {branchSchemas.map((schema) => (
+        <script
+          key={String(schema["@id"])}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
+        />
+      ))}
       <Navigation />
       <SpotDetailClient
         spot={spot as SpotData}

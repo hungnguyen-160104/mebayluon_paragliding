@@ -242,8 +242,6 @@ export const fr: CommonTranslation = {
     workingHours: "Horaires d’ouverture",
     /** Ngày mở cửa, dùng cho thẻ "Giờ làm việc". */
     openDays: "Lun - Dim",
-    officeCity: "Ville de Sapa",
-    officeProvince: "Lao Cai, Vietnam",
     social: {
       facebook: "Suivez notre page pour les dernières actualités",
       zalo: "Discutez directement avec nous sur Zalo pour une assistance rapide",

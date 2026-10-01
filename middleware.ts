@@ -20,6 +20,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { BAOBAY_COOKIE } from "@/lib/baobay/cookie";
 import { isCamId } from "@/lib/imou/cameras";
 import { resolveLegacySlug } from "@/lib/legacy-slug-redirects";
+import { KNOWLEDGE_TOPICS } from "@/lib/knowledge";
 
 const LOCALE_PREFIX = /^\/(en|fr|ru|zh|hi)(\/.*)?$/;
 
@@ -55,6 +56,21 @@ const PARENT_PATH_REDIRECTS: Record<string, string> = {
   // Viên Nam đã gộp vào thẻ Hà Nội (Đồi Bù – Viên Nam)
   "/spots/vien-nam": "/spots/doi-bu",
 };
+
+/**
+ * /knowledge?sub=<mã> (tab cũ, SEO 01/10/2026) → /knowledge/<url>. Tab giờ link
+ * thẳng trang mục con; URL ?sub= cũ đã lọt vào Google và bài share thì 301 sang
+ * đường mới. Nhận cả mã DB (thiet-bi) lẫn mã URL (gear). ?sub=all → /knowledge.
+ * Trả null nếu không phải trường hợp này.
+ */
+function knowledgeSubPath(rest: string, search: URLSearchParams): string | null {
+  if (rest.replace(/\/$/, "") !== "/knowledge") return null;
+  const sub = search.get("sub")?.trim().toLowerCase();
+  if (!sub) return null;
+  if (sub === "all") return "/knowledge";
+  const topic = KNOWLEDGE_TOPICS.find((t) => t.db === sub || t.url === sub);
+  return topic ? `/knowledge/${topic.url}` : null;
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -151,6 +167,7 @@ export function middleware(request: NextRequest) {
     }
     const requestHeaders = new Headers(request.headers);
     requestHeaders.delete("x-locale");
+    requestHeaders.delete("x-mbl-path");
     requestHeaders.set("x-mbl-embed", "1");
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
@@ -176,6 +193,14 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(url, 301);
     }
 
+    const localeKnowledge = knowledgeSubPath(rest, request.nextUrl.searchParams);
+    if (localeKnowledge) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${locale}${localeKnowledge}`;
+      url.searchParams.delete("sub");
+      return NextResponse.redirect(url, 301);
+    }
+
     // Đường dẫn cha 404 trong bản có prefix: 301 giữ nguyên ngôn ngữ
     const parentTarget = PARENT_PATH_REDIRECTS[rest.replace(/\/$/, "")];
     if (parentTarget) {
@@ -191,6 +216,8 @@ export function middleware(request: NextRequest) {
 
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-locale", locale);
+    // Đường dẫn gốc cho app/layout.tsx (đặt <html lang> theo ngôn ngữ nội dung)
+    requestHeaders.set("x-mbl-path", rest);
     requestHeaders.delete("x-mbl-embed");
 
     const response = NextResponse.rewrite(url, {
@@ -213,6 +240,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301);
   }
 
+  const knowledgeTarget = knowledgeSubPath(pathname, request.nextUrl.searchParams);
+  if (knowledgeTarget) {
+    const url = request.nextUrl.clone();
+    url.pathname = knowledgeTarget;
+    url.searchParams.delete("sub");
+    return NextResponse.redirect(url, 301);
+  }
+
   // Bài đổi slug (URL không prefix ngôn ngữ)
   const legacy = legacyBlogPath(pathname);
   if (legacy) {
@@ -223,10 +258,15 @@ export function middleware(request: NextRequest) {
 
   // Chặn header x-locale / x-mbl-embed giả mạo từ bên ngoài trên URL không prefix —
   // hai header này chỉ được phép do chính middleware đặt ở các nhánh trên
-  if (request.headers.has("x-locale") || request.headers.has("x-mbl-embed")) {
+  if (
+    request.headers.has("x-locale") ||
+    request.headers.has("x-mbl-embed") ||
+    request.headers.has("x-mbl-path")
+  ) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.delete("x-locale");
     requestHeaders.delete("x-mbl-embed");
+    requestHeaders.delete("x-mbl-path");
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 

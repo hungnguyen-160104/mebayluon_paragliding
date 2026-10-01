@@ -20,7 +20,7 @@ function toLang(v: unknown): Lang {
 }
 
 /**
- * Tab mục con của /knowledge (dùng ?sub=<mã DB>). Danh sách + nhãn 6 ngôn ngữ
+ * Tab mục con của /knowledge (link /knowledge/<url>). Danh sách + nhãn 6 ngôn ngữ
  * ở lib/knowledge.ts. `available`: mã đang có bài — tab trống bị ẩn (tab đang
  * mở luôn hiện); không truyền thì hiện đủ.
  */
@@ -35,11 +35,11 @@ export function KnowledgeTabs({
   const lang = toLang(language);
   const cur = (current || "all").toLowerCase();
 
-  const tabs: { key: string; label: string }[] = [
+  const tabs: { key: string; url?: string; label: string }[] = [
     { key: "all", label: ALL_LABEL[lang] },
     ...KNOWLEDGE_TOPICS.filter(
       (t) => !available || available.includes(t.db) || t.db === cur,
-    ).map((t) => ({ key: t.db as string, label: t.label[lang] })),
+    ).map((t) => ({ key: t.db as string, url: t.url as string, label: t.label[lang] })),
   ];
 
   return (
@@ -47,10 +47,13 @@ export function KnowledgeTabs({
       <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-1.5 max-w-full overflow-hidden shadow-lg">
         <ul className="flex items-center gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {tabs.map((tab) => {
-            const href =
-              tab.key === "all"
-                ? "/knowledge"
-                : `/knowledge?sub=${encodeURIComponent(tab.key)}`;
+            /**
+             * Link thẳng trang mục con /knowledge/<url> (SEO 01/10/2026): trước
+             * đây trỏ /knowledge?sub=<mã DB> — URL đó canonical về /knowledge
+             * nên các trang /knowledge/gear, /ppg… gần như không có link vào.
+             * ?sub= cũ vẫn chạy: middleware chuyển 301 sang đường mới.
+             */
+            const href = tab.key === "all" ? "/knowledge" : `/knowledge/${tab.url}`;
 
             const isActive = tab.key === "all" ? cur === "all" : cur === tab.key;
 
@@ -58,7 +61,6 @@ export function KnowledgeTabs({
               <li key={tab.key} className="flex-shrink-0">
                 <Link
                   href={href}
-                  scroll={false}
                   className={`
                     flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-medium whitespace-nowrap transition-all duration-200
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40

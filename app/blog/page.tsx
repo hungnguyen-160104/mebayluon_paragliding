@@ -26,7 +26,6 @@ import Link from "@/components/locale-link";
 import { getPosts } from "@/lib/posts-data";
 import { LazyPostCards } from "@/components/lazy-post-cards";
 import type { Post, SupportedLocale } from "@/types/frontend/post";
-import { Footer } from "@/components/footer";
 import BlogTabs from "@/components/blog/BlogTabs";
 import {
   BLOG_CATEGORIES,
@@ -532,14 +531,6 @@ export default async function BlogPage({
 
       </main>
 
-      {/* Footer nằm NGOÀI <main>: để bên trong thì nó bị bọc thêm một lớp
-          container (hẹp lại) và ăn luôn khoảng đệm đáy của main, tạo ra một
-          mảng trống lớn phía dưới. mt-8 tách footer khỏi nút "Xem thêm". */}
-      <div className="relative z-10 mt-8 pb-4">
-        <div className="container mx-auto">
-          <Footer />
-        </div>
-      </div>
     </div>
   );
 }

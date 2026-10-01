@@ -92,12 +92,13 @@ type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
 export const HOMESTAY_GALLERY_I18N: Record<
   Lang,
-  { title: string; subtitle: string; all: string } & Record<HomestayPhotoGroup, string>
+  { title: string; subtitle: string; all: string; seeMore: string } & Record<HomestayPhotoGroup, string>
 > = {
   vi: {
     title: "Bộ sưu tập ảnh",
     subtitle: "Không gian, phòng nghỉ và sân bãi tại Clubhouse Mebayluon.",
     all: "Tất cả",
+    seeMore: "Xem thêm",
     rooms: "Phòng nghỉ",
     space: "Không gian chung",
     pool: "Bể bơi & suối",
@@ -110,6 +111,7 @@ export const HOMESTAY_GALLERY_I18N: Record<
     title: "Photo gallery",
     subtitle: "Spaces, rooms and grounds at Clubhouse Mebayluon.",
     all: "All",
+    seeMore: "See more",
     rooms: "Rooms",
     space: "Common areas",
     pool: "Pool & stream",
@@ -122,6 +124,7 @@ export const HOMESTAY_GALLERY_I18N: Record<
     title: "Galerie photo",
     subtitle: "Espaces, chambres et terrains du Clubhouse Mebayluon.",
     all: "Tout",
+    seeMore: "Voir plus",
     rooms: "Chambres",
     space: "Espaces communs",
     pool: "Piscine & ruisseau",
@@ -134,6 +137,7 @@ export const HOMESTAY_GALLERY_I18N: Record<
     title: "Фотогалерея",
     subtitle: "Пространства, номера и площадки Clubhouse Mebayluon.",
     all: "Все",
+    seeMore: "Показать ещё",
     rooms: "Номера",
     space: "Общие зоны",
     pool: "Бассейн и ручей",
@@ -146,6 +150,7 @@ export const HOMESTAY_GALLERY_I18N: Record<
     title: "照片集",
     subtitle: "Clubhouse Mebayluon 的空间、客房与场地。",
     all: "全部",
+    seeMore: "查看更多",
     rooms: "客房",
     space: "公共区域",
     pool: "泳池与溪流",
@@ -158,6 +163,7 @@ export const HOMESTAY_GALLERY_I18N: Record<
     title: "फ़ोटो गैलरी",
     subtitle: "Clubhouse Mebayluon के स्थान, कमरे और मैदान।",
     all: "सभी",
+    seeMore: "और देखें",
     rooms: "कमरे",
     space: "साझा क्षेत्र",
     pool: "पूल और नदी",

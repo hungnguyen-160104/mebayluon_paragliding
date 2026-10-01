@@ -12,11 +12,53 @@ import {
   DEFAULT_LOCALE,
   languageAlternates,
   canonicalUrlFor,
+  localizedUrl,
+  LOCALES,
   PLACE_MAP_URL,
   PLACE_GEO,
   type Locale,
 } from "@/lib/site-config";
-import { PARAGLIDING_PARTNERS, HOMESTAY_PARTNERS } from "@/lib/partner-links";
+import { HOMESTAY_PARTNERS } from "@/lib/partner-links";
+import {
+  LEGAL_ENTITY,
+  COMPANY_BRANCHES,
+  branchMapUrl,
+  type CompanyBranch,
+} from "@/lib/legal-entity";
+import { cloudinaryOgImage, isCloudinaryImage } from "@/lib/cloudinary-url";
+
+/** Mã og:locale (Open Graph dùng gạch dưới: vi_VN, en_US…). */
+const OG_LOCALE: Record<Locale, string> = {
+  vi: "vi_VN",
+  en: "en_US",
+  fr: "fr_FR",
+  ru: "ru_RU",
+  zh: "zh_CN",
+  hi: "hi_IN",
+};
+
+/** Mã ngôn ngữ BCP 47 cho `inLanguage` trong JSON-LD. */
+export const SCHEMA_LANG: Record<Locale, string> = {
+  vi: "vi-VN",
+  en: "en",
+  fr: "fr",
+  ru: "ru",
+  zh: "zh-CN",
+  hi: "hi",
+};
+
+/** Mạng xã hội chính thức — dùng chung cho Organization và LocalBusiness. */
+const SOCIAL_PROFILES = [
+  "https://www.facebook.com/mebayluon",
+  "https://www.youtube.com/@mebayluon",
+  "https://www.tiktok.com/@mebayluon_paragliding",
+  "https://www.instagram.com/mebayluon.paragliding/",
+];
+
+const ORG_ID = `${SITE_URL}/#organization`;
+const LOGO_URL = `${SITE_URL.replace(/\/$/, "")}/logo.png`;
+/** Điện thoại chính, định dạng quốc tế. */
+const MAIN_PHONE = "+84-964-073-555";
 
 export interface SEOMetadata {
   title: string;
@@ -25,6 +67,8 @@ export interface SEOMetadata {
   image?: string; // can be absolute or relative
   url?: string;   // can be absolute or relative
   author?: string;
+  /** Link hồ sơ tác giả (thẻ meta author kèm url) — xem lib/authors.ts. */
+  authorUrl?: string;
 
   // Dates for articles (optional)
   publishedDate?: Date;
@@ -161,13 +205,48 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
    * Trang KHÔNG khai `availableLocales` (trang tĩnh, đã dịch đủ) thì
    * `available` rỗng — mọi thứ index như thường.
    */
-  const indexable = !available || available.includes(locale);
+  /**
+   * CẬP NHẬT 01/10/2026 (chủ chọn "chỉ canonical"): Google khuyên KHÔNG ghép
+   * noindex với canonical trỏ sang URL khác — hai tín hiệu đá nhau. Nay bản
+   * chưa dịch được index như thường và chỉ dựa vào canonical (→ /en/…) để gộp
+   * tín hiệu; `<html lang>` của trang đó cũng theo ngôn ngữ nội dung thật
+   * (xem app/layout.tsx). Giữ biến để chỗ đọc bên dưới không phải sửa.
+   */
+  const indexable = true;
+
+  /** Ngôn ngữ của NỘI DUNG đang hiển thị (bản chưa dịch → ngôn ngữ canonical). */
+  const contentLocale: Locale =
+    !available || available.length === 0 || available.includes(locale)
+      ? locale
+      : available.includes("en")
+        ? "en"
+        : available.includes(DEFAULT_LOCALE)
+          ? DEFAULT_LOCALE
+          : available[0];
+  const ogAlternateLocales = (available && available.length ? available : LOCALES)
+    .filter((l) => l !== contentLocale)
+    .map((l) => OG_LOCALE[l]);
 
   /**
    * Trang tự truyền ảnh (bài viết, sản phẩm, hồ sơ phi công) thì dùng ảnh đó
    * vì nó sát nội dung hơn; còn lại lấy thẻ dựng sẵn của mục.
    */
-  const imageUrl = seo.image ? resolveImage(seo.image) : ogCardFor(basePath);
+  /**
+   * Ảnh bìa trên Cloudinary → bản cắt đúng 1200×630, JPEG q80 (SEO 01/10/2026):
+   * 51 bài từng dùng ảnh gốc 1–4 MB làm og:image, Zalo/WhatsApp hay không
+   * hiện được thẻ xem trước. Ảnh nằm trong /public thì để nguyên.
+   */
+  const imageUrl = seo.image
+    ? isCloudinaryImage(seo.image)
+      ? cloudinaryOgImage(seo.image)
+      : resolveImage(seo.image)
+    : ogCardFor(basePath);
+  const imageIsSized = !seo.image || isCloudinaryImage(seo.image);
+  const imageMime = /\.png(\?|$)/i.test(imageUrl)
+    ? "image/png"
+    : /\.webp(\?|$)/i.test(imageUrl)
+      ? "image/webp"
+      : "image/jpeg";
 
   // Map internal type -> Next OpenGraph supported type
   const ogType: "article" | "website" =
@@ -181,7 +260,9 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
     // Next Metadata supports string[] here (recommended)
     keywords: seo.keywords,
 
-    authors: seo.author ? [{ name: seo.author }] : undefined,
+    authors: seo.author
+      ? [{ name: seo.author, ...(seo.authorUrl ? { url: seo.authorUrl } : {}) }]
+      : undefined,
 
     alternates: {
       canonical: canonicalUrl,
@@ -194,17 +275,19 @@ export function buildMetadata(seo: SEOMetadata): Metadata {
       url: canonicalUrl,
       siteName: SITE_NAME,
       type: ogType,
+      locale: OG_LOCALE[contentLocale],
+      alternateLocale: ogAlternateLocales,
 
       ...(imageUrl
         ? {
             images: [
               {
                 url: imageUrl,
-                width: 1200,
-                height: 630,
+                // Chỉ khai kích thước khi chắc chắn (thẻ dựng sẵn / bản cắt
+                // Cloudinary 1200×630); ảnh /public khác cỡ thì để trống.
+                ...(imageIsSized ? { width: 1200, height: 630 } : {}),
                 alt: seo.title,
-                // "type" here is OK (image mime type)
-                type: "image/png",
+                type: imageMime,
               },
             ],
           }
@@ -258,8 +341,21 @@ export function generateArticleSchema(data: {
   publishedDate: Date;
   updatedDate: Date;
   author: string;
+  /**
+   * Tác giả có hồ sơ (lib/authors.ts): khai Person kèm url/jobTitle và @id
+   * trùng Person ở trang /pilots/<slug>. Không có → tên thương hiệu ("Admin",
+   * "Mebayluon"…) khai thành Organization; tên khác giữ Person chỉ có tên.
+   */
+  authorUrl?: string;
+  authorJobTitle?: string;
+  authorId?: string;
+  authorIsBrand?: boolean;
+  /** URL tuyệt đối của bản ngôn ngữ đang xem (hoặc canonical của nó). */
   url: string;
+  /** Ngôn ngữ của nội dung bài đang hiển thị. */
+  inLanguage?: Locale;
 }) {
+  const url = resolveUrl(data.url);
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -268,19 +364,27 @@ export function generateArticleSchema(data: {
     image: [resolveImage(data.image)],
     datePublished: data.publishedDate.toISOString(),
     dateModified: data.updatedDate.toISOString(),
-    author: {
-      "@type": "Person",
-      name: data.author,
-    },
+    author: data.authorIsBrand
+      ? { "@type": "Organization", "@id": ORG_ID, name: SITE_NAME, url: SITE_URL }
+      : {
+          "@type": "Person",
+          ...(data.authorId ? { "@id": data.authorId } : {}),
+          name: data.author,
+          ...(data.authorUrl ? { url: resolveUrl(data.authorUrl) } : {}),
+          ...(data.authorJobTitle ? { jobTitle: data.authorJobTitle } : {}),
+        },
     publisher: {
       "@type": "Organization",
+      "@id": ORG_ID,
       name: SITE_NAME,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_URL.replace(/\/$/, "")}/logo.png`,
+        url: LOGO_URL,
       },
     },
-    url: resolveUrl(data.url),
+    url,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    ...(data.inLanguage ? { inLanguage: SCHEMA_LANG[data.inLanguage] } : {}),
   };
 }
 
@@ -322,95 +426,140 @@ export function generateProductSchema(data: {
   };
 }
 
+/** PostalAddress của một địa điểm (trụ sở / chi nhánh) — lib/legal-entity.ts. */
+function branchPostalAddress(b: CompanyBranch) {
+  return {
+    "@type": "PostalAddress",
+    streetAddress: b.streetAddress,
+    addressLocality: b.addressLocality,
+    addressRegion: b.addressRegion,
+    addressCountry: "VN",
+  };
+}
+
+const ORG_DESCRIPTION: Record<Locale, string> = {
+  vi: "Trải nghiệm bay dù lượn tự do trên khắp Việt Nam",
+  en: "Tandem paragliding flights across Vietnam",
+  fr: "Vols en parapente biplace partout au Vietnam",
+  ru: "Тандемные полёты на параплане по всему Вьетнаму",
+  zh: "越南各地双人滑翔伞飞行体验",
+  hi: "पूरे वियतनाम में टैंडम पैराग्लाइडिंग उड़ानें",
+};
+
+const BRANCH_LABEL: Record<Locale, { hq: string; branch: string }> = {
+  vi: { hq: "Trụ sở chính", branch: "Chi nhánh" },
+  en: { hq: "Head office", branch: "Branch" },
+  fr: { hq: "Siège social", branch: "Agence" },
+  ru: { hq: "Головной офис", branch: "Филиал" },
+  zh: { hq: "总部", branch: "分公司" },
+  hi: { hq: "मुख्य कार्यालय", branch: "शाखा" },
+};
+
+/** Tên hiển thị của địa điểm: "Mebayluon Paragliding – <điểm bay>". */
+export function branchDisplayName(b: CompanyBranch, locale: Locale = DEFAULT_LOCALE): string {
+  return `${SITE_NAME} – ${b.site[locale] ?? b.site.en}`;
+}
+
 /**
- * Generate JSON-LD structured data for organization
+ * Organization toàn site (SEO 01/10/2026, chủ chốt phương án chi nhánh).
+ *
+ * Pháp nhân: CTCP Du lịch và Thể thao Viên Nam — tên, MST, trụ sở lấy từ
+ * lib/legal-entity.ts (cùng nguồn với khối pháp nhân ở footer, nên NAP khớp).
+ * Năm địa điểm (trụ sở + 4 chi nhánh) khai trong `department`; mỗi trang điểm
+ * bay khai lại LocalBusiness đầy đủ của chi nhánh mình (generateBranchSchema)
+ * và trỏ `parentOrganization` về đúng @id ở đây.
+ *
+ * Trước đây layout còn khai thêm một TouristInformationCenter gắn cứng địa chỉ
+ * Tú Lệ trên MỌI trang — thành ra trang Hà Nội, Sa Pa cũng nói doanh nghiệp ở
+ * Tú Lệ, lệch với footer (Xuân Mai) và /contact (Sa Pa). Đã bỏ.
  */
-export function generateOrganizationSchema() {
+export function generateOrganizationSchema(locale: Locale = DEFAULT_LOCALE) {
+  const hq = COMPANY_BRANCHES.find((b) => b.headquarters);
+  const label = BRANCH_LABEL[locale] ?? BRANCH_LABEL.vi;
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": ORG_ID,
     name: SITE_NAME,
+    alternateName: "Mebayluon",
+    legalName: LEGAL_ENTITY.legalName,
+    taxID: LEGAL_ENTITY.taxCode,
     url: SITE_URL,
-    logo: `${SITE_URL.replace(/\/$/, "")}/logo.png`,
-    description: "Trải nghiệm bay dù lượn tự do trên khắp Việt Nam",
-    sameAs: [
-      "https://www.facebook.com/mebayluon",
-      "https://www.youtube.com/@mebayluon",
-      "https://www.tiktok.com/@mebayluon_paragliding",
-    ],
+    logo: LOGO_URL,
+    image: DEFAULT_IMAGE,
+    description: ORG_DESCRIPTION[locale] ?? ORG_DESCRIPTION.vi,
+    telephone: MAIN_PHONE,
+    email: LEGAL_ENTITY.email,
+    ...(hq ? { address: branchPostalAddress(hq) } : {}),
+    founder: { "@type": "Person", name: LEGAL_ENTITY.legalRepresentative.name },
+    sameAs: SOCIAL_PROFILES,
     contactPoint: {
       "@type": "ContactPoint",
-      contactType: "Customer Service",
-      telephone: "+84-964-073-555",
-      email: "mebayluon@gmail.com",
+      contactType: "customer service",
+      telephone: MAIN_PHONE,
+      email: LEGAL_ENTITY.email,
       availableLanguage: ["Vietnamese", "English"],
     },
+    department: COMPANY_BRANCHES.map((b) => ({
+      "@type": ["LocalBusiness", "SportsActivityLocation"],
+      "@id": `${localizedUrl(`/spots/${b.spot}`, DEFAULT_LOCALE)}#${b.id}`,
+      name: branchDisplayName(b, locale),
+      description: `${b.headquarters ? label.hq : label.branch} – ${b.site[locale] ?? b.site.en}`,
+      url: localizedUrl(`/spots/${b.spot}`, locale),
+      telephone: MAIN_PHONE,
+      address: branchPostalAddress(b),
+      geo: { "@type": "GeoCoordinates", latitude: b.geo.lat, longitude: b.geo.lng },
+      hasMap: branchMapUrl(b),
+    })),
   };
 }
 
 /**
- * Generate LocalBusiness schema for Mebayluon
+ * LocalBusiness + SportsActivityLocation của MỘT chi nhánh — khai ở trang điểm
+ * bay chi nhánh đó phục vụ (app/spots/[slug]/page.tsx). `@id` trùng với mục
+ * trong `department` của Organization để Google nối hai nơi là một thực thể.
  */
-export function generateLocalBusinessSchema() {
+export function generateBranchSchema(
+  b: CompanyBranch,
+  opts: { locale: Locale; image?: string; description?: string },
+) {
+  const label = BRANCH_LABEL[opts.locale] ?? BRANCH_LABEL.vi;
   return {
     "@context": "https://schema.org",
-    "@type": "TouristInformationCenter",
-    name: "Mebayluon Paragliding",
-    image: DEFAULT_IMAGE,
-    url: SITE_URL,
-    telephone: "+84-964-073-555",
-    email: "mebayluon@gmail.com",
-    description: "Công ty bay dù lượn chuyên nghiệp tại Việt Nam. Trải nghiệm bay dù lượn tự do trên khắp Việt Nam.",
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: "Thôn Lìm Thái, Xã Tú Lệ",
-      addressLocality: "Lào Cai",
-      addressCountry: "VN",
-    },
-    // Trụ sở công ty đặt cùng chỗ với Clubhouse nên dùng chung toạ độ.
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: PLACE_GEO.lat,
-      longitude: PLACE_GEO.lng,
-    },
-    hasMap: PLACE_MAP_URL,
+    "@type": ["LocalBusiness", "SportsActivityLocation"],
+    "@id": `${localizedUrl(`/spots/${b.spot}`, DEFAULT_LOCALE)}#${b.id}`,
+    name: branchDisplayName(b, opts.locale),
+    description:
+      opts.description ?? `${b.headquarters ? label.hq : label.branch} – ${b.site[opts.locale] ?? b.site.en}`,
+    url: localizedUrl(`/spots/${b.spot}`, opts.locale),
+    image: resolveImage(opts.image),
+    logo: LOGO_URL,
+    telephone: MAIN_PHONE,
+    email: LEGAL_ENTITY.email,
+    address: branchPostalAddress(b),
+    geo: { "@type": "GeoCoordinates", latitude: b.geo.lat, longitude: b.geo.lng },
+    hasMap: branchMapUrl(b),
     openingHoursSpecification: {
       "@type": "OpeningHoursSpecification",
-      dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
       opens: "06:00",
       closes: "19:00",
     },
     priceRange: "$$",
     currenciesAccepted: "VND",
     paymentAccepted: "Cash, Bank Transfer",
-
-    /**
-     * address ở trên là trụ sở (Tú Lệ), nhưng Mebayluon tổ chức bay ở nhiều
-     * tỉnh. Không khai areaServed thì Google chỉ hiểu doanh nghiệp phục vụ
-     * quanh Tú Lệ, nên các tìm kiếm kiểu "bay dù lượn Hà Nội" hay "dù lượn
-     * Sa Pa" khó nối được về đây. Liệt kê đúng những nơi đang có điểm bay
-     * (xem SPOT_SLUGS trong lib/spots-slugs.ts) — thêm điểm bay mới thì nhớ
-     * bổ sung vào đây.
-     */
-    areaServed: [
-      { "@type": "Place", name: "Hà Nội" },
-      { "@type": "Place", name: "Sa Pa" },
-      { "@type": "Place", name: "Mù Cang Chải" },
-      { "@type": "Place", name: "Trạm Tấu" },
-      { "@type": "Place", name: "Tú Lệ" },
-      { "@type": "Place", name: "Hà Giang" },
-      { "@type": "Place", name: "Đà Nẵng" },
-      { "@type": "Place", name: "Đà Lạt" },
-    ],
-
-    sameAs: [
-      "https://www.facebook.com/mebayluon",
-      "https://www.youtube.com/@mebayluon",
-      "https://www.tiktok.com/@mebayluon_paragliding",
-      ...PARAGLIDING_PARTNERS.map((p) => p.url),
-    ],
+    parentOrganization: {
+      "@type": "Organization",
+      "@id": ORG_ID,
+      name: SITE_NAME,
+      legalName: LEGAL_ENTITY.legalName,
+      taxID: LEGAL_ENTITY.taxCode,
+      url: SITE_URL,
+    },
+    sameAs: SOCIAL_PROFILES,
   };
 }
+
 
 /**
  * Homestay Clubhouse Mebayluon — khai riêng ở trang /homestay.
@@ -481,10 +630,13 @@ export function generatePilotSchema(data: {
   url: string;
   experience?: string;
   certificates?: string[];
+  /** @id cố định (không tiền tố ngôn ngữ) để bài viết trỏ author về đây. */
+  id?: string;
 }) {
   return {
     "@context": "https://schema.org",
     "@type": "Person",
+    ...(data.id ? { "@id": data.id } : {}),
     name: data.name,
     alternateName: data.nickname,
     jobTitle: data.role,
@@ -493,6 +645,7 @@ export function generatePilotSchema(data: {
     url: resolveUrl(data.url),
     worksFor: {
       "@type": "Organization",
+      "@id": ORG_ID,
       name: SITE_NAME,
       url: SITE_URL,
     },
@@ -514,10 +667,12 @@ export function generateSpotSchema(data: {
   latitude?: number;
   longitude?: number;
   address?: string;
+  inLanguage?: Locale;
 }) {
   return {
     "@context": "https://schema.org",
     "@type": "TouristAttraction",
+    ...(data.inLanguage ? { inLanguage: SCHEMA_LANG[data.inLanguage] } : {}),
     name: data.name,
     description: data.description,
     image: resolveImage(data.image),

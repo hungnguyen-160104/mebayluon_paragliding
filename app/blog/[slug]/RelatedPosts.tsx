@@ -62,7 +62,7 @@ export function RelatedPostsGrid({
             className="group flex gap-3 rounded-xl border border-white/15 bg-white/10 p-3 transition-all hover:bg-white/20"
           >
             <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg">
-              <Image src={item.cover} alt={item.title} fill className="object-cover" />
+              <Image src={item.cover} alt={item.title} fill sizes="96px" className="object-cover" />
             </div>
             <p className="line-clamp-3 text-sm font-semibold leading-snug text-white group-hover:text-sky-300">
               {item.title}
@@ -102,6 +102,7 @@ export function RelatedPostsSidebar({
                 src={item.cover}
                 alt={item.title}
                 fill
+                sizes="96px"
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>

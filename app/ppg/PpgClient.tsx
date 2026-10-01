@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import Footer from "@/components/footer/Footer";
 import { LazyVideo } from "@/components/lazy-video";
 import { useLanguage } from "@/contexts/language-context";
 import { getSpotLinks } from "@/lib/spot-partner-links";
@@ -511,11 +510,6 @@ export default function PpgClient() {
           </div>
         </section>
 
-        <div className="pb-6">
-          <div className="container mx-auto">
-            <Footer />
-          </div>
-        </div>
       </div>
     </main>
   );

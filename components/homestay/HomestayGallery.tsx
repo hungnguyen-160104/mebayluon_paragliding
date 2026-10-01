@@ -162,7 +162,7 @@ export default function HomestayGallery({
                  đặc, viền sáng và đổ bóng cho tách khỏi nền. */
               className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-accent/40 px-8 py-3 text-base font-semibold text-white shadow-xl shadow-black/50 backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-accent/60 hover:shadow-2xl"
             >
-              {seeMoreLabel ?? "Xem thêm"} ({photos.length - shown})
+              {seeMoreLabel ?? t.seeMore} ({photos.length - shown})
             </button>
           </div>
         )}

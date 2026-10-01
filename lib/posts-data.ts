@@ -3,6 +3,8 @@ import { connectDB } from "@/lib/mongodb";
 import { Post as PostModel } from "@/models/Post.model";
 import type { Post, ContentBlock } from "@/types/frontend/post";
 import type { SortOrder } from "mongoose";
+import { postLocales } from "@/lib/post-locales";
+import type { Locale } from "@/lib/site-config";
 
 export interface GetPostsOptions {
   category?: string;
@@ -423,6 +425,27 @@ export const getKnowledgeSubCounts = cache(async function getKnowledgeSubCounts(
     return out;
   } catch (error) {
     console.error("Error in getKnowledgeSubCounts:", error);
+    return null;
+  }
+});
+
+/**
+ * Những ngôn ngữ bài viết THẬT SỰ có nội dung (lib/post-locales.ts) — bản nhẹ
+ * cho app/layout.tsx đặt `<html lang>` (bài chưa dịch ở /zh/blog/x hiện bản
+ * tiếng Anh → lang="en"). Chỉ lấy tiêu đề + bản dịch, không kéo cả thân bài.
+ * null = không có bài (đã xuất bản) mang slug này hoặc lỗi DB.
+ */
+export const getPostLocalesBySlug = cache(async function getPostLocalesBySlug(
+  slug: string,
+): Promise<Locale[] | null> {
+  try {
+    await connectDB();
+    const raw = await PostModel.findOne({ slug, isPublished: true })
+      .select("title titleVi translatedLangs translations")
+      .lean();
+    return raw ? postLocales(raw as Parameters<typeof postLocales>[0]) : null;
+  } catch (error) {
+    console.error("Error in getPostLocalesBySlug:", error);
     return null;
   }
 });

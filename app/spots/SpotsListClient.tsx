@@ -11,7 +11,6 @@ import { MapPin, Mountain, Clock } from "lucide-react";
 
 import { useLanguage } from "@/contexts/language-context";
 import { Button } from "@/components/ui/button";
-import Footer from "@/components/footer/Footer";
 import { SPOTS_LIST } from "@/lib/spots-registry";
 import { SpotTagline } from "@/components/spots/SpotTagline";
 import { getSpotsPageCopy } from "@/lib/i18n/spots-page";
@@ -217,11 +216,6 @@ export default function SpotsListClient() {
         }}
       />
 
-      <div className="relative z-10 pb-6">
-        <div className="container mx-auto">
-          <Footer />
-        </div>
-      </div>
     </div>
   );
 }

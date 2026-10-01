@@ -26,6 +26,16 @@ import {
 import { ViewCounter } from "@/components/ViewCounter";
 import { buildMetadata, generateArticleSchema, generateBreadcrumbSchema } from "@/lib/metadata-builder";
 import { collectPostVideos, generateVideoSchema } from "@/lib/video-schema";
+import { cloudinaryOptimize, optimizeContentImages } from "@/lib/cloudinary-url";
+import { getProductPathMap, rewriteProductLinks } from "@/lib/product-links";
+import { canonicalUrlFor, localizedUrl, type Locale } from "@/lib/site-config";
+import {
+  AUTHOR_LABEL,
+  authorProfileUrl,
+  findArticleAuthor,
+  isBrandAuthor,
+  pilotPersonId,
+} from "@/lib/authors";
 import type { ContentBlock, EmbedType, Post, SupportedLocale } from "@/types/frontend/post";
 
 type Lang = SupportedLocale;
@@ -622,6 +632,15 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
   }
 }
 
+const NOT_FOUND_TITLE: Record<Lang, string> = {
+  vi: "Bài viết không tồn tại",
+  en: "Article not found",
+  fr: "Article introuvable",
+  ru: "Статья не найдена",
+  zh: "文章不存在",
+  hi: "लेख नहीं मिला",
+};
+
 const LOCALE_BY_LANG: Record<Lang, string> = {
   vi: "vi-VN",
   en: "en-US",
@@ -742,9 +761,8 @@ export async function generateMetadata({
 
   if (!post) {
     return {
-      title: "Bài viết không tồn tại | Mebayluon",
-      // URL không tồn tại: trang render kiểu streaming nên không đổi được mã
-      // trạng thái sang 404 — chặn index để tránh URL rác lọt vào Google.
+      title: `${NOT_FOUND_TITLE[lang]} | Mebayluon`,
+      // Thân trang gọi notFound() → HTTP 404 thật; noindex chỉ là lớp phụ.
       robots: { index: false, follow: false },
     };
   }
@@ -759,13 +777,19 @@ export async function generateMetadata({
   // Chỉ khai hreflang cho ngôn ngữ bài này THẬT SỰ có nội dung. Mở
   // /fr/blog/... khi bài chưa dịch tiếng Pháp thì canonical trỏ về bản
   // tiếng Anh, tránh 5 URL cùng nội dung bị tính là trùng lặp.
+  const knownAuthor = findArticleAuthor(post.author);
   const meta = buildMetadata({
     title,
     description,
     image,
     url: basePath,
     type: "article",
-    author: post.author || "Mebayluon Team",
+    author: knownAuthor
+      ? knownAuthor.name
+      : isBrandAuthor(post.author)
+        ? "Mebayluon Paragliding"
+        : String(post.author),
+    authorUrl: knownAuthor ? authorProfileUrl(knownAuthor, urlLocale) : undefined,
     publishedDate: post.publishedAt ? new Date(post.publishedAt) : undefined,
     updatedDate: post.updatedAt ? new Date(post.updatedAt) : undefined,
     locale: urlLocale,
@@ -873,6 +897,20 @@ export default async function BlogPostPage({
     permanentRedirect(`/blog/${post.slug}`);
   }
 
+  /** Ngôn ngữ theo URL — chỉ dùng cho URL trong JSON-LD và chuyển hướng. */
+  const urlLocale = await getUrlLocale();
+  const localePrefix = urlLocale === "vi" ? "" : `/${urlLocale}`;
+
+  /**
+   * SẢN PHẨM CỬA HÀNG mở bằng /blog/<slug> (SEO 01/10/2026): trang này render
+   * mọi bài theo slug, kể cả type "product", nên sách/khoá học có hai URL index
+   * được — /blog/x và /store/<danh mục>/x. Chuyển hẳn (308) về trang cửa hàng,
+   * giữ tiền tố ngôn ngữ. Xem trước bản nháp (?preview=1) thì không chuyển.
+   */
+  if (post.type === "product" && !isPreview) {
+    permanentRedirect(`${localePrefix}/store/${post.storeCategory || "all"}/${post.slug}`);
+  }
+
   /**
    * Lấy RỘNG danh sách bài liên quan (không chỉ 6-7 bài): client hiển thị
    * 8 bài đầu, bấm "Xem thêm" mở thêm 10 bài mỗi lần — dữ liệu đã có sẵn
@@ -959,10 +997,20 @@ export default async function BlogPostPage({
 
   const title = pickTitle(post, lang);
   const excerpt = pickExcerpt(post, lang);
-  const content = pickContent(post, lang);
-  const blocks = pickBlocks(post, lang);
+  /**
+   * Link /blog/<sản phẩm> trong nội dung → thẳng /store/<danh mục>/<slug>
+   * (trang /blog/<sản phẩm> giờ chỉ là chuyển hướng 308).
+   */
+  const productPaths = await getProductPathMap();
+  const content = rewriteProductLinks(pickContent(post, lang), productPaths);
+  const rawBlocks = pickBlocks(post, lang);
+  const blocks: ContentBlock[] = Object.keys(productPaths).length
+    ? (JSON.parse(rewriteProductLinks(JSON.stringify(rawBlocks), productPaths)) as ContentBlock[])
+    : rawBlocks;
   const canRenderBlocks = blocks.length > 0 && hasVisibleBlockData(blocks);
   const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
+  /** Ảnh bìa hiển thị: bản Cloudinary đã nén/đổi định dạng (URL gốc giữ cho JSON-LD). */
+  const coverDisplay = cloudinaryOptimize(cover);
   const backUrl = post.category === "knowledge" ? "/knowledge" : "/blog";
   const publishedLabel =
     post.publishedAt || post.createdAt
@@ -980,7 +1028,7 @@ export default async function BlogPostPage({
     return {
       slug: String(item.slug),
       title: pickTitle(item, lang),
-      cover: item.coverImage || item.thumbnail || "/images/mebayluon.jpg",
+      cover: cloudinaryOptimize(item.coverImage || item.thumbnail || "/images/mebayluon.jpg", 600),
       dateLabel: itemDate
         ? new Date(itemDate).toLocaleDateString(locale)
         : undefined,
@@ -989,13 +1037,35 @@ export default async function BlogPostPage({
 
   const schemaDates = articleSchemaDates(post);
 
+  /**
+   * URL trong JSON-LD theo NGÔN NGỮ CỦA TRANG (SEO 01/10/2026): trước đây mọi
+   * bản /en, /fr… đều khai URL tiếng Việt. Bài chưa dịch sang ngôn ngữ đang
+   * xem (vd /ru/blog/x hiện bản tiếng Anh) thì URL bài = canonical (/en/…),
+   * còn các bậc giữa của breadcrumb (/ru/blog) vẫn theo ngôn ngữ trang.
+   */
+  const postPath = `/blog/${post.slug || slug}`;
+  const available = postLocales(post);
+  const postUrl = canonicalUrlFor(postPath, urlLocale, available);
+  const contentLocale: Locale =
+    available.length === 0 || available.includes(urlLocale)
+      ? urlLocale
+      : available.includes("en")
+        ? "en"
+        : available[0];
+
+  const author = findArticleAuthor(post.author);
   const articleSchema = generateArticleSchema({
     title,
     description: excerpt,
     image: cover,
     ...schemaDates,
-    author: post.author || "Mebayluon Team",
-    url: `/blog/${slug}`,
+    author: author ? author.name : String(post.author || "Mebayluon Paragliding"),
+    authorIsBrand: !author && isBrandAuthor(post.author),
+    authorId: author ? pilotPersonId(author.pilotSlug) : undefined,
+    authorUrl: author ? authorProfileUrl(author, urlLocale) : undefined,
+    authorJobTitle: author ? author.jobTitle[contentLocale] : undefined,
+    url: postUrl,
+    inLanguage: contentLocale,
   });
 
   /**
@@ -1007,11 +1077,11 @@ export default async function BlogPostPage({
   // Bậc giữa bám theo backUrl để khớp với nút "Quay lại" ngay trên trang.
   const crumb = CRUMB[lang];
   const breadcrumbSchema = generateBreadcrumbSchema([
-    { name: crumb.home, url: "/" },
+    { name: crumb.home, url: localizedUrl("/", urlLocale) },
     backUrl === "/knowledge"
-      ? { name: crumb.knowledge, url: "/knowledge" }
-      : { name: crumb.blog, url: "/blog" },
-    { name: title, url: `/blog/${slug}` },
+      ? { name: crumb.knowledge, url: localizedUrl("/knowledge", urlLocale) }
+      : { name: crumb.blog, url: localizedUrl("/blog", urlLocale) },
+    { name: title, url: postUrl },
   ]);
 
   const videoSchemas = collectPostVideos(blocks, {
@@ -1019,7 +1089,7 @@ export default async function BlogPostPage({
     description: excerpt,
   }).map((video) =>
     generateVideoSchema(video, {
-      pageUrl: `/blog/${slug}`,
+      pageUrl: postUrl,
       uploadDate: schemaDates.publishedDate,
     }),
   );
@@ -1082,6 +1152,22 @@ export default async function BlogPostPage({
                 {title}
               </h1>
 
+              {/* Dòng tác giả — chỉ người viết có hồ sơ (lib/authors.ts) */}
+              {author && (
+                <p className="mb-2 text-center text-sm text-white/80">
+                  {AUTHOR_LABEL[lang]}:{" "}
+                  <Link
+                    href={`/pilots/${author.pilotSlug}`}
+                    rel="author"
+                    className="font-semibold text-white underline-offset-4 hover:underline"
+                  >
+                    {author.name}
+                  </Link>
+                  {" · "}
+                  <span className="text-white/70">{author.jobTitle[lang]}</span>
+                </p>
+              )}
+
               {/* ngày + lượt xem */}
               <div className="mb-3 text-center text-xs text-white/60">
                 {publishedLabel} • {ui.views(Number(post.views || 0))}
@@ -1103,10 +1189,11 @@ export default async function BlogPostPage({
               {cover && (
                 <div className="mb-6 overflow-hidden rounded-xl bg-white/5">
                   <Image
-                    src={cover}
+                    src={coverDisplay}
                     alt={title}
                     width={1200}
                     height={675}
+                    sizes="(min-width: 1280px) 860px, (min-width: 1024px) 70vw, 100vw"
                     priority
                     className="h-auto w-full rounded-xl"
                     style={{ objectFit: "contain", display: "block" }}
@@ -1132,7 +1219,7 @@ export default async function BlogPostPage({
                   </div>
                 ) : content ? (
                   hasHtmlTag(content) ? (
-                    <div dangerouslySetInnerHTML={{ __html: linkifyPhonesInHtml(fillMissingImgAlt(content, title)) }} />
+                    <div dangerouslySetInnerHTML={{ __html: linkifyPhonesInHtml(optimizeContentImages(fillMissingImgAlt(content, title))) }} />
                   ) : (
                     <div className="whitespace-pre-line">{linkifyPhones(content)}</div>
                   )

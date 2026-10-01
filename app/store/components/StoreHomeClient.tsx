@@ -7,7 +7,6 @@ import type { Post, StoreCategory } from "@/types/frontend/post";
 import clsx from "clsx";
 import { getStoreTexts, type StoreLang, type StoreUiTexts } from "@/lib/store-texts";
 import { useLanguage } from "@/contexts/language-context";
-import { Footer } from "@/components/footer";
 
 function toStoreLang(v: string): StoreLang {
   const code = v.toLowerCase().slice(0, 2);
@@ -73,13 +72,6 @@ export default function StoreHomeClient({
         </div>
       </section>
 
-      {/* Footer — trước đây trang này không có, khách đọc xong là cụt đường
-          đi tiếp và Google mất luôn liên kết nội bộ từ đây. */}
-      <div className="relative z-10 pb-6">
-        <div className="container mx-auto">
-          <Footer />
-        </div>
-      </div>
     </main>
   );
 }

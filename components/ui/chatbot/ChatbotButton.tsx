@@ -30,7 +30,9 @@ export default function ChatbotButton({ onClick, className, title }: Props) {
         fill
         sizes="40px"
         className="object-contain p-1.5"
-        priority
+        /* KHÔNG priority (SEO 01/10/2026): nút 40px góc màn hình không phải
+           nội dung chính — priority khiến trang chủ preload ảnh này kèm 17 cỡ
+           srcset, tranh băng thông với ảnh nền và font của màn hình đầu. */
       />
     </button>
   );

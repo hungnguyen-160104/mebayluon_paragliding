@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import { Post } from "@/models/Post.model"; // dùng chung Post model cho cả product
 import { toSlug } from "@/utils/slug";
 import { estimateReadTime } from "@/utils/readTime";
+import { revalidateContent } from "@/lib/revalidate-content";
 
 /** ===== Types ===== */
 export type ProductInput = {
@@ -106,6 +107,7 @@ export async function createProduct(data: ProductInput, _auth?: any) {
     price: data.price,
   });
 
+  revalidateContent();
   return doc;
 }
 
@@ -148,6 +150,7 @@ export async function updateProduct(id: string, data: Partial<ProductInput>, _au
     err.status = 404;
     throw err;
   }
+  revalidateContent();
   return updated;
 }
 
@@ -163,6 +166,7 @@ export async function deleteProduct(id: string, _auth?: any) {
     err.status = 404;
     throw err;
   }
+  revalidateContent();
   return { ok: true, id };
 }
 
@@ -188,5 +192,6 @@ export async function publishProduct(
     err.status = 404;
     throw err;
   }
+  revalidateContent();
   return updated;
 }

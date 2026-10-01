@@ -2,7 +2,6 @@
 import { PageBackground } from "@/components/page-background";
 
 import { Navigation } from "@/components/navigation"
-import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle2, Shirt, PackageCheck, Ban, Ticket, ArrowRight } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
@@ -397,9 +396,6 @@ export default function PreNoticePage() {
         </div>
       </section>
 
-      <div className="relative z-10">
-        <Footer />
-      </div>
     </main>
   )
 }

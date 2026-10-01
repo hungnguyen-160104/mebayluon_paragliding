@@ -4,6 +4,7 @@ import { Post } from "@/models/Post.model";
 import { toSlug } from "@/utils/slug";
 import { estimateReadTime } from "@/utils/readTime";
 import type { ContentBlock, EmbedType } from "@/types/frontend/post";
+import { revalidateContent } from "@/lib/revalidate-content";
 
 export type PostInput = {
   title: string;
@@ -533,6 +534,7 @@ export async function createPost(data: PostInput, _auth?: any) {
     fixedKey: data.fixedKey ?? undefined,
   });
 
+  revalidateContent();
   return doc;
 }
 
@@ -672,6 +674,7 @@ export async function updatePost(id: string, data: Partial<PostInput>, _auth?: a
     throw err;
   }
 
+  revalidateContent();
   return updated;
 }
 
@@ -689,6 +692,7 @@ export async function deletePost(id: string, _auth?: any) {
     throw err;
   }
 
+  revalidateContent();
   return { ok: true, id };
 }
 
@@ -719,5 +723,6 @@ export async function publishPost(
     throw err;
   }
 
+  revalidateContent();
   return updated;
 }

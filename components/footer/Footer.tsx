@@ -14,6 +14,8 @@ const dancingScript = Dancing_Script({
   weight: ["600"],
   subsets: ["latin", "vietnamese"],
   display: "swap",
+  // Slogan nằm cuối trang — không preload, khỏi tranh băng thông màn đầu.
+  preload: false,
 });
 import {
   Facebook,

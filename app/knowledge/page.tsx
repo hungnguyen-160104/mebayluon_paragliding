@@ -7,7 +7,6 @@ import { KnowledgeTabs } from "./KnowledgeTabs";
 import { LazyPostCards } from "@/components/lazy-post-cards";
 import { buildMetadata } from "@/lib/metadata-builder";
 import { getRequestLang, getUrlLocale } from "@/lib/locale";
-import { Footer } from "@/components/footer";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
@@ -481,14 +480,6 @@ export default async function KnowledgeAllPage({
 
       </main>
 
-      {/* Footer nằm NGOÀI <main>: để bên trong thì nó bị bọc thêm một lớp
-          container (hẹp lại) và ăn luôn khoảng đệm đáy của main, tạo ra một
-          mảng trống lớn phía dưới. mt-8 tách footer khỏi nút "Xem thêm". */}
-      <div className="relative z-10 mt-8 pb-4">
-        <div className="container mx-auto">
-          <Footer />
-        </div>
-      </div>
 
       <style>{`
         @keyframes fadeInRight {

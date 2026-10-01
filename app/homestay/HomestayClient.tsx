@@ -41,7 +41,6 @@ import {
 import { PLACE_MAP_URL } from "@/lib/site-config";
 import { HOMESTAY_PARTNERS, BRAND_BUTTON_CLASS } from "@/lib/partner-links";
 import { bookingContactChannels } from "@/lib/contact-channels";
-import { Footer } from "@/components/footer";
 import HomestayGallery from "@/components/homestay/HomestayGallery";
 
 /* ================= Helpers ================= */
@@ -773,13 +772,6 @@ export default function HomestayPage({
       </div>
 
 
-      {/* Footer — trước đây trang này không có, khách đọc xong là cụt đường
-          đi tiếp và Google mất luôn liên kết nội bộ từ đây. */}
-      <div className="relative z-10 pb-6">
-        <div className="container mx-auto">
-          <Footer />
-        </div>
-      </div>
       <GoogleReviewBadge rating={rating} reviewsCount={reviewsCount} />
     </div>
   );

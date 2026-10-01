@@ -17,7 +17,6 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "@/components/locale-link";
 
-import Footer from "@/components/footer/Footer";
 import { PageBackground } from "@/components/page-background";
 import { useLanguage } from "@/contexts/language-context";
 import { getThoiTietCopy } from "@/lib/i18n/thoi-tiet";
@@ -167,9 +166,6 @@ export default function WeatherPageClient() {
           </div>
         </section>
       </main>
-      <div className="relative z-10">
-        <Footer />
-      </div>
     </div>
   );
 }

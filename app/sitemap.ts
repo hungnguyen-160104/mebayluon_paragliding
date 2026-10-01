@@ -10,8 +10,21 @@ import { STORE_CATEGORY_CONFIG } from "@/lib/store-texts";
 import { getActivePilots } from "@/lib/pilots-data";
 import { collectPostVideos } from "@/lib/video-schema";
 import { POLICY_SLUGS } from "@/lib/policies/shared";
+import { LEGACY_SLUG_REDIRECTS } from "@/lib/legacy-slug-redirects";
 
-export const revalidate = 3600; // regenerate every hour
+/**
+ * Dựng lại mỗi giờ — LƯỚI AN TOÀN. Đường chính: services/post.service.ts và
+ * product.service.ts gọi revalidatePath("/sitemap.xml") (lib/revalidate-content)
+ * ngay khi bài được tạo / sửa / đăng / gỡ / xoá.
+ */
+export const revalidate = 3600;
+
+/**
+ * Slug đã đổi / đã gộp (khoá của LEGACY_SLUG_REDIRECTS) → URL đó trả 301,
+ * KHÔNG được nằm trong sitemap kể cả khi bản ghi cũ trong DB lỡ còn đăng.
+ */
+const REDIRECTED_SLUGS = new Set(Object.keys(LEGACY_SLUG_REDIRECTS).map((k) => k.toLowerCase()));
+const isRedirectedSlug = (slug: unknown) => REDIRECTED_SLUGS.has(String(slug ?? "").toLowerCase());
 
 const BASE = SITE_URL;
 
@@ -112,6 +125,23 @@ const STATIC_CONTENT_UPDATED = new Date("2026-08-10T00:00:00Z");
 /** Ngày viết các trang chính sách — khớp POLICY_UPDATED_AT (lib/policies/shared.ts). */
 const POLICIES_UPDATED = new Date("2026-09-30T00:00:00Z");
 
+/** Số sản phẩm đã đăng theo danh mục cửa hàng; null nếu DB lỗi. */
+async function loadStoreCategoryCounts(): Promise<Record<string, number> | null> {
+  try {
+    await connectDB();
+    const rows = await PostModel.aggregate<{ _id: string | null; n: number }>([
+      { $match: { type: "product", isPublished: true } },
+      { $group: { _id: "$storeCategory", n: { $sum: 1 } } },
+    ]);
+    const out: Record<string, number> = {};
+    for (const r of rows) if (r._id) out[r._id] = r.n;
+    return out;
+  } catch (err) {
+    console.error("[sitemap] store counts failed:", err);
+    return null;
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -192,6 +222,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       alternates: alts(`${BASE}/booking`),
     },
     {
+      // Thời tiết các điểm bay — có link ở menu mọi trang, dữ liệu đổi hằng ngày
+      url: `${BASE}/thoi-tiet-bay`,
+      lastModified: STATIC_CONTENT_UPDATED,
+      changeFrequency: "daily",
+      priority: 0.7,
+      alternates: alts(`${BASE}/thoi-tiet-bay`),
+    },
+    {
       url: `${BASE}/pre-notice`,
       lastModified: STATIC_CONTENT_UPDATED,
       changeFrequency: "monthly",
@@ -251,13 +289,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     (t) => knowledgeCounts === null || (knowledgeCounts[t.db] ?? 0) > 0,
   ).map((t) => t.url);
 
+  /**
+   * Danh mục cửa hàng CHƯA có sản phẩm đã đăng (thiết bị bay, phụ kiện…) thì
+   * bỏ ra — trang đó đang noindex (app/store/[category]/page.tsx). Lỗi DB →
+   * null → giữ đủ danh mục như cũ.
+   */
+  const storeCounts = await loadStoreCategoryCounts();
+
   const sectionRoutes: MetadataRoute.Sitemap = [
     ...KNOWLEDGE_SUBS.map((sub) => `/knowledge/${sub}`),
     "/knowledge/all",
     // Bỏ "all": /store/all hiện đúng nội dung của /store nên là URL trùng.
-    ...STORE_CATEGORY_CONFIG.filter((c) => c.key !== "all").map(
-      (c) => `/store/${c.key}`,
-    ),
+    ...STORE_CATEGORY_CONFIG.filter(
+      (c) => c.key !== "all" && (storeCounts === null || (storeCounts[c.key] ?? 0) > 0),
+    ).map((c) => `/store/${c.key}`),
   ].map((path) => ({
     url: `${BASE}${path}`,
     lastModified: STATIC_CONTENT_UPDATED,
@@ -288,6 +333,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // (bài knowledge cũng có type "blog" nên từng bị liệt kê 2 lần —
         // 37 URL lặp trong sitemap).
         category: { $ne: "knowledge" },
+        // Sản phẩm có URL riêng ở /store (/blog/<sản phẩm> chỉ là chuyển hướng)
+        type: { $ne: "product" },
         $or: [{ category: "news" }, { type: "blog" }],
       })
         .select("slug title titleVi translatedLangs translations publishedAt updatedAt createdAt")
@@ -296,6 +343,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       PostModel.find({
         isPublished: true,
         category: "knowledge",
+        type: { $ne: "product" },
       })
         .select("slug title titleVi translatedLangs translations publishedAt updatedAt createdAt")
         .lean(),
@@ -310,7 +358,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       loadVideosBySlug(),
     ]);
 
-    const blogRoutes: MetadataRoute.Sitemap = (blogPosts as any[]).map((p) => {
+    const blogRoutes: MetadataRoute.Sitemap = (blogPosts as any[]).filter((p) => !isRedirectedSlug(p.slug)).map((p) => {
       const url = `${BASE}/blog/${p.slug}`;
       return {
         url,
@@ -322,7 +370,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
-    const knowledgeRoutes: MetadataRoute.Sitemap = (knowledgePosts as any[]).map((p) => {
+    const knowledgeRoutes: MetadataRoute.Sitemap = (knowledgePosts as any[]).filter((p) => !isRedirectedSlug(p.slug)).map((p) => {
       const url = `${BASE}/blog/${p.slug}`;
       return {
         url,

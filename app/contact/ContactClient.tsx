@@ -1,15 +1,62 @@
 "use client"
 import { PageBackground } from "@/components/page-background";
 
-import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
 import { Phone, Mail, MapPin, Clock, Instagram } from "lucide-react"
 import { motion } from "framer-motion"
 import { useLanguage } from "@/contexts/language-context"
 import Image from "next/image"
+import { COMPANY_BRANCHES, branchMapUrl, type BranchLang } from "@/lib/legal-entity"
+
+/**
+ * Chữ của mục "Địa điểm" (SEO 01/10/2026 — chủ chốt trụ sở + 4 chi nhánh).
+ * Địa chỉ giữ nguyên văn tiếng Việt (địa chỉ đăng ký), tên điểm bay dịch.
+ */
+const LOCATIONS_TEXT: Record<BranchLang, { title: string; subtitle: string; map: string; site: string }> = {
+  vi: {
+    title: "Trụ sở & chi nhánh",
+    subtitle: "Mebayluon Paragliding — Công ty Cổ phần Du lịch và Thể thao Viên Nam",
+    map: "Xem bản đồ",
+    site: "Điểm bay",
+  },
+  en: {
+    title: "Head office & branches",
+    subtitle: "Mebayluon Paragliding — Vien Nam Sport and Tourism Joint Stock Company",
+    map: "Open map",
+    site: "Flying site",
+  },
+  fr: {
+    title: "Siège et agences",
+    subtitle: "Mebayluon Paragliding — Vien Nam Sport and Tourism Joint Stock Company",
+    map: "Voir la carte",
+    site: "Site de vol",
+  },
+  ru: {
+    title: "Головной офис и филиалы",
+    subtitle: "Mebayluon Paragliding — Vien Nam Sport and Tourism Joint Stock Company",
+    map: "Открыть карту",
+    site: "Место полётов",
+  },
+  zh: {
+    title: "总部与分公司",
+    subtitle: "Mebayluon Paragliding — Vien Nam Sport and Tourism Joint Stock Company",
+    map: "查看地图",
+    site: "飞行点",
+  },
+  hi: {
+    title: "मुख्य कार्यालय और शाखाएँ",
+    subtitle: "Mebayluon Paragliding — Vien Nam Sport and Tourism Joint Stock Company",
+    map: "नक्शा खोलें",
+    site: "उड़ान स्थल",
+  },
+}
 
 export default function ContactPage() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const lang: BranchLang = (["vi", "en", "fr", "ru", "zh", "hi"] as const).includes(language as BranchLang)
+    ? (language as BranchLang)
+    : "vi"
+  const loc = LOCATIONS_TEXT[lang]
 
   const socialLinks = [
     {
@@ -142,7 +189,7 @@ export default function ContactPage() {
           </div>
 
           {/* Contact Info Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {([
               {
                 icon: Phone,
@@ -157,14 +204,6 @@ export default function ContactPage() {
                 icon: Mail,
                 title: "Email",
                 lines: [{ text: "mebayluon@gmail.com", href: "mailto:mebayluon@gmail.com" }],
-              },
-              {
-                icon: MapPin,
-                title: t.contact.address,
-                lines: [
-                  t.contact.officeCity ?? "Thị trấn Sapa",
-                  t.contact.officeProvince ?? "Lào Cai, Việt Nam",
-                ],
               },
               {
                 icon: Clock,
@@ -215,41 +254,53 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Map Section */}
-      <section className="relative z-10 py-20">
+      {/* Địa điểm: trụ sở + 4 chi nhánh (lib/legal-entity.ts). Thay cho dòng
+          "Văn phòng: Thị trấn Sapa" và bản đồ Sa Pa duy nhất trước đây — địa chỉ
+          đó không phải trụ sở, lệch với footer và dữ liệu cấu trúc. */}
+      <section className="relative z-10 py-20" id="dia-diem">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-8"
+            className="text-center mb-10"
           >
-            <h2 className="text-3xl font-bold font-serif">{t.contact.connectTitle}</h2>
+            <h2 className="text-3xl font-bold font-serif">{loc.title}</h2>
+            <p className="mt-2 text-slate-200">{loc.subtitle}</p>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="aspect-video w-full rounded-2xl overflow-hidden border-2 border-white/30 shadow-xl"
-          >
-            {/* === LINK ĐÃ SỬA LẠI === */}
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d29699.47959938831!2d103.82914041083984!3d22.335398200000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x36cd410f70b20f01%3A0x2607f2a1a0f576e3!2zU2EgUGEsIExhbyBDYWksIFZpZXRuYW0!5e0!3m2!1sen!2s!4v1668581785955!5m2!1sen!2s"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="MBL Paragliding Location"
-            />
-          </motion.div>
+          <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
+            {COMPANY_BRANCHES.map((b) => (
+              <li key={b.id}>
+                <Card className="h-full bg-white/20 backdrop-blur-md border border-white/30 text-white">
+                  <CardContent className="pt-6 pb-6">
+                    <div className="flex items-start gap-4">
+                      <div className="shrink-0 w-11 h-11 rounded-full bg-white/25 flex items-center justify-center">
+                        <MapPin className="text-white" size={22} />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-lg leading-snug">{b.label[lang]}</h3>
+                        <p className="mt-1 text-sm text-slate-100">{b.address}</p>
+                        <p className="mt-1 text-sm text-slate-200">
+                          {loc.site}: {b.site[lang]}
+                        </p>
+                        <a
+                          href={branchMapUrl(b)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-flex items-center rounded-md bg-white/15 px-3 py-1.5 text-sm font-medium hover:bg-white/25"
+                        >
+                          {loc.map}
+                          <span className="sr-only"> — {b.label[lang]}</span>
+                        </a>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
-      
-      <div className="relative z-10">
-        <Footer />
-      </div>
     </main>
   )
 }

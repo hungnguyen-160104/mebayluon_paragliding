@@ -216,8 +216,6 @@ export const zh: CommonTranslation = {
     workingHours: "营业时间",
     /** Ngày mở cửa, dùng cho thẻ "Giờ làm việc". */
     openDays: "周一至周日",
-    officeCity: "沙坝镇",
-    officeProvince: "越南老街省",
     social: {
       facebook: "关注我们的主页，获取最新动态",
       zalo: "通过 Zalo 与我们直接聊天，获得快速支持",

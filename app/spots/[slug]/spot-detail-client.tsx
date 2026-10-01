@@ -13,7 +13,6 @@ import { SpotWeatherWidget } from "@/components/weather/SpotWeather";
 import { diemThoiTietTheoSlug } from "@/lib/weather-spots";
 import { bookingHrefForSpot } from "@/lib/booking/spot-to-location";
 import { ShareButtons } from "@/components/share-buttons";
-import { Footer } from "@/components/footer";
 import SpotPartnerLinks from "@/components/spots/SpotPartnerLinks";
 import SpotVideos from "@/components/spots/SpotVideos";
 import { SpotTagline, SPOT_I18N_KEY_BY_SLUG } from "@/components/spots/SpotTagline";
@@ -4061,12 +4060,6 @@ export function SpotDetailClient({
       {/* Bài viết về điểm bay (server render, truyền qua slot) */}
       {articlesSlot}
 
-      {/* Footer */}
-      <div className="relative z-10 pt-16">
-        <div className="container mx-auto">
-          <Footer />
-        </div>
-      </div>
     </main>
   );
 }

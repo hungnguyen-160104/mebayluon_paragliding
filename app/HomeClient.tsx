@@ -8,7 +8,6 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import Footer from "@/components/footer/Footer";
 import { SpotTagline } from "@/components/spots/SpotTagline";
 import { HOME_SECTION_HEADING } from "@/components/section-heading";
 import { useLanguage } from "@/contexts/language-context";
@@ -872,12 +871,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ================= FOOTER ================= */}
-      <div className="relative z-10 pb-6 pt-12">
-        <div className="container mx-auto">
-          <Footer />
-        </div>
-      </div>
     </div>
   );
 }

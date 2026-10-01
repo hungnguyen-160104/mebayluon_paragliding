@@ -2,7 +2,7 @@ import { PageBackground } from "@/components/page-background";
 // app/store/[category]/[slug]/page.tsx
 import Image from "next/image";
 import Link from "@/components/locale-link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { connectDB } from "@/lib/mongodb";
 import { getProductBySlug } from "@/services/product.service";
 import { Post as PostModel } from "@/models/Post.model";
@@ -11,6 +11,10 @@ import { getRequestLang, getUrlLocale } from "@/lib/locale";
 import { postLocales } from "@/lib/post-locales";
 import { getProductUi, getStoreLocale, STORE_CATEGORY_CONFIG, type StoreLang } from "@/lib/store-texts";
 import { ShareButtons } from "@/components/share-buttons";
+import { cloudinaryOptimize, optimizeContentImages } from "@/lib/cloudinary-url";
+import { getProductPathMap, rewriteProductLinks } from "@/lib/product-links";
+import { truncateAtWord } from "@/lib/seo-text";
+import { localizedUrl, type Locale } from "@/lib/site-config";
 
 type PostLite = {
   _id?: string;
@@ -107,10 +111,8 @@ export async function generateMetadata({
     : p.content || p.contentVi;
 
   const title = `${rawTitle} | Mebayluon Store`;
-  const description = String(rawContent || "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/\s+/g, " ")
-    .slice(0, 150);
+  // Cắt ở ranh giới từ (trước đây cắt cứng 150 ký tự, dừng giữa chữ)
+  const description = truncateAtWord(String(rawContent || "").replace(/<[^>]+>/g, " "), 158);
 
   // Chỉ khai hreflang cho ngôn ngữ sản phẩm này thật sự có nội dung
   return buildMetadata({
@@ -128,6 +130,15 @@ export async function generateMetadata({
  * Nhãn "Cửa hàng" cho đường dẫn phân cấp. Không dùng lại STORE_TITLE vì chuỗi
  * đó viết hoa toàn bộ để làm tiêu đề trang, đọc trong breadcrumb rất kỳ.
  */
+const HOME_CRUMB: Record<StoreLang, string> = {
+  vi: "Trang chủ",
+  en: "Home",
+  fr: "Accueil",
+  ru: "Главная",
+  zh: "首页",
+  hi: "होम",
+};
+
 const STORE_CRUMB: Record<StoreLang, string> = {
   vi: "Cửa hàng",
   en: "Store",
@@ -158,19 +169,30 @@ export default async function ProductDetailPage({
   }
   if (!product) notFound();
 
+  // Sai danh mục trên URL (/store/phu-kien/<sách>) → về đúng URL chuẩn
+  if (product.storeCategory && product.storeCategory !== category) {
+    const urlLocale = await getUrlLocale();
+    permanentRedirect(`${urlLocale === "vi" ? "" : `/${urlLocale}`}/store/${product.storeCategory}/${product.slug}`);
+  }
+
   const relatedProducts = await getRelatedProducts(slug, 6);
   const currentTitle = pickTitle(product, isVietnamese);
-  const content = pickContent(product, isVietnamese);
+  const content = rewriteProductLinks(pickContent(product, isVietnamese), await getProductPathMap());
   const excerpt = pickExcerpt(product, isVietnamese);
   const publishedDate = product.publishedAt || product.createdAt;
 
+  // URL trong JSON-LD theo ngôn ngữ URL (SEO 01/10/2026)
+  const urlLocale = (await getUrlLocale()) as Locale;
+  const productPath = `/store/${category}/${slug}`;
+  const productUrl = localizedUrl(productPath, urlLocale);
+
   const productSchema = generateProductSchema({
     name: currentTitle,
-    description: excerpt || String(content || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").slice(0, 200),
+    description: excerpt || truncateAtWord(String(content || "").replace(/<[^>]+>/g, " "), 200),
     image: product.coverImage || "",
     price: typeof product.price === "number" ? product.price : 0,
     currency: "VND",
-    url: `/store/${category}/${slug}`,
+    url: productUrl,
   });
 
   // Đường dẫn phân cấp: Trang chủ > Cửa hàng > Danh mục > Sản phẩm.
@@ -181,12 +203,12 @@ export default async function ProductDetailPage({
     ?.title?.[storeLang];
 
   const breadcrumbSchema = generateBreadcrumbSchema([
-    { name: isVietnamese ? "Trang chủ" : "Home", url: "/" },
-    { name: STORE_CRUMB[storeLang] ?? STORE_CRUMB.vi, url: "/store" },
+    { name: HOME_CRUMB[storeLang] ?? HOME_CRUMB.vi, url: localizedUrl("/", urlLocale) },
+    { name: STORE_CRUMB[storeLang] ?? STORE_CRUMB.vi, url: localizedUrl("/store", urlLocale) },
     ...(categoryTitle
-      ? [{ name: categoryTitle, url: `/store/${category}` }]
+      ? [{ name: categoryTitle, url: localizedUrl(`/store/${category}`, urlLocale) }]
       : []),
-    { name: currentTitle, url: `/store/${category}/${slug}` },
+    { name: currentTitle, url: productUrl },
   ]);
 
   return (
@@ -270,7 +292,7 @@ export default async function ProductDetailPage({
             {product.coverImage && (
               <div className="mb-6 overflow-hidden rounded-xl bg-white/5">
                 <Image
-                  src={product.coverImage}
+                  src={cloudinaryOptimize(product.coverImage)}
                   alt={currentTitle}
                   width={1200}
                   height={675}
@@ -297,7 +319,7 @@ export default async function ProductDetailPage({
             >
               {content ? (
                 hasHtmlTag(content) ? (
-                  <div dangerouslySetInnerHTML={{ __html: content }} />
+                  <div dangerouslySetInnerHTML={{ __html: optimizeContentImages(content) }} />
                 ) : (
                   <div className="whitespace-pre-line">{content}</div>
                 )
@@ -342,7 +364,7 @@ export default async function ProductDetailPage({
                         className="group flex gap-3 rounded-xl border border-white/15 bg-white/10 p-3 transition-all hover:bg-white/20"
                       >
                         <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg">
-                          <Image src={itemCover} alt={itemTitle} fill className="object-cover" />
+                          <Image src={cloudinaryOptimize(itemCover, 600)} alt={itemTitle} fill sizes="96px" className="object-cover" />
                         </div>
                         <p className="line-clamp-3 text-sm font-semibold leading-snug text-white group-hover:text-sky-300">
                           {itemTitle}
@@ -376,9 +398,10 @@ export default async function ProductDetailPage({
                       >
                         <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg">
                           <Image
-                            src={itemCover}
+                            src={cloudinaryOptimize(itemCover, 600)}
                             alt={itemTitle}
                             fill
+                            sizes="96px"
                             className="object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         </div>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { cloudinaryOptimize } from "@/lib/cloudinary-url";
 
 /**
  * Thư viện ảnh + ảnh đơn trong bài viết, BẤM VÀO LÀ PHÓNG TO.
@@ -108,7 +109,7 @@ function Lightbox({ images, index, onClose, onMove }: LightboxProps) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={img.url}
+          src={cloudinaryOptimize(img.url, 2000)}
           alt={img.caption || ""}
           className="max-h-[86vh] max-w-full rounded-lg object-contain shadow-2xl"
         />
@@ -153,9 +154,10 @@ export function PostGallery({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={img.url}
+                src={cloudinaryOptimize(img.url, 900)}
                 alt={img.caption || `${alt} - ${i + 1}`}
                 loading="lazy"
+                decoding="async"
                 className={`w-full ${ratioClass} transition-transform duration-300 hover:scale-105`}
               />
             </button>
@@ -197,7 +199,7 @@ export function PostImage({
         className="block w-full cursor-zoom-in focus:outline-none"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt={alt} loading="lazy" className={className} />
+        <img src={cloudinaryOptimize(url)} alt={alt} loading="lazy" decoding="async" className={className} />
       </button>
       {open ? (
         <Lightbox images={[{ url, caption }]} index={0} onClose={close} onMove={() => {}} />

@@ -96,6 +96,130 @@ export const LEGAL_ENTITY = {
   ],
 } as const;
 
+/**
+ * TRỤ SỞ + CHI NHÁNH — nguồn DUY NHẤT cho dữ liệu cấu trúc (Organization,
+ * LocalBusiness ở từng trang điểm bay) và danh sách địa điểm ở /contact
+ * (chủ chốt 01/10/2026). Thêm/sửa chi nhánh chỉ sửa ở đây.
+ *
+ *  - `address`: nguyên văn địa chỉ đăng ký (sau sáp nhập tỉnh 2025).
+ *  - `spot`: slug trang /spots/<spot> của điểm bay mà chi nhánh phục vụ — trang
+ *    đó khai LocalBusiness của chi nhánh. Viên Nam đã gộp vào trang Đồi Bù nên
+ *    trang /spots/doi-bu mang CẢ trụ sở lẫn chi nhánh Phú Thọ.
+ *  - `geo`: toạ độ bãi cất trong lib/weather-spots.ts; riêng chi nhánh Tây Bắc
+ *    lấy toạ độ Clubhouse (PLACE_GEO, khớp hồ sơ Google Business) vì địa chỉ
+ *    chi nhánh chính là Clubhouse chứ không phải bãi cất trên đèo.
+ *  - `site`: tên điểm bay theo 6 ngôn ngữ, dùng cho tên "Mebayluon Paragliding –
+ *    <site>" và nhãn ở /contact.
+ */
+export type BranchLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
+
+export type CompanyBranch = {
+  id: "hq" | "phu-tho" | "tay-bac" | "sapa" | "ha-giang";
+  /** true = trụ sở chính (Giấy CN ĐKDN), còn lại là chi nhánh. */
+  headquarters: boolean;
+  /** Địa chỉ đầy đủ, nguyên văn. */
+  address: string;
+  /** Tách cho PostalAddress của schema.org. */
+  streetAddress: string;
+  addressLocality: string;
+  addressRegion: string;
+  spot: string;
+  geo: { lat: number; lng: number };
+  /** Link Google Maps riêng (hồ sơ Google Business) nếu có; không thì dò theo toạ độ. */
+  mapUrl?: string;
+  site: Record<BranchLang, string>;
+  /** Tên địa điểm hiện ở /contact ("Trụ sở chính", "Chi nhánh Phú Thọ"…). */
+  label: Record<BranchLang, string>;
+};
+
+export const COMPANY_BRANCHES: readonly CompanyBranch[] = [
+  {
+    id: "hq",
+    headquarters: true,
+    address: "Xóm Đồng Sắc, Thôn Núi Bé, Xã Xuân Mai, Thành phố Hà Nội, Việt Nam",
+    streetAddress: "Xóm Đồng Sắc, Thôn Núi Bé",
+    addressLocality: "Xã Xuân Mai",
+    addressRegion: "Thành phố Hà Nội",
+    spot: "doi-bu",
+    geo: { lat: 20.8085, lng: 105.568778 },
+    site: { vi: "Đồi Bù", en: "Doi Bu", fr: "Doi Bu", ru: "Дой Бу", zh: "布山", hi: "डोई बू" },
+    label: { vi: "Trụ sở chính (Hà Nội)", en: "Head office (Hanoi)", fr: "Siège social (Hanoï)", ru: "Головной офис (Ханой)", zh: "总部（河内）", hi: "मुख्य कार्यालय (हनोई)" },
+  },
+  {
+    id: "phu-tho",
+    headquarters: false,
+    address: "Xóm Đoàn Kết, xã Thịnh Minh, tỉnh Phú Thọ, Việt Nam",
+    streetAddress: "Xóm Đoàn Kết",
+    addressLocality: "Xã Thịnh Minh",
+    addressRegion: "Tỉnh Phú Thọ",
+    spot: "doi-bu",
+    geo: { lat: 20.954306, lng: 105.412861 },
+    site: { vi: "Núi Viên Nam", en: "Vien Nam Mountain", fr: "Mont Vien Nam", ru: "Гора Виен Нам", zh: "员南山", hi: "विएन नाम पर्वत" },
+    label: { vi: "Chi nhánh Phú Thọ", en: "Phu Tho branch", fr: "Agence de Phu Tho", ru: "Филиал Футхо", zh: "富寿分公司", hi: "फू थो शाखा" },
+  },
+  {
+    id: "tay-bac",
+    headquarters: false,
+    address: "Thôn Lìm Thái, xã Tú Lệ, tỉnh Lào Cai, Việt Nam",
+    streetAddress: "Thôn Lìm Thái (Clubhouse Mebayluon)",
+    addressLocality: "Xã Tú Lệ",
+    addressRegion: "Tỉnh Lào Cai",
+    spot: "khau-pha",
+    geo: { lat: 21.7764187, lng: 104.2636752 },
+    mapUrl: "https://maps.app.goo.gl/uSy6LHKZXMd6mQ6r6",
+    site: {
+      vi: "Đèo Khau Phạ",
+      en: "Khau Pha Pass",
+      fr: "Col de Khau Pha",
+      ru: "Перевал Кхау Фа",
+      zh: "考帕山口",
+      hi: "खाउ फ़ा दर्रा",
+    },
+    label: { vi: "Chi nhánh Tây Bắc (Clubhouse Mebayluon)", en: "Northwest branch (Clubhouse Mebayluon)", fr: "Agence du Nord-Ouest (Clubhouse Mebayluon)", ru: "Северо-западный филиал (Clubhouse Mebayluon)", zh: "西北分公司（Clubhouse Mebayluon）", hi: "उत्तर-पश्चिम शाखा (Clubhouse Mebayluon)" },
+  },
+  {
+    id: "sapa",
+    headquarters: false,
+    address: "Tổ Cầu Mây 3, phường Sa Pa, tỉnh Lào Cai, Việt Nam",
+    streetAddress: "Tổ Cầu Mây 3",
+    addressLocality: "Phường Sa Pa",
+    addressRegion: "Tỉnh Lào Cai",
+    spot: "muong-hoa-sapa",
+    geo: { lat: 22.3364, lng: 103.8438 },
+    site: { vi: "Sa Pa", en: "Sa Pa", fr: "Sa Pa", ru: "Сапа", zh: "沙坝", hi: "सापा" },
+    label: { vi: "Chi nhánh Sa Pa", en: "Sa Pa branch", fr: "Agence de Sa Pa", ru: "Филиал Сапа", zh: "沙坝分公司", hi: "सापा शाखा" },
+  },
+  {
+    id: "ha-giang",
+    headquarters: false,
+    address: "Thôn Nà Khoang, xã Quản Bạ, tỉnh Tuyên Quang, Việt Nam",
+    streetAddress: "Thôn Nà Khoang",
+    addressLocality: "Xã Quản Bạ",
+    addressRegion: "Tỉnh Tuyên Quang",
+    spot: "ha-giang",
+    geo: { lat: 23.0604025, lng: 105.0189508 },
+    site: {
+      vi: "Quản Bạ (Hà Giang)",
+      en: "Quan Ba (Ha Giang)",
+      fr: "Quan Ba (Ha Giang)",
+      ru: "Куан Ба (Хазянг)",
+      zh: "管坝（河江）",
+      hi: "क्वान बा (हा जियांग)",
+    },
+    label: { vi: "Chi nhánh Hà Giang", en: "Ha Giang branch", fr: "Agence de Ha Giang", ru: "Филиал Хазянг", zh: "河江分公司", hi: "हा जियांग शाखा" },
+  },
+];
+
+/** Chi nhánh (kể cả trụ sở) phục vụ trang /spots/<slug> — slug chuẩn. */
+export function branchesForSpot(spotSlug: string): CompanyBranch[] {
+  return COMPANY_BRANCHES.filter((b) => b.spot === spotSlug);
+}
+
+/** Link Google Maps của một địa điểm: hồ sơ riêng nếu có, không thì theo toạ độ. */
+export function branchMapUrl(b: CompanyBranch): string {
+  return b.mapUrl ?? `https://www.google.com/maps/search/?api=1&query=${b.geo.lat},${b.geo.lng}`;
+}
+
 /*
  * CỐ Ý KHÔNG CÔNG BỐ:
  *  - Giấy phép bay: cấp lại theo từng năm nên đăng lên là sẽ lạc hậu ngay, mà

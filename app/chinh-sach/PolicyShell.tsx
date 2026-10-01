@@ -8,7 +8,6 @@
  */
 import type { ReactNode } from "react";
 
-import { Footer } from "@/components/footer";
 import { Navigation } from "@/components/navigation";
 import { PageBackground } from "@/components/page-background";
 
@@ -55,9 +54,6 @@ export function PolicyShell({
         </article>
       </div>
 
-      <div className="relative z-10">
-        <Footer />
-      </div>
     </main>
   );
 }

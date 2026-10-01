@@ -6,6 +6,19 @@ import { notFound } from "next/navigation"
 import PilotDetailClientPage from "@/components/pilot-detail-page"
 import { buildMetadata, generateBreadcrumbSchema, generatePilotSchema } from "@/lib/metadata-builder"
 import { getUrlLocale } from "@/lib/locale"
+import { pilotPersonId } from "@/lib/authors"
+import { truncateAtWord } from "@/lib/seo-text"
+import { localizedUrl, type Locale } from "@/lib/site-config"
+
+/** Nhãn breadcrumb theo ngôn ngữ URL (JSON-LD). */
+const CRUMB: Record<Locale, { home: string; pilots: string }> = {
+  vi: { home: "Trang chủ", pilots: "Phi công" },
+  en: { home: "Home", pilots: "Pilots" },
+  fr: { home: "Accueil", pilots: "Pilotes" },
+  ru: { home: "Главная", pilots: "Пилоты" },
+  zh: { home: "首页", pilots: "飞行员" },
+  hi: { home: "होम", pilots: "पायलट" },
+}
 
 // Helper function để lấy dữ liệu phi công bằng slug
 function getPilotBySlug(slug: string): Pilot | undefined {
@@ -31,8 +44,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const bio = (pilot.bio as Record<string, string>)[locale] || pilot.bio.vi;
 
   return buildMetadata({
-    title: `${pilot.name} - ${role} | Mebayluon`,
-    description: `${bio.slice(0, 155)}…`,
+    // Chức danh dài (vd "Chief Pilot, Paragliding & Powered Paragliding Pilot")
+    // làm tiêu đề quá 65 ký tự → chỉ giữ vế đầu trước dấu phẩy khi quá dài.
+    title: (() => {
+      const full = `${pilot.name} - ${role} | Mebayluon`;
+      return full.length <= 65 ? full : `${pilot.name} - ${role.split(/[,，、]/)[0].trim()} | Mebayluon`;
+    })(),
+    description: truncateAtWord(bio, 158),
     image: pilot.avatar,
     url: `/pilots/${slug}`,
     type: "website",
@@ -66,20 +84,26 @@ export default async function PilotDetailPage({ params }: PilotDetailPageProps) 
     notFound()
   }
 
+  // JSON-LD theo ngôn ngữ URL; @id không đổi giữa các bản để bài viết trỏ về
+  const locale = await getUrlLocale()
+  const pick = (v: unknown) => (v as Record<string, string>)[locale] || (v as Record<string, string>).vi
+  const certs = (pilotData.certificates as Record<string, unknown> | undefined)?.[locale] ?? pilotData.certificates?.vi
   const personSchema = generatePilotSchema({
+    id: pilotPersonId(slug),
     name: pilotData.name,
-    nickname: pilotData.nickname.vi,
-    role: pilotData.role.vi,
-    bio: pilotData.bio.vi,
+    nickname: pick(pilotData.nickname),
+    role: pick(pilotData.role),
+    bio: pick(pilotData.bio),
     image: pilotData.avatar,
-    url: `/pilots/${slug}`,
-    certificates: Array.isArray(pilotData.certificates?.vi) ? pilotData.certificates.vi : [],
+    url: localizedUrl(`/pilots/${slug}`, locale),
+    certificates: Array.isArray(certs) ? (certs as string[]) : [],
   });
 
+  const crumb = CRUMB[locale]
   const breadcrumbSchema = generateBreadcrumbSchema([
-    { name: "Trang chủ", url: "/" },
-    { name: "Phi công", url: "/pilots" },
-    { name: pilotData.name, url: `/pilots/${slug}` },
+    { name: crumb.home, url: localizedUrl("/", locale) },
+    { name: crumb.pilots, url: localizedUrl("/pilots", locale) },
+    { name: pilotData.name, url: localizedUrl(`/pilots/${slug}`, locale) },
   ]);
 
   return (
