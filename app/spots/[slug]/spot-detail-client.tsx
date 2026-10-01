@@ -1764,7 +1764,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
       title: "Bay Trên Cao Nguyên Đá - Cổng Trời Hà Giang",
       altitude: "950 – 2.000 m",
       description:
-        `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Lô uốn quanh chân núi.
+        `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Miện uốn quanh chân núi.
 
 🏍️ TRÊN CUNG HÀ GIANG LOOP
 Quản Bạ là chặng đầu tiên của Hà Giang Loop – cung đường vòng nổi tiếng Hà Giang – Quản Bạ – Yên Minh – Đồng Văn – Mèo Vạc, cách TP Hà Giang khoảng 45 km. Dừng chân bay dù lượn ngay dưới Cổng Trời Quản Bạ, ngắm trọn cao nguyên đá từ trên cao rồi đi tiếp hành trình. Xem bản đồ vòng loop, điểm check-in và kinh nghiệm tại web Hà Giang Paragliding.
@@ -1780,33 +1780,50 @@ Quản Bạ là chặng đầu tiên của Hà Giang Loop – cung đường vò
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
 🪂 DÙ LƯỢN (PG) — từ 2.290.000 đ/khách
-+ Bay đôi cùng phi công, 10–15 phút tuỳ điều kiện thời tiết
++ Bay đôi cùng phi công, 9–15 phút tuỳ điều kiện gió
++ Gói săn hoàng hôn: 2.990.000 đ/khách, bay 9–15 phút tuỳ điều kiện gió
 + Cất cánh sườn núi ở 950 m, hạ cánh tại thung lũng Quản Bạ
 
 🚁 DÙ LƯỢN CÓ ĐỘNG CƠ (PPG) — từ 2.490.000 đ/khách
 + Gói cơ bản: bay 15 phút
-+ Gói bay lâu: 25 phút, bay săn mây — bình minh / hoàng hôn, cộng thêm 900.000 đ
++ Gói nâng cao: 22–25 phút, bay săn mây — bình minh / hoàng hôn — 3.390.000 đ/khách
 + Cất cánh ngay tại thung lũng, leo cao hàng ngàn mét ngắm toàn cảnh
 
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 
+🚌 TỪ HÀ NỘI ĐI QUẢN BẠ
++ Hà Nội – TP Hà Giang khoảng 300 km. Xe giường nằm chạy đêm mất chừng 6–7 tiếng, sáng sớm tới nơi là kịp lên Quản Bạ bay buổi sáng.
++ Tự lái ô tô hoặc xe máy: theo QL2 lên TP Hà Giang, rồi thêm khoảng 45 km theo QL4C là tới Quản Bạ.
++ Từ TP Hà Giang: xe của đội bay 500.000 đ/xe 4 chỗ/chiều. Đã ở trong khu vực Quản Bạ thì đội bay đón trả miễn phí.
+
+🗓️ LỊCH TRÌNH GỢI Ý
++ Đi nhanh 1 ngày từ TP Hà Giang: sáng lên Quản Bạ bay, ăn trưa ở Tam Sơn, chiều về thành phố.
++ Hà Giang Loop 3 ngày 2 đêm: ngày 1 bay ở Quản Bạ rồi đi tiếp Yên Minh – Đồng Văn; ngày 2 Mã Pí Lèng, sông Nho Quế, Mèo Vạc; ngày 3 vòng về TP Hà Giang.
++ Mẹo: nên bay ngay buổi đầu tới Quản Bạ, nếu gió chưa đẹp vẫn còn buổi dự phòng.
+
+🌸 MÙA ĐẸP & DỊP LỄ
++ Tháng 10–11: hoa tam giác mạch, trời khô và trong — mùa đông khách nhất.
++ Tháng 12–3: trời lạnh, sáng sớm hay có biển mây, hợp gói paramotor săn mây; tháng 1–3 hoa đào, hoa mận nở khắp cao nguyên.
++ Cuối tuần tháng 10–11 và các dịp Tết Dương lịch, 30/4 – 1/5, 2/9 rất đông: nên đặt trước vài ngày để giữ giờ bay đẹp.
+
 📌 THÔNG TIN THÊM:
 🔄 Miễn phí đổi/hủy lịch do thời tiết
 💳 Thanh toán tiền mặt (tại điểm bay) hoặc chuyển khoản
+🌤️ Chuyến bay đặc biệt (săn mây, bình minh, hoàng hôn, bay lâu) nếu điều kiện không cho phép sẽ chuyển thành chuyến bay PG/PPG cơ bản
 
-⏰ Mở cửa 7:00 – 18:00 hàng ngày
+⏰ Mở cửa 6:30 – 18:30 hàng ngày
 
-Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyến bay của bạn!`,
-      landscape: "Cao Nguyên Đá – Núi Đôi Quản Bạ – Cổng Trời – sông Lô",
-      duration: "10 – 25 phút",
+📱 ĐẶT NHANH: đặt online ngay trên trang này hoặc nhắn Zalo / gọi 0964 073 555 — không cần đặt cọc, thanh toán khi tới điểm bay.`,
+      landscape: "Cao Nguyên Đá – Núi Đôi Quản Bạ – Cổng Trời – sông Miện",
+      duration: "9 – 25 phút",
     },
     en: {
       name: "Quan Ba - Ha Giang",
       title: "Fly Over the Karst Plateau - Ha Giang Heaven's Gate",
       altitude: "950 – 2.000 m",
       description:
-        `Paragliding at QUẢN BẠ – the gateway to the Đồng Văn Karst Plateau. Take off at 950 m and soar over the whole Quản Bạ valley, taking in the Quản Bạ Twin Mountains, Heaven's Gate, the Lùng Tám valley and the Lô River winding around the foot of the mountains.
+        `Paragliding at QUẢN BẠ – the gateway to the Đồng Văn Karst Plateau. Take off at 950 m and soar over the whole Quản Bạ valley, taking in the Quản Bạ Twin Mountains, Heaven's Gate, the Lùng Tám valley and the Miện River winding around the foot of the mountains.
 
 🏍️ ON THE HA GIANG LOOP
 Quan Ba is the first stop of the Ha Giang Loop – the famous circuit Ha Giang – Quan Ba – Yen Minh – Dong Van – Meo Vac, about 45 km from Ha Giang city. Stop to paraglide right below Quan Ba Heaven's Gate, see the whole karst plateau from above, then ride on. Loop map, check-in spots and tips on the Ha Giang Paragliding website.
@@ -1822,12 +1839,13 @@ Quan Ba is the first stop of the Ha Giang Loop – the famous circuit Ha Giang �
 ✅ Professional pilot & safety equipment
 
 🪂 PARAGLIDING (PG) — from 2.290.000 VND/guest
-+ Tandem flight with a pilot, 10–15 minutes depending on the weather
++ Tandem flight with a pilot, 9–15 minutes depending on the wind
++ Sunset package: 2.990.000 VND/guest, 9–15 minutes depending on the wind
 + Mountain-slope take-off at 950 m, landing in the Quản Bạ valley
 
 🚁 POWERED PARAGLIDING (PPG) — from 2.490.000 VND/guest
 + Basic package: 15-minute flight
-+ Extended package: 25 minutes, cloud-chasing flight — sunrise / sunset, plus 900.000 VND
++ Advanced package: 22–25 minutes, cloud-chasing flight — sunrise / sunset — 3.390.000 VND/guest
 + Take off right in the valley and climb thousands of metres for the full panorama
 
 📸 OPTIONAL SERVICES:
@@ -1836,19 +1854,20 @@ Quan Ba is the first stop of the Ha Giang Loop – the famous circuit Ha Giang �
 📌 ADDITIONAL INFO:
 🔄 Free reschedule/cancellation due to weather
 💳 Cash payment (at the flying site) or bank transfer
+🌤️ If conditions do not allow a special flight (cloud chasing, sunrise, sunset, long flight), it becomes a basic PG/PPG flight
 
-⏰ Open daily 7:00 – 18:00
+⏰ Open daily 6:30 – 18:30
 
 Please book in advance so we can arrange your flight in the best possible way!`,
-      landscape: "Karst Plateau – Quản Bạ Twin Mountains – Heaven's Gate – Lô River",
-      duration: "10 – 25 minutes",
+      landscape: "Karst Plateau – Quản Bạ Twin Mountains – Heaven's Gate – Miện River",
+      duration: "9 – 25 minutes",
     },
     fr: {
       name: "Quản Bạ - Hà Giang",
       title: "Vol au-dessus du plateau karstique - la Porte du Ciel de Hà Giang",
       altitude: "950 – 2.000 m",
       description:
-        `Parapente à QUẢN BẠ – la porte d'entrée du plateau calcaire de Đồng Văn. Décollage à 950 m d'altitude et survol de toute la vallée de Quản Bạ : les Montagnes Jumelles de Quản Bạ, la Porte du Ciel, la vallée de Lùng Tám et la rivière Lô qui serpente au pied des montagnes.
+        `Parapente à QUẢN BẠ – la porte d'entrée du plateau calcaire de Đồng Văn. Décollage à 950 m d'altitude et survol de toute la vallée de Quản Bạ : les Montagnes Jumelles de Quản Bạ, la Porte du Ciel, la vallée de Lùng Tám et la rivière Miện qui serpente au pied des montagnes.
 
 🏍️ SUR LA BOUCLE DE HA GIANG
 Quan Ba est la première étape de la Ha Giang Loop – le célèbre circuit Ha Giang – Quan Ba – Yen Minh – Dong Van – Meo Vac, à environ 45 km de la ville de Ha Giang. Faites une pause parapente juste sous la Porte du Ciel de Quan Ba, admirez tout le plateau karstique d'en haut, puis reprenez la route. Carte de la boucle, points de vue et conseils sur le site Ha Giang Paragliding.
@@ -1864,12 +1883,13 @@ Quan Ba est la première étape de la Ha Giang Loop – le célèbre circuit Ha 
 ✅ Pilote professionnel & équipement de sécurité
 
 🪂 PARAPENTE (PG) — à partir de 2.290.000 VND/personne
-+ Vol biplace avec un pilote, 10–15 minutes selon les conditions météo
++ Vol biplace avec un pilote, 9–15 minutes selon le vent
++ Formule coucher du soleil : 2.990.000 VND/personne, 9–15 minutes selon le vent
 + Décollage à flanc de montagne à 950 m, atterrissage dans la vallée de Quản Bạ
 
 🚁 PARAMOTEUR (PPG) — à partir de 2.490.000 VND/personne
 + Forfait de base : vol de 15 minutes
-+ Forfait longue durée : 25 minutes, vol à la chasse aux nuages — lever / coucher du soleil, supplément de 900.000 VND
++ Forfait avancé : 22–25 minutes, vol à la chasse aux nuages — lever / coucher du soleil — 3.390.000 VND/personne
 + Décollage directement dans la vallée et montée de plusieurs milliers de mètres pour un panorama complet
 
 📸 SERVICES OPTIONNELS :
@@ -1878,19 +1898,20 @@ Quan Ba est la première étape de la Ha Giang Loop – le célèbre circuit Ha 
 📌 INFOS SUPPLÉMENTAIRES :
 🔄 Report/annulation gratuit en cas de mauvais temps
 💳 Paiement en espèces (sur le site de vol) ou par virement bancaire
+🌤️ Si les conditions ne permettent pas un vol spécial (chasse aux nuages, lever ou coucher du soleil, vol long), il devient un vol PG/PPG de base
 
-⏰ Ouvert tous les jours de 7h00 à 18h00
+⏰ Ouvert tous les jours de 6h30 à 18h30
 
 Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre vol !`,
-      landscape: "Plateau karstique – Montagnes Jumelles de Quản Bạ – Porte du Ciel – rivière Lô",
-      duration: "10 – 25 minutes",
+      landscape: "Plateau karstique – Montagnes Jumelles de Quản Bạ – Porte du Ciel – rivière Miện",
+      duration: "9 – 25 minutes",
     },
     ru: {
       name: "Quản Bạ - Ха Зянг",
       title: "Полёт над каменным плато - Небесные Врата Ха Зянга",
       altitude: "950 – 2.000 м",
       description:
-        `Полёт на параплане в QUẢN BẠ – воротах каменного плато Đồng Văn. Старт на высоте 950 м и полёт над всей долиной Quản Bạ: горы-близнецы Núi Đôi, Небесные Врата (Cổng Trời), долина Lùng Tám и река Lô, огибающая подножие гор.
+        `Полёт на параплане в QUẢN BẠ – воротах каменного плато Đồng Văn. Старт на высоте 950 м и полёт над всей долиной Quản Bạ: горы-близнецы Núi Đôi, Небесные Врата (Cổng Trời), долина Lùng Tám и река Miện, огибающая подножие гор.
 
 🏍️ НА ПЕТЛЕ ХАЗЯНГ
 Куан Ба — первая остановка Ha Giang Loop, знаменитого маршрута Хазянг – Куан Ба – Йенминь – Донгван – Мео Вак, примерно в 45 км от города Хазянг. Остановитесь полетать на параплане прямо под Небесными вратами Куан Ба, окиньте взглядом всё каменное плато и продолжайте путь. Карта петли, места для фото и советы — на сайте Ha Giang Paragliding.
@@ -1906,12 +1927,13 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ Профессиональный пилот и защитное снаряжение
 
 🪂 ПАРАПЛАН (PG) — от 2.290.000 VND с человека
-+ Полёт в тандеме с пилотом, 10–15 минут в зависимости от погоды
++ Полёт в тандеме с пилотом, 9–15 минут в зависимости от ветра
++ Пакет «закат»: 2.990.000 VND с человека, 9–15 минут в зависимости от ветра
 + Старт со склона горы на высоте 950 м, посадка в долине Quản Bạ
 
 🚁 ПАРАМОТОР (PPG) — от 2.490.000 VND с человека
 + Базовый пакет: полёт 15 минут
-+ Расширенный пакет: 25 минут, полёт за облаками — рассвет / закат, доплата 900.000 VND
++ Расширенный пакет: 22–25 минут, полёт за облаками — рассвет / закат — 3.390.000 VND с человека
 + Взлёт прямо в долине и набор высоты в несколько тысяч метров ради полной панорамы
 
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
@@ -1920,19 +1942,20 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🔄 Бесплатный перенос/отмена из-за погоды
 💳 Оплата наличными (на месте старта) или банковским переводом
+🌤️ Если условия не позволяют особый полёт (за облаками, на рассвете, на закате, долгий полёт), он становится базовым полётом PG/PPG
 
-⏰ Работаем ежедневно с 7:00 до 18:00
+⏰ Работаем ежедневно с 6:30 до 18:30
 
 Пожалуйста, бронируйте заранее, чтобы мы могли организовать ваш полёт наилучшим образом!`,
-      landscape: "Каменное плато – Горы-близнецы Куан Ба – Небесные Врата – река Ло",
-      duration: "10 – 25 минут",
+      landscape: "Каменное плато – Горы-близнецы Куан Ба – Небесные Врата – река Мьен",
+      duration: "9 – 25 минут",
     },
     zh: {
       name: "Quản Bạ（管坝）- 河江",
       title: "飞越石灰岩高原 - 河江天门",
       altitude: "950 – 2.000 米",
       description:
-        `在 QUẢN BẠ（管坝）滑翔伞飞行 – 同文岩石高原的门户。从海拔 950 米起飞，翱翔于整个 Quản Bạ 山谷之上，俯瞰 Núi Đôi 双子山、天门（Cổng Trời）、Lùng Tám 山谷，以及绕山脚蜿蜒而过的 Lô 江。
+        `在 QUẢN BẠ（管坝）滑翔伞飞行 – 同文岩石高原的门户。从海拔 950 米起飞，翱翔于整个 Quản Bạ 山谷之上，俯瞰 Núi Đôi 双子山、天门（Cổng Trời）、Lùng Tám 山谷，以及绕山脚蜿蜒而过的 Miện 河。
 
 🏍️ 河江环线上的一站
 管簿是河江环线（Ha Giang Loop）的第一站——著名环线河江 – 管簿 – 安明 – 同文 – 苗旺，距河江市约 45 公里。在管簿天门下停下来飞一趟滑翔伞，从高空俯瞰整片石灰岩高原，再继续旅程。环线地图、打卡点与攻略见 Ha Giang Paragliding 网站。
@@ -1948,12 +1971,13 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ 专业飞行员和安全装备
 
 🪂 滑翔伞（PG）— 每位 2.290.000 VND 起
-+ 与飞行员双人飞行，10–15 分钟，视天气条件而定
++ 与飞行员双人飞行，9–15 分钟，视风况而定
++ 日落套餐：每位 2.990.000 VND，飞行 9–15 分钟，视风况而定
 + 在海拔 950 米的山坡起飞，降落于 Quản Bạ 山谷
 
 🚁 动力滑翔伞（PPG）— 每位 2.490.000 VND 起
 + 基础套餐：飞行 15 分钟
-+ 加长套餐：25 分钟，日出／日落追云飞行，加收 900.000 VND
++ 进阶套餐：22–25 分钟，日出／日落追云飞行，每位 3.390.000 VND
 + 直接在山谷起飞，爬升数千米俯瞰全景
 
 📸 可选服务：
@@ -1962,19 +1986,20 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📌 更多信息：
 🔄 因天气原因可免费改期/取消
 💳 现金支付（在飞行点）或银行转账
+🌤️ 特色飞行（追云、日出、日落、长时间飞行）如条件不允许，将改为基础 PG/PPG 飞行
 
-⏰ 每日营业时间：7:00 – 18:00
+⏰ 每日营业时间：6:30 – 18:30
 
 请提前预订，让我们为您的飞行做出最好的安排！`,
-      landscape: "石灰岩高原 – 管簿双子山 – 天门 – 泸江",
-      duration: "10 – 25 分钟",
+      landscape: "石灰岩高原 – 管簿双子山 – 天门 – Miện 河",
+      duration: "9 – 25 分钟",
     },
     hi: {
       name: "Quản Bạ - हा जियांग",
       title: "पत्थर के पठार के ऊपर उड़ान - हा जियांग का स्वर्ग द्वार",
       altitude: "950 – 2.000 मी",
       description:
-        `QUẢN BẠ में पैराग्लाइडिंग – Đồng Văn स्टोन प्लेटू का प्रवेश द्वार। 950 मीटर की ऊँचाई से टेक-ऑफ़ करें और पूरी Quản Bạ घाटी के ऊपर उड़ें — Núi Đôi जुड़वाँ पहाड़, स्वर्ग द्वार (Cổng Trời), Lùng Tám घाटी और पहाड़ों की तलहटी में बल खाती Lô नदी।
+        `QUẢN BẠ में पैराग्लाइडिंग – Đồng Văn स्टोन प्लेटू का प्रवेश द्वार। 950 मीटर की ऊँचाई से टेक-ऑफ़ करें और पूरी Quản Bạ घाटी के ऊपर उड़ें — Núi Đôi जुड़वाँ पहाड़, स्वर्ग द्वार (Cổng Trời), Lùng Tám घाटी और पहाड़ों की तलहटी में बल खाती Miện नदी।
 
 🏍️ हा जियांग लूप पर
 क्वान बा, हा जियांग लूप का पहला पड़ाव है – मशहूर रास्ता हा जियांग – क्वान बा – येन मिन्ह – डोंग वान – मेओ वाक, हा जियांग शहर से लगभग 45 किमी। क्वान बा के स्वर्ग द्वार के ठीक नीचे रुककर पैराग्लाइडिंग करें, ऊपर से पूरा पत्थर का पठार देखें, फिर सफ़र जारी रखें। लूप का नक्शा, चेक-इन स्थान और सुझाव Ha Giang Paragliding वेबसाइट पर।
@@ -1990,12 +2015,13 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 ✅ पेशेवर पायलट और सुरक्षा उपकरण
 
 🪂 पैराग्लाइडिंग (PG) — 2.290.000 VND प्रति व्यक्ति से
-+ पायलट के साथ टेंडम उड़ान, मौसम के अनुसार 10–15 मिनट
++ पायलट के साथ टेंडम उड़ान, हवा के अनुसार 9–15 मिनट
++ सूर्यास्त पैकेज: 2.990.000 VND प्रति व्यक्ति, हवा के अनुसार 9–15 मिनट
 + 950 मीटर पर पहाड़ी ढलान से टेक-ऑफ़, Quản Bạ घाटी में लैंडिंग
 
 🚁 पावर्ड पैराग्लाइडिंग (PPG) — 2.490.000 VND प्रति व्यक्ति से
 + बेसिक पैकेज: 15 मिनट की उड़ान
-+ लंबी उड़ान पैकेज: 25 मिनट, बादलों का पीछा — सूर्योदय / सूर्यास्त, अतिरिक्त 900.000 VND
++ एडवांस पैकेज: 22–25 मिनट, बादलों का पीछा — सूर्योदय / सूर्यास्त — 3.390.000 VND प्रति व्यक्ति
 + घाटी से ही टेक-ऑफ़ और हज़ारों मीटर ऊपर चढ़कर पूरा नज़ारा
 
 📸 वैकल्पिक सेवाएं:
@@ -2004,12 +2030,13 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 📌 अतिरिक्त जानकारी:
 🔄 मौसम के कारण मुफ्त रिशेड्यूल/कैंसलेशन
 💳 नकद भुगतान (फ्लाइंग साइट पर) या बैंक ट्रांसफ़र
+🌤️ अगर परिस्थितियाँ विशेष उड़ान (बादलों का पीछा, सूर्योदय, सूर्यास्त, लंबी उड़ान) की अनुमति न दें, तो यह बेसिक PG/PPG उड़ान बन जाती है
 
-⏰ प्रतिदिन 7:00 – 18:00 तक खुला
+⏰ प्रतिदिन 6:30 – 18:30 तक खुला
 
 कृपया पहले से बुक करें ताकि हम आपकी उड़ान की बेहतरीन व्यवस्था कर सकें!`,
-      landscape: "पत्थर का पठार – क्वान बा जुड़वाँ पहाड़ – स्वर्ग द्वार – लो नदी",
-      duration: "10 – 25 मिनट",
+      landscape: "पत्थर का पठार – क्वान बा जुड़वाँ पहाड़ – स्वर्ग द्वार – मिएन नदी",
+      duration: "9 – 25 मिनट",
     },
   },
 
@@ -3184,7 +3211,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon Team",
         date: "25/09/2026",
         content:
-          "Từ 15/10/2026, gói PPG bay lâu 25 phút đưa khách lên cao lúc mặt trời mọc, khi mây còn phủ kín các thung lũng nhỏ quanh Tam Sơn và chỉ những đỉnh đá nhô lên. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
+          "Từ 15/10/2026, gói PPG bay lâu 22–25 phút đưa khách lên cao lúc mặt trời mọc, khi mây còn phủ kín các thung lũng nhỏ quanh Tam Sơn và chỉ những đỉnh đá nhô lên. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
       },
     ],
     en: [
@@ -3210,7 +3237,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon Team",
         date: "2026-09-25",
         content:
-          "From 15 October 2026 the 25-minute PPG package takes you up at sunrise, while cloud still fills the small valleys around Tam Son and only the rock peaks show through. Book ahead so we can schedule by the sun.",
+          "From 15 October 2026 the 22–25-minute PPG package takes you up at sunrise, while cloud still fills the small valleys around Tam Son and only the rock peaks show through. Book ahead so we can schedule by the sun.",
       },
     ],
     fr: [
@@ -3236,7 +3263,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Équipe Mebayluon",
         date: "25/09/2026",
         content:
-          "Dès le 15 octobre 2026, le forfait PPG de 25 minutes vous emmène en altitude au lever du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Sơn et que seuls les pics rocheux émergent. Réservez pour que nous calions l'horaire sur le soleil.",
+          "Dès le 15 octobre 2026, le forfait PPG de 22 à 25 minutes vous emmène en altitude au lever du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Sơn et que seuls les pics rocheux émergent. Réservez pour que nous calions l'horaire sur le soleil.",
       },
     ],
     ru: [
@@ -3262,7 +3289,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Команда Mebayluon",
         date: "25.09.2026",
         content:
-          "С 15 октября 2026 года 25-минутный пакет PPG поднимает вас в небо на рассвете, когда облака ещё заполняют маленькие долины вокруг Там Шона и над ними торчат только скальные вершины. Бронируйте заранее, чтобы мы подобрали время по солнцу.",
+          "С 15 октября 2026 года пакет PPG на 22–25 минут поднимает вас в небо на рассвете, когда облака ещё заполняют маленькие долины вокруг Там Шона и над ними торчат только скальные вершины. Бронируйте заранее, чтобы мы подобрали время по солнцу.",
       },
     ],
     zh: [
@@ -3288,7 +3315,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon 团队",
         date: "2026-09-25",
         content:
-          "自 2026 年 10 月 15 日起，25 分钟 PPG 套餐带您在日出时升空，此时云海仍填满三山周围的小山谷，只露出石峰。请提前预订，我们按日出时间安排。",
+          "自 2026 年 10 月 15 日起，22–25 分钟 PPG 套餐带您在日出时升空，此时云海仍填满三山周围的小山谷，只露出石峰。请提前预订，我们按日出时间安排。",
       },
     ],
     hi: [
@@ -3314,7 +3341,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon टीम",
         date: "2026-09-25",
         content:
-          "15 अक्टूबर 2026 से 25 मिनट का PPG पैकेज आपको सूर्योदय पर ऊपर ले जाता है, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों को भरे रहते हैं और सिर्फ़ चट्टानी चोटियाँ दिखती हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें।",
+          "15 अक्टूबर 2026 से 22–25 मिनट का PPG पैकेज आपको सूर्योदय पर ऊपर ले जाता है, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों को भरे रहते हैं और सिर्फ़ चट्टानी चोटियाँ दिखती हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें।",
       },
     ],
   },

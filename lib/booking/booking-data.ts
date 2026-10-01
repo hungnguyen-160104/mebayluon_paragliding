@@ -190,11 +190,11 @@ export const flightOptions: FlightOption[] = [
   {
     id: "quan-ba",
     name: "Hà Giang (Quản Bạ)",
-    // PG 2.290.000đ đã gồm đón trả 2 chiều; PPG 15' 2.490.000đ; PPG 25' 3.390.000đ
+    // PG 2.290.000đ đã gồm đón trả 2 chiều; PPG 15' 2.490.000đ; PPG 22–25' 3.390.000đ
     // (bảng gói đầy đủ ở lib/booking/calculate-price.ts → quan_ba.packages).
     price: { weekday: 2290000, unit: "VND" },
     included: [
-      "01 chuyến bay dù lượn (PG) 10–15 phút hoặc dù có động cơ (PPG) 15–25 phút",
+      "01 chuyến bay dù lượn (PG) 9–15 phút hoặc dù có động cơ (PPG) 15–25 phút",
       "Đón trả 2 chiều trong khu vực Quản Bạ",
       "Ảnh & video bằng GoPro",
       "Bảo hiểm dù lượn",

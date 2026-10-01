@@ -296,7 +296,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     title: "Bay Trên Cao Nguyên Đá - Cổng Trời Hà Giang",
     altitude: "950 – 2.000 m",
     description:
-      `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Lô uốn quanh chân núi.
+      `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Miện uốn quanh chân núi.
 
 🎉 KHAI TRƯƠNG 15/10/2026 — Mebayluon vận hành
 
@@ -309,26 +309,43 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 ✅ Phi công chuyên nghiệp & trang thiết bị an toàn
 
 🪂 DÙ LƯỢN (PG) — từ 2.290.000 đ/khách
-+ Bay đôi cùng phi công, 10–15 phút tuỳ điều kiện thời tiết
++ Bay đôi cùng phi công, 9–15 phút tuỳ điều kiện gió
++ Gói săn hoàng hôn: 2.990.000 đ/khách, bay 9–15 phút tuỳ điều kiện gió
 + Cất cánh sườn núi ở 950 m, hạ cánh tại thung lũng Quản Bạ
 
 🚁 DÙ LƯỢN CÓ ĐỘNG CƠ (PPG) — từ 2.490.000 đ/khách
 + Gói cơ bản: bay 15 phút
-+ Gói bay lâu: 25 phút, bay săn mây — bình minh / hoàng hôn, cộng thêm 900.000 đ
++ Gói nâng cao: 22–25 phút, bay săn mây — bình minh / hoàng hôn — 3.390.000 đ/khách
 + Cất cánh ngay tại thung lũng, leo cao hàng ngàn mét ngắm toàn cảnh
 
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 
+🚌 TỪ HÀ NỘI ĐI QUẢN BẠ
++ Hà Nội – TP Hà Giang khoảng 300 km. Xe giường nằm chạy đêm mất chừng 6–7 tiếng, sáng sớm tới nơi là kịp lên Quản Bạ bay buổi sáng.
++ Tự lái ô tô hoặc xe máy: theo QL2 lên TP Hà Giang, rồi thêm khoảng 45 km theo QL4C là tới Quản Bạ.
++ Từ TP Hà Giang: xe của đội bay 500.000 đ/xe 4 chỗ/chiều. Đã ở trong khu vực Quản Bạ thì đội bay đón trả miễn phí.
+
+🗓️ LỊCH TRÌNH GỢI Ý
++ Đi nhanh 1 ngày từ TP Hà Giang: sáng lên Quản Bạ bay, ăn trưa ở Tam Sơn, chiều về thành phố.
++ Hà Giang Loop 3 ngày 2 đêm: ngày 1 bay ở Quản Bạ rồi đi tiếp Yên Minh – Đồng Văn; ngày 2 Mã Pí Lèng, sông Nho Quế, Mèo Vạc; ngày 3 vòng về TP Hà Giang.
++ Mẹo: nên bay ngay buổi đầu tới Quản Bạ, nếu gió chưa đẹp vẫn còn buổi dự phòng.
+
+🌸 MÙA ĐẸP & DỊP LỄ
++ Tháng 10–11: hoa tam giác mạch, trời khô và trong — mùa đông khách nhất.
++ Tháng 12–3: trời lạnh, sáng sớm hay có biển mây, hợp gói paramotor săn mây; tháng 1–3 hoa đào, hoa mận nở khắp cao nguyên.
++ Cuối tuần tháng 10–11 và các dịp Tết Dương lịch, 30/4 – 1/5, 2/9 rất đông: nên đặt trước vài ngày để giữ giờ bay đẹp.
+
 📌 THÔNG TIN THÊM:
 🔄 Miễn phí đổi/hủy lịch do thời tiết
 💳 Thanh toán tiền mặt (tại điểm bay) hoặc chuyển khoản
+🌤️ Chuyến bay đặc biệt (săn mây, bình minh, hoàng hôn, bay lâu) nếu điều kiện không cho phép sẽ chuyển thành chuyến bay PG/PPG cơ bản
 
-⏰ Mở cửa 7:00 – 18:00 hàng ngày
+⏰ Mở cửa 6:30 – 18:30 hàng ngày
 
-Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyến bay của bạn!`,
-    landscape: "Cao Nguyên Đá – Núi Đôi Quản Bạ – Cổng Trời – sông Lô",
-    duration: "10 – 25 phút",
+📱 ĐẶT NHANH: đặt online ngay trên trang này hoặc nhắn Zalo / gọi 0964 073 555 — không cần đặt cọc, thanh toán khi tới điểm bay.`,
+    landscape: "Cao Nguyên Đá – Núi Đôi Quản Bạ – Cổng Trời – sông Miện",
+    duration: "9 – 25 phút",
     landingPoint: "Thung lũng Quản Bạ (cũng là bãi cất PPG)",
     basePrice: 2290000,
     // Ảnh nền riêng của Quản Bạ do chủ chọn 25/09/2026: dù lượn trên thung lũng sông (ảnh điện thoại 912×1620, dọc).
@@ -351,10 +368,21 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyế
       {
         name: "Dù lượn (PG)",
         price: 2290000,
-        description: "Bay đôi 10–15 phút, cất cánh 950 m",
+        description: "Bay đôi 9–15 phút, cất cánh 950 m",
         features: [
           "Đón trả 2 chiều trong khu vực Quản Bạ",
           "Phi công kinh nghiệm & trang bị an toàn",
+          "Ảnh & video GoPro toàn chuyến bay",
+          "Bảo hiểm · chứng nhận tham gia",
+        ],
+      },
+      {
+        name: "Dù lượn (PG) — săn hoàng hôn",
+        price: 2990000,
+        description: "Bay đôi 9–15 phút tuỳ gió, khung giờ hoàng hôn",
+        features: [
+          "Đón trả 2 chiều trong khu vực Quản Bạ",
+          "Không đủ điều kiện bay hoàng hôn thì chuyển thành bay PG cơ bản",
           "Ảnh & video GoPro toàn chuyến bay",
           "Bảo hiểm · chứng nhận tham gia",
         ],
@@ -373,9 +401,9 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho chuyế
       {
         name: "PPG bay lâu — săn mây / bình minh / hoàng hôn",
         price: 3390000,
-        description: "Bay 25 phút (gói cơ bản + 900.000 đ)",
+        description: "Bay 22–25 phút (gói cơ bản + 900.000 đ)",
         features: [
-          "Bay 25 phút, săn mây",
+          "Bay 22–25 phút, săn mây",
           "Khung giờ bình minh hoặc hoàng hôn",
           "Đón trả 2 chiều trong khu vực Quản Bạ",
           "Ảnh & video GoPro toàn chuyến bay",
