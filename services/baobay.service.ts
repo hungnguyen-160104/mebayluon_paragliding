@@ -2075,6 +2075,8 @@ export type DispatcherReportSaveInput = {
   note: string;
   /** true = chốt ca, false = lưu nháp. Chốt lại được, y như phi công. */
   submit: boolean;
+  /** Lưu dòng thu/chi (nút "✓ Xác nhận & lưu"): chỉ lưu — không chốt, không đẩy bảng tính. */
+  autosave?: boolean;
 };
 
 /**
@@ -2450,6 +2452,25 @@ export async function upsertDispatcherReport(
     );
   }
 
+  /**
+   * LƯU DÒNG ≠ CHỐT (luật chủ 01/10): "bấm xác nhận dòng thu chi là lưu máy
+   * chủ luôn (lưu thôi, chưa đẩy số liệu) — còn Chốt báo cáo là chốt số tổng
+   * trong ngày và đẩy số liệu về kế toán".
+   *
+   * Nên lần lưu dòng: không đẩy bảng tính, không đụng mốc chốt. Báo cáo ĐÃ
+   * CHỐT mà sửa dòng thì số tổng đã gửi không còn đúng — trả về NHÁP để kế
+   * toán thấy "nháp" và người trực phải bấm Chốt lại; mốc `submittedAt` cũ giữ
+   * nguyên làm dấu "từng chốt lúc…".
+   */
+  const autosave = input.autosave === true;
+  const prev = autosave
+    ? await DispatcherDailyReport.findOne(
+        { accountId: new mongoose.Types.ObjectId(session.id), date: input.date, spot },
+        { submitted: 1 },
+      ).lean<any>()
+    : null;
+  const editedAfterSubmit = autosave && Boolean(prev?.submitted);
+
   const doc = await DispatcherDailyReport.findOneAndUpdate(
     { accountId: new mongoose.Types.ObjectId(session.id), date: input.date, spot },
     {
@@ -2509,14 +2530,30 @@ export async function upsertDispatcherReport(
         expenses,
         merchSales,
         note: input.note,
-        submitted: input.submit,
-        // null (không phải undefined) mới xoá được mốc chốt cũ khi quay về nháp —
-        // Mongoose bỏ qua undefined trong $set nên mốc cũ sẽ nằm lại.
-        submittedAt: input.submit ? new Date() : null,
+        ...(autosave
+          ? {
+              // Chỉ lưu: luôn là nháp; mốc chốt cũ (nếu có) để nguyên
+              submitted: false,
+              sheetSynced: false,
+              sheetError: "đã lưu, chưa gửi — chờ bấm Chốt báo cáo",
+            }
+          : {
+              submitted: input.submit,
+              // null (không phải undefined) mới xoá được mốc chốt cũ khi quay về nháp —
+              // Mongoose bỏ qua undefined trong $set nên mốc cũ sẽ nằm lại.
+              submittedAt: input.submit ? new Date() : null,
+            }),
       },
     },
     { upsert: true, new: true, setDefaultsOnInsert: true },
   ).lean<any>();
+
+  if (autosave) {
+    if (editedAfterSubmit) {
+      warnings.push("Báo cáo đã chốt nay sửa lại nên trở về NHÁP — bấm Chốt báo cáo để gửi số mới cho kế toán.");
+    }
+    return { report: toDispatcherDTO(doc), warnings };
+  }
 
   // Trả lời NGAY, bảng tính nhận số sau vài giây — xem pushSheetInBackground
   pushSheetInBackground(() => pushDispatcherRow(doc), DispatcherDailyReport, doc._id);

@@ -246,7 +246,7 @@ export default function DispatcherReportPage() {
   /** null = rảnh · "draft" = đang lưu nháp · "submit" = đang chốt ca. */
   const [saving, setSaving] = useState<"draft" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<{ warnings: string[]; submitted: boolean } | null>(null);
+  const [saved, setSaved] = useState<{ warnings: string[]; submitted: boolean; autosaved?: boolean } | null>(null);
   /** Dấu "✓ Đã lưu / Đã chốt" nhấp nháy cạnh nút, tự tắt sau vài giây. */
   const [justSaved, flashSaved] = useDoneFlag();
   /** Booking chờ bay của ngày — cho ô "chọn booking" ở thẻ Khách huỷ / dời lịch. */
@@ -454,7 +454,7 @@ export default function DispatcherReportPage() {
   }
 
   /** Lưu báo cáo với đúng bản form truyền vào — dùng cho cả nút Lưu lẫn "xác nhận dời". */
-  async function persist(f: FormState, submitNow = false) {
+  async function persist(f: FormState, submitNow = false, autosave = false) {
     const res = await apiPost<{ report: DispatcherReportDTO; warnings: string[]; check: DayCheck }>(
       `/api/baocao/reports/dispatcher?spot=${spot}`,
       {
@@ -491,12 +491,14 @@ export default function DispatcherReportPage() {
         ),
         diplomaticEntries: f.diplomaticEntries.filter((e) => e.codesText.trim() || e.amount || e.note.trim()),
         submit: submitNow,
+        // Lưu dòng thu/chi: CHỈ lưu — máy chủ không chốt, không đẩy bảng tính (chủ 01/10)
+        autosave,
       },
     );
     setExisting(res.report);
     setCheck(res.check);
     setForm(fromReport(res.report));
-    setSaved({ warnings: res.warnings || [], submitted: res.report.submitted });
+    setSaved({ warnings: res.warnings || [], submitted: res.report.submitted, autosaved: autosave });
     flashSaved();
     loadHistory();
   }
@@ -985,20 +987,27 @@ export default function DispatcherReportPage() {
               </div>
             </div>
           )}
-          {/* "✓ Xác nhận" một khoản là LƯU NGAY cả báo cáo (giữ nguyên trạng thái nháp/đã chốt) —
-              trước kia nút chỉ co dòng lại, tải lại trang là mất khoản chi (lỗi chủ 01/10). */}
+          {/* "✓ Xác nhận" một khoản là LƯU NGAY (chỉ lưu — không chốt, không gửi kế toán; báo cáo
+              đã chốt thì trở về nháp, phải Chốt lại). Trước kia nút chỉ co dòng lại, tải lại trang
+              là mất khoản chi (lỗi chủ 01/10). */}
           {/* key: nạp báo cáo xong thì dựng lại khối — dấu "dòng đang mở" tính theo chỉ số của
               form rỗng ban đầu, không dựng lại thì khoản đã lưu ở dòng 1 hiện thành ô nhập dở. */}
           <ExpenseRows
             key={`${date}|${existing?.updatedAt ?? ""}`}
             rows={form.money}
             onChange={(rows) => set("money", rows)}
-            onCommit={!locked && date <= today ? (rows) => persist({ ...form, money: rows }, existing?.submitted ?? false) : undefined}
+            onCommit={!locked && date <= today ? (rows) => persist({ ...form, money: rows }, false, true) : undefined}
             disabled={locked}
             withKind
             withMethod
             hideTotals
           />
+          {saved?.autosaved && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1.5 text-xs font-semibold text-amber-800">
+              ✓ Đã lưu — bấm <b>Chốt báo cáo</b> ở cuối trang để gửi số mới cho kế toán.
+              {saved.warnings.some((w) => w.includes("trở về NHÁP")) && " (Báo cáo đã chốt trước đó nay là nháp vì vừa sửa.)"}
+            </p>
+          )}
 
           {/* Tổng GỘP sổ + khai tay: thu xanh dấu +, chi đỏ dấu − */}
           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -1118,7 +1127,7 @@ export default function DispatcherReportPage() {
         {saved && (
           <Banner tone="success" onClose={() => setSaved(null)}>
             <strong>
-              {saved.submitted ? "Đã chốt báo cáo" : "Đã lưu nháp"} ngày {formatDateKeyVN(date)}.
+              {saved.submitted ? "Đã chốt báo cáo" : saved.autosaved ? "Đã lưu (chưa chốt)" : "Đã lưu nháp"} ngày {formatDateKeyVN(date)}.
             </strong>
             {saved.warnings.length > 0 && (
               <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">

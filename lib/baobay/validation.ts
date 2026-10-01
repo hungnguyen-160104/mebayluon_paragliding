@@ -279,6 +279,11 @@ export const dispatcherReportSchema = z.object({
   note: text(2_000),
   /** false = lưu nháp (còn nhập tiếp), true = chốt ca. */
   submit: z.boolean().optional().default(false),
+  /**
+   * Lưu từ nút "✓ Xác nhận & lưu" một dòng thu/chi: CHỈ LƯU (chủ 01/10) —
+   * không đẩy bảng tính, không chốt. Đi kèm thì `submit` bị bỏ qua.
+   */
+  autosave: z.boolean().optional().default(false),
 });
 
 /** CAMERA MAN: số chuyến quay flycam + chi tiêu. */
