@@ -233,6 +233,7 @@ export function ExpenseRows({
   withKind,
   withMethod,
   hideTotals,
+  onCommit,
 }: {
   rows: ExpenseRow[];
   onChange: (next: ExpenseRow[]) => void;
@@ -243,6 +244,16 @@ export function ExpenseRows({
   withMethod?: boolean;
   /** Ẩn cặp tổng mặc định — nơi gọi tự vẽ tổng theo kiểu riêng. */
   hideTotals?: boolean;
+  /**
+   * LƯU THẬT khi bấm "✓ Xác nhận" / "Xoá" một khoản (lỗi chủ 01/10).
+   *
+   * Trước kia "Xác nhận" chỉ co dòng lại và hiện "CHI … −xxx đ" như đã xong,
+   * trong khi khoản chỉ được ghi khi bấm nút Lưu ở cuối trang — điều phối
+   * xác nhận khoản chi, tải lại trang là mất. Trang nào truyền hàm này thì
+   * mỗi lần xác nhận/xoá là lưu ngay cả sổ; lưu hỏng thì dòng GIỮ NGUYÊN mở
+   * kèm lỗi đỏ, không bao giờ co lại như đã xong.
+   */
+  onCommit?: (next: ExpenseRow[]) => Promise<void>;
 }) {
   const set = (index: number, patch: Partial<ExpenseRow>) =>
     onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -260,9 +271,51 @@ export function ExpenseRows({
   const openRow = (i: number) => setOpenIdx((prev) => (prev.includes(i) ? prev : [...prev, i]));
   const closeRow = (i: number) => setOpenIdx((prev) => prev.filter((k) => k !== i));
   /** Xoá một dòng: chỉ số các dòng sau tụt một bậc, dấu "đang mở" phải tụt theo. */
-  const removeRow = (i: number) => {
-    onChange(rows.filter((_, k) => k !== i));
+  const removeRow = async (i: number) => {
+    const gone = rows[i];
+    // Lưu ngay thì xoá cũng là xoá thật khỏi sổ — hỏi lại khoản có tiền
+    if (
+      onCommit &&
+      gone?.amount &&
+      !window.confirm(`Xoá khoản ${gone.kind === "thu" ? "THU" : "CHI"} “${gone.content || "?"}” ${(gone.amount || 0).toLocaleString("vi-VN")}đ khỏi báo cáo?`)
+    ) {
+      return;
+    }
+    const next = rows.filter((_, k) => k !== i);
+    onChange(next);
     setOpenIdx((prev) => prev.filter((k) => k !== i).map((k) => (k > i ? k - 1 : k)));
+    if (onCommit) await commit(next, null);
+  };
+
+  /** Đang lưu khoản nào (chỉ số dòng; -1 = đang lưu sau khi xoá) và lỗi lưu gần nhất. */
+  const [committing, setCommitting] = useState<number | null>(null);
+  const [commitError, setCommitError] = useState<{ index: number | null; message: string } | null>(null);
+  /**
+   * Lưu cả sổ qua `onCommit`. Thành công: nơi gọi nạp lại sổ từ máy chủ (thứ
+   * tự dòng có thể đổi — dòng THU lên trước), nên dấu "đang mở" theo chỉ số
+   * cũ không còn đúng: xoá hết, dòng trống vẫn tự mở như thường.
+   */
+  async function commit(next: ExpenseRow[], index: number | null): Promise<boolean> {
+    if (!onCommit) return true;
+    setCommitting(index ?? -1);
+    setCommitError(null);
+    try {
+      await onCommit(next);
+      setOpenIdx([]);
+      return true;
+    } catch (err: any) {
+      setCommitError({
+        index,
+        message: `CHƯA LƯU được: ${String(err?.message || "lỗi mạng").replace(/[.\s]+$/, "")}. Khoản này chưa vào sổ — thử lại hoặc bấm Lưu nháp ở cuối trang.`,
+      });
+      return false;
+    } finally {
+      setCommitting(null);
+    }
+  }
+  const confirmRow = async (i: number) => {
+    if (!onCommit) return closeRow(i);
+    await commit(rows, i);
   };
 
   const totalChi = rows.reduce((s, r) => s + (r.kind !== "thu" ? r.amount || 0 : 0), 0);
@@ -316,6 +369,7 @@ export function ExpenseRows({
                 <button
                   type="button"
                   onClick={() => removeRow(i)}
+                  disabled={committing !== null}
                   className="h-7 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-400 hover:border-rose-500 hover:text-rose-600"
                 >
                   Xoá
@@ -397,6 +451,7 @@ export function ExpenseRows({
               <button
                 type="button"
                 onClick={() => removeRow(i)}
+                disabled={committing !== null}
                 className="h-10 w-10 shrink-0 rounded-lg border border-slate-300 bg-white text-slate-400 hover:text-rose-600"
                 aria-label="Bỏ khoản này"
               >
@@ -409,21 +464,35 @@ export function ExpenseRows({
               <Button
                 type="button"
                 className="h-8 bg-emerald-600 px-3 text-xs hover:bg-emerald-700"
-                disabled={!row.content.trim() && !row.amount}
-                onClick={() => closeRow(i)}
-                title="Xác nhận khoản này — dòng sẽ co lại cho gọn, sửa lại được"
+                disabled={(!row.content.trim() && !row.amount) || committing !== null}
+                onClick={() => confirmRow(i)}
+                title={
+                  onCommit
+                    ? "Xác nhận và LƯU khoản này vào báo cáo ngay"
+                    : "Xác nhận khoản này — dòng sẽ co lại cho gọn, sửa lại được"
+                }
               >
-                ✓ Xác nhận
+                {committing === i ? "Đang lưu…" : onCommit ? "✓ Xác nhận & lưu" : "✓ Xác nhận"}
               </Button>
               <span className="text-[11px] text-slate-400">
-                Xác nhận xong khoản này co lại một dòng, vẫn sửa/xoá được.
+                {onCommit
+                  ? "Bấm là lưu ngay vào báo cáo, dòng co lại; vẫn sửa/xoá được."
+                  : "Dòng co lại cho gọn — CHƯA lưu, nhớ bấm nút Lưu ở cuối trang."}
               </span>
             </div>
+          )}
+          {commitError && commitError.index === i && (
+            <p className="mt-2 rounded-lg bg-rose-50 px-2 py-1.5 text-xs font-semibold text-rose-700">
+              {commitError.message}
+            </p>
           )}
         </div>
         ),
       )}
 
+      {commitError && commitError.index === null && (
+        <p className="rounded-lg bg-rose-50 px-2 py-1.5 text-xs font-semibold text-rose-700">{commitError.message}</p>
+      )}
       {!disabled && (
         <div className="flex flex-wrap items-center gap-3">
           <Button

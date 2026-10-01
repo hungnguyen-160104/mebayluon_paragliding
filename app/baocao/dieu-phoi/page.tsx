@@ -985,7 +985,20 @@ export default function DispatcherReportPage() {
               </div>
             </div>
           )}
-          <ExpenseRows rows={form.money} onChange={(rows) => set("money", rows)} disabled={locked} withKind withMethod hideTotals />
+          {/* "✓ Xác nhận" một khoản là LƯU NGAY cả báo cáo (giữ nguyên trạng thái nháp/đã chốt) —
+              trước kia nút chỉ co dòng lại, tải lại trang là mất khoản chi (lỗi chủ 01/10). */}
+          {/* key: nạp báo cáo xong thì dựng lại khối — dấu "dòng đang mở" tính theo chỉ số của
+              form rỗng ban đầu, không dựng lại thì khoản đã lưu ở dòng 1 hiện thành ô nhập dở. */}
+          <ExpenseRows
+            key={`${date}|${existing?.updatedAt ?? ""}`}
+            rows={form.money}
+            onChange={(rows) => set("money", rows)}
+            onCommit={!locked && date <= today ? (rows) => persist({ ...form, money: rows }, existing?.submitted ?? false) : undefined}
+            disabled={locked}
+            withKind
+            withMethod
+            hideTotals
+          />
 
           {/* Tổng GỘP sổ + khai tay: thu xanh dấu +, chi đỏ dấu − */}
           <div className="mt-4 grid grid-cols-2 gap-3">
