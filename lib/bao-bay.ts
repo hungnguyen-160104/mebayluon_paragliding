@@ -158,8 +158,10 @@ export const BAO_BAY_SITE_POSTS: Record<BaoBaySpot, Array<{ href: string; icon: 
     { href: "/blog/di-chuyen-den-diem-bay-du-luon-khau-pha", icon: "🚐", vi: "Đường tới điểm bay Khau Phạ", en: "Getting to the Khau Pha site" },
     { href: "/blog/duong-ha-noi-di-mu-cang-chai-qua-ic14", icon: "🛣️", vi: "Hà Nội đi Mù Cang Chải qua nút giao IC14", en: "Hanoi to Mu Cang Chai via the IC14 junction" },
   ],
-  /** Chưa có bài dành cho phi công ở Quản Bạ (các bài Hà Giang hiện có là bài dịch vụ). */
-  "quan-ba": [],
+  /** Bài kỹ thuật cho phi công bay đơn PG/PPG (01/10/2026); các bài Hà Giang khác là bài dịch vụ. */
+  "quan-ba": [
+    { href: "/blog/ky-thuat-bay-quan-ba-ha-giang", icon: "🌬️", vi: "Kỹ thuật bay Quản Bạ — bản tóm tắt cho phi công PG và PPG", en: "Flying Quan Ba — site briefing for PG and PPG pilots" },
+  ],
 };
 
 /**
