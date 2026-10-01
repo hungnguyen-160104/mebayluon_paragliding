@@ -150,7 +150,8 @@ export const BAO_BAY_GENERAL_KNOWLEDGE: BaoBayKnowledgeKey[] = ["weather", "wind
 export const BAO_BAY_SITE_POSTS: Record<BaoBaySpot, Array<{ href: string; icon: string; vi: string; en: string }>> = {
   /** Chưa có bài kiến thức riêng cho Viên Nam — chỉ bài đường lên đỉnh; nội quy + bản đồ vùng bay đã nằm ngay trong trang. */
   "vien-nam": [
-    { href: "/blog/bay-du-luon-hanoi", icon: "🧭", vi: "Đường lên đỉnh Viên Nam", en: "Getting up to Vien Nam Peak" },
+    { href: "/blog/ky-thuat-bay-nui-vien-nam-huong-gio", icon: "🌬️", vi: "Kỹ thuật bay núi Viên Nam — luật vùng bay và các kịch bản hướng gió", en: "Flying Vien Nam — site rules and wind scenarios" },
+    { href: "/blog/du-luon-vien-nam", icon: "🧭", vi: "Đường lên đỉnh Viên Nam", en: "Getting up to Vien Nam Peak" },
   ],
   "khau-pha": [
     { href: "/blog/ky-thuat-bay-deo-khau-pha-3-kich-ban-gio", icon: "🌬️", vi: "Kỹ thuật bay Khau Phạ — 3 kịch bản gió", en: "Flying Khau Pha — the three main wind scenarios" },
