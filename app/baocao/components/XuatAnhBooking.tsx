@@ -16,6 +16,47 @@ import { chiaSeAnhPhieu, chiaSeDuocFile, luuAnhPhieu, taoAnhPhieu, type AnhPhieu
  * `data` là hàm: form đang gõ dựng số liệu tại lúc bấm, không dựng trước mỗi
  * lần gõ một ký tự.
  */
+/**
+ * GỬI ẢNH PHIẾU QUA ZALO / WHATSAPP (chủ 01/10).
+ *
+ * Web KHÔNG thể tự thả ảnh vào khung chat của một số điện thoại — Zalo lẫn
+ * WhatsApp đều không mở cách đó cho trang web. Làm được gần nhất: CHÉP ảnh vào
+ * bộ nhớ tạm, rồi mở thẳng khung chat với SĐT của booking (zalo.me/<sđt>,
+ * wa.me/<mã nước+sđt>) — nhân viên nhấn giữ ô chat → Dán → Gửi.
+ * Máy nào không chép được ảnh thì vẫn mở khung chat, kèm lời nhắc dùng
+ * "Chia sẻ" / "Lưu ảnh" để đính ảnh.
+ */
+function sdtZalo(raw: string): string | null {
+  const d = raw.replace(/\D/g, "");
+  if (/^84\d{9}$/.test(d)) return "0" + d.slice(2);
+  if (/^0\d{9}$/.test(d)) return d;
+  return null;
+}
+
+function sdtWhatsApp(raw: string): string | null {
+  const t = raw.trim();
+  const d = t.replace(/\D/g, "");
+  if (!d) return null;
+  if (t.startsWith("+") || t.startsWith("00")) return d.replace(/^00/, "");
+  if (/^0\d{9}$/.test(d)) return "84" + d.slice(1);
+  if (/^84\d{9}$/.test(d)) return d;
+  return d.length >= 8 ? d : null;
+}
+
+/** Chép ảnh PNG vào bộ nhớ tạm — gọi ngay trong cú bấm. Trả false nếu máy không cho. */
+function chepAnh(blob: Blob): Promise<boolean> {
+  try {
+    const CI = (window as unknown as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+    if (!CI || !navigator.clipboard?.write) return Promise.resolve(false);
+    return navigator.clipboard
+      .write([new CI({ "image/png": blob })])
+      .then(() => true)
+      .catch(() => false);
+  } catch {
+    return Promise.resolve(false);
+  }
+}
+
 export function XuatAnhBooking({
   data,
   className,
@@ -35,6 +76,8 @@ export function XuatAnhBooking({
   const [anh, setAnh] = useState<AnhPhieu | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [baoLuu, setBaoLuu] = useState<string | null>(null);
+  /** SĐT của booking lúc mở khung — để nút Zalo / WhatsApp mở đúng khung chat. */
+  const [sdt, setSdt] = useState("");
 
   useEffect(() => {
     if (!mo) return;
@@ -51,7 +94,9 @@ export function XuatAnhBooking({
     setAnh(null);
     setMo(true);
     try {
-      setAnh(await taoAnhPhieu(data()));
+      const d = data();
+      setSdt(d.phone || "");
+      setAnh(await taoAnhPhieu(d));
     } catch (e) {
       const m = e instanceof Error ? e.message : "Không xuất được ảnh phiếu";
       setLoi(m);
@@ -136,6 +181,53 @@ export function XuatAnhBooking({
                   📤 Chia sẻ
                 </button>
               </div>
+              {sdt && (sdtZalo(sdt) || sdtWhatsApp(sdt)) && (
+                <div className="mx-auto mt-2 flex max-w-3xl gap-2">
+                  {sdtZalo(sdt) && (
+                    <button
+                      type="button"
+                      disabled={!anh}
+                      title={`Chép ảnh phiếu rồi mở Zalo với ${sdt} — nhấn giữ ô chat → Dán → Gửi`}
+                      className="h-11 flex-1 rounded-lg bg-[#0068ff] text-sm font-bold text-white hover:brightness-110 disabled:opacity-50"
+                      onClick={() => {
+                        if (!anh) return;
+                        // Chép ảnh và mở Zalo NGAY trong cú bấm (không await) — trình duyệt chặn mở muộn
+                        void chepAnh(anh.blob).then((ok) =>
+                          setBaoLuu(
+                            ok
+                              ? "Đã chép ảnh phiếu — trong Zalo nhấn giữ ô chat → Dán → Gửi."
+                              : "Máy này không chép được ảnh — trong Zalo bấm đính kèm ảnh, hoặc dùng Chia sẻ / Lưu ảnh.",
+                          ),
+                        );
+                        window.open(`https://zalo.me/${sdtZalo(sdt)}`, "_blank", "noopener");
+                      }}
+                    >
+                      Zalo · {sdt}
+                    </button>
+                  )}
+                  {sdtWhatsApp(sdt) && (
+                    <button
+                      type="button"
+                      disabled={!anh}
+                      title={`Chép ảnh phiếu rồi mở WhatsApp với ${sdt} — dán ảnh vào khung chat rồi gửi`}
+                      className="h-11 flex-1 rounded-lg bg-[#25d366] text-sm font-bold text-white hover:brightness-110 disabled:opacity-50"
+                      onClick={() => {
+                        if (!anh) return;
+                        void chepAnh(anh.blob).then((ok) =>
+                          setBaoLuu(
+                            ok
+                              ? "Đã chép ảnh phiếu — trong WhatsApp nhấn giữ ô chat → Dán → Gửi."
+                              : "Máy này không chép được ảnh — trong WhatsApp bấm đính kèm ảnh, hoặc dùng Chia sẻ / Lưu ảnh.",
+                          ),
+                        );
+                        window.open(`https://wa.me/${sdtWhatsApp(sdt)}`, "_blank", "noopener");
+                      }}
+                    >
+                      WhatsApp
+                    </button>
+                  )}
+                </div>
+              )}
               {baoLuu && <p className="mx-auto mt-1.5 max-w-3xl text-center text-xs text-white/80">{baoLuu}</p>}
               {anh && !baoLuu && (
                 <p className="mx-auto mt-1.5 max-w-3xl text-center text-xs text-white/60">
