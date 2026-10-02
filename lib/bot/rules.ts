@@ -85,9 +85,11 @@ CHIET KHAU DAI LY / HOA HONG HDV:
 
 DICH VU & PHU PHI (Mu Cang Chai / Khau Pha):
 - Flycam +400.000d. Insta360/camera 360 +400.000d. Combo Flycam + Insta360 +700.000d (re hon mua le).
-- Du co do sao vang +400.000d. Ben em CHI CO 1 CHIEC: neu 2 khach cung dat thi bay LAN LUOT tung nguoi. Du co do CHI bay du thuong, KHONG bay du dong co.
-- Tram Cam Xuc +700.000d: di kem du DONG CO, san may / binh minh / hoang hon, vuot qua day nui len do cao khoang 2.300-2.500m.
-- Keo co sinh nhat +100.000d (co san co sinh nhat va mo hinh banh sinh nhat).
+- Du co do sao vang +300.000d. Ben em CHI CO 1 CHIEC: neu 2 khach cung dat thi bay LAN LUOT tung nguoi. Du co do CHI bay du thuong, KHONG bay du dong co.
+- Du DONG CO (PPG) tieu chuan bay 15 phut. "Goi dac biet" +700.000d: bay 20-25 phut, thuc hien 1 trong 3 tuy dieu kien hom bay — san may (bay cao khoang 2.000m, KHONG len 2.500m), binh minh (6-7h ngay nang) hoac hoang hon (16-17h ngay nang). Bay lau (20-25 phut) +700.000d neu chon rieng, MIEN PHI neu da chon Goi dac biet.
+- Du THUONG (PG): bay binh minh (6-7h) hoac hoang hon (16-17h) +700.000d, bay 9-15 phut; bay lau 20-25 phut +700.000d (PG da so chi bay lau duoc buoi trua), mien phi neu da chon binh minh/hoang hon.
+- Chuyen dac biet khong thuc hien duoc (khong nang, may che hoang hon, gio yeu khong bay lau duoc) thi HOAN phu phi sau chuyen bay, thanh chuyen bay thuong.
+- Keo co sinh nhat / co do (keo sau du) +150.000d moi khach, CHI du thuong (PG), KHONG bay du dong co (co san co sinh nhat va mo hinh banh sinh nhat).
 - GoPro DA BAO GOM trong gia.
 
 GIOI HAN KY THUAT PHAI NOI TRUOC (chong khieu nai):
@@ -102,8 +104,8 @@ DU LUON KHONG PHAI NHAY DU (SKYDIVING):
 GIO HOAT DONG:
 - Bat dau bay khoang 8h. DUNG BAY 17h30 voi du thuong. Du dong co bay muon hon, den khoang 18h (chap toi).
 - Du dong co qua khoang 16h la khung dep nhat (nang em, co anh hoang hon).
-- Du thuong som nhat 7h — KHONG bay duoc binh minh (binh minh khoang 6h kem).
-- Binh minh/hoang hon bang du thuong chi dat khoang 10% so ngay, phai noi that la hen xui.
+- Binh minh bay khung 6-7h, hoang hon khung 16-17h, ca du thuong lan du dong co.
+- Binh minh/hoang hon TUY NGAY, khong phai ngay nao cung co (can nang, khong may che). Noi that voi khach; khong thuc hien duoc thi hoan phu phi.
 
 SO THU TU BAY:
 - Dat truoc tren mebayluon.com/booking se duoc cap MA + SO THU TU. Den noi trinh ve la duoc uu tien, khong phai xep hang.
