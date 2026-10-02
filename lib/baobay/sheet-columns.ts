@@ -254,7 +254,14 @@ function cotDiemKhac(spot: string, dests: SheetDest[], thang: boolean): SheetCol
     { key: "video360", label: "360", edit: "video360", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Camera 360" },
     /** "C.đỏ" và "K.cờ" — hai chữ đầu đủ để phân biệt mà vẫn vừa cột 38px (chủ 11/09). */
     { key: "redFlag", label: "C.đỏ", edit: "redFlag", kind: "num", w: 38, right: true, g1: "THÔNG TIN VÉ", title: "Dù cờ đỏ" },
-    { key: "sunset", label: "H.hôn", edit: "sunset", kind: "num", w: 42, right: true, g1: "THÔNG TIN VÉ", title: "Bay hoàng hôn / săn mây" },
+    /**
+     * Chủ 02/10: hoàng hôn / săn mây / bình minh gộp MỘT dịch vụ (khoá cũ
+     * `sunset`) — tên cột viết tắt cho vừa ô, tên đủ ở tooltip. BAY LÂU là cột
+     * riêng ngay sau; máy tự miễn phí bay lâu cho số suất trùng H.hôn/S.mây/B.minh.
+     * Lưới này chỉ dùng cho điểm khác Sa Pa (Sa Pa không bán hai dịch vụ này).
+     */
+    { key: "sunset", label: "HH/SM/BM", edit: "sunset", kind: "num", w: 58, right: true, g1: "THÔNG TIN VÉ", title: "H.hôn / S.mây / B.minh" },
+    { key: "longFlight", label: "B.lâu", edit: "longFlight", kind: "num", w: 40, right: true, g1: "THÔNG TIN VÉ", title: "Bay lâu 20–25 phút — miễn phí kèm H.hôn/S.mây/B.minh" },
     { key: "flagFlight", label: "K.cờ", edit: "flagFlight", kind: "num", w: 38, right: true, g1: "THÔNG TIN VÉ", title: "Bay kéo cờ đỏ / cờ sinh nhật" },
     ...(hn ? ([{ key: "mountainCar", label: "Xe", edit: "mountainCar", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Xe lên núi" }] as SheetCol[]) : []),
     { key: "pickupFee", label: "Phí đón", edit: "pickupFee", kind: "money", w: 68, right: true, g1: "THÔNG TIN VÉ" },
@@ -308,8 +315,8 @@ export { shortPickup, shortPickupSo } from "./pickup";
  */
 function toMau(cols: SheetCol[]): SheetCol[] {
   const nhanDang = new Set(["monthLabel", "daySeq", "flightDate", "source", "bookingCode", "guestNames", "guestCount", "pgGuests", "ppgGuests", "expectedTime"]);
-  const vang = new Set(["unitPrice", "ppgUnitPrice", "flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar", "extraFee", "pickupFee", "discount"]);
-  const suat = new Set(["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"]);
+  const vang = new Set(["unitPrice", "ppgUnitPrice", "flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight", "mountainCar", "extraFee", "pickupFee", "discount"]);
+  const suat = new Set(["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight", "mountainCar"]);
   const ngoc = new Set(["lineAmount", "total", "paid", "remaining", "flycamMoney", "video360Money"]);
   const xanhNhat = new Set(["commission", "xeKhach", "chiFlycam", "chiKhac", "hinhThucTT", "nguoiThuTM", "phone", "pickupNote", "status", "note", "contactNote"]);
   return cols.map((c) => {

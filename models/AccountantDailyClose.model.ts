@@ -82,8 +82,10 @@ export interface IAccountantDailyClose {
   video360: number;
   /** Số dù cờ đỏ — nguồn chuẩn là PHI CÔNG, đối chiếu với điều phối. */
   redFlag: number;
-  /** Bay hoàng hôn — Hà Nội & Khau Phạ. */
+  /** H.hôn / S.mây / B.minh (một dịch vụ gộp, chủ 02/10) — Hà Nội & Khau Phạ. */
   sunset: number;
+  /** Bay lâu 20–25 phút (chủ 02/10/2026) — miễn phí cho khách có H.hôn/S.mây/B.minh. */
+  longFlight: number;
   /** Số chuyến bay kéo cờ. */
   flagFlight: number;
 
@@ -203,6 +205,7 @@ const AccountantDailyCloseSchema = new Schema<IAccountantDailyClose>(
     video360: { type: Number, default: 0, min: 0 },
     redFlag: { type: Number, default: 0, min: 0 },
     sunset: { type: Number, default: 0, min: 0 },
+    longFlight: { type: Number, default: 0, min: 0 },
     flagFlight: { type: Number, default: 0, min: 0 },
 
     ledger: { type: [ExpenseSchema], default: [] },

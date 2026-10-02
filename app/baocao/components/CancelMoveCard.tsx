@@ -547,7 +547,8 @@ export function CancelMoveCard({
                       ["flycam", "Flycam"],
                       ["video360", "Cam360"],
                       ["redFlag", "Cờ đỏ"],
-                      ["sunset", "H.hôn"],
+                      ["sunset", "HH/SM/BM"],
+                      ["longFlight", "B.lâu"],
                       ["flagFlight", "Kéo cờ"],
                     ] as Array<[string, string]>
                   ).some(([k]) => Number((picked as Record<string, unknown>)[k]) > 0) && (
@@ -561,7 +562,8 @@ export function CancelMoveCard({
                             ["flycam", "Flycam"],
                             ["video360", "Cam360"],
                             ["redFlag", "Cờ đỏ"],
-                            ["sunset", "H.hôn"],
+                            ["sunset", "HH/SM/BM"],
+                            ["longFlight", "B.lâu"],
                             ["flagFlight", "Kéo cờ"],
                           ] as Array<[string, string]>
                         )

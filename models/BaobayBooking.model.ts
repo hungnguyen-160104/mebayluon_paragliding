@@ -47,6 +47,8 @@ export interface IBaobayBooking {
   video360: number;
   redFlag: number;
   sunset: number;
+  /** Bay lâu 20–25 phút (chủ 02/10/2026) — miễn phí cho khách có H.hôn/S.mây/B.minh. */
+  longFlight: number;
   flagFlight: number;
   /**
    * HUỶ MỘT PHẦN: đăng ký 2 huỷ 1 thì số đang chạy giảm còn 1, các ô dưới đây
@@ -58,6 +60,7 @@ export interface IBaobayBooking {
   cancelledVideo360: number;
   cancelledRedFlag: number;
   cancelledSunset: number;
+  cancelledLongFlight: number;
   cancelledFlagFlight: number;
   /** Booking gốc từ trang khách mebayluon.com/booking — khoá chống nhập trùng. */
   webBookingId?: string;
@@ -518,12 +521,14 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     video360: { type: Number, default: 0, min: 0 },
     redFlag: { type: Number, default: 0, min: 0 },
     sunset: { type: Number, default: 0, min: 0 },
+    longFlight: { type: Number, default: 0, min: 0 },
     flagFlight: { type: Number, default: 0, min: 0 },
     cancelledGuests: { type: Number, default: 0, min: 0 },
     cancelledFlycam: { type: Number, default: 0, min: 0 },
     cancelledVideo360: { type: Number, default: 0, min: 0 },
     cancelledRedFlag: { type: Number, default: 0, min: 0 },
     cancelledSunset: { type: Number, default: 0, min: 0 },
+    cancelledLongFlight: { type: Number, default: 0, min: 0 },
     cancelledFlagFlight: { type: Number, default: 0, min: 0 },
     webBookingId: { type: String, index: true, sparse: true },
     otaRef: { type: String, index: true, sparse: true },
@@ -743,13 +748,14 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
                     flycam: { type: Boolean, default: false },
                     redFlag: { type: Boolean, default: false },
                     sunset: { type: Boolean, default: false },
+                    longFlight: { type: Boolean, default: false },
                     flagFlight: { type: Boolean, default: false },
                   },
                   /** Khách bay PG trong đoàn gộp: có dịch vụ nhưng KHÔNG có mã QR, nhận vé giấy viết tay. */
                   veGiay: { type: Boolean, default: false },
                   phiCong: { type: new Schema({ username: String, name: String, luc: Date }, { _id: false }), default: null },
                   bayXong: { type: new Schema({ luc: Date }, { _id: false }), default: null },
-                  hoanDichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean, sunset: Boolean, flagFlight: Boolean },
+                  hoanDichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean, sunset: Boolean, longFlight: Boolean, flagFlight: Boolean },
                   thuHoi: {
                     type: new Schema(
                       {
@@ -762,7 +768,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
                         daBayXong: Boolean,
                         /** Phi công trả lời khi vé bị rút lúc đã tích bay xong: "da-bay" hay "chua-bay" (chủ 23/09). */
                         xacNhan: { type: new Schema({ ket: String, luc: Date, boi: String }, { _id: false }), default: null },
-                        dichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean, sunset: Boolean, flagFlight: Boolean },
+                        dichVu: { video360: Boolean, flycam: Boolean, redFlag: Boolean, sunset: Boolean, longFlight: Boolean, flagFlight: Boolean },
                       },
                       { _id: false },
                     ),

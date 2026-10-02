@@ -63,7 +63,7 @@ export const zh: CommonTranslation = {
         location: "Tu Le - Mu Cang Chai",
         tagline: "滑翔伞 & 动力滑翔伞飞行点",
         duration: "行程 60 分钟",
-        highlights: ["飞越四大名山口之一", "飞越金色稻季", "2,000 米高空追云"],
+        highlights: ["飞越四大名山口之一", "飞越金色稻季", "约 2,000 米高空追云"],
         summary:
           "世界上最美的飞行点之一。飞越雄伟的 Khau Pha 山口——越南四大名山口之一。可飞越金色稻季、灌水季，并可在 2,000 米高空追云（动力伞）。",
       },

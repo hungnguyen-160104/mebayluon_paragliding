@@ -197,6 +197,7 @@ function bookingSnapshot(doc: any): BookingSnapshot {
     video360: doc?.video360 ?? 0,
     redFlag: doc?.redFlag ?? 0,
     sunset: doc?.sunset ?? 0,
+    longFlight: doc?.longFlight ?? 0,
     flagFlight: doc?.flagFlight ?? 0,
     mountainCar: doc?.mountainCar ?? 0,
     pickup: doc?.pickup || "self",
@@ -308,7 +309,7 @@ export async function sendBookingChangeMail(
     );
   const mailLang = nuocNgoai ? "en" : "vi";
 
-  const dichVu = (["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const)
+  const dichVu = (["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight", "mountainCar"] as const)
     .map((k) => ({ k, qty: Math.max(0, Math.round(Number(doc[k]) || 0)) }))
     .filter((x) => x.qty > 0)
     .map((x) => ({ label: SERVICE_LABEL[x.k][mailLang], qty: x.qty }));
@@ -1351,7 +1352,9 @@ export type PilotReportSaveInput = {
   redFlag: number;
   redFlagCodesText: string;
   sunset: number;
+  longFlight: number;
   sunsetCodesText: string;
+  longFlightCodesText: string;
   flagFlight: number;
   flagFlightCodesText: string;
   diplomaticGuests: number;
@@ -1471,6 +1474,7 @@ export async function upsertPilotReport(
   const codes360 = parseTicketCodeList(input.video360CodesText);
   const codesRedFlag = parseTicketCodeList(input.redFlagCodesText);
   const codesSunset = parseTicketCodeList(input.sunsetCodesText);
+  const codesLongFlight = parseTicketCodeList(input.longFlightCodesText);
   const codesFlagFlight = parseTicketCodeList(input.flagFlightCodesText);
   const diplomatic = parseTicketCodeList(input.diplomaticCodesText);
 
@@ -1483,7 +1487,8 @@ export async function upsertPilotReport(
     { label: "Flycam", codes: codesFlycam.codes, count: input.flycam },
     { label: "Camera360", codes: codes360.codes, count: input.video360 },
     { label: "Cờ đỏ", codes: codesRedFlag.codes, count: input.redFlag },
-    { label: "Hoàng hôn/săn mây", codes: codesSunset.codes, count: input.sunset },
+    { label: "H.hôn/S.mây/B.minh", codes: codesSunset.codes, count: input.sunset },
+    { label: "Bay lâu", codes: codesLongFlight.codes, count: input.longFlight ?? 0 },
     { label: "Kéo cờ", codes: codesFlagFlight.codes, count: input.flagFlight },
   ];
 
@@ -1620,7 +1625,9 @@ export async function upsertPilotReport(
         redFlag: input.redFlag,
         redFlagCodes: codesRedFlag.codes,
         sunset: input.sunset,
+        longFlight: input.longFlight,
         sunsetCodes: codesSunset.codes,
+        longFlightCodes: codesLongFlight.codes,
         flagFlight: input.flagFlight,
         flagFlightCodes: codesFlagFlight.codes,
         diplomaticGuests: input.diplomaticGuests,
@@ -1757,7 +1764,9 @@ export async function deleteMyPilotReport(
       redFlag: 0,
       redFlagCodes: [],
       sunset: 0,
+      longFlight: 0,
       sunsetCodes: [],
+      longFlightCodes: [],
       flagFlight: 0,
       flagFlightCodes: [],
       diplomaticGuests: 0,
@@ -1800,7 +1809,9 @@ async function pushPilotRow(doc: any) {
       redFlag: doc.redFlag || 0,
       redFlagCodes: (doc.redFlagCodes || []).join(", "),
       sunset: doc.sunset || 0,
+      longFlight: doc.longFlight || 0,
       sunsetCodes: (doc.sunsetCodes || []).join(", "),
+      longFlightCodes: (doc.longFlightCodes || []).join(", "),
       flagFlight: doc.flagFlight || 0,
       flagFlightCodes: (doc.flagFlightCodes || []).join(", "),
       diplomaticGuests: doc.diplomaticGuests || 0,
@@ -1880,7 +1891,9 @@ function toPilotDTO(doc: any): PilotReportDTO {
     redFlag: doc.redFlag ?? 0,
     redFlagCodes: doc.redFlagCodes ?? [],
     sunset: doc.sunset ?? 0,
+    longFlight: doc.longFlight ?? 0,
     sunsetCodes: doc.sunsetCodes ?? [],
+    longFlightCodes: doc.longFlightCodes ?? [],
     flagFlight: doc.flagFlight ?? 0,
     flagFlightCodes: doc.flagFlightCodes ?? [],
     diplomaticGuests: doc.diplomaticGuests ?? 0,
@@ -2059,7 +2072,9 @@ export type DispatcherReportSaveInput = {
   redFlag: number;
   redFlagCodesText: string;
   sunset: number;
+  longFlight: number;
   sunsetCodesText: string;
+  longFlightCodesText: string;
   flagFlight: number;
   flagFlightCodesText: string;
   cashReceived: number;
@@ -2507,7 +2522,9 @@ export async function upsertDispatcherReport(
         redFlag: input.redFlag,
         redFlagCodes: parseTicketCodeList(input.redFlagCodesText).codes,
         sunset: input.sunset,
+        longFlight: input.longFlight,
         sunsetCodes: parseTicketCodeList(input.sunsetCodesText).codes,
+        longFlightCodes: parseTicketCodeList(input.longFlightCodesText).codes,
         flagFlight: input.flagFlight,
         flagFlightCodes: parseTicketCodeList(input.flagFlightCodesText).codes,
         diplomaticGuests: diplomaticCodesUnique.length,
@@ -2611,6 +2628,7 @@ async function pushDispatcherRow(doc: any) {
     video360: doc.video360,
     redFlag: doc.redFlag,
     sunset: doc.sunset || 0,
+    longFlight: doc.longFlight || 0,
     flagFlight: doc.flagFlight,
     diplomaticGuests: doc.diplomaticGuests,
     diplomaticCodes: (doc.diplomaticCodes || []).join(", "),
@@ -2684,7 +2702,9 @@ function toDispatcherDTO(doc: any): DispatcherReportDTO {
     redFlag: doc.redFlag ?? 0,
     redFlagCodes: doc.redFlagCodes ?? [],
     sunset: doc.sunset ?? 0,
+    longFlight: doc.longFlight ?? 0,
     sunsetCodes: doc.sunsetCodes ?? [],
+    longFlightCodes: doc.longFlightCodes ?? [],
     flagFlight: doc.flagFlight ?? 0,
     flagFlightCodes: doc.flagFlightCodes ?? [],
     diplomaticGuests: doc.diplomaticGuests ?? 0,
@@ -4112,6 +4132,8 @@ export type BookingSaveInput = {
   video360: number;
   redFlag: number;
   sunset: number;
+  /** Không gửi (máy chưa tải bản 02/10) = giữ số đang có — xem updateBooking. */
+  longFlight?: number;
   flagFlight: number;
   pickup: "self" | "bigc" | "hotel" | "other";
   pickupNote: string;
@@ -4490,7 +4512,8 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     ["Flycam", input.flycam],
     ["Camera 360", input.video360],
     ["Dù cờ đỏ", input.redFlag],
-    ["Bay hoàng hôn/săn mây", input.sunset],
+    ["H.hôn / S.mây / B.minh", input.sunset],
+    ["Bay lâu", input.longFlight ?? 0],
     ["Bay kéo cờ đỏ/cờ sinh nhật", input.flagFlight],
   ];
   for (const [label, count] of services) {
@@ -4547,6 +4570,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
       video360: input.video360,
       redFlag: input.redFlag,
       sunset: input.sunset,
+      longFlight: input.longFlight ?? 0,
       flagFlight: input.flagFlight,
       /** Lưới chặn: loại bay phải thuộc điểm này (chủ 23/09) — xem loaiBayCuaDiem. */
       flightKind: loaiBayCuaDiem(spot, input.flightKind),
@@ -4639,6 +4663,7 @@ export type FlownServices = {
   video360: number;
   redFlag: number;
   sunset: number;
+  longFlight: number;
   flagFlight: number;
   mountainCar: number;
   /**
@@ -4792,6 +4817,7 @@ export async function listBookings(
     video360: sum((b) => b.video360),
     redFlag: sum((b) => b.redFlag),
     sunset: sum((b) => b.sunset),
+    longFlight: sum((b) => b.longFlight),
     flagFlight: sum((b) => b.flagFlight),
     mountainCar: sum((b) => b.mountainCar),
     byPerson: {},
@@ -4814,7 +4840,7 @@ export async function listBookings(
         .lean<any[]>()
     : [];
 
-  const KEYS = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
+  const KEYS = ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight"] as const;
   /** loại dịch vụ → tên người → số lượng */
   const tally = new Map<string, Map<string, number>>();
   const add = (key: string, name: string, qty: number) => {
@@ -4961,6 +4987,7 @@ export async function listBookings(
         video360: c.items?.video360 ?? 0,
         redFlag: c.items?.redFlag ?? 0,
         sunset: c.items?.sunset ?? 0,
+        longFlight: c.items?.longFlight ?? 0,
         flagFlight: c.items?.flagFlight ?? 0,
       },
       byName: c.createdByName || "",
@@ -5036,7 +5063,8 @@ export async function updateBookingInfo(
     ["Flycam", input.flycam],
     ["Camera 360", input.video360],
     ["Dù cờ đỏ", input.redFlag],
-    ["Bay hoàng hôn/săn mây", input.sunset],
+    ["H.hôn / S.mây / B.minh", input.sunset],
+    ["Bay lâu", input.longFlight ?? 0],
     ["Bay kéo cờ đỏ/cờ sinh nhật", input.flagFlight],
   ] as Array<[string, number]>) {
     if (count > input.guestCount) {
@@ -5110,6 +5138,8 @@ export async function updateBookingInfo(
 
 const editedTotal = bookingTotal({
     ...input,
+    // Máy cũ không gửi bay lâu → giữ số đang có, đừng xoá mất suất web đã bán (chủ 02/10)
+    longFlight: input.longFlight ?? current.longFlight ?? 0,
     spot,
     /**
      * SỬA booking thì GIỮ NGUYÊN bảng giá dịch vụ lúc nó được lập — booking cũ
@@ -5133,6 +5163,7 @@ const editedTotal = bookingTotal({
       video360: input.video360,
       redFlag: input.redFlag,
       sunset: input.sunset,
+      longFlight: input.longFlight ?? current.longFlight ?? 0,
       flagFlight: input.flagFlight,
       /** Lưới chặn: loại bay phải thuộc điểm này (chủ 23/09) — xem loaiBayCuaDiem. */
       flightKind: loaiBayCuaDiem(spot, input.flightKind),
@@ -5810,6 +5841,7 @@ function serviceSnapshot(b: any) {
     video360: b.video360 ?? 0,
     redFlag: b.redFlag ?? 0,
     sunset: b.sunset ?? 0,
+    longFlight: b.longFlight ?? 0,
     flagFlight: b.flagFlight ?? 0,
     comboDiscount: b.comboDiscount ?? 0,
     discount: b.discount ?? 0,
@@ -5853,7 +5885,7 @@ function assertCameramanServiceLimits(
     wearsRole(session, "accountant");
   if (privileged || !wearsRole(session, "cameraman")) return;
 
-  const others = ["video360", "redFlag", "sunset", "flagFlight"] as const;
+  const others = ["video360", "redFlag", "sunset", "longFlight", "flagFlight"] as const;
   if (others.some((k) => (qty[k] ?? 0) > 0)) {
     throw new BaobayError("Camera man chỉ được thêm hoặc bớt dịch vụ flycam", 403);
   }
@@ -5872,7 +5904,7 @@ export async function addBookingServices(
   spotRaw: string,
   id: string,
   input: {
-    add: { flycam?: number; video360?: number; redFlag?: number; sunset?: number; flagFlight?: number };
+    add: { flycam?: number; video360?: number; redFlag?: number; sunset?: number; longFlight?: number; flagFlight?: number };
     /** Giảm trừ riêng cho lần đăng ký thêm này (cộng vào giảm trừ của booking). */
     discount?: number;
     note?: string;
@@ -5894,7 +5926,7 @@ export async function addBookingServices(
 
   assertCameramanServiceLimits(session, input.add, String(booking.flightDate ?? ""));
 
-  const keys = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
+  const keys = ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight"] as const;
   const add = Object.fromEntries(keys.map((k) => [k, Math.max(0, Math.round(input.add[k] ?? 0))])) as Record<
     (typeof keys)[number],
     number
@@ -5908,7 +5940,7 @@ export async function addBookingServices(
     const sum = (booking[k] ?? 0) + add[k];
     if (sum > (booking.guestCount ?? 0)) {
       throw new BaobayError(
-        `${k === "video360" ? "Camera 360" : k === "flycam" ? "Flycam" : k === "redFlag" ? "Dù cờ đỏ" : k === "sunset" ? "Bay hoàng hôn/săn mây" : "Bay kéo cờ đỏ/cờ sinh nhật"} vượt số khách của booking (${booking.guestCount})`,
+        `${k === "video360" ? "Camera 360" : k === "flycam" ? "Flycam" : k === "redFlag" ? "Dù cờ đỏ" : k === "sunset" ? "H.hôn / S.mây / B.minh" : k === "longFlight" ? "Bay lâu" : "Bay kéo cờ đỏ/cờ sinh nhật"} vượt số khách của booking (${booking.guestCount})`,
         400,
       );
     }
@@ -5943,7 +5975,7 @@ export async function addBookingServices(
           booking.note,
           `đăng ký thêm: ${keys
             .filter((k) => add[k] > 0)
-            .map((k) => `${add[k]}×${k === "video360" ? "cam360" : k === "flycam" ? "flycam" : k === "redFlag" ? "cờ đỏ" : k === "sunset" ? "hoàng hôn" : "kéo cờ"}`)
+            .map((k) => `${add[k]}×${k === "video360" ? "cam360" : k === "flycam" ? "flycam" : k === "redFlag" ? "cờ đỏ" : k === "sunset" ? "H.hôn/S.mây/B.minh" : k === "longFlight" ? "bay lâu" : "kéo cờ"}`)
             .join(" ")} (${session.name || session.username})`,
           input.note?.trim(),
         ]
@@ -6297,7 +6329,7 @@ export async function removeBookingServices(
   spotRaw: string,
   id: string,
   input: {
-    remove: { flycam?: number; video360?: number; redFlag?: number; sunset?: number; flagFlight?: number };
+    remove: { flycam?: number; video360?: number; redFlag?: number; sunset?: number; longFlight?: number; flagFlight?: number };
     mode: "credit" | "refund";
     refundMethod?: "cash" | "transfer";
     bankAccount?: string;
@@ -6329,12 +6361,13 @@ export async function removeBookingServices(
   assertCameramanServiceLimits(session, input.remove, String(booking.flightDate ?? ""));
 
   const before = serviceSnapshot(booking);
-  const keys = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
+  const keys = ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight"] as const;
   const label: Record<(typeof keys)[number], string> = {
     flycam: "Flycam",
     video360: "Camera 360",
     redFlag: "Dù cờ đỏ",
-    sunset: "Bay hoàng hôn/săn mây",
+    sunset: "H.hôn / S.mây / B.minh",
+    longFlight: "Bay lâu",
     flagFlight: "Bay kéo cờ đỏ/cờ sinh nhật",
   };
   const next: Record<string, number> = {};
@@ -6425,6 +6458,7 @@ export async function removeBookingServices(
         cancelledVideo360: input.remove.video360 ?? 0,
         cancelledRedFlag: input.remove.redFlag ?? 0,
         cancelledSunset: input.remove.sunset ?? 0,
+        cancelledLongFlight: input.remove.longFlight ?? 0,
         cancelledFlagFlight: input.remove.flagFlight ?? 0,
       },
       $set: {
@@ -6629,6 +6663,7 @@ export async function ingestSapaWebBooking(input: {
       video360: 0,
       redFlag: 0,
       sunset: 0,
+      longFlight: 0,
       flagFlight: 0,
       mountainCar: 0,
       // Sa Pa chưa quản tiền — mọi ô tiền để 0
@@ -6717,6 +6752,7 @@ export const BOOKING_CELL_FIELDS = [
   "video360",
   "redFlag",
   "sunset",
+  "longFlight",
   "flagFlight",
   "mountainCar",
   "ppgGuests",
@@ -7015,7 +7051,7 @@ export async function updateBookingCell(
       set.guestCount = n;
       /** Dịch vụ bám theo đầu khách — giảm khách thì kẹp mọi dịch vụ xuống theo. */
       if (n > 0) {
-        for (const k of ["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar", "ppgGuests"] as const) {
+        for (const k of ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight", "mountainCar", "ppgGuests"] as const) {
           set[k] = Math.min(booking[k] ?? 0, n);
         }
       }
@@ -7039,6 +7075,7 @@ export async function updateBookingCell(
     case "video360":
     case "redFlag":
     case "sunset":
+    case "longFlight":
     case "flagFlight":
     case "mountainCar": {
       const n = money();
@@ -7143,7 +7180,7 @@ export async function recordTicketPrint(
      * điều phối tích ở hộp trước khi in. Không gửi thì máy tự chia khi chia
      * đều được (10 khách 10 flycam), không chia đều được thì báo lỗi bắt tích tay.
      */
-    dichVu?: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean; sunset?: boolean; flagFlight?: boolean }>;
+    dichVu?: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean; sunset?: boolean; longFlight?: boolean; flagFlight?: boolean }>;
     /**
      * KHÁCH NÀO ĐƯỢC CẤP MÃ (chủ 22/09) — Khau Phạ đoàn gộp PG + PPG chỉ cấp
      * cho khách PPG. Không gửi thì lấy mặc định (các khách đầu danh sách).
@@ -7215,6 +7252,7 @@ export async function recordTicketPrint(
             flycam: Boolean(x.flycam),
             redFlag: Boolean(x.redFlag),
             sunset: Boolean(x.sunset),
+            longFlight: Boolean(x.longFlight),
             flagFlight: Boolean(x.flagFlight),
           }
         : macDinh;
@@ -7248,6 +7286,7 @@ export async function recordTicketPrint(
         flycam: Number(booking.flycam) || 0,
         redFlag: Number(booking.redFlag) || 0,
         sunset: Number(booking.sunset) || 0,
+        longFlight: Number(booking.longFlight) || 0,
         flagFlight: Number(booking.flagFlight) || 0,
       });
       if (!chia.auto && !guiDv) {
@@ -7441,6 +7480,7 @@ export async function createBlankBookingRow(
     video360: q?.video360 ?? 0,
     redFlag: q?.redFlag ?? 0,
     sunset: q?.sunset ?? 0,
+    longFlight: q?.longFlight ?? 0,
     flagFlight: q?.flagFlight ?? 0,
     mountainCar: q?.mountainCar ?? 0,
     discount: q?.discount ?? 0,
@@ -7478,6 +7518,7 @@ export async function createBlankBookingRow(
       video360: Math.min(q?.video360 ?? 0, khach || (q?.video360 ?? 0)),
       redFlag: Math.min(q?.redFlag ?? 0, khach || (q?.redFlag ?? 0)),
       sunset: Math.min(q?.sunset ?? 0, khach || (q?.sunset ?? 0)),
+      longFlight: Math.min(q?.longFlight ?? 0, khach || (q?.longFlight ?? 0)),
       flagFlight: Math.min(q?.flagFlight ?? 0, khach || (q?.flagFlight ?? 0)),
       mountainCar: Math.min(q?.mountainCar ?? 0, khach || (q?.mountainCar ?? 0)),
       /** Đơn giá điền sẵn theo bảng giá của điểm — gõ đè được như mọi ô khác. */
@@ -7534,6 +7575,7 @@ export async function createSapaBookRow(
       video360: 0,
       redFlag: 0,
       sunset: 0,
+      longFlight: 0,
       flagFlight: 0,
       mountainCar: 0,
       /** Đơn giá điền sẵn theo bảng giá Sa Pa — gõ đè được như mọi ô khác. */
@@ -7888,6 +7930,7 @@ export async function ingestSapaSheetRows(input: {
         redFlag: booking?.redFlag ?? 0,
         flagFlight: booking?.flagFlight ?? 0,
         sunset: 0,
+        longFlight: 0,
         mountainCar: 0,
         comboDiscount: 0,
       });
@@ -7990,6 +8033,7 @@ export async function ingestSapaSheetRows(input: {
           ppgGuests: 0,
           redFlag: 0,
           sunset: 0,
+          longFlight: 0,
           flagFlight: 0,
           mountainCar: 0,
           comboDiscount: 0,
@@ -8248,7 +8292,7 @@ export type ServiceChangeDTO = {
   bookingId: string;
   bookingLabel: string;
   kind: "add" | "remove";
-  items: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number };
+  items: { flycam: number; video360: number; redFlag: number; sunset: number; longFlight: number; flagFlight: number };
   discount: number;
   charge: number;
   back: number;
@@ -8273,6 +8317,7 @@ function toServiceChangeDTO(doc: any): ServiceChangeDTO {
       video360: doc.items?.video360 ?? 0,
       redFlag: doc.items?.redFlag ?? 0,
       sunset: doc.items?.sunset ?? 0,
+      longFlight: doc.items?.longFlight ?? 0,
       flagFlight: doc.items?.flagFlight ?? 0,
     },
     discount: doc.discount ?? 0,
@@ -8320,12 +8365,13 @@ export async function listServiceChanges(
  * không xoá lịch sử).
  */
 /** Tên dịch vụ tiếng Việt cho dòng vết ghi vào booking. */
-const SERVICE_KEYS = ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const;
+const SERVICE_KEYS = ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight"] as const;
 const SERVICE_LABEL_VI: Record<(typeof SERVICE_KEYS)[number], string> = {
   flycam: "flycam",
   video360: "cam360",
   redFlag: "cờ đỏ",
-  sunset: "hoàng hôn",
+  sunset: "H.hôn/S.mây/B.minh",
+  longFlight: "bay lâu",
   flagFlight: "kéo cờ",
 };
 
@@ -8396,6 +8442,7 @@ export async function undoServiceChange(
         video360: b.video360 ?? 0,
         redFlag: b.redFlag ?? 0,
         sunset: b.sunset ?? 0,
+        longFlight: b.longFlight ?? 0,
         flagFlight: b.flagFlight ?? 0,
         comboDiscount: b.comboDiscount ?? 0,
         discount: b.discount ?? 0,
@@ -8820,7 +8867,7 @@ export async function splitBooking(
      * luôn kẹp trong khoảng hợp lệ: không ít hơn phần bắt buộc phải đi (gốc
      * không chứa nổi), không nhiều hơn số đang có.
      */
-    services?: Partial<Record<"flycam" | "video360" | "redFlag" | "sunset" | "flagFlight" | "mountainCar", number>>;
+    services?: Partial<Record<"flycam" | "video360" | "redFlag" | "sunset" | "longFlight" | "flagFlight" | "mountainCar", number>>;
   },
 ): Promise<{ origin: BookingDTO; part: BookingDTO }> {
   await connectDB();
@@ -8879,6 +8926,7 @@ export async function splitBooking(
     video360: carryOf("video360", current.video360),
     redFlag: carryOf("redFlag", current.redFlag),
     sunset: carryOf("sunset", current.sunset),
+    longFlight: carryOf("longFlight", current.longFlight),
     flagFlight: carryOf("flagFlight", current.flagFlight),
     mountainCar: carryOf("mountainCar", current.mountainCar),
   };
@@ -8889,6 +8937,7 @@ export async function splitBooking(
     video360: (Number(current.video360) || 0) - partServices.video360,
     redFlag: (Number(current.redFlag) || 0) - partServices.redFlag,
     sunset: (Number(current.sunset) || 0) - partServices.sunset,
+    longFlight: (Number(current.longFlight) || 0) - partServices.longFlight,
     flagFlight: (Number(current.flagFlight) || 0) - partServices.flagFlight,
     mountainCar: (Number(current.mountainCar) || 0) - partServices.mountainCar,
   };
@@ -8985,6 +9034,7 @@ export async function splitBooking(
     video360: partServices.video360,
     redFlag: partServices.redFlag,
     sunset: partServices.sunset,
+    longFlight: partServices.longFlight,
     flagFlight: partServices.flagFlight,
     mountainCar: partServices.mountainCar,
     flightKind: current.flightKind,
@@ -9584,6 +9634,7 @@ export async function updateBookingStatus(
         flycam: Boolean(k.dichVu?.flycam),
         redFlag: Boolean(k.dichVu?.redFlag),
         sunset: Boolean(k.dichVu?.sunset),
+        longFlight: Boolean(k.dichVu?.longFlight),
         flagFlight: Boolean(k.dichVu?.flagFlight),
       };
       const viec = laHuy ? "huy" : "doi";
@@ -9711,6 +9762,7 @@ async function pushBookingRow(doc: any) {
       video360: doc.video360 ?? 0,
       redFlag: doc.redFlag ?? 0,
       sunset: doc.sunset ?? 0,
+      longFlight: doc.longFlight ?? 0,
       flagFlight: doc.flagFlight ?? 0,
       pickup:
         doc.pickup === "other"
@@ -9829,12 +9881,13 @@ export function maskForCrew(doc: any, money: "none" | "remaining" | "full" = "re
 /** Ngày giờ → ISO cho khối mã vé QR (xem lib/baobay/ve-qr.ts). */
 function veQrToDTO(v: any): BookingDTO["veQr"] {
   const iso = (d: unknown) => (d ? new Date(d as string).toISOString() : "");
-  /** Đủ NĂM dịch vụ — thiếu sunset/flagFlight thì vé in mất chữ, hộp DV vé mất cột (chủ 23/09). */
+  /** Đủ SÁU dịch vụ (thêm bay lâu 02/10) — thiếu sunset/longFlight/flagFlight thì vé in mất chữ, hộp DV vé mất cột (chủ 23/09). */
   const dv = (d: any): DichVuKhach => ({
     video360: Boolean(d?.video360),
     flycam: Boolean(d?.flycam),
     redFlag: Boolean(d?.redFlag),
     sunset: Boolean(d?.sunset),
+    longFlight: Boolean(d?.longFlight),
     flagFlight: Boolean(d?.flagFlight),
   });
   return {
@@ -9947,6 +10000,7 @@ export function toBookingDTO(doc: any): BookingDTO {
     video360: doc.video360 ?? 0,
     redFlag: doc.redFlag ?? 0,
     sunset: doc.sunset ?? 0,
+    longFlight: doc.longFlight ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     /**
      * LOẠI BAY LUÔN THUỘC ĐIỂM (chủ 23/09: "Khau Phạ làm gì có 650m đâu mà sao
@@ -10032,6 +10086,7 @@ export function toBookingDTO(doc: any): BookingDTO {
     cancelledVideo360: doc.cancelledVideo360 ?? 0,
     cancelledRedFlag: doc.cancelledRedFlag ?? 0,
     cancelledSunset: doc.cancelledSunset ?? 0,
+    cancelledLongFlight: doc.cancelledLongFlight ?? 0,
     cancelledFlagFlight: doc.cancelledFlagFlight ?? 0,
     transferCode: doc.transferCode || "",
     depositToCompany: Boolean(doc.depositToCompany),
@@ -11211,6 +11266,7 @@ issuedRanges: Array<{ from: string; to: string }>;
     video360: number;
     redFlag: number;
     sunset: number;
+    longFlight: number;
     flagFlight: number;
     hasData: boolean;
   };
@@ -11297,6 +11353,7 @@ issuedRanges: Array<{ from: string; to: string }>;
   redFlag: number;
   /** Bay hoàng hôn/săn mây lấy theo PHI CÔNG — như cờ đỏ. */
   sunset: number;
+  longFlight: number;
   flagFlight: number;
   /** Tổng theo TỪNG PHÍA — cho hai nút "lấy số phi công" / "lấy số điều phối". */
   pilot: {
@@ -11309,10 +11366,11 @@ issuedRanges: Array<{ from: string; to: string }>;
     video360: number;
     redFlag: number;
     sunset: number;
+    longFlight: number;
     flagFlight: number;
     hasData: boolean;
   };
-  dispatcher: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
+  dispatcher: { flycam: number; video360: number; redFlag: number; sunset: number; longFlight: number; flagFlight: number; hasData: boolean };
   /** Tên những điều phối/trực quầy đã báo — nút chấp nhận ghi rõ nhận số từ ai. */
   dispatcherNames: string[];
   /** Có báo cáo nào của nhân viên chưa — chưa có thì khỏi hiện nút chép. */
@@ -11409,7 +11467,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
      * khỏi sổ. Kèm trạng thái để tách riêng số khách ĐÃ XÁC NHẬN BAY.
      */
     BaobayBooking.find({ spot, flightDate: date, status: { $nin: ["cancelled", "voided"] } })
-      .select("guestCount status flycam video360 redFlag sunset flagFlight flightKind ppgGuests cancelledGuests ticketIssuedAt noTicketFlight")
+      .select("guestCount status flycam video360 redFlag sunset longFlight flagFlight flightKind ppgGuests cancelledGuests ticketIssuedAt noTicketFlight")
       .lean<any[]>(),
     /**
      * Bảo hiểm đếm trên MỌI booking của ngày, KHÔNG lọc trạng thái: booking đã
@@ -11733,6 +11791,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     pushReport("video360", p.pilotName, p.video360 || 0);
     pushReport("redFlag", p.pilotName, p.redFlag || 0);
     pushReport("sunset", p.pilotName, p.sunset || 0);
+    pushReport("longFlight", p.pilotName, p.longFlight || 0);
     pushReport("flagFlight", p.pilotName, p.flagFlight || 0);
     pushReport("pilotFlycam", p.pilotName, p.flycam || 0);
   }
@@ -11744,6 +11803,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     video360: bookings.reduce((t, b) => t + (b.video360 || 0), 0),
     redFlag: bookings.reduce((t, b) => t + (b.redFlag || 0), 0),
     sunset: bookings.reduce((t, b) => t + (b.sunset || 0), 0),
+    longFlight: bookings.reduce((t, b) => t + (b.longFlight || 0), 0),
     flagFlight: bookings.reduce((t, b) => t + (b.flagFlight || 0), 0),
   };
 
@@ -11845,7 +11905,8 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       { key: "flycam", label: "Flycam", booked: bookingServices.flycam, reported: sum(cameramen, (c) => c.flycamFlights ?? 0), source: "camera man" },
       { key: "video360", label: "Cam360", booked: bookingServices.video360, reported: sum(pilots, (p) => p.video360 ?? 0), source: "phi công" },
       { key: "redFlag", label: "Cờ đỏ", booked: bookingServices.redFlag, reported: sum(pilots, (p) => p.redFlag ?? 0), source: "phi công" },
-      { key: "sunset", label: "Hoàng hôn", booked: bookingServices.sunset, reported: sum(pilots, (p) => p.sunset ?? 0), source: "phi công" },
+      { key: "sunset", label: "H.hôn/S.mây/B.minh", booked: bookingServices.sunset, reported: sum(pilots, (p) => p.sunset ?? 0), source: "phi công" },
+      { key: "longFlight", label: "Bay lâu", booked: bookingServices.longFlight, reported: sum(pilots, (p) => p.longFlight ?? 0), source: "phi công" },
       { key: "flagFlight", label: "Kéo cờ", booked: bookingServices.flagFlight, reported: sum(pilots, (p) => p.flagFlight ?? 0), source: "phi công" },
     ],
   };
@@ -12010,6 +12071,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     video360: bookingServices.video360,
     redFlag: bookingServices.redFlag,
     sunset: bookingServices.sunset,
+    longFlight: bookingServices.longFlight,
     flagFlight: bookingServices.flagFlight,
     reportedBy,
     moneyByPerson,
@@ -12023,6 +12085,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       video360: sum(pilots, (p) => p.video360),
       redFlag: sum(pilots, (p) => p.redFlag),
       sunset: sum(pilots, (p) => p.sunset),
+      longFlight: sum(pilots, (p) => p.longFlight),
       flagFlight: sum(pilots, (p) => p.flagFlight),
       hasData: pilots.length > 0,
     },
@@ -12031,6 +12094,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       video360: sum(dispatchers, (d) => d.video360),
       redFlag: sum(dispatchers, (d) => d.redFlag),
       sunset: sum(dispatchers, (d) => d.sunset),
+      longFlight: sum(dispatchers, (d) => d.longFlight),
       flagFlight: sum(dispatchers, (d) => d.flagFlight),
       hasData: dispatchers.length > 0,
     },
@@ -12073,6 +12137,7 @@ export type DailyCloseSaveInput = {
   video360: number;
   redFlag: number;
   sunset: number;
+  longFlight: number;
   flagFlight: number;
   expensesApproved: boolean;
   expensesApprovedNote: string;
@@ -12178,6 +12243,7 @@ export async function upsertDailyClose(
         video360: input.video360,
         redFlag: input.redFlag,
         sunset: input.sunset,
+        longFlight: input.longFlight,
         flagFlight: input.flagFlight,
         ledger,
         expenseReviews: (input.expenseReviews ?? []).filter((r) => r.key && (r.status === "ok" || r.status === "no")),
@@ -12242,6 +12308,7 @@ async function pushCloseRow(doc: any) {
     video360: doc.video360 ?? 0,
     redFlag: doc.redFlag ?? 0,
     sunset: doc.sunset ?? 0,
+    longFlight: doc.longFlight ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     ledgerDetail: formatExpenses(doc.ledger ?? []),
     expensesApproved: doc.expensesApproved ? "x" : "",
@@ -12318,6 +12385,7 @@ export type TicketLookup = {
     video360: number;
     redFlag: number;
     sunset: number;
+    longFlight: number;
     flagFlight: number;
     guestCount: number;
     /** Khách PPG trong đoàn — ô chọn ghi "(1×PPG 1×PG)". */
@@ -12398,10 +12466,11 @@ export async function lookupTicketCode(spotRaw: string, codeRaw: string): Promis
         { video360: { $gt: 0 } },
         { redFlag: { $gt: 0 } },
         { sunset: { $gt: 0 } },
+        { longFlight: { $gt: 0 } },
         { flagFlight: { $gt: 0 } },
       ],
     })
-      .select("contactName bookingCode daySeq flycam video360 redFlag sunset flagFlight guestCount ppgGuests status")
+      .select("contactName bookingCode daySeq flycam video360 redFlag sunset longFlight flagFlight guestCount ppgGuests status")
       .sort({ daySeq: 1 })
       .lean<any[]>();
     out.candidates = bookings.map((b) => ({
@@ -12412,6 +12481,7 @@ export async function lookupTicketCode(spotRaw: string, codeRaw: string): Promis
       video360: b.video360 || 0,
       redFlag: b.redFlag || 0,
       sunset: b.sunset || 0,
+      longFlight: b.longFlight || 0,
       flagFlight: b.flagFlight || 0,
       guestCount: b.guestCount || 0,
       ppgGuests: b.ppgGuests || 0,
@@ -12525,7 +12595,7 @@ export async function createFlycamCancel(
   const doc = (
     await BaobayFlycamCancel.create({
       spot,
-      service: ["flycam", "video360", "redFlag", "sunset", "flagFlight"].includes(String(input.service))
+      service: ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight"].includes(String(input.service))
         ? input.service
         : "flycam",
       date: input.date,
@@ -12694,6 +12764,7 @@ async function pushDaySummaryRow(spot: string, date: string): Promise<{ ok: bool
       video360Pilot: sum(pilots, (p) => p.video360),
       redFlag: sum(dispatchers, (d) => d.redFlag),
       sunset: sum(dispatchers, (d) => d.sunset),
+      longFlight: sum(dispatchers, (d) => d.longFlight),
       flagFlight: sum(dispatchers, (d) => d.flagFlight),
 
       diplomaticTickets: sum(dispatchers, (d) => (d.diplomaticCodes?.length ?? 0) || (d.diplomaticGuests ?? 0)),
@@ -12883,6 +12954,7 @@ function toCloseDTO(doc: any): DailyCloseDTO {
     video360: doc.video360 ?? 0,
     redFlag: doc.redFlag ?? 0,
     sunset: doc.sunset ?? 0,
+    longFlight: doc.longFlight ?? 0,
     flagFlight: doc.flagFlight ?? 0,
     ledger: doc.ledger ?? [],
     expenseReviews: doc.expenseReviews ?? [],
@@ -13069,13 +13141,13 @@ export async function getReconcile(
       .lean<any[]>(),
     /** Dịch vụ của khách ĐÃ BAY theo sổ — phía quầy trong bộ soát lấy theo đây (chủ 14/09). */
     BaobayBooking.find({ spot, flightDate: date, status: "done" })
-      .select("flycam video360 redFlag sunset flagFlight")
+      .select("flycam video360 redFlag sunset longFlight flagFlight")
       .lean<any[]>(),
   ]);
   const bookingCancelledCodes = cancelledBookings.flatMap((b) => b.cancelTicketCodes ?? []);
   const congSo = (k: string) => bayXong.reduce((t: number, b: any) => t + (Number(b[k]) || 0), 0);
   const bookServices = bayXong.length
-    ? { flycam: congSo("flycam"), video360: congSo("video360"), redFlag: congSo("redFlag"), sunset: congSo("sunset"), flagFlight: congSo("flagFlight") }
+    ? { flycam: congSo("flycam"), video360: congSo("video360"), redFlag: congSo("redFlag"), sunset: congSo("sunset"), longFlight: congSo("longFlight"), flagFlight: congSo("flagFlight") }
     : undefined;
   const bookingMovedCodes = movedWithCodes.flatMap((b) =>
     (b.movedTicketCodes ?? []).map((c: string) => ({ code: String(c).toUpperCase(), toDate: String(b.flightDate) })),
@@ -13278,6 +13350,7 @@ export async function getReconcile(
           video360: close.video360 ?? 0,
           redFlag: close.redFlag ?? 0,
           sunset: close.sunset ?? 0,
+          longFlight: close.longFlight ?? 0,
           flagFlight: close.flagFlight ?? 0,
           expensesApproved: Boolean(close.expensesApproved),
           varianceApproved: Boolean(close.varianceApproved),
@@ -13300,7 +13373,9 @@ export async function getReconcile(
       redFlag: d.redFlag ?? 0,
       redFlagCodes: d.redFlagCodes ?? [],
       sunset: d.sunset ?? 0,
+      longFlight: d.longFlight ?? 0,
       sunsetCodes: d.sunsetCodes ?? [],
+      longFlightCodes: d.longFlightCodes ?? [],
       flagFlight: d.flagFlight ?? 0,
       flagFlightCodes: d.flagFlightCodes ?? [],
       diplomaticGuests: d.diplomaticGuests ?? 0,
@@ -13320,7 +13395,9 @@ export async function getReconcile(
       redFlag: p.redFlag ?? 0,
       redFlagCodes: p.redFlagCodes ?? [],
       sunset: p.sunset ?? 0,
+      longFlight: p.longFlight ?? 0,
       sunsetCodes: p.sunsetCodes ?? [],
+      longFlightCodes: p.longFlightCodes ?? [],
       flagFlight: p.flagFlight ?? 0,
       flagFlightCodes: p.flagFlightCodes ?? [],
       diplomaticGuests: p.diplomaticGuests ?? 0,
@@ -13531,6 +13608,7 @@ const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked" | "closed
   diplomaticAmount: 0,
   redFlag: 0,
   sunset: 0,
+  longFlight: 0,
   expenseTotal: 0,
   pilotCount: 0,
   pilotSubmitted: 0,
@@ -13674,6 +13752,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     row.diplomaticAmount += r.diplomaticAmount;
     row.redFlag += r.redFlag;
     row.sunset += r.sunset;
+    row.longFlight += r.longFlight;
     row.expenseTotal += dispatcherExpenseTotal(r);
     row.dispatcherCount += 1;
   }
@@ -13758,6 +13837,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
         video360: 0,
         redFlag: 0,
         sunset: 0,
+        longFlight: 0,
         flagFlight: 0,
         diplomaticGuests: 0,
         expenseTotal: 0,
@@ -13779,6 +13859,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     entry.video360 += r.video360;
     entry.redFlag += r.redFlag;
     entry.sunset += r.sunset;
+    entry.longFlight += r.longFlight;
     entry.flagFlight += r.flagFlight;
     entry.diplomaticGuests += r.diplomaticGuests;
     entry.expenseTotal += pilotExpenseTotal(r);
@@ -13817,6 +13898,7 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
       video360: 0,
       redFlag: 0,
       sunset: 0,
+      longFlight: 0,
       flagFlight: 0,
       diplomaticGuests: 0,
       expenseTotal: 0,
@@ -13979,7 +14061,8 @@ export async function getMyPeriodSummary(
         { label: "Flycam", value: sumOf((d) => d.flycam) },
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Dù cờ đỏ (red flag)", value: sumOf((d) => d.redFlag) },
-        ...(spot !== "sapa" ? [{ label: "Bay hoàng hôn/săn mây (sunset)", value: sumOf((d) => d.sunset) }] : []),
+        ...(spot !== "sapa" ? [{ label: "H.hôn / S.mây / B.minh (sunset)", value: sumOf((d) => d.sunset) }] : []),
+        ...(spot !== "sapa" ? [{ label: "Bay lâu (long flight)", value: sumOf((d) => d.longFlight ?? 0) }] : []),
         { label: "Bay kéo cờ đỏ/cờ sinh nhật (flag flight)", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao (complimentary)", value: sumOf((d) => d.diplomaticGuests) },
         // Phí bãi + nước chỉ có ở Hà Nội; PPG chỉ có ở Khau Phạ
@@ -14047,7 +14130,8 @@ export async function getMyPeriodSummary(
         { label: "Flycam", value: sumOf((d) => d.flycam) },
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Cờ đỏ", value: sumOf((d) => d.redFlag) },
-        ...(spot !== "sapa" ? [{ label: "Bay hoàng hôn/săn mây", value: sumOf((d) => d.sunset) }] : []),
+        ...(spot !== "sapa" ? [{ label: "H.hôn / S.mây / B.minh", value: sumOf((d) => d.sunset) }] : []),
+        ...(spot !== "sapa" ? [{ label: "Bay lâu", value: sumOf((d) => d.longFlight ?? 0) }] : []),
         { label: "Bay kéo cờ đỏ/cờ sinh nhật", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao", value: sumOf((d) => d.diplomaticGuests) },
         { label: "Tiền mặt", value: sumOf((d) => d.cashReceived) + collectCash, money: true },
@@ -14092,6 +14176,7 @@ const EMPTY_MONTHLY: MonthlyTotalsDTO = {
   video360: 0,
   redFlag: 0,
   sunset: 0,
+  longFlight: 0,
   flagFlight: 0,
   diplomaticGuests: 0,
   siteFeeGuests: 0,
@@ -14117,6 +14202,7 @@ function addMonthly(acc: MonthlyTotalsDTO, r: PilotReportDTO): void {
   acc.video360 += r.video360;
   acc.redFlag += r.redFlag;
   acc.sunset += r.sunset;
+  acc.longFlight += r.longFlight;
   acc.flagFlight += r.flagFlight;
   acc.diplomaticGuests += r.diplomaticGuests;
   acc.siteFeeGuests += r.siteFeeGuests;
@@ -14535,7 +14621,8 @@ const NHAN_DICH_VU = {
   flycam: "flycam",
   video360: "cam360",
   redFlag: "dù cờ đỏ",
-  sunset: "săn mây/hoàng hôn",
+  sunset: "H.hôn/S.mây/B.minh",
+  longFlight: "bay lâu",
   flagFlight: "kéo cờ",
 } as const;
 

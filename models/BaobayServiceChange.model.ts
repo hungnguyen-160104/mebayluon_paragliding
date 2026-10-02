@@ -29,6 +29,8 @@ export interface IBaobayServiceChange {
     video360: number;
     redFlag: number;
     sunset: number;
+    /** Bay lâu 20–25 phút (chủ 02/10/2026) — miễn phí cho khách có H.hôn/S.mây/B.minh. */
+    longFlight: number;
     flagFlight: number;
   };
   /** THÊM: giảm trừ riêng của lần này và số tiền phải thu thêm. */
@@ -48,6 +50,8 @@ export interface IBaobayServiceChange {
     video360: number;
     redFlag: number;
     sunset: number;
+    /** Bay lâu 20–25 phút (chủ 02/10/2026) — miễn phí cho khách có H.hôn/S.mây/B.minh. */
+    longFlight: number;
     flagFlight: number;
     comboDiscount: number;
     discount: number;
@@ -84,6 +88,7 @@ const ServiceChangeSchema = new Schema<IBaobayServiceChange>(
       video360: { type: Number, default: 0 },
       redFlag: { type: Number, default: 0 },
       sunset: { type: Number, default: 0 },
+      longFlight: { type: Number, default: 0 },
       flagFlight: { type: Number, default: 0 },
     },
     discount: { type: Number, default: 0 },
@@ -98,6 +103,7 @@ const ServiceChangeSchema = new Schema<IBaobayServiceChange>(
       video360: { type: Number, default: 0 },
       redFlag: { type: Number, default: 0 },
       sunset: { type: Number, default: 0 },
+      longFlight: { type: Number, default: 0 },
       flagFlight: { type: Number, default: 0 },
       comboDiscount: { type: Number, default: 0 },
       discount: { type: Number, default: 0 },

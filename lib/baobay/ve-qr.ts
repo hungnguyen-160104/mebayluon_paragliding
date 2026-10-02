@@ -37,7 +37,7 @@ export type DichVuVe = (typeof DICH_VU_VE)[number];
  * phi công khai trong báo cáo ngày như cũ; ở đây chỉ để in đúng lên vé của
  * từng khách và để quầy soát đủ số đã bán.
  */
-export const DICH_VU_VE_THEM = ["sunset", "flagFlight"] as const;
+export const DICH_VU_VE_THEM = ["sunset", "longFlight", "flagFlight"] as const;
 export type DichVuVeThem = (typeof DICH_VU_VE_THEM)[number];
 
 /** Mọi dịch vụ gắn được cho một khách — thứ tự hiện trên hộp cấp mã và trên vé. */
@@ -50,17 +50,21 @@ export const TEN_DICH_VU: Record<DichVuVeBatKy, string> = {
   video360: "Cam 360",
   flycam: "Flycam",
   redFlag: "Cờ đỏ",
-  sunset: "Hoàng hôn",
+  /** Một dịch vụ gộp: hoàng hôn / săn mây / bình minh (chủ 02/10/2026). */
+  sunset: "H.hôn / S.mây / B.minh",
+  /** Bay lâu 20–25 phút (chủ 02/10/2026) — miễn phí nếu khách có H.hôn/S.mây/B.minh. */
+  longFlight: "Bay lâu",
   flagFlight: "Kéo cờ",
 };
 
 /**
  * KHÁCH BAY PPG KHÔNG CÓ cờ đỏ và kéo cờ (chủ 23/09) — hai thứ này chỉ dành
- * cho dù lượn thường.
+ * cho dù lượn thường. H.hôn/S.mây/B.minh và bay lâu thì PG lẫn PPG đều bán
+ * (chủ 02/10) nên không nằm ở đây.
  */
 export const DV_CAM_VOI_PPG: DichVuVeBatKy[] = ["redFlag", "flagFlight"];
 
-export const KHONG_DICH_VU: DichVuKhach = { video360: false, flycam: false, redFlag: false, sunset: false, flagFlight: false };
+export const KHONG_DICH_VU: DichVuKhach = { video360: false, flycam: false, redFlag: false, sunset: false, longFlight: false, flagFlight: false };
 
 /** Mã điểm in trên QR — ngắn, viết hoa, không dấu để mọi máy đọc được. */
 const MA_DIEM: Record<string, string> = { sapa: "SAPA", "khau-pha": "KHAUPHA", "ha-noi": "HANOI" };
@@ -169,7 +173,7 @@ export function loaiVePhuCua(raw: string): LoaiVePhu | null {
  */
 export function chiaDichVu(
   guestCount: number,
-  so: { video360: number; flycam: number; redFlag: number; sunset?: number; flagFlight?: number },
+  so: { video360: number; flycam: number; redFlag: number; sunset?: number; longFlight?: number; flagFlight?: number },
 ): { auto: boolean; khach: DichVuKhach[] } {
   const n = Math.max(1, guestCount);
   const soCua = (k: DichVuVeBatKy) => Math.max(0, Number(so[k] ?? 0));

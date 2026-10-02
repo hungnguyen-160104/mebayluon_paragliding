@@ -61,6 +61,9 @@ type FormState = {
   redFlagCodesText: string;
   sunset: number;
   sunsetCodesText: string;
+  /** Bay lâu 20–25' — dịch vụ riêng từ chủ 02/10, khai giống hệt hoàng hôn. */
+  longFlight: number;
+  longFlightCodesText: string;
   flagFlight: number;
   flagFlightCodesText: string;
   diplomaticGuests: number;
@@ -110,6 +113,8 @@ const EMPTY_FORM: FormState = {
   redFlagCodesText: "",
   sunset: 0,
   sunsetCodesText: "",
+  longFlight: 0,
+  longFlightCodesText: "",
   flagFlight: 0,
   flagFlightCodesText: "",
   diplomaticGuests: 0,
@@ -261,6 +266,9 @@ export default function PilotReportPage() {
               redFlagCodesText: res.report.redFlagCodes.join(", "),
               sunset: res.report.sunset,
               sunsetCodesText: res.report.sunsetCodes.join(", "),
+              // Báo cáo lưu trước 02/10 chưa có trường bay lâu → coi như 0.
+              longFlight: res.report.longFlight ?? 0,
+              longFlightCodesText: (res.report.longFlightCodes ?? []).join(", "),
               flagFlight: res.report.flagFlight,
               flagFlightCodesText: res.report.flagFlightCodes.join(", "),
               diplomaticGuests: res.report.diplomaticGuests,
@@ -375,6 +383,7 @@ export default function PilotReportPage() {
         video360CodesText: res.report.video360Codes.join(", "),
         redFlagCodesText: res.report.redFlagCodes.join(", "),
         sunsetCodesText: res.report.sunsetCodes.join(", "),
+        longFlightCodesText: (res.report.longFlightCodes ?? []).join(", "),
         flagFlightCodesText: res.report.flagFlightCodes.join(", "),
         diplomaticCodesText: res.report.diplomaticCodes.join(", "),
         expenses: toExpenseRows(res.report.expenses),
@@ -712,8 +721,14 @@ export default function PilotReportPage() {
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} />
             </ServiceBox>
             {spot !== "sapa" && (
-            <ServiceBox tone="sunset" label={bi("Bay hoàng hôn/săn mây", "sunset/cloud-hunt flight")}>
+            <ServiceBox tone="sunset" label={bi("H.hôn / S.mây / B.minh", "sunset/cloud/sunrise flight")}>
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} />
+            </ServiceBox>
+            )}
+            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — cùng điều kiện hiện, dùng chung màu sunset */}
+            {spot !== "sapa" && (
+            <ServiceBox tone="longFlight" label={bi("Bay lâu", "long flight 20–25'")}>
+              <CountInput compact value={form.longFlight} onChange={(v) => set("longFlight", v)} />
             </ServiceBox>
             )}
             <ServiceBox tone="flagFlight" label={bi("Bay kéo cờ đỏ/cờ sinh nhật", "flag flight")}>
@@ -757,10 +772,21 @@ export default function PilotReportPage() {
                 />
               </ServiceBox>
               {spot !== "sapa" && (
-              <ServiceBox tone="sunset" label="Mã vé hoàng hôn/săn mây">
+              <ServiceBox tone="sunset" label="Mã vé H.hôn / S.mây / B.minh">
                 <TextInput
                   value={form.sunsetCodesText}
                   onChange={(e) => set("sunsetCodesText", e.target.value.toUpperCase())}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  disabled={locked}
+                />
+              </ServiceBox>
+              )}
+              {spot !== "sapa" && (
+              <ServiceBox tone="longFlight" label="Mã vé bay lâu">
+                <TextInput
+                  value={form.longFlightCodesText}
+                  onChange={(e) => set("longFlightCodesText", e.target.value.toUpperCase())}
                   autoCapitalize="characters"
                   spellCheck={false}
                   disabled={locked}
@@ -1182,6 +1208,8 @@ export default function PilotReportPage() {
                       {r.flycam ? ` · ${r.flycam} flycam` : ""}
                       {r.video360 ? ` · ${r.video360}×360` : ""}
                       {r.redFlag ? ` · ${r.redFlag} cờ đỏ` : ""}
+                      {r.sunset ? ` · ${r.sunset} H.hôn/S.mây/B.minh` : ""}
+                      {r.longFlight ? ` · ${r.longFlight} bay lâu` : ""}
                       {r.flagFlight ? ` · ${r.flagFlight} kéo cờ` : ""}
                       {r.diplomaticGuests ? ` · ${r.diplomaticGuests} ngoại giao` : ""}
                       {r.waterCost + r.guestCarCost

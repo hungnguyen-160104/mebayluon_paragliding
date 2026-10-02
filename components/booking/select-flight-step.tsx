@@ -30,6 +30,16 @@ import {
   imageComboDiscountUSD,
   imageComboLabel,
 } from "@/lib/booking/image-combo";
+import {
+  fitCapGroup,
+  isKhauPhaSpecialKey,
+  isLongFlightKey,
+  kpOnePerGuestNote,
+  kpRefundNote,
+  longFlightFreeLabel,
+  longFlightFreeUSD,
+  longFlightFreeVND,
+} from "@/lib/booking/khau-pha-dac-biet";
 
 type ServiceConfig =
   NonNullable<(typeof LOCATIONS)[LocationKey]["services"]>[number];
@@ -88,6 +98,8 @@ type ServiceMeta = {
   priceText: string;
   lines: TextLine[];
   activeNoteLines?: TextLine[];
+  /** Chỉ hiện activeNoteLines khi khách ĐÃ TÍCH dịch vụ (lời nhắc bay lâu PG). */
+  noteOnlyWhenActive?: boolean;
   warningWhenUnchecked?: string;
   lineTotalVND: (
     basePriceVND: number,
@@ -920,6 +932,25 @@ function getServiceMeta(
     };
   }
 
+  /**
+   * BAY LÂU Khau Phạ: lời nhắc (PG chỉ bay lâu được buổi trưa) chỉ hiện khi
+   * khách đã tích. Giá dòng vẫn 700k × số suất; phần miễn phí khi kèm bình
+   * minh/hoàng hôn/săn mây trừ ở dòng riêng (lib/booking/khau-pha-dac-biet.ts).
+   */
+  if (isLongFlightKey(key)) {
+    return {
+      id: "generic",
+      showQty: true,
+      priceText: `${formatVND(priceVND)}/${ui.pax}`,
+      lines: descriptionLines.map((text) => ({ text, tone: "dark" })),
+      activeNoteLines: noteLines.map((text) => ({ text, tone: "red", bold: true })),
+      noteOnlyWhenActive: true,
+      lineTotalVND: (base, _guests, qty) => base * qty,
+      lineTotalUSD: (base, _guests, qty) => base * qty,
+      summaryText: (name, qty) => `${name}${qty > 1 ? ` x${qty}` : ""}`,
+    };
+  }
+
   if (key === "ha_noi_sunset") {
     return {
       id: "sunset",
@@ -1060,6 +1091,8 @@ export default function SelectFlightStep() {
     const services = (selectedCfg?.services || []) as ServiceConfig[];
 
     return services.filter((svc) => {
+      // Dịch vụ cũ không còn bán (vd. khoá gộp 2.000m) — chỉ để booking cũ hiển thị.
+      if (svc.legacy) return false;
       if (svc.visibleForPackages?.length) {
         if (!data.packageKey) return false;
         if (!svc.visibleForPackages.includes(data.packageKey as PackageKey)) {
@@ -1243,6 +1276,22 @@ export default function SelectFlightStep() {
     });
   };
 
+  /**
+   * Giữ trần chung của nhóm (bình minh / hoàng hôn / săn mây Khau Phạ: tổng ≤
+   * số khách). Dịch vụ vừa bấm được giữ, phần vượt bớt từ dịch vụ khác cùng
+   * nhóm — 1 khách thì như nút radio.
+   */
+  const applyCapGroup = (
+    svc: ServiceConfig,
+    nextServices: Record<string, ServiceSelection>,
+  ) => {
+    if (!svc.capGroup) return nextServices;
+    const groupKeys = servicesWithMeta
+      .filter((item) => item.svc.capGroup === svc.capGroup)
+      .map((item) => String(item.svc.key));
+    return fitCapGroup(nextServices, groupKeys, String(svc.key), guestsCount);
+  };
+
   const handleToggleService = (svc: ServiceConfig, meta: ServiceMeta) => {
     const currentServices =
       (data.services as Record<string, ServiceSelection> | undefined) || {};
@@ -1274,7 +1323,7 @@ export default function SelectFlightStep() {
       inputText: nextSelected ? current.inputText || "" : "",
     };
 
-    update({ services: nextServices });
+    update({ services: applyCapGroup(svc, nextServices) });
   };
 
   const handleServiceQty = (
@@ -1310,7 +1359,7 @@ export default function SelectFlightStep() {
       qty,
     };
 
-    update({ services: nextServices });
+    update({ services: applyCapGroup(svc, nextServices) });
   };
 
   const selectedServicesTotalVND = useMemo(
@@ -1357,24 +1406,51 @@ export default function SelectFlightStep() {
   const imageComboOffVND = imageComboDiscountVND(comboServiceStates);
   const imageComboOffUSD = imageComboDiscountUSD(comboServiceStates);
 
+  /**
+   * BAY LÂU MIỄN PHÍ khi kèm bình minh / hoàng hôn / săn mây (Khau Phạ, chủ
+   * 02/10/2026) — mỗi suất đặc biệt miễn một suất bay lâu. Trừ ở dòng riêng
+   * như combo ảnh để khách thấy rõ (lib/booking/khau-pha-dac-biet.ts).
+   */
+  const longFreeOffVND = longFlightFreeVND(comboServiceStates);
+  const longFreeOffUSD = longFlightFreeUSD(comboServiceStates);
+  const longFreeLabel = longFlightFreeLabel(lang, comboServiceStates);
+  const specialOffVND = imageComboOffVND + longFreeOffVND;
+  const specialOffUSD = imageComboOffUSD + longFreeOffUSD;
+
+  /** Lựa chọn bay đặc biệt / bay lâu CUỐI CÙNG đang bày — luật hoàn phụ phí hiện ngay dưới nó. */
+  const lastSpecialKey = [...servicesWithMeta]
+    .reverse()
+    .find(({ svc }) => isKhauPhaSpecialKey(svc.key))?.svc.key;
+  /** Tổng bình minh + hoàng hôn + săn mây vượt số khách (vd. vừa bớt khách). */
+  const dacBietOverCap = servicesWithMeta.some(({ svc }) => {
+    if (!svc.capGroup) return false;
+    const total = servicesWithMeta
+      .filter((item) => item.svc.capGroup === svc.capGroup)
+      .reduce((n, item) => {
+        const st = getServiceState(data, item.svc.key);
+        return st.selected ? n + Math.max(1, Number(st.qty) || 1) : n;
+      }, 0);
+    return total > guestsCount;
+  });
+
   const addonTotalVND = Object.values(totalsVND.addonsTotal || {}).reduce(
     (sum, value) => sum + Number(value || 0),
     0,
   );
 
   const optionalTotalVND =
-    addonTotalVND + selectedServicesTotalVND - imageComboOffVND;
+    addonTotalVND + selectedServicesTotalVND - specialOffVND;
   const grandTotalVND = Math.max(
     0,
     Number(totalsVND.totalAfterDiscount || 0) +
       selectedServicesTotalVND -
-      imageComboOffVND,
+      specialOffVND,
   );
   const grandTotalUSD = Math.max(
     0,
     Number(totalsUSD.totalAfterDiscount || 0) +
       selectedServicesTotalUSD -
-      imageComboOffUSD,
+      specialOffUSD,
   );
 
   const requiredPickupInputsMissing = servicesWithMeta.some(({ svc, meta }) => {
@@ -1394,7 +1470,8 @@ export default function SelectFlightStep() {
     !!selected &&
     !needsFlightType &&
     !needsPackage &&
-    !requiredPickupInputsMissing;
+    !requiredPickupInputsMissing &&
+    !dacBietOverCap;
 
   const activeKhauPhaPickupGroup =
     isKhauPha && isParamotor
@@ -1508,6 +1585,10 @@ export default function SelectFlightStep() {
       rows.push({ label: imageComboLabel(lang), amount: -imageComboOffVND });
     }
 
+    if (longFreeOffVND > 0) {
+      rows.push({ label: longFreeLabel, amount: -longFreeOffVND });
+    }
+
     return rows;
   }, [
     servicesWithMeta,
@@ -1518,6 +1599,8 @@ export default function SelectFlightStep() {
     lang,
     getServiceQty,
     imageComboOffVND,
+    longFreeOffVND,
+    longFreeLabel,
   ]);
 
   const renderServiceDescription = (svc: ServiceConfig, meta: ServiceMeta) => {
@@ -1909,6 +1992,11 @@ export default function SelectFlightStep() {
                         {imageComboLabel(lang)}: −{formatVND(imageComboOffVND)}
                       </div>
                     ) : null}
+                    {longFreeOffVND > 0 ? (
+                      <div className="mt-1 text-[12px] font-semibold text-emerald-600">
+                        {longFreeLabel}: −{formatVND(longFreeOffVND)}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="px-3 py-2.5 text-center md:text-right">
@@ -1999,8 +2087,8 @@ export default function SelectFlightStep() {
                     const qty = getServiceQty(svc, meta);
 
                     return (
+                      <React.Fragment key={svc.key}>
                       <div
-                        key={svc.key}
                         className={[
                           "rounded-xl border-2 px-3 py-2.5 transition-all",
                           active
@@ -2083,7 +2171,8 @@ export default function SelectFlightStep() {
                           />
                         ) : null}
 
-                        {meta.activeNoteLines?.length ? (
+                        {meta.activeNoteLines?.length &&
+                        (!meta.noteOnlyWhenActive || active) ? (
                           <div className="mt-2 space-y-1 sm:ml-11">
                             {meta.activeNoteLines.map((line, idx) => (
                               <p
@@ -2123,6 +2212,23 @@ export default function SelectFlightStep() {
                           </div>
                         ) : null}
                       </div>
+
+                      {/* Luật hoàn phụ phí bay đặc biệt — ngay dưới lựa chọn
+                          bay đặc biệt / bay lâu cuối cùng (chủ 02/10/2026). */}
+                      {svc.key === lastSpecialKey ? (
+                        <div className="rounded-xl border border-[#F5C26B] bg-[#FFF8EB] px-3 py-2.5 text-[13px] leading-5 text-[#7A4B00] sm:text-[14px]">
+                          <p className="font-semibold">
+                            {kpOnePerGuestNote(lang)}
+                          </p>
+                          <p className="mt-1">{kpRefundNote(lang)}</p>
+                          {dacBietOverCap ? (
+                            <p className="mt-1 font-bold text-[#DC2626]">
+                              ⚠ {kpOnePerGuestNote(lang)}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      </React.Fragment>
                     );
                   })}
 

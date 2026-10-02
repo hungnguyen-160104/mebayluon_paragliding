@@ -30,6 +30,7 @@ export type QuickParsed = {
   video360?: number;
   redFlag?: number;
   sunset?: number;
+  longFlight?: number;
   flagFlight?: number;
   mountainCar?: number;
   pickup?: "self" | "bigc" | "hotel" | "other";
@@ -147,7 +148,9 @@ export function parseQuickBooking(input: string, today: string): QuickParsed {
   out.flycam = service(state, "flycam|fly cam");
   out.video360 = service(state, "360|cam ?360|camera ?360");
   out.redFlag = service(state, "cờ đỏ|co do|dù cờ đỏ");
-  out.sunset = service(state, "hoàng hôn|hoang hon|săn mây|san may|sunset");
+  // Một dịch vụ gộp H.hôn / S.mây / B.minh (chủ 02/10): bình minh cũng vào đây
+  out.sunset = service(state, "hoàng hôn|hoang hon|săn mây|san may|bình minh|binh minh|h\\.hôn|s\\.mây|b\\.minh|sunset|sunrise");
+  out.longFlight = service(state, "bay lâu|bay lau|b\\.lâu|long flight");
   out.flagFlight = service(state, "kéo cờ|keo co|kéo bánh|keo banh");
   out.mountainCar = service(state, "xe núi|xe nui|xe lên núi|xe len nui");
 

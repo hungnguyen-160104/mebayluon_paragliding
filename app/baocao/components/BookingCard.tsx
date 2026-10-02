@@ -39,6 +39,10 @@ import {
   type FlightKind,
   type ServiceKey,
   loaiBayCuaDiem,
+  SUNSET_LABEL,
+  longFlightFree,
+  longFlightCharged,
+  serviceChargedCount,
 } from "@/lib/baobay/flight-price";
 import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
@@ -329,7 +333,13 @@ function BookingSummary({
   if (b.flycam + (b.cancelledFlycam ?? 0)) parts.push(`${b.flycam + (b.cancelledFlycam ?? 0)}×flycam`);
   if (b.video360 + (b.cancelledVideo360 ?? 0)) parts.push(`${b.video360 + (b.cancelledVideo360 ?? 0)}×cam360`);
   if (b.redFlag + (b.cancelledRedFlag ?? 0)) parts.push(`${b.redFlag + (b.cancelledRedFlag ?? 0)}×cờ đỏ`);
-  if (b.sunset + (b.cancelledSunset ?? 0)) parts.push(`${b.sunset + (b.cancelledSunset ?? 0)}×hoàng hôn/săn mây`);
+  if (b.sunset + (b.cancelledSunset ?? 0)) parts.push(`${b.sunset + (b.cancelledSunset ?? 0)}×H.hôn/S.mây/B.minh`);
+  /** Bay lâu (chủ 02/10): ghi rõ số suất miễn phí kèm H.hôn/S.mây/B.minh để lễ tân khỏi thu nhầm. */
+  {
+    const lf = (b.longFlight || 0) + (b.cancelledLongFlight ?? 0);
+    const free = longFlightFree(b.longFlight, b.sunset);
+    if (lf) parts.push(`${lf}×bay lâu${free ? ` (${free} miễn phí)` : ""}`);
+  }
   if (b.mountainCar) parts.push(`${b.mountainCar}×xe núi`);
   /**
    * PPG hiện thành CỜ NỔI riêng (luật chủ 04/09 — "tìm rất khó nhìn" khi lẫn
@@ -352,7 +362,8 @@ function BookingSummary({
     (b.cancelledFlycam ?? 0) ? `huỷ ${b.cancelledFlycam}×flycam` : "",
     (b.cancelledVideo360 ?? 0) ? `huỷ ${b.cancelledVideo360}×cam360` : "",
     (b.cancelledRedFlag ?? 0) ? `huỷ ${b.cancelledRedFlag}×cờ đỏ` : "",
-    (b.cancelledSunset ?? 0) ? `huỷ ${b.cancelledSunset}×hoàng hôn` : "",
+    (b.cancelledSunset ?? 0) ? `huỷ ${b.cancelledSunset}×H.hôn/S.mây/B.minh` : "",
+    (b.cancelledLongFlight ?? 0) ? `huỷ ${b.cancelledLongFlight}×bay lâu` : "",
     (b.cancelledFlagFlight ?? 0) ? `huỷ ${b.cancelledFlagFlight}×kéo cờ` : "",
   ].filter(Boolean);
   parts.push(
@@ -1985,7 +1996,7 @@ const COMMISSION_WAY_TITLE: Record<CommissionWay, string> = {
 
 /**
  * THÊM DỊCH VỤ ngay trên dòng booking (chủ 18/09): trong "⋯ Thêm" bấm "＋ Thêm
- * dịch vụ" → bảng dịch vụ (flycam, 360, cờ đỏ, kéo cờ, hoàng hôn) với số tối
+ * dịch vụ" → bảng dịch vụ (flycam, 360, cờ đỏ, kéo cờ, H.hôn/S.mây/B.minh, bay lâu) với số tối
  * đa còn thêm được = số khách − số đã đặt; dịch vụ đã đủ cho cả đoàn thì ẨN.
  * Xác nhận → máy chủ tính tiền (đúng bảng giá lúc lập booking, combo nếu có)
  * → báo "phải thu thêm X · còn thu Y" để nhân viên thu bổ sung. Thu tiền thì
@@ -2001,7 +2012,7 @@ function ThemDichVuControl({
   onDone: (message: string) => void;
 }) {
   const [open, setOpen] = usePanelOpen("them-dich-vu");
-  const trong = (): Record<ServiceKey, number> => ({ flycam: 0, video360: 0, redFlag: 0, flagFlight: 0, sunset: 0 });
+  const trong = (): Record<ServiceKey, number> => ({ flycam: 0, video360: 0, redFlag: 0, flagFlight: 0, sunset: 0, longFlight: 0 });
   const [add, setAdd] = useState<Record<ServiceKey, number>>(trong);
   /** BỚT dịch vụ (chủ 18/09: "cho phép bớt vì có thể thay đổi thêm/bớt"). */
   const [bot, setBot] = useState<Record<ServiceKey, number>>(trong);
@@ -2016,15 +2027,24 @@ function ThemDichVuControl({
     redFlag: booking.redFlag || 0,
     flagFlight: booking.flagFlight || 0,
     sunset: booking.sunset || 0,
+    longFlight: booking.longFlight || 0,
   };
-  /** Sa Pa không bán hoàng hôn / kéo cờ (chỉ 360, flycam, cờ đỏ — chủ 17/09). */
+  /** Sa Pa không bán hoàng hôn / kéo cờ / bay lâu (chỉ 360, flycam, cờ đỏ — chủ 17/09, 02/10). */
   const banO = (k: ServiceKey) => (normalizeSpot(spot) === "sapa" ? k === "flycam" || k === "video360" || k === "redFlag" : true);
   const gia = servicePriceOf(spot, booking.createdAt);
   const hang = SERVICE_PRICE_LABEL.filter(({ key }) => banO(key));
   const soThem = hang.reduce((t, { key }) => t + add[key], 0);
   const soBot = hang.reduce((t, { key }) => t + bot[key], 0);
-  const tongThem = hang.reduce((t, { key }) => t + add[key] * gia[key], 0);
-  const tongBot = hang.reduce((t, { key }) => t + bot[key] * gia[key], 0);
+  /**
+   * Tiền thêm/bớt = chênh tiền dịch vụ trước–sau, KHÔNG nhân thẳng số × giá:
+   * bay lâu miễn phí kèm H.hôn/S.mây/B.minh (chủ 02/10) nên thêm hoàng hôn có
+   * thể làm bay lâu đang thu tiền thành 0đ — chỉ tính chênh mới khớp máy chủ.
+   */
+  const tienDv = (c: Record<ServiceKey, number>) => hang.reduce((t, { key }) => t + serviceChargedCount(key, c) * gia[key], 0);
+  const congTru = (dau: 1 | -1, d: Record<ServiceKey, number>) =>
+    Object.fromEntries(Object.keys(daCo).map((k) => [k, Math.max(0, daCo[k as ServiceKey] + dau * (d[k as ServiceKey] || 0))])) as Record<ServiceKey, number>;
+  const tongThem = tienDv(congTru(1, add)) - tienDv(daCo);
+  const tongBot = tienDv(daCo) - tienDv(congTru(-1, bot));
   const daTra = booking.deposit || 0;
 
   if (booking.status === "cancelled" || booking.status === "voided") return null;
@@ -3779,7 +3799,15 @@ function BookingDetailControl({
     }
     for (const { key, label } of SERVICE_PRICE_LABEL) {
       const n = b[key] || 0;
-      if (n > 0) lines.push({ label: `${n}×${label}`, calc: `${moneyK(price[key])} × ${n}`, amount: price[key] * n });
+      if (n <= 0) continue;
+      /** Bay lâu: chỉ nhân số suất PHẢI THU — phần trùng H.hôn/S.mây/B.minh miễn phí (chủ 02/10). */
+      const thu = serviceChargedCount(key, b);
+      const free = n - thu;
+      lines.push({
+        label: `${n}×${label}${free > 0 ? ` (${free} miễn phí kèm ${SUNSET_LABEL})` : ""}`,
+        calc: `${moneyK(price[key])} × ${thu}`,
+        amount: price[key] * thu,
+      });
     }
     if ((b.mountainCar || 0) > 0) {
       lines.push({
@@ -3819,7 +3847,8 @@ function BookingDetailControl({
     b.cancelledFlycam ? `${b.cancelledFlycam} flycam` : "",
     b.cancelledVideo360 ? `${b.cancelledVideo360} cam360` : "",
     b.cancelledRedFlag ? `${b.cancelledRedFlag} cờ đỏ` : "",
-    b.cancelledSunset ? `${b.cancelledSunset} hoàng hôn` : "",
+    b.cancelledSunset ? `${b.cancelledSunset} H.hôn/S.mây/B.minh` : "",
+    b.cancelledLongFlight ? `${b.cancelledLongFlight} bay lâu` : "",
     b.cancelledFlagFlight ? `${b.cancelledFlagFlight} kéo cờ` : "",
   ].filter(Boolean);
   const changeText = (c: NonNullable<BookingDTO["serviceChanges"]>[number]) =>
@@ -3828,7 +3857,8 @@ function BookingDetailControl({
       c.items.flycam ? `${c.items.flycam} flycam` : "",
       c.items.video360 ? `${c.items.video360} cam360` : "",
       c.items.redFlag ? `${c.items.redFlag} cờ đỏ` : "",
-      c.items.sunset ? `${c.items.sunset} hoàng hôn` : "",
+      c.items.sunset ? `${c.items.sunset} H.hôn/S.mây/B.minh` : "",
+      c.items.longFlight ? `${c.items.longFlight} bay lâu` : "",
       c.items.flagFlight ? `${c.items.flagFlight} kéo cờ` : "",
     ]
       .filter(Boolean)
@@ -4350,6 +4380,7 @@ function BookingDayTable({
       b.video360 ? `${b.video360}×360` : "",
       b.redFlag ? `${b.redFlag}🇻🇳` : "",
       b.sunset ? `${b.sunset}🌅` : "",
+      b.longFlight ? `${b.longFlight}⏱` : "",
       b.flagFlight ? `${b.flagFlight}🎌` : "",
     ]
       .filter(Boolean)
@@ -4367,6 +4398,7 @@ function BookingDayTable({
     if (b.video360) parts.push(<span key="v360">{b.video360}×360</span>);
     if (b.redFlag) parts.push(<span key="flag">{b.redFlag}🇻🇳</span>);
     if (b.sunset) parts.push(<span key="sun">{b.sunset}🌅</span>);
+    if (b.longFlight) parts.push(<span key="lau">{b.longFlight}⏱</span>);
     if (b.flagFlight) parts.push(<span key="keo">{b.flagFlight}🎌</span>);
     if (!parts.length) return null;
     return parts.map((part, pi) => (
@@ -4631,7 +4663,7 @@ function BookingDayTable({
                   )}
                 </td>
                 )}
-                <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🇻🇳 cờ đỏ · 🌅 hoàng hôn · 🎌 kéo cờ">
+                <td className="max-w-[130px] border-b border-slate-100 px-2 py-1 text-[12px]" title="✈ flycam · 360 cam360 · 🇻🇳 cờ đỏ · 🌅 H.hôn / S.mây / B.minh · ⏱ bay lâu · 🎌 kéo cờ">
                   {dichVuView(b) ?? "—"}
                   {/* Dịch vụ THÊM/BỚT tại bãi (đã cộng vào số trên) — kể riêng kèm
                       người lập để phân biệt với đăng ký gốc (luật chủ 04/09) */}
@@ -4641,6 +4673,7 @@ function BookingDayTable({
                       c.items.video360 ? `${c.items.video360}×360` : "",
                       c.items.redFlag ? `${c.items.redFlag}🇻🇳` : "",
                       c.items.sunset ? `${c.items.sunset}🌅` : "",
+                      c.items.longFlight ? `${c.items.longFlight}⏱` : "",
                       c.items.flagFlight ? `${c.items.flagFlight}🎌` : "",
                     ]
                       .filter(Boolean)
@@ -5673,7 +5706,8 @@ export function BookingTodayBanner({
                       ["flycam", "Flycam"],
                       ["video360", "Cam360"],
                       ["redFlag", "Cờ đỏ"],
-                      ["sunset", "H.hôn"],
+                      ["sunset", "HH/SM/BM"],
+                      ["longFlight", "B.lâu"],
                       ["flagFlight", "Kéo cờ"],
                     ] as Array<[keyof BookingDTO & string, string]>
                   ).some(([k]) => Number(b[k]) > 0) && (
@@ -5685,7 +5719,9 @@ export function BookingTodayBanner({
                             ["flycam", "Flycam"],
                             ["video360", "Cam360"],
                             ["redFlag", "Cờ đỏ"],
-                            ["sunset", "H.hôn"],
+                            // H.hôn / S.mây / B.minh gộp một khoá `sunset`; bay lâu dời theo nhóm như mọi dịch vụ (chủ 02/10)
+                            ["sunset", "HH/SM/BM"],
+                            ["longFlight", "B.lâu"],
                             ["flagFlight", "Kéo cờ"],
                           ] as Array<[keyof BookingDTO & string, string]>
                         )
@@ -7318,6 +7354,8 @@ function totalOf(f: {
   redFlag: number;
   flagFlight: number;
   sunset: number;
+  /** Bay lâu — bookingTotal tự trừ phần miễn phí kèm H.hôn/S.mây/B.minh (chủ 02/10). */
+  longFlight: number;
   pickupFee: number;
   discount: number;
   comboDiscount: number;
@@ -7344,7 +7382,10 @@ type BookingForm = {
   flycam: number;
   video360: number;
   redFlag: number;
+  /** H.hôn / S.mây / B.minh — một dịch vụ gộp, khoá cũ `sunset` (chủ 02/10). */
   sunset: number;
+  /** Bay lâu 20–25 phút — miễn phí cho số suất trùng `sunset` (chủ 02/10). */
+  longFlight: number;
   flagFlight: number;
   pickup: BookingDTO["pickup"];
   pickupNote: string;
@@ -7395,6 +7436,7 @@ function emptyBooking(today: string, spot: string): BookingForm {
     video360: 0,
     redFlag: 0,
     sunset: 0,
+    longFlight: 0,
     flagFlight: 0,
     pickup: "self",
     pickupNote: "",
@@ -7534,7 +7576,7 @@ export function BookingCard({
 
   /** Có đang chọn dịch vụ nào không — để nhắc "nhớ nhập số khách". */
   const serviceTotalCount =
-    form.flycam + form.video360 + form.redFlag + form.sunset + form.flagFlight + form.mountainCar;
+    form.flycam + form.video360 + form.redFlag + form.sunset + form.longFlight + form.flagFlight + form.mountainCar;
 
   /** Trần cho mỗi ô dịch vụ: bằng số khách, chưa có số khách thì mở tạm 20. */
   const serviceCap = form.guestCount > 0 ? form.guestCount : 20;
@@ -7562,6 +7604,7 @@ export function BookingCard({
         next.video360 = Math.min(next.video360, cap);
         next.redFlag = Math.min(next.redFlag, cap);
         next.sunset = Math.min(next.sunset, cap);
+        next.longFlight = Math.min(next.longFlight, cap);
         next.mountainCar = Math.min(next.mountainCar, cap);
         next.flagFlight = Math.min(next.flagFlight, cap);
       }
@@ -7699,6 +7742,7 @@ export function BookingCard({
       if (r.video360 !== undefined) next.video360 = r.video360;
       if (r.redFlag !== undefined) next.redFlag = r.redFlag;
       if (r.sunset !== undefined) next.sunset = r.sunset;
+      if (r.longFlight !== undefined) next.longFlight = r.longFlight;
       if (r.flagFlight !== undefined) next.flagFlight = r.flagFlight;
       if (r.mountainCar !== undefined) next.mountainCar = r.mountainCar;
       if (r.pickup) {
@@ -7765,6 +7809,7 @@ export function BookingCard({
         next.video360 = Math.min(next.video360, guestCount);
         next.redFlag = Math.min(next.redFlag, guestCount);
         next.sunset = Math.min(next.sunset, guestCount);
+        next.longFlight = Math.min(next.longFlight, guestCount);
         next.mountainCar = Math.min(next.mountainCar, guestCount);
         next.flagFlight = Math.min(next.flagFlight, guestCount);
       }
@@ -7880,7 +7925,8 @@ export function BookingCard({
       ["Flycam", form.flycam],
       ["Cam 360", form.video360],
       ["Dù cờ đỏ", form.redFlag],
-      ["Bay hoàng hôn/săn mây", form.sunset],
+      [SUNSET_LABEL, form.sunset],
+      ["Bay lâu", form.longFlight],
       ["Bay kéo cờ đỏ/cờ sinh nhật", form.flagFlight],
       ["Xe lên núi", form.mountainCar],
     ] as Array<[string, number]>).find(([, n]) => n > form.guestCount);
@@ -7913,7 +7959,7 @@ export function BookingCard({
        *
        *  - "điểm đón" là chữ tự do (khách sạn / bến xe / nhà thờ) nên luôn xếp
        *    vào kiểu đón "other";
-       *  - Sa Pa không bán bay hoàng hôn/săn mây và không có xe lên núi (chỉ
+       *  - Sa Pa không bán H.hôn/S.mây/B.minh, bay lâu (chủ 02/10) và không có xe lên núi (chỉ
        *    Hà Nội) — ô đã ẩn, nhưng vẫn ép 0 để form đang sửa dở của điểm khác
        *    đổi sang Sa Pa không mang theo số cũ;
        *  - KHÔNG ép giảm combo: comboDiscount(…, "sapa") vốn trả 0 vì Sa Pa
@@ -7923,6 +7969,7 @@ export function BookingCard({
         Object.assign(payload, {
           pickup: "other" as const,
           sunset: 0,
+          longFlight: 0,
           mountainCar: 0,
           comboDiscount: 0,
         });
@@ -8072,6 +8119,7 @@ export function BookingCard({
       video360: b.video360,
       redFlag: b.redFlag,
       sunset: b.sunset,
+      longFlight: b.longFlight || 0,
       flagFlight: b.flagFlight,
       pickup: b.pickup,
       pickupNote: b.pickupNote,
@@ -8111,6 +8159,7 @@ export function BookingCard({
           redFlag: b.redFlag,
           flagFlight: b.flagFlight,
           sunset: b.sunset,
+          longFlight: b.longFlight || 0,
           pickupFee: b.pickupFee,
           discount: b.discount,
           comboDiscount: b.comboDiscount ?? 0,
@@ -8485,7 +8534,7 @@ export function BookingCard({
        * DỊCH VỤ · ĐƠN GIÁ · CỌC · CÒN THU — CẢ BA ĐIỂM đều dùng, Sa Pa từ
        * 09/09/2026 cũng quản tiền như Khau Phạ (sổ tay Sa Pa vốn đã ghi đơn
        * giá, flycam, 360, tổng thu, đặt cọc — nay nhập thẳng vào app).
-       * Riêng "bay hoàng hôn/săn mây" Sa Pa không có nên vẫn ẩn (xem dưới).
+       * Riêng "H.hôn / S.mây / B.minh" và "bay lâu" Sa Pa không có nên vẫn ẩn (xem dưới).
        */}
       <>
       {/* Dịch vụ tuỳ chọn: 3 ô mỗi hàng khi đủ rộng — 5-6 dịch vụ gọn 2 hàng */}
@@ -8509,9 +8558,19 @@ export function BookingCard({
         <ServiceBox tone="flagFlight" label="Bay kéo cờ đỏ/cờ sinh nhật">
           <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={serviceCap} />
         </ServiceBox>
+        {/**
+         * Chủ 02/10: hoàng hôn, săn mây, bình minh gộp MỘT dịch vụ (khoá cũ
+         * `sunset`); BAY LÂU 20–25 phút là dịch vụ riêng ngay cạnh, khách đã có
+         * H.hôn/S.mây/B.minh thì bay lâu miễn phí. Sa Pa không bán cả hai.
+         */}
         {bookSpot !== "sapa" && (
-        <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
+        <ServiceBox tone="sunset" label={SUNSET_LABEL}>
           <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={serviceCap} />
+        </ServiceBox>
+        )}
+        {bookSpot !== "sapa" && (
+        <ServiceBox tone="longFlight" label="Bay lâu (20–25′)">
+          <CountInput compact value={form.longFlight} onChange={(v) => set("longFlight", v)} max={serviceCap} />
         </ServiceBox>
         )}
         {/* Xe chuyên dụng lên núi — chỉ Hà Nội, 150k mỗi khách */}
@@ -8534,6 +8593,15 @@ export function BookingCard({
         ))}
         {bookSpot === "ha-noi" ? ` · Xe lên núi ${(MOUNTAIN_CAR_PRICE / 1000).toLocaleString("vi-VN")}k/khách` : ""}
       </p>
+      {/* Báo ngay số suất bay lâu miễn phí / phải thu để nhân viên khỏi báo giá sai (chủ 02/10) */}
+      {bookSpot !== "sapa" && form.longFlight > 0 && form.sunset > 0 && (
+        <p className="mt-0.5 text-[11px] font-semibold leading-tight text-emerald-700">
+          Bay lâu: {longFlightFree(form.longFlight, form.sunset)} suất miễn phí kèm {SUNSET_LABEL}
+          {longFlightCharged(form.longFlight, form.sunset) > 0
+            ? ` · ${longFlightCharged(form.longFlight, form.sunset)} suất tính ${(servicePriceOf(bookSpot, formPriceAt).longFlight / 1000).toLocaleString("vi-VN")}k`
+            : ""}
+        </p>
+      )}
 
       <div className="mt-2 grid grid-cols-2 gap-2 @md:grid-cols-3">
         {/**
@@ -9190,6 +9258,7 @@ export function BookingCard({
                 video360: form.video360,
                 redFlag: form.redFlag,
                 sunset: form.sunset,
+                longFlight: form.longFlight,
                 flagFlight: form.flagFlight,
                 pickupLabel:
                   form.pickup === "other"

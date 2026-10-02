@@ -846,6 +846,7 @@ export type BookingPick = {
   video360?: number;
   redFlag?: number;
   sunset?: number;
+  longFlight?: number;
   flagFlight?: number;
 };
 

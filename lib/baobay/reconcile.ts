@@ -54,6 +54,8 @@ export type IssueCode =
   | "LECH_360"
   | "LECH_CO_DO"
   | "LECH_HOANG_HON"
+  /** Bay lâu (chủ 02/10/2026): phi công báo khác điều phối / kế toán. */
+  | "LECH_BAY_LAU"
   | "LECH_KEO_CO"
   | "THIEU_SO_KE_TOAN"
   | "CHUA_DUYET_CHI"
@@ -86,7 +88,9 @@ export type ReconcilePilot = {
   redFlag: number;
   redFlagCodes: string[];
   sunset: number;
+  longFlight: number;
   sunsetCodes: string[];
+  longFlightCodes: string[];
   flagFlight: number;
   flagFlightCodes: string[];
   diplomaticGuests: number;
@@ -118,7 +122,9 @@ export type ReconcileDispatcher = {
   redFlag: number;
   redFlagCodes: string[];
   sunset: number;
+  longFlight: number;
   sunsetCodes: string[];
+  longFlightCodes: string[];
   flagFlight: number;
   flagFlightCodes: string[];
   diplomaticGuests: number;
@@ -151,6 +157,7 @@ export type ReconcileClose = {
   video360: number;
   redFlag: number;
   sunset: number;
+  longFlight: number;
   flagFlight: number;
   expensesApproved: boolean;
   varianceApproved: boolean;
@@ -179,7 +186,7 @@ export type ReconcileInput = {
    * ngay lúc bán, con số gõ lại vào báo cáo chỉ là bản chép tay — có sổ thì
    * phía quầy lấy theo sổ, khỏi so hai bản chép của cùng một người.
    */
-  bookServices?: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number };
+  bookServices?: { flycam: number; video360: number; redFlag: number; sunset: number; longFlight?: number; flagFlight: number };
   /** Điểm bay — Hà Nội không xuất vé nên vài phép soát theo mã được tắt. */
   spot?: string;
   /**
@@ -237,6 +244,7 @@ export type ReconcileTotals = {
   dispatcher360: number;
   dispatcherRedFlag: number;
   dispatcherSunset: number;
+  dispatcherLongFlight: number;
   dispatcherFlagFlight: number;
   dispatcherCash: number;
   dispatcherTransfer: number;
@@ -249,6 +257,7 @@ export type ReconcileTotals = {
   pilot360: number;
   pilotRedFlag: number;
   pilotSunset: number;
+  pilotLongFlight: number;
   pilotFlagFlight: number;
   pilotDiplomatic: number;
   cameramanFlycam: number;
@@ -791,6 +800,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     dispatcher360: input.bookServices ? input.bookServices.video360 : sum(dispatchers, (d) => d.video360),
     dispatcherRedFlag: input.bookServices ? input.bookServices.redFlag : sum(dispatchers, (d) => d.redFlag),
     dispatcherSunset: input.bookServices ? input.bookServices.sunset : sum(dispatchers, (d) => d.sunset),
+    dispatcherLongFlight: input.bookServices ? (input.bookServices.longFlight ?? 0) : sum(dispatchers, (d) => d.longFlight ?? 0),
     dispatcherFlagFlight: input.bookServices ? input.bookServices.flagFlight : sum(dispatchers, (d) => d.flagFlight),
     dispatcherCash: sum(dispatchers, (d) => d.cashReceived),
     dispatcherTransfer: sum(dispatchers, (d) => d.transferReceived),
@@ -802,6 +812,7 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     pilot360: sum(pilots, (p) => p.video360),
     pilotRedFlag: sum(pilots, (p) => p.redFlag),
     pilotSunset: sum(pilots, (p) => p.sunset),
+    pilotLongFlight: sum(pilots, (p) => p.longFlight),
     pilotFlagFlight: sum(pilots, (p) => p.flagFlight),
     pilotDiplomatic: sum(pilots, (p) => p.diplomaticGuests),
     cameramanFlycam: sum(cameramen, (c) => c.flycamFlights),
@@ -922,11 +933,19 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
     },
     {
       code: "LECH_HOANG_HON",
-      label: "Bay hoàng hôn/săn mây",
+      label: "H.hôn / S.mây / B.minh",
       pilotTotal: totals.pilotSunset,
       dispatcherTotal: totals.dispatcherSunset,
       pilotCodes: pilots.flatMap((p) => p.sunsetCodes),
       dispatcherCodes: dispatchers.flatMap((d) => d.sunsetCodes),
+    },
+    {
+      code: "LECH_BAY_LAU",
+      label: "Bay lâu",
+      pilotTotal: totals.pilotLongFlight,
+      dispatcherTotal: totals.dispatcherLongFlight,
+      pilotCodes: pilots.flatMap((p) => p.longFlightCodes ?? []),
+      dispatcherCodes: dispatchers.flatMap((d) => d.longFlightCodes ?? []),
     },
     {
       code: "LECH_KEO_CO",
@@ -1122,12 +1141,22 @@ export function reconcileDay(input: ReconcileInput): ReconcileResult {
       });
     }
 
-    // Bay hoàng hôn/săn mây cùng khuôn: nguồn chuẩn là phi công, lệch thì duyệt được
+    // H.hôn / S.mây / B.minh cùng khuôn: nguồn chuẩn là phi công, lệch thì duyệt được
     if ((close.sunset ?? 0) !== totals.pilotSunset && pilots.length) {
       flag({
         code: "LECH_HOANG_HON",
         severity: "warn",
-        message: `Bay hoàng hôn/săn mây: kế toán khai ${close.sunset}, phi công báo ${totals.pilotSunset}`,
+        message: `H.hôn / S.mây / B.minh: kế toán khai ${close.sunset}, phi công báo ${totals.pilotSunset}`,
+        who: [],
+      });
+    }
+
+    // Bay lâu (chủ 02/10) cùng khuôn với hoàng hôn: nguồn chuẩn là phi công
+    if ((close.longFlight ?? 0) !== totals.pilotLongFlight && pilots.length) {
+      flag({
+        code: "LECH_BAY_LAU",
+        severity: "warn",
+        message: `Bay lâu: kế toán khai ${close.longFlight ?? 0}, phi công báo ${totals.pilotLongFlight}`,
         who: [],
       });
     }

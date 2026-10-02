@@ -69,6 +69,9 @@ const KINDS = {
     'Phạt nộp muộn': 'latePenalty',
     'Huỷ phạt': 'penaltyWaived',
     'Cập nhật lúc': 'updatedAt',
+    // Chủ 02/10/2026: bay lâu là dịch vụ riêng — thêm ở CUỐI để không xô cột cũ
+    'Bay lâu': 'longFlight',
+    'Mã vé bay lâu': 'longFlightCodes',
   },
   dispatcher: {
     'Khoá': 'key',
@@ -108,6 +111,8 @@ const KINDS = {
     'Trạng thái ngày': 'dayStatus',
     'Ghi chú': 'note',
     'Cập nhật lúc': 'updatedAt',
+    // Chủ 02/10/2026: bay lâu là dịch vụ riêng — thêm ở CUỐI để không xô cột cũ
+    'Bay lâu': 'longFlight',
   },
   close: {
     'Khoá': 'key',
@@ -140,6 +145,8 @@ const KINDS = {
     'Người chốt': 'closedBy',
     'Ghi chú': 'note',
     'Cập nhật lúc': 'updatedAt',
+    // Chủ 02/10/2026: bay lâu là dịch vụ riêng — thêm ở CUỐI để không xô cột cũ
+    'Bay lâu': 'longFlight',
   },
   cameraman: {
     'Khoá': 'key',
@@ -217,6 +224,8 @@ const KINDS = {
     'Chiết khấu đại lý': 'commission',
     'Ghi chú': 'note',
     'Cập nhật lúc': 'updatedAt',
+    // Chủ 02/10/2026: bay lâu là dịch vụ riêng — thêm ở CUỐI để không xô cột cũ
+    'Bay lâu': 'longFlight',
   },
   collect: {
     'Khoá': 'key',
@@ -289,6 +298,8 @@ const KINDS = {
     'Kế toán': 'accountantName',
     'Chốt lúc': 'closedAt',
     'Cập nhật lúc': 'updatedAt',
+    // Chủ 02/10/2026: bay lâu là dịch vụ riêng — thêm ở CUỐI để không xô cột cũ
+    'Bay lâu': 'longFlight',
   },
   advance: {
     'Khoá': 'key',
@@ -324,7 +335,7 @@ function json(obj) {
 function doGet() {
   return json({
     ok: true,
-    version: 'baobay-multispot-v30',
+    version: 'baobay-multispot-v31',
     kinds: Object.keys(KINDS),
     sheets: SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function (s) { return s.getName(); }),
   });

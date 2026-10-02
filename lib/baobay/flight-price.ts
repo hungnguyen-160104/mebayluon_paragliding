@@ -83,10 +83,50 @@ export const SERVICE_PRICE = {
   video360: 400_000,
   redFlag: 100_000,
   flagFlight: 100_000,
+  /**
+   * GỘP MỘT DỊCH VỤ: bay hoàng hôn / săn mây / bình minh (chủ 02/10/2026) —
+   * khoá và trường DB vẫn là `sunset` để sổ cũ đọc nguyên, chỉ đổi nhãn.
+   */
   sunset: 700_000,
+  /**
+   * BAY LÂU 20–25 phút tuỳ điều kiện (chủ 02/10/2026), dịch vụ RIÊNG. Khách đã
+   * mua H.hôn / S.mây / B.minh thì bay lâu MIỄN PHÍ — xem `longFlightCharged`.
+   */
+  longFlight: 700_000,
 } as const;
 
 export type ServiceKey = keyof typeof SERVICE_PRICE;
+
+/** Nhãn đầy đủ của dịch vụ gộp (khoá `sunset`) — một chỗ để mọi màn hình dùng chung. */
+export const SUNSET_LABEL = "H.hôn / S.mây / B.minh";
+/** Nhãn dịch vụ bay lâu (khoá `longFlight`). */
+export const LONG_FLIGHT_LABEL = "Bay lâu";
+
+/**
+ * SỐ SUẤT BAY LÂU ĐƯỢC MIỄN PHÍ (chủ 02/10/2026): mỗi khách có H.hôn / S.mây /
+ * B.minh thì suất bay lâu của khách ấy là 0đ. Booking chỉ khai SỐ chứ không chỉ
+ * đích danh ai, nên coi như người mua bay lâu ưu tiên trùng người mua hoàng hôn:
+ * miễn = min(bay lâu, hoàng hôn). Web booking áp đúng quy tắc này nên tổng tiền
+ * hai bên không lệch.
+ */
+export function longFlightFree(longFlight?: number, sunset?: number): number {
+  return Math.max(0, Math.min(Number(longFlight) || 0, Number(sunset) || 0));
+}
+
+/** Số suất bay lâu PHẢI THU tiền = max(0, bay lâu − hoàng hôn). Mọi chỗ tính doanh thu bay lâu dùng số này. */
+export function longFlightCharged(longFlight?: number, sunset?: number): number {
+  return Math.max(0, (Number(longFlight) || 0) - longFlightFree(longFlight, sunset));
+}
+
+/**
+ * Số suất dịch vụ ĐƯỢC TÍNH TIỀN — để các bảng tính doanh thu từng dịch vụ
+ * (số × đơn giá) ra cùng con số với `servicesAmount`. Chỉ bay lâu khác số
+ * bán, các dịch vụ còn lại trả nguyên.
+ */
+export function serviceChargedCount(key: ServiceKey, s: { longFlight?: number; sunset?: number } & Partial<Record<ServiceKey, number>>): number {
+  if (key === "longFlight") return longFlightCharged(s.longFlight, s.sunset);
+  return Number(s[key]) || 0;
+}
 
 /**
  * GIÁ RIÊNG THEO ĐIỂM BAY, NEO VÀO LÚC LẬP BOOKING.
@@ -173,7 +213,8 @@ export const SERVICE_PRICE_LABEL: Array<{ key: ServiceKey; label: string }> = [
   { key: "video360", label: "Camera 360" },
   { key: "redFlag", label: "Dù cờ đỏ" },
   { key: "flagFlight", label: "Bay kéo cờ đỏ/cờ sinh nhật" },
-  { key: "sunset", label: "Bay hoàng hôn/săn mây" },
+  { key: "sunset", label: SUNSET_LABEL },
+  { key: "longFlight", label: "Bay lâu (20–25 phút, tuỳ điều kiện)" },
 ];
 
 /* ================================================================== */
@@ -274,6 +315,7 @@ export function servicesAmount(s: {
   redFlag?: number;
   flagFlight?: number;
   sunset?: number;
+  longFlight?: number;
   /** Điểm bay + LÚC LẬP BOOKING — để lấy đúng bảng giá riêng (xem servicePriceOf). */
   spot?: string;
   createdAt?: string | Date | null;
@@ -284,7 +326,9 @@ export function servicesAmount(s: {
     (s.video360 || 0) * price.video360 +
     (s.redFlag || 0) * price.redFlag +
     (s.flagFlight || 0) * price.flagFlight +
-    (s.sunset || 0) * price.sunset
+    (s.sunset || 0) * price.sunset +
+    // Bay lâu: chỉ tính phần vượt số suất hoàng hôn (miễn phí kèm H.hôn/S.mây/B.minh — chủ 02/10)
+    longFlightCharged(s.longFlight, s.sunset) * price.longFlight
   );
 }
 
@@ -329,6 +373,8 @@ export type BookingMoneyInput = {
   redFlag?: number;
   flagFlight?: number;
   sunset?: number;
+  /** Bay lâu — miễn phí cho số suất trùng với `sunset` (xem longFlightCharged). */
+  longFlight?: number;
   pickupFee?: number;
   discount?: number;
   /** Tiền giảm combo đã CHỐT TAY — không khai thì máy tự tính min(flycam,360)×100k. */

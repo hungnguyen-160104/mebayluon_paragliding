@@ -754,8 +754,10 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn
-☁️ Bay dù lượn gắn động cơ săn mây
+🌅 Bay bình minh (06:00–07:00) / bay hoàng hôn (16:00–17:00) ngày nắng: +700.000đ/khách — dù lượn bay 9–15 phút, dù lượn gắn động cơ bay 20–25 phút
+☁️ Bay săn mây cao khoảng 2.000m (chỉ dù lượn gắn động cơ, 20–25 phút): +700.000đ/khách
+⏱️ Bay lâu 20–25 phút (tuỳ điều kiện): +700.000đ/khách, miễn phí khi đã chọn bình minh, hoàng hôn hoặc săn mây; dù lượn đa số chỉ bay lâu được vào khung giờ trưa
+↩️ Không thực hiện được chuyến bay đặc biệt (bình minh không có nắng, mây che hoàng hôn, gió yếu không bay lâu được) thì hoàn phụ phí sau chuyến bay, chuyến bay trở thành chuyến bay cơ bản
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
@@ -794,8 +796,10 @@ Golden harvest season (August–September): terraces dyed in brilliant gold, enc
 📸 OPTIONAL SERVICES:
 🚁 Flycam/Drone footage and 360° camera recording
 🚐 Round-trip hotel transfers
-🌅 Sunset flight
-☁️ Paramotor cloud-hunting flight
+🌅 Sunrise (06:00–07:00) / sunset (16:00–17:00) flight on sunny days: +700,000 VND/guest — paragliding 9–15 minutes, paramotor 20–25 minutes
+☁️ Cloud-hunting flight up to around 2,000 m (paramotor only, 20–25 minutes): +700,000 VND/guest
+⏱️ Long flight, 20–25 minutes (conditions permitting): +700,000 VND/guest, free when you also choose sunrise, sunset or cloud hunting; paragliders can usually only fly long around midday
+↩️ If the special flight cannot be done (no sun at sunrise, sunset lost to cloud, wind too weak for a long flight), the surcharge is refunded after the flight, which becomes a standard flight
 
 📌 ADDITIONAL INFO:
 🎥 Free GoPro flight photos & video
@@ -834,8 +838,10 @@ Saison dorée (août–septembre) : les terrasses se parent d’or éclatant, d�
 📸 SERVICES OPTIONNELS :
 🚁 Prise de vue Flycam/Drone et enregistrement caméra 360°
 🚐 Transferts aller-retour depuis l’hôtel
-🌅 Vol au coucher du soleil
-☁️ Vol en paramoteur au-dessus des nuages
+🌅 Vol au lever (6 h–7 h) / au coucher du soleil (16 h–17 h) les jours de soleil : +700 000 VND/pers. — parapente 9 à 15 minutes, paramoteur 20 à 25 minutes
+☁️ Vol sur mer de nuages jusqu’à environ 2 000 m (paramoteur uniquement, 20 à 25 minutes) : +700 000 VND/pers.
+⏱️ Vol long de 20 à 25 minutes (selon les conditions) : +700 000 VND/pers., offert si vous choisissez aussi le lever, le coucher du soleil ou la mer de nuages ; en parapente, le vol long n’est généralement possible qu’en milieu de journée
+↩️ Si le vol spécial ne peut pas avoir lieu (pas de soleil au lever, coucher masqué par les nuages, vent trop faible pour un vol long), le supplément est remboursé après le vol, qui devient un vol standard
 
 📌 INFOS SUPPLÉMENTAIRES :
 🎥 Photos & vidéo GoPro du vol offertes
@@ -874,8 +880,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
 🚁 Съёмка с дрона/Flycam и запись на камеру 360°
 🚐 Трансфер от отеля и обратно
-🌅 Полёт на закате
-☁️ Полёт на парамоторе за облаками
+🌅 Полёт на рассвете (06:00–07:00) / на закате (16:00–17:00) в солнечные дни: +700 000 VND/чел. — параплан 9–15 минут, парамотор 20–25 минут
+☁️ Полёт над облаками примерно до 2 000 м (только парамотор, 20–25 минут): +700 000 VND/чел.
+⏱️ Долгий полёт 20–25 минут (если позволяют условия): +700 000 VND/чел., бесплатно при выборе рассвета, заката или полёта над облаками; на параплане долгий полёт обычно возможен только около полудня
+↩️ Если особый полёт не удался (на рассвете нет солнца, закат скрыт облаками, ветер слишком слабый для долгого полёта), доплата возвращается после полёта, а полёт считается обычным
 
 📌 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ:
 🎥 Фото и видео полёта с GoPro бесплатно
@@ -914,8 +922,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 可选服务：
 🚁 航拍/无人机拍摄和 360° 摄像
 🚐 酒店往返接送
-🌅 日落飞行
-☁️ 动力伞追云飞行
+🌅 晴天日出飞行（06:00–07:00）/ 日落飞行（16:00–17:00）：每人加收 700,000 越南盾——无动力滑翔伞飞 9–15 分钟，动力伞飞 20–25 分钟
+☁️ 动力伞追云飞行，爬升至约 2,000 米（仅限动力伞，20–25 分钟）：每人加收 700,000 越南盾
+⏱️ 长时飞行 20–25 分钟（视条件而定）：每人加收 700,000 越南盾，同时选择日出、日落或追云飞行则免费；无动力滑翔伞通常只能在中午时段长时飞行
+↩️ 如特色飞行无法实现（日出时无阳光、日落被云遮挡、风力太弱无法长时飞行），附加费将在飞行结束后退还，该次飞行按普通飞行计算
 
 📌 更多信息：
 🎥 免费赠送 GoPro 飞行照片与视频
@@ -954,8 +964,10 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 📸 वैकल्पिक सेवाएं:
 🚁 फ्लाईकैम/ड्रोन फुटेज और 360° कैमरा रिकॉर्डिंग
 🚐 होटल से दोनों तरफ़ की गाड़ी
-🌅 सूर्यास्त उड़ान
-☁️ पैरामोटर बादल-उड़ान
+🌅 धूप वाले दिनों में सूर्योदय (06:00–07:00) / सूर्यास्त (16:00–17:00) उड़ान: +700,000 VND/व्यक्ति — पैराग्लाइडिंग 9–15 मिनट, पैरामोटर 20–25 मिनट
+☁️ लगभग 2,000 मीटर तक बादलों के ऊपर उड़ान (केवल पैरामोटर, 20–25 मिनट): +700,000 VND/व्यक्ति
+⏱️ लंबी उड़ान 20–25 मिनट (परिस्थिति अनुसार): +700,000 VND/व्यक्ति, सूर्योदय, सूर्यास्त या बादल उड़ान के साथ चुनने पर मुफ़्त; पैराग्लाइडिंग में लंबी उड़ान आमतौर पर केवल दोपहर के समय संभव होती है
+↩️ अगर विशेष उड़ान संभव न हो (सूर्योदय पर धूप न हो, सूर्यास्त बादलों में छिप जाए, लंबी उड़ान के लिए हवा कमज़ोर हो), तो अतिरिक्त शुल्क उड़ान के बाद लौटा दिया जाता है और उड़ान सामान्य उड़ान मानी जाती है
 
 📌 अतिरिक्त जानकारी:
 🎥 GoPro से फ़्लाइट के फ़ोटो/वीडियो मुफ़्त

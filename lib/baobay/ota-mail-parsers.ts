@@ -842,5 +842,20 @@ export function extrasOf(b: OtaBookingMail): string[] {
     const n = countOf(/360/);
     out.push(`360${n ? ` ×${n}` : ""}`);
   }
+  /**
+   * Bay đặc biệt (chủ 02/10/2026): hoàng hôn / bình minh / săn mây là MỘT dịch
+   * vụ trong app (ô `sunset`), bay lâu là dịch vụ riêng. Cũng chỉ GHI CHÚ như
+   * flycam/360 — khớp chữ trên tên gói OTA dễ sai, điền thẳng ô đếm là lệch tiền.
+   */
+  const DAC_BIET = /(sunset|sunrise|cloud[\s-]*hunt|sea of clouds|hoàng hôn|hoang hon|bình minh|binh minh|săn mây|san may)/i;
+  if (DAC_BIET.test(hay)) {
+    const n = countOf(DAC_BIET);
+    out.push(`H.hôn/S.mây/B.minh${n ? ` ×${n}` : ""}`);
+  }
+  const BAY_LAU = /(long(?:er)?[\s-]*flight|extended[\s-]*flight|bay lâu|bay lau)/i;
+  if (BAY_LAU.test(hay)) {
+    const n = countOf(BAY_LAU);
+    out.push(`bay lâu${n ? ` ×${n}` : ""}`);
+  }
   return out;
 }

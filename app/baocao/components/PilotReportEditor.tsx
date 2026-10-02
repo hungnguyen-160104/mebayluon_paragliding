@@ -167,6 +167,8 @@ function blankPilotReport(username: string, pilotName: string, date: string): Pi
     redFlagCodes: [],
     sunset: 0,
     sunsetCodes: [],
+    longFlight: 0,
+    longFlightCodes: [],
     flagFlight: 0,
     flagFlightCodes: [],
     diplomaticGuests: 0,
@@ -251,7 +253,9 @@ function PilotRow({
       { label: "360", value: form.video360 },
       { label: "flycam", value: form.flycam },
       { label: "cờ đỏ", value: form.redFlag },
-      ...(spot !== "sapa" ? [{ label: "hoàng hôn", value: form.sunset }] : []),
+      ...(spot !== "sapa" ? [{ label: "H.hôn / S.mây / B.minh", value: form.sunset }] : []),
+      // Bay lâu tách riêng từ chủ 02/10 — cùng điều kiện hiện với hoàng hôn.
+      ...(spot !== "sapa" ? [{ label: "bay lâu", value: form.longFlight }] : []),
       { label: "kéo cờ", value: form.flagFlight },
       { label: "ngoại giao", value: form.diplomaticGuests },
     ];
@@ -492,8 +496,12 @@ function PilotRow({
             <ServiceBox tone="redFlag" label="Dù cờ đỏ">
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={300} />
             </ServiceBox>
-            <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
+            <ServiceBox tone="sunset" label="H.hôn / S.mây / B.minh">
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={300} />
+            </ServiceBox>
+            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — dùng chung màu sunset */}
+            <ServiceBox tone="longFlight" label="Bay lâu">
+              <CountInput compact value={form.longFlight} onChange={(v) => set("longFlight", v)} max={300} />
             </ServiceBox>
             <ServiceBox tone="flagFlight" label="Bay kéo cờ đỏ/cờ sinh nhật">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={300} />
@@ -509,10 +517,18 @@ function PilotRow({
                 spellCheck={false}
               />
             </ServiceBox>
-            <ServiceBox tone="sunset" label="Mã vé hoàng hôn/săn mây">
+            <ServiceBox tone="sunset" label="Mã vé H.hôn / S.mây / B.minh">
               <TextInput
                 value={form.sunsetCodesText}
                 onChange={(e) => set("sunsetCodesText", e.target.value.toUpperCase())}
+                autoCapitalize="characters"
+                spellCheck={false}
+              />
+            </ServiceBox>
+            <ServiceBox tone="longFlight" label="Mã vé bay lâu">
+              <TextInput
+                value={form.longFlightCodesText}
+                onChange={(e) => set("longFlightCodesText", e.target.value.toUpperCase())}
                 autoCapitalize="characters"
                 spellCheck={false}
               />
@@ -668,7 +684,8 @@ function PilotSummaryLine({ report: r }: { report: PilotReportDTO }) {
   if (r.flycam) add(`${r.flycam}×flycam`, "flycam");
   if (r.video360) add(`${r.video360}×360`, "v360");
   if (r.redFlag) add(`${r.redFlag}×cờ đỏ`, "red");
-  if (r.sunset) add(`${r.sunset}×hoàng hôn/săn mây`, "sunset");
+  if (r.sunset) add(`${r.sunset}×H.hôn/S.mây/B.minh`, "sunset");
+  if (r.longFlight) add(`${r.longFlight}×bay lâu`, "longFlight");
   if (r.flagFlight) add(`${r.flagFlight}×kéo cờ`, "flag");
   if (r.diplomaticGuests) add(`${r.diplomaticGuests} ngoại giao`, "diplo");
   // Nhóm khách huỷ/dời phi công báo — kế toán lướt là thấy, chi tiết xem báo cáo điều phối
@@ -741,6 +758,9 @@ function toForm(r: PilotReportDTO) {
     redFlagCodesText: r.redFlagCodes.join(", "),
     sunset: r.sunset,
     sunsetCodesText: r.sunsetCodes.join(", "),
+    // Báo cáo lưu trước 02/10 chưa có trường bay lâu → gửi 0, máy chủ kiểm đủ trường.
+    longFlight: r.longFlight ?? 0,
+    longFlightCodesText: (r.longFlightCodes ?? []).join(", "),
     flagFlight: r.flagFlight,
     flagFlightCodesText: r.flagFlightCodes.join(", "),
     diplomaticGuests: r.diplomaticGuests,

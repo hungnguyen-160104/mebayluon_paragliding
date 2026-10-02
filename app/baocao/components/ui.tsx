@@ -150,6 +150,8 @@ export const SERVICE_TONE = {
   video360: { box: "border-violet-200 bg-violet-50/70", label: "text-violet-800" },
   redFlag: { box: "border-rose-200 bg-rose-50/70", label: "text-rose-800" },
   sunset: { box: "border-orange-200 bg-orange-50/70", label: "text-orange-800" },
+  /** Bay lâu (chủ 02/10) — xanh ngọc, khác hẳn ô H.hôn/S.mây/B.minh cam ngay bên cạnh. */
+  longFlight: { box: "border-teal-200 bg-teal-50/70", label: "text-teal-800" },
   flagFlight: { box: "border-amber-200 bg-amber-50/70", label: "text-amber-800" },
   /* Năm ô đếm ở "Số tổng trong ngày" — trước đây trắng giống nhau nên rất dễ
      gõ nhầm ô. Mỗi ô một màu riêng, khác hẳn bộ màu dịch vụ phía dưới. */

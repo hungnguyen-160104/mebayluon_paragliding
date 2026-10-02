@@ -188,8 +188,10 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay săn hoàng hôn
-☁️ Bay dù lượn gắn động cơ săn mây
+🌅 Bay bình minh (06:00–07:00) / bay hoàng hôn (16:00–17:00) ngày nắng: +700.000đ/khách — dù lượn bay 9–15 phút, dù lượn gắn động cơ bay 20–25 phút
+☁️ Bay săn mây cao khoảng 2.000m (chỉ dù lượn gắn động cơ, 20–25 phút): +700.000đ/khách
+⏱️ Bay lâu 20–25 phút (tuỳ điều kiện): +700.000đ/khách, miễn phí khi đã chọn bình minh, hoàng hôn hoặc săn mây; dù lượn đa số chỉ bay lâu được vào khung giờ trưa
+↩️ Không thực hiện được chuyến bay đặc biệt (bình minh không có nắng, mây che hoàng hôn, gió yếu không bay lâu được) thì hoàn phụ phí sau chuyến bay, chuyến bay trở thành chuyến bay cơ bản
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro

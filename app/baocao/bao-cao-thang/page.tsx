@@ -32,6 +32,7 @@ type MetricKey = keyof Pick<
   | "video360"
   | "redFlag"
   | "sunset"
+  | "longFlight"
   | "flagFlight"
   | "siteFeeGuests"
   | "pickupBigC"
@@ -53,7 +54,9 @@ const BASE_METRICS: Array<{ key: MetricKey; label: string; money?: boolean }> = 
   { key: "flights", label: "PG" },
   { key: "video360", label: "360" },
   { key: "redFlag", label: "Cờ" },
-  { key: "sunset", label: "Hoàng hôn/săn mây" },
+  { key: "sunset", label: "H.hôn / S.mây / B.minh" },
+  // Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — phi công được tính công như một suất riêng.
+  { key: "longFlight", label: "Bay lâu" },
   { key: "flagFlight", label: "Kéo cờ" },
 ];
 
@@ -161,7 +164,7 @@ export default function MonthlyReportPage() {
           <Card title={`Tổng cả đội tháng ${month}`}>
             {/**
              * ĐỦ MỌI MỤC (chủ 12/09): PG, PPG, flycam, 360, cờ đỏ, kéo cờ/bánh,
-             * hoàng hôn, khách huỷ. Phí bãi / nước / xe cho khách CHỈ Hà Nội —
+             * H.hôn / S.mây / B.minh, bay lâu, khách huỷ. Phí bãi / nước / xe cho khách CHỈ Hà Nội —
              * Khau Phạ và Sa Pa không có, bày ra chỉ toàn số 0.
              */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -177,7 +180,8 @@ export default function MonthlyReportPage() {
               <Stat label="Camera 360 cả tháng" value={String(data.grandMonth.video360)} />
               <Stat label="Dù cờ đỏ cả tháng" value={String(data.grandMonth.redFlag)} />
               <Stat label="Kéo cờ/bánh cả tháng" value={String(data.grandMonth.flagFlight)} />
-              {data.spot !== "sapa" && <Stat label="Hoàng hôn/săn mây cả tháng" value={String(data.grandMonth.sunset)} />}
+              {data.spot !== "sapa" && <Stat label="H.hôn / S.mây / B.minh cả tháng" value={String(data.grandMonth.sunset)} />}
+              {data.spot !== "sapa" && <Stat label="Bay lâu cả tháng" value={String(data.grandMonth.longFlight ?? 0)} />}
               <Stat label="Khách ngoại giao" value={String(data.grandMonth.diplomaticGuests)} />
               <Stat label="Khách huỷ đến hôm nay (sổ booking)" value={String(data.cancelledGuests?.toDate ?? 0)} />
               <Stat label="Khách huỷ cả tháng (sổ booking)" value={String(data.cancelledGuests?.month ?? 0)} strong />

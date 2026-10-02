@@ -21,6 +21,15 @@ import {
   imageComboDiscountUSD,
   imageComboLabel,
 } from "@/lib/booking/image-combo";
+import {
+  KP_DAC_BIET_VND,
+  LONG_FLIGHT_FREE_KEY,
+  isKhauPhaSpecialKey,
+  kpRefundNote,
+  longFlightFreeLabel,
+  longFlightFreeUSD,
+  longFlightFreeVND,
+} from "@/lib/booking/khau-pha-dac-biet";
 
 type LangUI = "vi" | "en" | "fr" | "ru" | "hi" | "zh";
 type CurrencyCode = "VND" | "USD";
@@ -855,6 +864,22 @@ export default function ReviewConfirmStep() {
   const imageComboOffVND = imageComboDiscountVND(comboServiceStates);
   const imageComboOffUSD = imageComboDiscountUSD(comboServiceStates);
 
+  /**
+   * Bay lâu MIỄN PHÍ khi kèm bình minh / hoàng hôn / săn mây (Khau Phạ, chủ
+   * 02/10/2026) — cùng quy tắc với bước chọn dịch vụ
+   * (lib/booking/khau-pha-dac-biet.ts). Gộp với combo ảnh thành "khoản giảm
+   * dịch vụ" để mọi tổng bên dưới trừ một lần.
+   */
+  const longFreeOffVND = longFlightFreeVND(comboServiceStates);
+  const longFreeOffUSD = longFlightFreeUSD(comboServiceStates);
+  const longFreeLabel = longFlightFreeLabel(lang, comboServiceStates);
+  const serviceOffVND = imageComboOffVND + longFreeOffVND;
+  const serviceOffUSD = imageComboOffUSD + longFreeOffUSD;
+  /** Khách chọn bay đặc biệt / bay lâu → hiện luật hoàn phụ phí. */
+  const hasSpecialFlight = comboServiceStates.some(
+    (st) => st.selected && isKhauPhaSpecialKey(st.key),
+  );
+
   const billVND = useMemo(
     () =>
       computePriceByLang(
@@ -1277,17 +1302,26 @@ export default function ReviewConfirmStep() {
       });
     }
 
+    if (longFreeOffVND > 0) {
+      lines.push({
+        label: longFreeLabel,
+        detail: `-${formatMoneyVND(KP_DAC_BIET_VND)} × ${longFreeOffVND / KP_DAC_BIET_VND}`,
+        amountText: `-${formatMoneyVND(longFreeOffVND)}`,
+        type: "discount",
+      });
+    }
+
     const grandTotalVND = Math.max(
       0,
       Number(billVND.totalAfterDiscount || 0) +
         selectedServicesTotalVND -
-        imageComboOffVND,
+        serviceOffVND,
     );
     const grandTotalUSD = Math.max(
       0,
       Number(billUSD.totalAfterDiscount || 0) +
         selectedServicesTotalUSD -
-        imageComboOffUSD,
+        serviceOffUSD,
     );
 
     return {
@@ -1312,6 +1346,61 @@ export default function ReviewConfirmStep() {
     selectedServicesTotalUSD,
     imageComboOffVND,
     imageComboOffUSD,
+    longFreeOffVND,
+    longFreeLabel,
+    serviceOffVND,
+    serviceOffUSD,
+  ]);
+
+  /**
+   * Gói tiền gửi lên máy chủ — dựng MỘT lần, dùng cho cả payload lẫn tấm vé
+   * ẩn (ảnh đính kèm email). Trước đây vé ẩn không có bảng dịch vụ nên tự
+   * cộng lại mà quên các khoản giảm (combo ảnh, bay lâu miễn phí).
+   */
+  const priceBreakdown = useMemo(() => {
+    const extra: ServiceBreakdownRow[] = [];
+    if (imageComboOffVND) {
+      extra.push({
+        key: "image_combo_discount",
+        label: imageComboLabel(lang),
+        lineTotal: -imageComboOffVND,
+      });
+    }
+    if (longFreeOffVND) {
+      extra.push({
+        key: LONG_FLIGHT_FREE_KEY,
+        label: longFreeLabel,
+        lineTotal: -longFreeOffVND,
+      });
+    }
+    return {
+      servicesBreakdown: [...selectedServicesBreakdown, ...extra],
+      servicesTotal: selectedServicesTotalVND - serviceOffVND,
+      total: Math.max(
+        0,
+        Number(billVND.totalAfterDiscount || 0) +
+          selectedServicesTotalVND -
+          serviceOffVND,
+      ),
+      usdTotal: Math.max(
+        0,
+        Number(billUSD.totalAfterDiscount || 0) +
+          selectedServicesTotalUSD -
+          serviceOffUSD,
+      ),
+    };
+  }, [
+    imageComboOffVND,
+    longFreeOffVND,
+    longFreeLabel,
+    lang,
+    selectedServicesBreakdown,
+    selectedServicesTotalVND,
+    selectedServicesTotalUSD,
+    serviceOffVND,
+    serviceOffUSD,
+    billVND.totalAfterDiscount,
+    billUSD.totalAfterDiscount,
   ]);
 
   const handleConfirm = async () => {
@@ -1386,29 +1475,10 @@ export default function ReviewConfirmStep() {
           addonsQty: (billVND as any).addonsQty,
           addonsUnitPrice: (billVND as any).addonsUnitPrice,
           addonsTotal: (billVND as any).addonsTotal,
-          servicesBreakdown: imageComboOffVND
-            ? [
-                ...selectedServicesBreakdown,
-                {
-                  key: "image_combo_discount",
-                  label: imageComboLabel(lang),
-                  lineTotal: -imageComboOffVND,
-                },
-              ]
-            : selectedServicesBreakdown,
-          servicesTotal: selectedServicesTotalVND - imageComboOffVND,
-          total: Math.max(
-            0,
-            Number(billVND.totalAfterDiscount || 0) +
-              selectedServicesTotalVND -
-              imageComboOffVND,
-          ),
-          usdTotal: Math.max(
-            0,
-            Number(billUSD.totalAfterDiscount || 0) +
-              selectedServicesTotalUSD -
-              imageComboOffUSD,
-          ),
+          servicesBreakdown: priceBreakdown.servicesBreakdown,
+          servicesTotal: priceBreakdown.servicesTotal,
+          total: priceBreakdown.total,
+          usdTotal: priceBreakdown.usdTotal,
           usdPerPerson: billUSD.totalPerPerson,
         },
 
@@ -1829,6 +1899,13 @@ export default function ReviewConfirmStep() {
                     {lang === "vi" ? PRICE_TAX_NOTE.vi : PRICE_TAX_NOTE.en}
                   </p>
                 ) : null}
+
+                {/* Luật hoàn phụ phí bay đặc biệt (Khau Phạ, chủ 02/10/2026). */}
+                {hasSpecialFlight ? (
+                  <p className="rounded-lg border border-[#F5C26B] bg-[#FFF8EB] px-2.5 py-2 text-xs leading-5 text-[#7A4B00]">
+                    {kpRefundNote(lang)}
+                  </p>
+                ) : null}
               </div>
             </section>
           </div>
@@ -1938,7 +2015,10 @@ export default function ReviewConfirmStep() {
             booking={data as any}
             totals={billVND}
             lang={lang as any}
-            bookingResult={{ bookingCode: previewBookingCode }}
+            bookingResult={{
+              bookingCode: previewBookingCode,
+              price: priceBreakdown,
+            }}
           />
         </div>
       </div>

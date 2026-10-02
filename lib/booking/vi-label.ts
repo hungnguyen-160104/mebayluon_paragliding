@@ -31,6 +31,8 @@ export function viFromConfig(location?: string, key?: string): string {
 /** Nhãn tiếng Việt cho những khoản không nằm trong cấu hình điểm bay. */
 const EXTRA_VI_LABEL: Record<string, string> = {
   image_combo_discount: "Giảm combo ảnh",
+  /** Bay lâu miễn phí kèm bình minh/hoàng hôn/săn mây — lib/booking/khau-pha-dac-biet.ts */
+  long_flight_free: "Bay lâu miễn phí (kèm H.hôn / S.mây / B.minh)",
   pickup: "Dịch vụ đón trả",
   flycam: "Flycam",
   camera360: "Camera 360",

@@ -29,6 +29,7 @@ export type BookingSnapshot = {
   video360?: number;
   redFlag?: number;
   sunset?: number;
+  longFlight?: number;
   flagFlight?: number;
   mountainCar?: number;
   pickup?: string;
@@ -54,7 +55,9 @@ export const SERVICE_LABEL: Record<string, { vi: string; en: string }> = {
   flycam: { vi: "Quay flycam", en: "Drone video" },
   video360: { vi: "Camera 360", en: "360° camera" },
   redFlag: { vi: "Dù cờ đỏ sao vàng", en: "Vietnam flag wing" },
-  sunset: { vi: "Bay hoàng hôn", en: "Sunset flight" },
+  // Thư gửi KHÁCH nên viết đủ chữ; một dịch vụ gộp từ 02/10/2026 (chủ chốt)
+  sunset: { vi: "Bay hoàng hôn / săn mây / bình minh", en: "Sunset / cloud-hunting / sunrise flight" },
+  longFlight: { vi: "Bay lâu (20–25 phút)", en: "Long flight (20–25 min)" },
   flagFlight: { vi: "Bay kéo cờ đỏ/cờ sinh nhật", en: "Banner/cake flight" },
   mountainCar: { vi: "Xe lên núi", en: "Mountain transfer" },
 };
@@ -182,7 +185,7 @@ export function buildBookingChangeMail(
   const dongThayDoiEn = changes.map((c) => `• ${c.en}`).join("\n");
 
   /** Bảng hiện trạng — chỉ in dòng có nội dung, tránh một rừng "0". */
-  const dichVu = (["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const)
+  const dichVu = (["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight", "mountainCar"] as const)
     .filter((k) => n((now as Record<string, unknown>)[k]) > 0)
     .map((k) => `${SERVICE_LABEL[k].vi} × ${n((now as Record<string, unknown>)[k])}`)
     .join(", ");
@@ -294,7 +297,7 @@ export function buildBookingConfirmMail(info: BookingMailInfo, now: BookingSnaps
   const vnd = (x: number) => `${Math.round(x).toLocaleString("vi-VN")} đ`;
   const usdish = (x: number) => `${Math.round(x).toLocaleString("en-US")} VND`;
   const conLai = n(now.remaining);
-  const dichVu = (["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const)
+  const dichVu = (["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight", "mountainCar"] as const)
     .filter((k) => n((now as Record<string, unknown>)[k]) > 0)
     .map((k) => `${SERVICE_LABEL[k].vi} × ${n((now as Record<string, unknown>)[k])}`)
     .join(", ");

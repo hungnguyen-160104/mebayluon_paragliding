@@ -10,7 +10,7 @@ import { buildVietQrPayload } from "@/lib/vietqr";
 
 import { PAY_ACCOUNT } from "./PaymentQr";
 import type { BookingDTO } from "@/lib/baobay/types";
-import { FLIGHT_KIND_SHORT, MOUNTAIN_CAR_PRICE, servicesAmount } from "@/lib/baobay/flight-price";
+import { FLIGHT_KIND_SHORT, MOUNTAIN_CAR_PRICE, longFlightFree, servicesAmount } from "@/lib/baobay/flight-price";
 import { DIEM_BAY_VE, laTuDen, pickupVe } from "@/lib/baobay/pickup";
 
 /**
@@ -39,7 +39,10 @@ export type BookingImageData = {
   flycam: number;
   video360: number;
   redFlag: number;
+  /** H.hôn / S.mây / B.minh — một dịch vụ gộp, khoá cũ `sunset` (chủ 02/10). */
   sunset: number;
+  /** Bay lâu 20–25 phút — miễn phí cho số suất trùng `sunset` (chủ 02/10). Tuỳ chọn để phiếu cũ vẫn dựng được. */
+  longFlight?: number;
   flagFlight: number;
   pickupLabel: string;
   /** Nhãn loại hình in trên phiếu: PG · PPG · 650m · 850m. */
@@ -134,12 +137,27 @@ const C = {
   card: "#F8FAFC",
 };
 
+/** Tên đủ chữ của dịch vụ gộp — cho khách đọc. */
+const SUNSET_KHACH = "hoàng hôn / săn mây / bình minh";
+
 function serviceLine(d: BookingImageData): string {
   const parts: string[] = [];
   if (d.flycam) parts.push(`${d.flycam} × flycam`);
   if (d.video360) parts.push(`${d.video360} × camera 360`);
   if (d.redFlag) parts.push(`${d.redFlag} × dù cờ đỏ`);
-  if (d.sunset) parts.push(`${d.sunset} × bay hoàng hôn/săn mây`);
+  // Phiếu này GỬI KHÁCH nên viết đủ chữ, không dùng dạng tắt H.hôn/S.mây/B.minh của nội bộ (chủ 02/10)
+  if (d.sunset) parts.push(`${d.sunset} × bay ${SUNSET_KHACH}`);
+  /**
+   * Bay lâu (chủ 02/10): khách có H.hôn/S.mây/B.minh thì bay lâu miễn phí —
+   * ghi rõ trên phiếu để khách thấy vì sao tiền dịch vụ không cộng thêm.
+   */
+  if (d.longFlight) {
+    const free = longFlightFree(d.longFlight, d.sunset);
+    parts.push(
+      `${d.longFlight} × bay lâu` +
+        (free >= d.longFlight ? ` (miễn phí kèm bay ${SUNSET_KHACH})` : free > 0 ? ` (${free} miễn phí)` : ""),
+    );
+  }
   if (d.flagFlight) parts.push(`${d.flagFlight} × bay kéo cờ/bánh`);
   return parts.join(" · ");
 }
@@ -913,6 +931,7 @@ export function duLieuAnhTuBooking(b: BookingDTO, spot: string): BookingImageDat
     video360: b.video360 || 0,
     redFlag: b.redFlag || 0,
     sunset: b.sunset || 0,
+    longFlight: b.longFlight || 0,
     flagFlight: b.flagFlight || 0,
     pickupLabel,
     flightKindLabel: FLIGHT_KIND_SHORT[b.flightKind] ?? b.flightKind,

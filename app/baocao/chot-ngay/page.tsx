@@ -94,6 +94,8 @@ type CloseSuggestion = {
     video360: number;
     redFlag: number;
     sunset: number;
+    /** Bay lâu (chủ 02/10) — máy chủ cũ chưa trả thì coi như 0. */
+    longFlight?: number;
     flagFlight: number;
     hasData: boolean;
   };
@@ -158,9 +160,10 @@ type CloseSuggestion = {
   video360: number;
   redFlag: number;
   sunset: number;
+  longFlight?: number;
   flagFlight: number;
-  pilot: { flights: number; ppg: number; ppgNoTicket?: number; flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
-  dispatcher: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number; hasData: boolean };
+  pilot: { flights: number; ppg: number; ppgNoTicket?: number; flycam: number; video360: number; redFlag: number; sunset: number; longFlight?: number; flagFlight: number; hasData: boolean };
+  dispatcher: { flycam: number; video360: number; redFlag: number; sunset: number; longFlight?: number; flagFlight: number; hasData: boolean };
   hasData: boolean;
 };
 
@@ -188,6 +191,8 @@ type FormState = {
   video360: number;
   redFlag: number;
   sunset: number;
+  /** Bay lâu 20–25' — dịch vụ riêng từ chủ 02/10, chốt giống hệt hoàng hôn. */
+  longFlight: number;
   flagFlight: number;
   ledger: ExpenseRow[];
   /** Dấu duyệt/từ chối từng khoản nhân viên khai — khoá theo expenseLines.key. */
@@ -223,6 +228,7 @@ const EMPTY_FORM: FormState = {
   video360: 0,
   redFlag: 0,
   sunset: 0,
+  longFlight: 0,
   flagFlight: 0,
   ledger: [],
   expenseReviews: [],
@@ -379,6 +385,8 @@ function DailyCloseInner() {
             video360: res.close.video360,
             redFlag: res.close.redFlag,
             sunset: res.close.sunset,
+            // Chốt ngày lưu trước 02/10 chưa có trường bay lâu → coi như 0.
+            longFlight: res.close.longFlight ?? 0,
             flagFlight: res.close.flagFlight,
             ledger: toExpenseRows(res.close.ledger).filter((e) => e.content || e.amount),
             expenseReviews: res.close.expenseReviews.map((r) => ({ ...r })),
@@ -474,6 +482,7 @@ function DailyCloseInner() {
       video360: suggest.dispatcher.video360,
       redFlag: suggest.dispatcher.redFlag,
       sunset: suggest.dispatcher.sunset,
+      longFlight: suggest.dispatcher.longFlight ?? 0,
       flagFlight: suggest.dispatcher.flagFlight,
     }));
     setMessage("Đã lấy số QUẦY/ĐIỀU PHỐI báo — soát lại rồi bấm Lưu.");
@@ -494,6 +503,7 @@ function DailyCloseInner() {
       video360: suggest.booking.video360,
       redFlag: suggest.booking.redFlag,
       sunset: suggest.booking.sunset,
+      longFlight: suggest.booking.longFlight ?? 0,
       flagFlight: suggest.booking.flagFlight,
     }));
     setMessage("Đã lấy số dịch vụ theo SỔ BOOKING — số này khớp với tiền đã thu.");
@@ -513,6 +523,7 @@ function DailyCloseInner() {
       video360: suggest.pilot.video360,
       redFlag: suggest.pilot.redFlag,
       sunset: suggest.pilot.sunset,
+      longFlight: suggest.pilot.longFlight ?? 0,
       flagFlight: suggest.pilot.flagFlight,
       // Dải mã dựng tự động từ mã phi công báo đã bay — quầy chưa nhập thì đỡ phải dò tay
       issuedRanges: suggest.pilotRanges.length ? suggest.pilotRanges.map((r) => ({ ...r })) : prev.issuedRanges,
@@ -848,7 +859,8 @@ function DailyCloseInner() {
                     </div>
                     <div className="mt-1 text-[11px] leading-snug text-emerald-900/80">
                       flycam {suggest.booking.flycam} · 360 {suggest.booking.video360} · cờ đỏ{" "}
-                      {suggest.booking.redFlag} · hoàng hôn {suggest.booking.sunset} · kéo cờ{" "}
+                      {suggest.booking.redFlag} · H.hôn/S.mây/B.minh {suggest.booking.sunset} · bay lâu{" "}
+                      {suggest.booking.longFlight ?? 0} · kéo cờ{" "}
                       {suggest.booking.flagFlight}
                     </div>
                     <Button
@@ -897,7 +909,8 @@ function DailyCloseInner() {
                       TM {formatVND(suggest.cashTotal)} · CK {formatVND(suggest.transferTotal)}
                       <br />
                       flycam {suggest.dispatcher.flycam} · 360 {suggest.dispatcher.video360} · cờ đỏ{" "}
-                      {suggest.dispatcher.redFlag} · hoàng hôn {suggest.dispatcher.sunset} · kéo cờ{" "}
+                      {suggest.dispatcher.redFlag} · H.hôn/S.mây/B.minh {suggest.dispatcher.sunset} · bay lâu{" "}
+                      {suggest.dispatcher.longFlight ?? 0} · kéo cờ{" "}
                       {suggest.dispatcher.flagFlight}
                     </div>
                     <Button
@@ -918,7 +931,8 @@ function DailyCloseInner() {
                       {suggest.pilot.ppg ? ` + ${suggest.pilot.ppg} PPG` : ""})
                       <br />
                       flycam {suggest.pilot.flycam} · 360 {suggest.pilot.video360} · cờ đỏ {suggest.pilot.redFlag} ·
-                      hoàng hôn {suggest.pilot.sunset} · kéo cờ {suggest.pilot.flagFlight}
+                      H.hôn/S.mây/B.minh {suggest.pilot.sunset} · bay lâu {suggest.pilot.longFlight ?? 0} · kéo cờ{" "}
+                      {suggest.pilot.flagFlight}
                       <br />
                       <span className="text-slate-400">
                         Phi công không nắm vé và tiền — hai phần đó giữ nguyên số đang có.
@@ -1418,6 +1432,8 @@ function DailyCloseInner() {
                 video360: f.video360,
                 redFlag: f.redFlag,
                 sunset: f.sunset,
+                // FlownServices cũ chưa có longFlight → đọc lỏng, thiếu thì 0 (chủ 02/10).
+                longFlight: Number((f as unknown as { longFlight?: number }).longFlight) || 0,
                 flagFlight: f.flagFlight,
               }))
             }
@@ -1426,7 +1442,7 @@ function DailyCloseInner() {
           {/* Mỗi dịch vụ một khung màu riêng, cụm đếm nhỏ — hai nguồn hiện bên dưới, bấm nguồn nào nhận nguồn đó */}
           <div className="mt-3 grid grid-cols-2 gap-2 @md:grid-cols-3">
             {/* Mỗi ô so ĐÚNG HAI nguồn: SỔ BOOKING (tiền khách trả) và người
-                THỰC LÀM (flycam ← camera man; 360/cờ đỏ/hoàng hôn/kéo cờ ←
+                THỰC LÀM (flycam ← camera man; 360/cờ đỏ/H.hôn/bay lâu/kéo cờ ←
                 phi công). Bỏ dòng "quầy/điều phối báo": quầy chỉ khai lại phần
                 mình nắm nên luôn thiếu phần người khác nhập — số booking đã là
                 nguồn chuẩn. Ai nhập bao nhiêu thì xem thẻ xanh phía trên. */}
@@ -1455,13 +1471,24 @@ function DailyCloseInner() {
               <ByPerson list={suggest?.reportedBy?.redFlag} prefix="phi công" />
             </ServiceBox>
             {spot !== "sapa" && (
-            <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
+            <ServiceBox tone="sunset" label="H.hôn / S.mây / B.minh">
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={1000} />
               <Compare label="số trên booking" value={flown?.sunset} mine={form.sunset}
                 onTake={locked ? undefined : (v) => set("sunset", v)} />
               <Compare label="phi công báo" value={t?.pilotSunset} mine={form.sunset}
                 onTake={locked ? undefined : (v) => set("sunset", v)} />
               <ByPerson list={suggest?.reportedBy?.sunset} prefix="phi công" />
+            </ServiceBox>
+            )}
+            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — cùng điều kiện hiện, so cùng hai nguồn */}
+            {spot !== "sapa" && (
+            <ServiceBox tone="longFlight" label="Bay lâu">
+              <CountInput compact value={form.longFlight} onChange={(v) => set("longFlight", v)} max={1000} />
+              <Compare label="số trên booking" value={(flown as { longFlight?: number } | null)?.longFlight} mine={form.longFlight}
+                onTake={locked ? undefined : (v) => set("longFlight", v)} />
+              <Compare label="phi công báo" value={t?.pilotLongFlight} mine={form.longFlight}
+                onTake={locked ? undefined : (v) => set("longFlight", v)} />
+              <ByPerson list={suggest?.reportedBy?.longFlight} prefix="phi công" />
             </ServiceBox>
             )}
             <ServiceBox tone="flagFlight" label="Bay kéo cờ đỏ/cờ sinh nhật">
@@ -1491,7 +1518,8 @@ function DailyCloseInner() {
                   <option value="flycam">Flycam</option>
                   <option value="video360">Camera 360</option>
                   <option value="redFlag">Dù cờ đỏ</option>
-                  <option value="sunset">Bay hoàng hôn/săn mây</option>
+                  <option value="sunset">H.hôn / S.mây / B.minh</option>
+                  <option value="longFlight">Bay lâu</option>
                   <option value="flagFlight">Bay kéo cờ đỏ/cờ sinh nhật</option>
                   <option value="general">Số liệu chung</option>
                 </select>
@@ -1868,7 +1896,10 @@ function DailyCloseInner() {
                 ["Cờ đỏ: phi công / điều phối", t?.pilotRedFlag, t?.dispatcherRedFlag],
                 ...(spot === "sapa"
                   ? ([] as Array<[string, number | undefined, number | undefined]>)
-                  : ([["Hoàng hôn/săn mây: phi công / điều phối", t?.pilotSunset, t?.dispatcherSunset]] as Array<
+                  : ([
+                      ["H.hôn / S.mây / B.minh: phi công / điều phối", t?.pilotSunset, t?.dispatcherSunset],
+                      ["Bay lâu: phi công / điều phối", t?.pilotLongFlight, t?.dispatcherLongFlight],
+                    ] as Array<
                       [string, number | undefined, number | undefined]
                     >)),
                 ["Kéo cờ/bánh: phi công / điều phối", t?.pilotFlagFlight, t?.dispatcherFlagFlight],

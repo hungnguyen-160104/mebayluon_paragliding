@@ -15,6 +15,8 @@ export type FlownServices = {
   video360: number;
   redFlag: number;
   sunset: number;
+  /** Bay lâu (chủ 02/10) — bản máy chủ cũ chưa gửi thì thiếu. */
+  longFlight?: number;
   flagFlight: number;
   mountainCar: number;
   /** Ai đóng góp bao nhiêu vào từng loại dịch vụ (gồm cả lệnh thêm/bớt tại bãi). */
@@ -26,7 +28,8 @@ const SERVICE_LABEL: Record<string, string> = {
   flycam: "flycam",
   video360: "camera 360",
   redFlag: "cờ đỏ",
-  sunset: "hoàng hôn/săn mây",
+  sunset: "H.hôn/S.mây/B.minh",
+  longFlight: "bay lâu",
   flagFlight: "kéo cờ/bánh",
 };
 
@@ -79,7 +82,8 @@ export function FlownServicesHint({
     flown.flycam ? `${flown.flycam}×flycam` : "",
     flown.video360 ? `${flown.video360}×cam 360` : "",
     flown.redFlag ? `${flown.redFlag}×cờ đỏ` : "",
-    flown.sunset ? `${flown.sunset}×hoàng hôn/săn mây` : "",
+    flown.sunset ? `${flown.sunset}×H.hôn/S.mây/B.minh` : "",
+    flown.longFlight ? `${flown.longFlight}×bay lâu` : "",
     flown.flagFlight ? `${flown.flagFlight}×kéo cờ/bánh` : "",
     flown.mountainCar ? `${flown.mountainCar}×xe núi` : "",
   ].filter(Boolean);

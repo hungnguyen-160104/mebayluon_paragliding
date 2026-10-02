@@ -208,6 +208,8 @@ export function BookingSheet({
       redFlag: p.redFlag,
       flagFlight: p.flagFlight,
       sunset: p.sunset,
+      // Bay lâu 700k — dòng giá dưới tên cột; suất trùng H.hôn/S.mây/B.minh máy chủ tự miễn (chủ 02/10)
+      longFlight: p.longFlight,
       mountainCar: MOUNTAIN_CAR_PRICE,
     } as Partial<Record<string, number>>;
   }, [spot]);

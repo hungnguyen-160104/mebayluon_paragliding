@@ -13,7 +13,7 @@ import { DEFAULT_SPOT } from "@/lib/baobay/spots";
  * hoặc tự tan khi ngày được chốt (chốt nghĩa là đã soát xong).
  */
 
-export type ReviewTopic = "flycam" | "video360" | "redFlag" | "sunset" | "flagFlight" | "general";
+export type ReviewTopic = "flycam" | "video360" | "redFlag" | "sunset" | "longFlight" | "flagFlight" | "general";
 
 /** Vai trò phải soát lại theo từng chủ đề — trùng với cặp đối chiếu của từng dịch vụ. */
 export const REVIEW_TARGET_ROLES: Record<ReviewTopic, string[]> = {
@@ -21,6 +21,7 @@ export const REVIEW_TARGET_ROLES: Record<ReviewTopic, string[]> = {
   video360: ["dispatcher", "counter", "pilot"],
   redFlag: ["dispatcher", "counter", "pilot"],
   sunset: ["dispatcher", "counter", "pilot"],
+  longFlight: ["dispatcher", "counter", "pilot"],
   flagFlight: ["dispatcher", "counter", "pilot"],
   general: ["dispatcher", "counter", "pilot", "cameraman"],
 };
@@ -29,7 +30,8 @@ export const REVIEW_TOPIC_LABEL: Record<ReviewTopic, string> = {
   flycam: "Flycam",
   video360: "Camera 360",
   redFlag: "Dù cờ đỏ",
-  sunset: "Bay hoàng hôn/săn mây",
+  sunset: "H.hôn / S.mây / B.minh",
+  longFlight: "Bay lâu",
   flagFlight: "Bay kéo cờ",
   general: "Số liệu chung",
 };
@@ -52,7 +54,7 @@ const BaobayReviewRequestSchema = new Schema<IBaobayReviewRequest>(
     date: { type: String, required: true, index: true },
     topic: {
       type: String,
-      enum: ["flycam", "video360", "redFlag", "sunset", "flagFlight", "general"],
+      enum: ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight", "general"],
       default: "general",
     },
     note: { type: String, default: "" },

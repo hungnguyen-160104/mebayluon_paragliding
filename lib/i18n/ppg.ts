@@ -47,6 +47,10 @@ export const PPG_PRICING = {
   camera360VND: 400_000,
   comboVND: 700_000,
   comboSaveVND: 100_000,
+  /** Phụ thu mỗi lựa chọn bay đặc biệt Khau Phạ (săn mây / bình minh / hoàng
+   *  hôn / bay lâu) — chủ chốt 02/10/2026. Cùng con số với KP_DAC_BIET_VND ở
+   *  lib/booking/khau-pha-dac-biet.ts; đổi giá thì sửa cả hai. */
+  specialVND: 700_000,
 } as const;
 
 /** Bài viết liên quan, mở trong cùng site. */
@@ -118,6 +122,13 @@ export type PpgCopy = {
   comboLabel: string;
   comboSave: string;
   perPax: string;
+  /** Khối "bay đặc biệt" trong mục giá: tiêu đề, từng lựa chọn (+700.000đ),
+   *  dòng bay lâu và quy tắc hoàn phụ phí. */
+  specialTitle: string;
+  specialOptions: { label: string; note: string }[];
+  longFlightLabel: string;
+  longFlightNote: string;
+  specialRefund: string;
 
   guideTitle: string;
   steps: Step[];
@@ -164,19 +175,19 @@ const vi: PpgCopy = {
   experiences: {
     cloudHunting: {
       title: "Bay săn mây",
-      desc: "Bay xuyên qua tầng mây thấp phủ kín thung lũng Tú Lệ, ngoi lên trên biển mây trắng. Đẹp nhất vào sáng sớm sau một đêm mưa hoặc trời lạnh.",
+      desc: "Bay lên cao khoảng 2.000m, xuyên qua tầng mây thấp phủ kín thung lũng Tú Lệ rồi ngoi lên trên biển mây trắng. Chuyến bay 20–25 phút, đẹp nhất vào sáng sớm sau một đêm mưa hoặc trời lạnh.",
     },
     sunrise: {
       title: "Bay bình minh",
-      desc: "Cất cánh lúc trời vừa hửng, đón mặt trời lên từ trên không trong khi cả thung lũng còn chìm trong sương. Khung giờ yên gió nhất trong ngày.",
+      desc: "Bay trong khung 06:00–07:00 những ngày nắng, đón mặt trời lên từ trên không trong khi cả thung lũng còn chìm trong sương. Chuyến bay 20–25 phút, khung giờ yên gió nhất trong ngày.",
     },
     sunset: {
       title: "Bay hoàng hôn",
-      desc: "Bay lúc chiều muộn, mặt trời hạ dần sau dãy núi và cả biển mây nhuộm vàng cam. Khung hình được khách chụp nhiều nhất.",
+      desc: "Bay trong khung 16:00–17:00 những ngày nắng, khi mặt trời hạ dần sau dãy núi và cả biển mây nhuộm vàng cam. Chuyến bay 20–25 phút — khung hình được khách chụp nhiều nhất.",
     },
     highAltitude: {
       title: "Bay cao 2.000m",
-      desc: "Lên tới độ cao 2.000m, nhìn trọn đèo Khau Phạ, thung lũng Tú Lệ và những dãy núi trùng điệp phía sau. Độ cao mà dù lượn thường rất khó đạt tới.",
+      desc: "Lên tới độ cao khoảng 2.000m cùng chuyến bay săn mây, nhìn trọn đèo Khau Phạ, thung lũng Tú Lệ và những dãy núi trùng điệp phía sau. Độ cao mà dù lượn thường rất khó đạt tới.",
     },
   },
   imageComingSoon: "Ảnh đang cập nhật",
@@ -193,7 +204,7 @@ const vi: PpgCopy = {
   altitudeLabel: "Độ cao bay",
   altitudeValue: "Tới 2.000 m",
   durationLabel: "Thời lượng bay",
-  durationValue: "10 – 25 phút (tự chọn)",
+  durationValue: "10 – 20 phút · bay lâu 20 – 25 phút",
 
   pricingTitle: "Giá dịch vụ",
   pricingSubtitle: "Giá cho một khách, một chuyến bay.",
@@ -211,6 +222,16 @@ const vi: PpgCopy = {
   comboLabel: "Combo flycam + camera 360°",
   comboSave: "Tiết kiệm",
   perPax: "/khách",
+  specialTitle: "Bay đặc biệt (cộng thêm vào giá bay)",
+  specialOptions: [
+    { label: "Bay săn mây", note: "Bay cao khoảng 2.000m, 20–25 phút" },
+    { label: "Bay bình minh", note: "Khung 06:00–07:00 ngày nắng, 20–25 phút" },
+    { label: "Bay hoàng hôn", note: "Khung 16:00–17:00 ngày nắng, 20–25 phút" },
+  ],
+  longFlightLabel: "Bay lâu (20–25 phút, tuỳ điều kiện)",
+  longFlightNote: "Miễn phí khi đã chọn săn mây, bình minh hoặc hoàng hôn",
+  specialRefund:
+    "Nếu không thực hiện được chuyến bay đặc biệt (bình minh không có nắng, mây che hoàng hôn, gió yếu không bay lâu được), phụ phí được hoàn lại sau chuyến bay và chuyến bay trở thành chuyến bay cơ bản.",
 
   guideTitle: "Chuyến bay diễn ra thế nào",
   steps: [
@@ -311,19 +332,19 @@ const en: PpgCopy = {
   experiences: {
     cloudHunting: {
       title: "Cloud hunting",
-      desc: "Climb through the low cloud that fills the Tu Le valley and come out above a white sea of cloud. Best in the early morning after a rainy night or on a cold day.",
+      desc: "Climb to around 2,000 m, through the low cloud that fills the Tu Le valley and out above a white sea of cloud. A 20–25-minute flight, best in the early morning after a rainy night or on a cold day.",
     },
     sunrise: {
       title: "Sunrise flight",
-      desc: "Take off at first light and meet the sun in the air while the whole valley is still under mist. The calmest hour of the day.",
+      desc: "Flown between 06:00 and 07:00 on sunny days: meet the sun in the air while the whole valley is still under mist. A 20–25-minute flight in the calmest hour of the day.",
     },
     sunset: {
       title: "Sunset flight",
-      desc: "Fly late in the afternoon as the sun sinks behind the ridge and the cloud below turns gold and orange. The shot our guests photograph most.",
+      desc: "Flown between 16:00 and 17:00 on sunny days, as the sun sinks behind the ridge and the cloud below turns gold and orange. A 20–25-minute flight — the shot our guests photograph most.",
     },
     highAltitude: {
       title: "Climb to 2,000 m",
-      desc: "Go up to 2,000 metres for the whole of Khau Pha Pass, the Tu Le valley and the ranges behind it — an altitude an unpowered glider rarely reaches.",
+      desc: "Go up to around 2,000 metres on the cloud-hunting flight for the whole of Khau Pha Pass, the Tu Le valley and the ranges behind it — an altitude an unpowered glider rarely reaches.",
     },
   },
   imageComingSoon: "Photo coming soon",
@@ -340,7 +361,7 @@ const en: PpgCopy = {
   altitudeLabel: "Altitude",
   altitudeValue: "Up to 2,000 m",
   durationLabel: "Airtime",
-  durationValue: "10 – 25 minutes (your choice)",
+  durationValue: "10 – 20 minutes · long flight 20 – 25 minutes",
 
   pricingTitle: "Prices",
   pricingSubtitle: "Per passenger, per flight.",
@@ -358,6 +379,16 @@ const en: PpgCopy = {
   comboLabel: "Drone + 360° camera combo",
   comboSave: "You save",
   perPax: "/passenger",
+  specialTitle: "Special flights (added to the flight price)",
+  specialOptions: [
+    { label: "Cloud hunting", note: "Up to around 2,000 m, 20–25 minutes" },
+    { label: "Sunrise flight", note: "06:00–07:00 on sunny days, 20–25 minutes" },
+    { label: "Sunset flight", note: "16:00–17:00 on sunny days, 20–25 minutes" },
+  ],
+  longFlightLabel: "Long flight (20–25 minutes, conditions permitting)",
+  longFlightNote: "Free when you also choose cloud hunting, sunrise or sunset",
+  specialRefund:
+    "If the special flight cannot be done (no sun at sunrise, sunset lost to cloud, wind too weak for a long flight), the surcharge is refunded after the flight, which becomes a standard flight.",
 
   guideTitle: "How the flight works",
   steps: [
@@ -459,19 +490,19 @@ const fr: PpgCopy = {
   experiences: {
     cloudHunting: {
       title: "Vol sur mer de nuages",
-      desc: "Traversez la couche nuageuse qui remplit la vallée de Tu Le et ressortez au-dessus d’une mer de nuages blanche. Idéal tôt le matin après une nuit de pluie ou par temps froid.",
+      desc: "Montez vers 2 000 m à travers la couche nuageuse qui remplit la vallée de Tu Le et ressortez au-dessus d’une mer de nuages blanche. Un vol de 20 à 25 minutes, idéal tôt le matin après une nuit de pluie ou par temps froid.",
     },
     sunrise: {
       title: "Vol au lever du soleil",
-      desc: "Décollez aux premières lueurs et accueillez le soleil depuis les airs pendant que la vallée dort encore sous la brume. L’heure la plus calme de la journée.",
+      desc: "Entre 6 h et 7 h les jours de soleil : accueillez le soleil depuis les airs pendant que la vallée dort encore sous la brume. Un vol de 20 à 25 minutes, à l’heure la plus calme de la journée.",
     },
     sunset: {
       title: "Vol au coucher du soleil",
-      desc: "Volez en fin d’après-midi, quand le soleil plonge derrière la crête et que les nuages en dessous virent à l’or et à l’orange. La photo la plus prise par nos clients.",
+      desc: "Entre 16 h et 17 h les jours de soleil, quand le soleil plonge derrière la crête et que les nuages en dessous virent à l’or et à l’orange. Un vol de 20 à 25 minutes — la photo la plus prise par nos clients.",
     },
     highAltitude: {
       title: "Montée à 2 000 m",
-      desc: "Montez à 2 000 mètres pour embrasser tout le col de Khau Pha, la vallée de Tu Le et les chaînes qui s’étendent derrière — une altitude qu’un parapente atteint rarement.",
+      desc: "Montez vers 2 000 mètres lors du vol sur mer de nuages pour embrasser tout le col de Khau Pha, la vallée de Tu Le et les chaînes qui s’étendent derrière — une altitude qu’un parapente atteint rarement.",
     },
   },
   imageComingSoon: "Photo à venir",
@@ -488,7 +519,7 @@ const fr: PpgCopy = {
   altitudeLabel: "Altitude",
   altitudeValue: "Jusqu’à 2 000 m",
   durationLabel: "Durée de vol",
-  durationValue: "10 à 25 minutes (au choix)",
+  durationValue: "10 à 20 minutes · vol long 20 à 25 minutes",
 
   pricingTitle: "Tarifs",
   pricingSubtitle: "Par passager et par vol.",
@@ -506,6 +537,16 @@ const fr: PpgCopy = {
   comboLabel: "Pack drone + caméra 360°",
   comboSave: "Vous économisez",
   perPax: "/passager",
+  specialTitle: "Vols spéciaux (en supplément du prix du vol)",
+  specialOptions: [
+    { label: "Vol sur mer de nuages", note: "Jusqu’à environ 2 000 m, 20 à 25 minutes" },
+    { label: "Vol au lever du soleil", note: "6 h–7 h les jours de soleil, 20 à 25 minutes" },
+    { label: "Vol au coucher du soleil", note: "16 h–17 h les jours de soleil, 20 à 25 minutes" },
+  ],
+  longFlightLabel: "Vol long (20 à 25 minutes, selon les conditions)",
+  longFlightNote: "Offert si vous choisissez aussi la mer de nuages, le lever ou le coucher du soleil",
+  specialRefund:
+    "Si le vol spécial ne peut pas avoir lieu (pas de soleil au lever, coucher masqué par les nuages, vent trop faible pour un vol long), le supplément est remboursé après le vol, qui devient un vol standard.",
 
   guideTitle: "Comment se déroule le vol",
   steps: [
@@ -606,19 +647,19 @@ const ru: PpgCopy = {
   experiences: {
     cloudHunting: {
       title: "Полёт над морем облаков",
-      desc: "Пройдите сквозь низкую облачность, заполняющую долину Tu Le, и выйдите над белым морем облаков. Лучше всего ранним утром после дождливой ночи или в холодный день.",
+      desc: "Поднимитесь примерно до 2 000 м сквозь низкую облачность, заполняющую долину Tu Le, и выйдите над белым морем облаков. Полёт 20–25 минут; лучше всего ранним утром после дождливой ночи или в холодный день.",
     },
     sunrise: {
       title: "Полёт на рассвете",
-      desc: "Взлетите на первом свете и встретьте солнце в воздухе, пока вся долина ещё в тумане. Самый спокойный час дня.",
+      desc: "С 06:00 до 07:00 в солнечные дни: встретьте солнце в воздухе, пока вся долина ещё в тумане. Полёт 20–25 минут в самый спокойный час дня.",
     },
     sunset: {
       title: "Полёт на закате",
-      desc: "Летите под вечер, когда солнце уходит за хребет, а облака внизу становятся золотыми и оранжевыми. Самый фотографируемый нашими гостями кадр.",
+      desc: "С 16:00 до 17:00 в солнечные дни, когда солнце уходит за хребет, а облака внизу становятся золотыми и оранжевыми. Полёт 20–25 минут — самый фотографируемый нашими гостями кадр.",
     },
     highAltitude: {
       title: "Подъём до 2 000 м",
-      desc: "Поднимитесь на 2 000 метров и увидите весь перевал Khau Pha, долину Tu Le и гряды за ней — высота, которой параплан достигает редко.",
+      desc: "Поднимитесь примерно на 2 000 метров в полёте над облаками и увидите весь перевал Khau Pha, долину Tu Le и гряды за ней — высота, которой параплан достигает редко.",
     },
   },
   imageComingSoon: "Фото скоро появится",
@@ -635,7 +676,7 @@ const ru: PpgCopy = {
   altitudeLabel: "Высота",
   altitudeValue: "До 2 000 м",
   durationLabel: "Время в воздухе",
-  durationValue: "10 – 25 минут (на выбор)",
+  durationValue: "10 – 20 минут · долгий полёт 20 – 25 минут",
 
   pricingTitle: "Цены",
   pricingSubtitle: "За одного пассажира за один полёт.",
@@ -653,6 +694,16 @@ const ru: PpgCopy = {
   comboLabel: "Комбо: дрон + камера 360°",
   comboSave: "Экономия",
   perPax: "/пассажир",
+  specialTitle: "Особые полёты (доплата к цене полёта)",
+  specialOptions: [
+    { label: "Полёт над облаками", note: "Примерно до 2 000 м, 20–25 минут" },
+    { label: "Полёт на рассвете", note: "06:00–07:00 в солнечные дни, 20–25 минут" },
+    { label: "Полёт на закате", note: "16:00–17:00 в солнечные дни, 20–25 минут" },
+  ],
+  longFlightLabel: "Долгий полёт (20–25 минут, если позволяют условия)",
+  longFlightNote: "Бесплатно, если выбран полёт над облаками, на рассвете или на закате",
+  specialRefund:
+    "Если особый полёт не удался (на рассвете нет солнца, закат скрыт облаками, ветер слишком слабый для долгого полёта), доплата возвращается после полёта, а полёт считается обычным.",
 
   guideTitle: "Как проходит полёт",
   steps: [
@@ -753,19 +804,19 @@ const zh: PpgCopy = {
   experiences: {
     cloudHunting: {
       title: "追云飞行",
-      desc: "穿过填满 Tú Lệ 山谷的低云层，冲上洁白的云海之上。清晨、雨夜之后或天气转凉时最佳。",
+      desc: "爬升至约 2,000 米，穿过填满 Tú Lệ 山谷的低云层，冲上洁白的云海之上。飞行 20–25 分钟，清晨、雨夜之后或天气转凉时最佳。",
     },
     sunrise: {
       title: "日出飞行",
-      desc: "天刚破晓即起飞，在空中迎接日出，而整座山谷仍沉睡在晨雾中。一天中气流最平稳的时段。",
+      desc: "晴天 06:00–07:00 时段起飞，在空中迎接日出，而整座山谷仍沉睡在晨雾中。飞行 20–25 分钟，是一天中气流最平稳的时段。",
     },
     sunset: {
       title: "日落飞行",
-      desc: "傍晚起飞，太阳沉入山脊，脚下的云海被染成金橙色。客人拍照最多的画面。",
+      desc: "晴天 16:00–17:00 时段起飞，太阳沉入山脊，脚下的云海被染成金橙色。飞行 20–25 分钟——客人拍照最多的画面。",
     },
     highAltitude: {
       title: "爬升至 2,000 米",
-      desc: "爬升到 2,000 米高空，将整条 Khau Pha 山口、Tú Lệ 山谷及其后重重山脉尽收眼底——这是无动力滑翔伞很难达到的高度。",
+      desc: "随追云飞行爬升到约 2,000 米高空，将整条 Khau Pha 山口、Tú Lệ 山谷及其后重重山脉尽收眼底——这是无动力滑翔伞很难达到的高度。",
     },
   },
   imageComingSoon: "照片即将上线",
@@ -782,7 +833,7 @@ const zh: PpgCopy = {
   altitudeLabel: "飞行高度",
   altitudeValue: "最高 2,000 米",
   durationLabel: "飞行时长",
-  durationValue: "10–25 分钟（自选）",
+  durationValue: "10–20 分钟 · 长时飞行 20–25 分钟",
 
   pricingTitle: "价格",
   pricingSubtitle: "每位乘客每次飞行的价格。",
@@ -800,6 +851,16 @@ const zh: PpgCopy = {
   comboLabel: "航拍 + 360° 相机套餐",
   comboSave: "立省",
   perPax: "/人",
+  specialTitle: "特色飞行（在飞行价格上加收）",
+  specialOptions: [
+    { label: "追云飞行", note: "爬升至约 2,000 米，20–25 分钟" },
+    { label: "日出飞行", note: "晴天 06:00–07:00，20–25 分钟" },
+    { label: "日落飞行", note: "晴天 16:00–17:00，20–25 分钟" },
+  ],
+  longFlightLabel: "长时飞行（20–25 分钟，视条件而定）",
+  longFlightNote: "同时选择追云、日出或日落飞行即可免费",
+  specialRefund:
+    "如特色飞行无法实现（日出时无阳光、日落被云遮挡、风力太弱无法长时飞行），附加费将在飞行结束后退还，该次飞行按普通飞行计算。",
 
   guideTitle: "飞行流程",
   steps: [
@@ -898,19 +959,19 @@ const hi: PpgCopy = {
   experiences: {
     cloudHunting: {
       title: "बादलों के ऊपर उड़ान",
-      desc: "Tú Lệ घाटी को भरने वाली नीची बादल परत को चीरते हुए सफ़ेद बादलों के समुद्र के ऊपर निकलें। बारिश वाली रात के बाद या ठंडे दिन की सुबह सबसे अच्छी।",
+      desc: "लगभग 2,000 मीटर तक चढ़ें, Tú Lệ घाटी को भरने वाली नीची बादल परत को चीरते हुए सफ़ेद बादलों के समुद्र के ऊपर निकलें। 20–25 मिनट की उड़ान; बारिश वाली रात के बाद या ठंडे दिन की सुबह सबसे अच्छी।",
     },
     sunrise: {
       title: "सूर्योदय उड़ान",
-      desc: "पहली रोशनी में उड़ान भरें और हवा में सूरज का स्वागत करें, जबकि पूरी घाटी अब भी कोहरे में हो। दिन का सबसे शांत समय।",
+      desc: "धूप वाले दिनों में 06:00–07:00 के बीच उड़ान: हवा में सूरज का स्वागत करें, जबकि पूरी घाटी अब भी कोहरे में हो। 20–25 मिनट की उड़ान, दिन का सबसे शांत समय।",
     },
     sunset: {
       title: "सूर्यास्त उड़ान",
-      desc: "देर दोपहर उड़ें, जब सूरज पहाड़ी के पीछे उतरता है और नीचे के बादल सुनहरे-नारंगी हो जाते हैं। मेहमानों की सबसे पसंदीदा तस्वीर।",
+      desc: "धूप वाले दिनों में 16:00–17:00 के बीच उड़ें, जब सूरज पहाड़ी के पीछे उतरता है और नीचे के बादल सुनहरे-नारंगी हो जाते हैं। 20–25 मिनट की उड़ान — मेहमानों की सबसे पसंदीदा तस्वीर।",
     },
     highAltitude: {
       title: "2,000 मीटर तक चढ़ाई",
-      desc: "2,000 मीटर तक जाएँ और पूरा Khau Pha दर्रा, Tú Lệ घाटी तथा पीछे फैली पर्वत शृंखलाएँ देखें — यह ऊँचाई बिना इंजन वाला ग्लाइडर मुश्किल से छूता है।",
+      desc: "बादलों के ऊपर उड़ान में लगभग 2,000 मीटर तक जाएँ और पूरा Khau Pha दर्रा, Tú Lệ घाटी तथा पीछे फैली पर्वत शृंखलाएँ देखें — यह ऊँचाई बिना इंजन वाला ग्लाइडर मुश्किल से छूता है।",
     },
   },
   imageComingSoon: "तस्वीर जल्द आ रही है",
@@ -927,7 +988,7 @@ const hi: PpgCopy = {
   altitudeLabel: "ऊँचाई",
   altitudeValue: "2,000 मीटर तक",
   durationLabel: "उड़ान अवधि",
-  durationValue: "10 – 25 मिनट (आपकी पसंद)",
+  durationValue: "10 – 20 मिनट · लंबी उड़ान 20 – 25 मिनट",
 
   pricingTitle: "मूल्य",
   pricingSubtitle: "प्रति यात्री, प्रति उड़ान।",
@@ -945,6 +1006,16 @@ const hi: PpgCopy = {
   comboLabel: "ड्रोन + 360° कैमरा कॉम्बो",
   comboSave: "आपकी बचत",
   perPax: "/यात्री",
+  specialTitle: "विशेष उड़ानें (उड़ान की कीमत के अतिरिक्त)",
+  specialOptions: [
+    { label: "बादलों के ऊपर उड़ान", note: "लगभग 2,000 मीटर तक, 20–25 मिनट" },
+    { label: "सूर्योदय उड़ान", note: "धूप वाले दिन 06:00–07:00, 20–25 मिनट" },
+    { label: "सूर्यास्त उड़ान", note: "धूप वाले दिन 16:00–17:00, 20–25 मिनट" },
+  ],
+  longFlightLabel: "लंबी उड़ान (20–25 मिनट, परिस्थिति अनुसार)",
+  longFlightNote: "बादल, सूर्योदय या सूर्यास्त उड़ान के साथ चुनने पर मुफ़्त",
+  specialRefund:
+    "अगर विशेष उड़ान संभव न हो (सूर्योदय पर धूप न हो, सूर्यास्त बादलों में छिप जाए, लंबी उड़ान के लिए हवा कमज़ोर हो), तो अतिरिक्त शुल्क उड़ान के बाद लौटा दिया जाता है और उड़ान सामान्य उड़ान मानी जाती है।",
 
   guideTitle: "उड़ान कैसे होती है",
   steps: [

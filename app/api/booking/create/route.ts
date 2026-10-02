@@ -7,6 +7,7 @@ import { Booking } from "@/models/Booking.model";
 import { postNotifyGmail } from "@/services/gmail.service";
 import { buildBookingMessage } from "@/services/telegram.service";
 import { syncOneWebBooking } from "@/services/baobay-web-sync.service";
+import { dacBietCount, longFlightCount, toDacBietStates } from "@/lib/booking/khau-pha-dac-biet";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -332,6 +333,27 @@ export async function POST(req: NextRequest) {
 
     const createdAt =
       raw.createdAt || new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+
+    /**
+     * BAY ĐẶC BIỆT KHAU PHẠ (chủ 02/10/2026): một khách chỉ bay một chuyến
+     * đặc biệt — tổng bình minh + hoàng hôn + săn mây ≤ số khách; bay lâu cũng
+     * không vượt số khách. Bước chọn dịch vụ đã giữ trần, đây là lưới chặn
+     * cuối cho bản gửi thẳng (lib/booking/khau-pha-dac-biet.ts).
+     */
+    if (key === "khau_pha") {
+      const states = toDacBietStates(raw.services);
+      if (dacBietCount(states) > guestsCount || longFlightCount(states) > guestsCount) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "VALIDATION_ERROR",
+            message:
+              "Mỗi khách chỉ chọn một chuyến bay đặc biệt (bình minh, hoàng hôn hoặc săn mây); số suất không vượt số khách.",
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     // normalize addonsQty + derive boolean
     const addonsQty = normalizeAddonsQty(raw, guestsCount);

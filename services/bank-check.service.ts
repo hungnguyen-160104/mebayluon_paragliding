@@ -1143,7 +1143,7 @@ export async function getBankCheck(
   const rowBookings = rowBookingIds.size
     ? await BaobayBooking.find({ _id: { $in: [...rowBookingIds] } })
         .select(
-          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset flagFlight totalAmount remaining discount note agencyPaidAmount agencyName deposit refundedTotal transferCode depositVerifiedAt status ticketIssuedAt noTicketFlight lockedAt",
+          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset longFlight flagFlight totalAmount remaining discount note agencyPaidAmount agencyName deposit refundedTotal transferCode depositVerifiedAt status ticketIssuedAt noTicketFlight lockedAt",
         )
         .lean<any[]>()
     : [];
@@ -1192,7 +1192,8 @@ export async function getBankCheck(
     if (b.flycam > 0) parts.push(`${b.flycam}×flycam`);
     if (b.video360 > 0) parts.push(`${b.video360}×360`);
     if (b.redFlag > 0) parts.push(`${b.redFlag}×cờ đỏ`);
-    if (b.sunset > 0) parts.push(`${b.sunset}×hoàng hôn`);
+    if (b.sunset > 0) parts.push(`${b.sunset}×H.hôn/S.mây/B.minh`);
+    if (b.longFlight > 0) parts.push(`${b.longFlight}×bay lâu`);
     if (b.flagFlight > 0) parts.push(`${b.flagFlight}×kéo cờ`);
     return parts.join(" · ") || `${b.guestCount || 0} khách`;
   };

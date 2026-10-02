@@ -64,7 +64,8 @@ const SERVICE_LABEL: Record<string, string> = {
   flycam: "flycam",
   video360: "cam360",
   redFlag: "cờ đỏ",
-  sunset: "hoàng hôn",
+  sunset: "H.hôn/S.mây/B.minh",
+  longFlight: "bay lâu",
   flagFlight: "kéo cờ",
 };
 
@@ -299,7 +300,8 @@ const FIELD_LABEL: Record<string, string> = {
   flycam: "Flycam",
   video360: "Cam 360",
   redFlag: "Cờ đỏ",
-  sunset: "Hoàng hôn",
+  sunset: "H.hôn / S.mây / B.minh",
+  longFlight: "Bay lâu",
   flagFlight: "Kéo cờ",
   mountainCar: "Xe lên núi",
   pickup: "Đón",

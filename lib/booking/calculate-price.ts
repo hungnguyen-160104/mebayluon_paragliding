@@ -10,6 +10,12 @@
  */
 
 import type { LangCode } from "./translations-booking";
+import {
+  KP_DAC_BIET_CAP_GROUP,
+  KP_DAC_BIET_USD,
+  KP_DAC_BIET_VND,
+  PG_LONG_FLIGHT_NOTE,
+} from "./khau-pha-dac-biet";
 
 export type LocationKey =
   | "sapa"
@@ -61,6 +67,17 @@ export type DynamicServiceConfig = {
   fixedMapUrl?: string;
   warningWhenUnchecked?: string;
   exclusiveGroup?: string;
+  /**
+   * Nhóm dịch vụ đếm (counter) có CHUNG một trần: tổng số lượng các dịch vụ
+   * cùng nhóm ≤ số khách. Dùng cho bình minh / hoàng hôn / săn mây Khau Phạ —
+   * một khách chỉ bay một chuyến đặc biệt (lib/booking/khau-pha-dac-biet.ts).
+   */
+  capGroup?: string;
+  /**
+   * Dịch vụ CŨ không còn bán: ẩn ở bước chọn dịch vụ, nhưng vẫn nằm trong cấu
+   * hình để booking cũ trong DB (vé, email, trang quản trị) còn ra đúng nhãn.
+   */
+  legacy?: boolean;
   visibleForPackages?: PackageKey[];
   visibleForFlightTypes?: FlightTypeKey[];
 };
@@ -664,8 +681,206 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
         visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
         visibleForFlightTypes: ["paragliding"],
       },
+      /**
+       * CHUYẾN BAY ĐẶC BIỆT (chủ chốt 02/10/2026) — thay dịch vụ gộp cũ
+       * "BAY SĂN MÂY, BAY HOÀNG HÔN, BAY BÌNH MINH (2.000m)". Quy tắc giá
+       * (bay lâu miễn phí khi kèm bình minh/hoàng hôn/săn mây, mỗi khách một
+       * chuyến đặc biệt) nằm ở lib/booking/khau-pha-dac-biet.ts.
+       *
+       * Khoá đặt tên để bộ đồng bộ web→app (SERVICE_MAP trong
+       * services/baobay-web-sync.service.ts) đổ đúng ô: sunrise/sunset/san_may
+       * → ô `sunset` (H.hôn / S.mây / B.minh), long_flight → ô `longFlight`.
+       * Khoá PG KHÔNG được chứa "ppg"/"paramotor" (bộ đồng bộ nhìn chữ đó để
+       * đoán khách bay PPG).
+       *
+       * Giá 700k phải khớp SERVICE_PRICE trong lib/baobay/flight-price.ts.
+       */
+      // ---- PG (dù không động cơ) ----
       {
+        key: "khau_pha_pg_sunrise",
+        label: {
+          vi: "Bay bình minh (6–7h, ngày nắng)",
+          en: "Sunrise flight (6–7 am, sunny days)",
+          fr: "Vol au lever du soleil (6h–7h, jours ensoleillés)",
+          ru: "Полёт на рассвете (6–7 ч, в солнечные дни)",
+          zh: "日出飞行（6–7 点，晴天）",
+          hi: "सूर्योदय उड़ान (सुबह 6–7 बजे, धूप वाले दिन)",
+        },
+        description: {
+          vi: "Chuyến bay riêng trong khung 06:00–07:00 vào ngày nắng, bay 9–15 phút.",
+          en: "A dedicated flight in the 06:00–07:00 window on sunny days, 9–15 minutes.",
+          fr: "Un vol dédié entre 06h00 et 07h00 les jours ensoleillés, 9 à 15 minutes.",
+          ru: "Отдельный полёт с 06:00 до 07:00 в солнечные дни, 9–15 минут.",
+          zh: "晴天 06:00–07:00 时段的专属飞行，9–15 分钟。",
+          hi: "धूप वाले दिनों में 06:00–07:00 के बीच एक अलग उड़ान, 9–15 मिनट।",
+        },
+        controlType: "counter",
+        priceVND: KP_DAC_BIET_VND,
+        priceUSD: KP_DAC_BIET_USD,
+        capGroup: KP_DAC_BIET_CAP_GROUP,
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
+        visibleForFlightTypes: ["paragliding"],
+      },
+      {
+        key: "khau_pha_pg_sunset",
+        label: {
+          vi: "Bay hoàng hôn (16–17h, ngày nắng)",
+          en: "Sunset flight (4–5 pm, sunny days)",
+          fr: "Vol au coucher du soleil (16h–17h, jours ensoleillés)",
+          ru: "Полёт на закате (16–17 ч, в солнечные дни)",
+          zh: "日落飞行（16–17 点，晴天）",
+          hi: "सूर्यास्त उड़ान (शाम 4–5 बजे, धूप वाले दिन)",
+        },
+        description: {
+          vi: "Chuyến bay riêng trong khung 16:00–17:00 vào ngày nắng, bay 9–15 phút.",
+          en: "A dedicated flight in the 16:00–17:00 window on sunny days, 9–15 minutes.",
+          fr: "Un vol dédié entre 16h00 et 17h00 les jours ensoleillés, 9 à 15 minutes.",
+          ru: "Отдельный полёт с 16:00 до 17:00 в солнечные дни, 9–15 минут.",
+          zh: "晴天 16:00–17:00 时段的专属飞行，9–15 分钟。",
+          hi: "धूप वाले दिनों में 16:00–17:00 के बीच एक अलग उड़ान, 9–15 मिनट।",
+        },
+        controlType: "counter",
+        priceVND: KP_DAC_BIET_VND,
+        priceUSD: KP_DAC_BIET_USD,
+        capGroup: KP_DAC_BIET_CAP_GROUP,
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
+        visibleForFlightTypes: ["paragliding"],
+      },
+      {
+        key: "khau_pha_pg_long_flight",
+        label: {
+          vi: "Bay lâu 20–25 phút",
+          en: "Long flight 20–25 minutes",
+          fr: "Vol long 20–25 minutes",
+          ru: "Долгий полёт 20–25 минут",
+          zh: "长时间飞行 20–25 分钟",
+          hi: "लंबी उड़ान 20–25 मिनट",
+        },
+        description: {
+          vi: "Mỗi chuyến bay 20–25 phút, tuỳ điều kiện. Miễn phí nếu khách đã chọn bay bình minh hoặc hoàng hôn.",
+          en: "20–25 minutes per flight, conditions permitting. Free if the guest also picks a sunrise or sunset flight.",
+          fr: "20 à 25 minutes par vol, selon les conditions. Offert si le passager choisit aussi un vol au lever ou au coucher du soleil.",
+          ru: "20–25 минут на полёт, если позволяют условия. Бесплатно, если гость выбрал также полёт на рассвете или на закате.",
+          zh: "每次飞行 20–25 分钟，视条件而定。若客人同时选择日出或日落飞行，则免费。",
+          hi: "हर उड़ान 20–25 मिनट, परिस्थितियों के अनुसार। अगर मेहमान सूर्योदय या सूर्यास्त उड़ान भी चुनता है तो मुफ़्त।",
+        },
+        // Lời nhắc hiện khi khách TÍCH bay lâu (select-flight-step).
+        note: PG_LONG_FLIGHT_NOTE,
+        controlType: "counter",
+        priceVND: KP_DAC_BIET_VND,
+        priceUSD: KP_DAC_BIET_USD,
+        visibleForPackages: ["khau_pha_pkg_1", "khau_pha_pkg_2"],
+        visibleForFlightTypes: ["paragliding"],
+      },
+      // ---- PPG (dù gắn động cơ) ----
+      {
+        key: "khau_pha_ppg_san_may",
+        label: {
+          vi: "Bay săn mây ~2.000m",
+          en: "Cloud hunting ~2,000 m",
+          fr: "Chasse aux nuages ~2 000 m",
+          ru: "Охота за облаками ~2 000 м",
+          zh: "追云飞行 约 2,000 米",
+          hi: "क्लाउड हंटिंग ~2,000 मीटर",
+        },
+        description: {
+          vi: "Bay lên cao khoảng 2.000m săn biển mây, bay 20–25 phút. Chỉ có ở dù gắn động cơ.",
+          en: "Fly high, to about 2,000 m, above the sea of clouds; 20–25 minutes. Paramotor only.",
+          fr: "Montée à environ 2 000 m au-dessus de la mer de nuages ; 20 à 25 minutes. En paramoteur uniquement.",
+          ru: "Подъём примерно на 2 000 м над морем облаков; 20–25 минут. Только на парамоторе.",
+          zh: "飞升至约 2,000 米高空追逐云海，飞行 20–25 分钟。仅限动力伞。",
+          hi: "बादलों के समुद्र के ऊपर लगभग 2,000 मीटर तक ऊँची उड़ान; 20–25 मिनट। केवल पैरामोटर।",
+        },
+        controlType: "counter",
+        priceVND: KP_DAC_BIET_VND,
+        priceUSD: KP_DAC_BIET_USD,
+        capGroup: KP_DAC_BIET_CAP_GROUP,
+        visibleForPackages: ["khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
+        visibleForFlightTypes: ["paramotor"],
+      },
+      {
+        key: "khau_pha_ppg_sunrise",
+        label: {
+          vi: "Bay bình minh (6–7h, ngày nắng)",
+          en: "Sunrise flight (6–7 am, sunny days)",
+          fr: "Vol au lever du soleil (6h–7h, jours ensoleillés)",
+          ru: "Полёт на рассвете (6–7 ч, в солнечные дни)",
+          zh: "日出飞行（6–7 点，晴天）",
+          hi: "सूर्योदय उड़ान (सुबह 6–7 बजे, धूप वाले दिन)",
+        },
+        description: {
+          vi: "Bay trong khung 06:00–07:00 vào ngày nắng, 20–25 phút.",
+          en: "Flown in the 06:00–07:00 window on sunny days, 20–25 minutes.",
+          fr: "Vol entre 06h00 et 07h00 les jours ensoleillés, 20 à 25 minutes.",
+          ru: "Полёт с 06:00 до 07:00 в солнечные дни, 20–25 минут.",
+          zh: "晴天 06:00–07:00 时段飞行，20–25 分钟。",
+          hi: "धूप वाले दिनों में 06:00–07:00 के बीच उड़ान, 20–25 मिनट।",
+        },
+        controlType: "counter",
+        priceVND: KP_DAC_BIET_VND,
+        priceUSD: KP_DAC_BIET_USD,
+        capGroup: KP_DAC_BIET_CAP_GROUP,
+        visibleForPackages: ["khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
+        visibleForFlightTypes: ["paramotor"],
+      },
+      {
+        key: "khau_pha_ppg_sunset",
+        label: {
+          vi: "Bay hoàng hôn (16–17h, ngày nắng)",
+          en: "Sunset flight (4–5 pm, sunny days)",
+          fr: "Vol au coucher du soleil (16h–17h, jours ensoleillés)",
+          ru: "Полёт на закате (16–17 ч, в солнечные дни)",
+          zh: "日落飞行（16–17 点，晴天）",
+          hi: "सूर्यास्त उड़ान (शाम 4–5 बजे, धूप वाले दिन)",
+        },
+        description: {
+          vi: "Bay trong khung 16:00–17:00 vào ngày nắng, 20–25 phút.",
+          en: "Flown in the 16:00–17:00 window on sunny days, 20–25 minutes.",
+          fr: "Vol entre 16h00 et 17h00 les jours ensoleillés, 20 à 25 minutes.",
+          ru: "Полёт с 16:00 до 17:00 в солнечные дни, 20–25 минут.",
+          zh: "晴天 16:00–17:00 时段飞行，20–25 分钟。",
+          hi: "धूप वाले दिनों में 16:00–17:00 के बीच उड़ान, 20–25 मिनट।",
+        },
+        controlType: "counter",
+        priceVND: KP_DAC_BIET_VND,
+        priceUSD: KP_DAC_BIET_USD,
+        capGroup: KP_DAC_BIET_CAP_GROUP,
+        visibleForPackages: ["khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
+        visibleForFlightTypes: ["paramotor"],
+      },
+      {
+        key: "khau_pha_ppg_long_flight",
+        label: {
+          vi: "Bay lâu 20–25 phút",
+          en: "Long flight 20–25 minutes",
+          fr: "Vol long 20–25 minutes",
+          ru: "Долгий полёт 20–25 минут",
+          zh: "长时间飞行 20–25 分钟",
+          hi: "लंबी उड़ान 20–25 मिनट",
+        },
+        description: {
+          vi: "Mỗi chuyến bay 20–25 phút, tuỳ điều kiện. Miễn phí nếu khách đã chọn săn mây, bình minh hoặc hoàng hôn.",
+          en: "20–25 minutes per flight, conditions permitting. Free if the guest also picks cloud hunting, sunrise or sunset.",
+          fr: "20 à 25 minutes par vol, selon les conditions. Offert si le passager choisit aussi la chasse aux nuages, le lever ou le coucher du soleil.",
+          ru: "20–25 минут на полёт, если позволяют условия. Бесплатно, если гость выбрал также охоту за облаками, рассвет или закат.",
+          zh: "每次飞行 20–25 分钟，视条件而定。若客人同时选择追云、日出或日落，则免费。",
+          hi: "हर उड़ान 20–25 मिनट, परिस्थितियों के अनुसार। अगर मेहमान क्लाउड हंटिंग, सूर्योदय या सूर्यास्त भी चुनता है तो मुफ़्त।",
+        },
+        controlType: "counter",
+        priceVND: KP_DAC_BIET_VND,
+        priceUSD: KP_DAC_BIET_USD,
+        visibleForPackages: ["khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
+        visibleForFlightTypes: ["paramotor"],
+      },
+      {
+        /**
+         * KHOÁ GỘP CŨ (đến 02/10/2026) — KHÔNG còn bán (`legacy`), giữ lại để
+         * booking cũ trong DB còn hiện đúng tên + giá 700k trên vé, email và
+         * trang quản trị, giống key gói `khau_pha_paramotor` cũ. Bộ đồng bộ
+         * vẫn đổ khoá này vào ô `sunset` của sổ.
+         */
         key: "khau_pha_paramotor_2000m",
+        legacy: true,
         label: {
           vi: "BAY SĂN MÂY, BAY HOÀNG HÔN, BAY BÌNH MINH (độ cao 2.000m)",
           en: "Cloud Hunting / Sunset / Sunrise Flight (2,000m altitude)",
@@ -674,19 +889,10 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           zh: "云海/日落/日出飞行（2000 米高度）",
           hi: "क्लाउड हंटिंग / सनसेट / सनराइज फ्लाइट (2,000 मीटर ऊंचाई)",
         },
-        description: {
-          vi: "Bay lên độ cao 2 nghìn mét để ngắm biển mây hoặc đón bình minh/hoàng hôn. Một trải nghiệm độc nhất!",
-          en: "Ascend to 2,000m to admire the cloud sea or catch sunrise/sunset. A truly unique experience!",
-          fr: "Montez à 2 000 m pour admirer la mer de nuages ou assister au lever/coucher du soleil. Une expérience vraiment unique !",
-          ru: "Поднимитесь на 2 000 м, чтобы полюбоваться морем облаков или встретить рассвет либо закат. Поистине уникальные впечатления!",
-          zh: "飞升至 2,000 米高空，饱览云海或迎接日出日落。绝无仅有的体验！",
-          hi: "बादलों के समुद्र को निहारने या सूर्योदय/सूर्यास्त देखने के लिए 2,000 मीटर की ऊँचाई तक उड़ें। वास्तव में अनोखा अनुभव!",
-        },
-        // Counter để nhóm khách chọn đúng SỐ NGƯỜI bay 2.000m
-        // (checkbox cũ mặc định tính cho cả đoàn).
         controlType: "counter",
-        priceVND: 700_000,
-        priceUSD: 28,
+        priceVND: KP_DAC_BIET_VND,
+        priceUSD: KP_DAC_BIET_USD,
+        capGroup: KP_DAC_BIET_CAP_GROUP,
         visibleForPackages: ["khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
         visibleForFlightTypes: ["paramotor"],
       },

@@ -75,7 +75,7 @@ export const en: CommonTranslation = {
         highlights: [
           "Fly over one of the four great passes",
           "Fly over the golden rice season",
-          "Cloud chasing above 2,000 m",
+          "Cloud chasing at around 2,000 m",
         ],
         summary:
           "One of the most beautiful flying sites in the world. Fly over the majestic Khau Pha Pass, one of Vietnam's four great mountain passes. Flights over the golden rice season, over the water-pouring season, and cloud chasing up to 2,000 m (paramotor).",

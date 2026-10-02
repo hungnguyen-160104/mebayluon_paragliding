@@ -17,7 +17,8 @@ const TEN_DV: Array<[keyof BookingDTO, string]> = [
   ["video360", "Cam 360"],
   ["flycam", "Flycam"],
   ["redFlag", "Cờ đỏ"],
-  ["sunset", "Hoàng hôn"],
+  ["sunset", "H.hôn / S.mây / B.minh"],
+  ["longFlight", "Bay lâu"],
   ["flagFlight", "Kéo cờ"],
 ];
 

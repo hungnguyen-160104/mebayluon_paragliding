@@ -75,7 +75,7 @@ export const vi: CommonTranslation = {
         highlights: [
           "Bay trên tứ đại đỉnh đèo",
           "Điểm bay giữa mùa vàng",
-          "Bay săn mây trên 2.000m",
+          "Bay săn mây khoảng 2.000m",
         ],
         summary:
           "Một trong những điểm bay đẹp nhất Thế giới. Bay trên đèo Khau Phạ hùng vĩ, một trong Tứ đại đỉnh đèo Việt Nam. Điểm bay giữa mùa vàng, bay trên mùa nước đổ và Bay săn mây lên 2.000m (Paramotor).",

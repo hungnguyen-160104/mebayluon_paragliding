@@ -117,6 +117,7 @@ function dv(x: any): DichVuKhach {
     flycam: Boolean(x?.flycam),
     redFlag: Boolean(x?.redFlag),
     sunset: Boolean(x?.sunset),
+    longFlight: Boolean(x?.longFlight),
     flagFlight: Boolean(x?.flagFlight),
   };
 }
@@ -586,7 +587,7 @@ export async function suaDichVuVe(
   session: BaobaySession,
   spotRaw: string,
   bookingId: string,
-  dichVu: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean; sunset?: boolean; flagFlight?: boolean }>,
+  dichVu: Array<{ guestNo: number; video360?: boolean; flycam?: boolean; redFlag?: boolean; sunset?: boolean; longFlight?: boolean; flagFlight?: boolean }>,
   /**
    * ĐỔI LẠI AI BAY PPG (chủ 23/09) — danh sách khách nhận VÉ QR. Chỉ đổi được
    * vé CHƯA ai quét và chưa bị thu hồi; vé đang có phi công giữ thì giữ nguyên
@@ -669,6 +670,7 @@ export async function suaDichVuVe(
       flycam: Boolean(x.flycam),
       redFlag: Boolean(x.redFlag),
       sunset: Boolean(x.sunset),
+      longFlight: Boolean(x.longFlight),
       flagFlight: Boolean(x.flagFlight),
     };
     if (DICH_VU_VE_TAT_CA.every((t) => Boolean(ra.dichVu?.[t]) === Boolean(moi[t]))) return ra;

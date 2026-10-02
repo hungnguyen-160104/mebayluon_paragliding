@@ -36,7 +36,9 @@ const TEN_COT: Record<DichVuVeBatKy, string> = {
   video360: "360",
   flycam: "Fcam",
   redFlag: "C.Đỏ",
-  sunset: "H.hôn",
+  /** Đầu cột ngắn; chú thích khi rê chuột là tên đủ "H.hôn / S.mây / B.minh" (chủ 02/10). */
+  sunset: "HH/SM/BM",
+  longFlight: "B.lâu",
   flagFlight: "K.cờ",
 };
 
@@ -71,6 +73,7 @@ export function VeDichVuModal({
       flycam: booking.flycam,
       redFlag: booking.redFlag,
       sunset: booking.sunset,
+      longFlight: booking.longFlight ?? 0,
       flagFlight: booking.flagFlight,
     }).khach;
   });
@@ -169,6 +172,7 @@ export function VeDichVuModal({
     flycam: booking.flycam,
     redFlag: booking.redFlag,
     sunset: booking.sunset,
+    longFlight: booking.longFlight ?? 0,
     flagFlight: booking.flagFlight,
   };
   /**

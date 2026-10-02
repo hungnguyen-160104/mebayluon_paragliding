@@ -75,7 +75,7 @@ export const fr: CommonTranslation = {
         highlights: [
           "Voler au-dessus de l’un des quatre grands cols",
           "Voler au-dessus de la saison dorée",
-          "Chasse aux nuages au-dessus de 2 000 m",
+          "Chasse aux nuages vers 2 000 m",
         ],
         summary:
           "L’un des plus beaux sites de vol au monde. Survolez le majestueux col de Khau Pha, l’un des quatre grands cols du Vietnam. Vols au-dessus de la saison dorée, de la saison des rizières inondées, et chasse aux nuages jusqu’à 2 000 m (paramoteur).",

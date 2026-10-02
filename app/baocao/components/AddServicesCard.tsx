@@ -7,6 +7,7 @@ import {
   COMBO_DISCOUNT,
   SERVICE_PRICE_LABEL,
   servicePriceOf,
+  serviceChargedCount,
   comboDiscount,
 } from "@/lib/baobay/flight-price";
 import type { BookingDTO } from "@/lib/baobay/types";
@@ -43,8 +44,9 @@ function MiniCount({ value, onChange, max }: { value: number; onChange: (v: numb
   );
 }
 
-type ServiceKey = "flycam" | "video360" | "redFlag" | "sunset" | "flagFlight";
-const EMPTY: Record<ServiceKey, number> = { flycam: 0, video360: 0, redFlag: 0, sunset: 0, flagFlight: 0 };
+type ServiceKey = "flycam" | "video360" | "redFlag" | "sunset" | "longFlight" | "flagFlight";
+const EMPTY: Record<ServiceKey, number> = { flycam: 0, video360: 0, redFlag: 0, sunset: 0, longFlight: 0, flagFlight: 0 };
+const KEYS = Object.keys(EMPTY) as ServiceKey[];
 
 /**
  * KHÁCH ĐĂNG KÝ THÊM DỊCH VỤ TẠI BÃI.
@@ -241,7 +243,20 @@ export function AddServicesCard({
    */
   const price = servicePriceOf(spot, picked?.createdAt);
   /** Tiền dịch vụ thêm, phần combo được bớt thêm, và số cuối cùng phải thu. */
-  const addAmount = (Object.keys(price) as ServiceKey[]).reduce((t, k) => t + add[k] * price[k], 0);
+  /**
+   * TIỀN DỊCH VỤ tính theo HIỆU hai trạng thái (trước / sau), không nhân thẳng
+   * số × giá: bay lâu MIỄN PHÍ cho khách có H.hôn/S.mây/B.minh (chủ 02/10), nên
+   * thêm 1 hoàng hôn vào đoàn đã trả bay lâu thì tiền phải thu tăng 0đ chứ
+   * không phải 700k — y như máy chủ tính lại bằng bookingTotal.
+   */
+  const dang: Record<ServiceKey, number> = picked
+    ? (Object.fromEntries(KEYS.map((k) => [k, Number(picked[k] ?? 0) || 0])) as Record<ServiceKey, number>)
+    : { ...EMPTY };
+  const tienDv = (c: Record<ServiceKey, number>) => KEYS.reduce((t, k) => t + serviceChargedCount(k, c) * price[k], 0);
+  const cong = (a: Record<ServiceKey, number>, b: Record<ServiceKey, number>, dau: 1 | -1) =>
+    Object.fromEntries(KEYS.map((k) => [k, Math.max(0, a[k] + dau * b[k])])) as Record<ServiceKey, number>;
+  const addAmount =
+    mode === "remove" ? tienDv(dang) - tienDv(cong(dang, add, -1)) : tienDv(cong(dang, add, 1)) - tienDv(dang);
   const comboBefore = picked ? comboDiscount(picked.flycam, picked.video360) : 0;
   const comboAfter = picked ? comboDiscount(picked.flycam + add.flycam, picked.video360 + add.video360) : 0;
   const comboGain = Math.max(0, comboAfter - comboBefore);
@@ -265,9 +280,10 @@ export function AddServicesCard({
    * Cam 360 lấy 1 flycam giá ngang nhau → 0đ; đổi mà combo tan thì khách chịu
    * phần combo mất (đổi là ý khách, không phải lỗi bên mình nên không chia đôi).
    */
-  const botAmount = (Object.keys(price) as ServiceKey[]).reduce((t, k) => t + bot[k] * price[k], 0);
+  const botAmount = tienDv(dang) - tienDv(cong(dang, bot, -1));
   const comboSauDoi = picked ? comboDiscount(picked.flycam - bot.flycam + add.flycam, picked.video360 - bot.video360 + add.video360) : 0;
-  const buTru = addAmount - botAmount - (comboSauDoi - comboBefore);
+  /** Bù trừ tính trên trạng thái CUỐI (bớt rồi thêm) — miễn phí bay lâu có thể đổi theo. */
+  const buTru = tienDv(cong(cong(dang, bot, -1), add, 1)) - tienDv(dang) - (comboSauDoi - comboBefore);
 
   /** Tiền lùi lại khi huỷ = tiền dịch vụ bỏ đi + phần combo tan rã theo. */
   const comboLost = picked
@@ -560,7 +576,10 @@ export function AddServicesCard({
             {serviceRows.map((s) => (
               <label key={s.key} className="flex items-center gap-1 text-[11px] font-semibold text-slate-700">
                 {s.label}
-                <span className="font-normal text-slate-400">{(price[s.key] / 1000).toLocaleString("vi-VN")}k</span>
+                <span className="font-normal text-slate-400">
+                  {(price[s.key] / 1000).toLocaleString("vi-VN")}k
+                  {s.key === "longFlight" ? " · miễn phí kèm H.hôn/S.mây/B.minh" : ""}
+                </span>
                 <MiniCount
                   value={add[s.key]}
                   onChange={(v) => setAdd((p) => ({ ...p, [s.key]: Math.min(v, capOf(s.key)) }))}

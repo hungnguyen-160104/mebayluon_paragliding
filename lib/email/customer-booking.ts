@@ -15,6 +15,7 @@
  */
 
 import { resolvePickup } from "@/lib/booking/pickup";
+import { isKhauPhaSpecialKey, kpRefundNote } from "@/lib/booking/khau-pha-dac-biet";
 import { CLUBHOUSE_MAP_URL, KHAU_PHA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
 
 export type EmailLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
@@ -623,6 +624,12 @@ export type CustomerEmailInput = {
   includedLines?: string[];
   /** Dịch vụ khách chọn thêm, đã dịch sẵn: [{ label, qty }]. */
   selectedServiceLines?: Array<{ label: string; qty?: number; note?: string }>;
+  /**
+   * Trạng thái dịch vụ theo KHOÁ (bản đặt web gửi kèm) — chỉ dùng để biết
+   * khách có chọn bay đặc biệt / bay lâu Khau Phạ hay không, để in luật hoàn
+   * phụ phí (lib/booking/khau-pha-dac-biet.ts).
+   */
+  services?: Record<string, { selected?: boolean; qty?: number } | undefined>;
   /** Đường dẫn tuyệt đối tới trang giới thiệu điểm bay đã đặt. */
   spotPageUrl?: string;
   /** Có ảnh vé đính kèm hay không — quyết định hiện dòng nhắc trong thư. */
@@ -840,6 +847,20 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
         : `<div style="font-size:14px;color:${C.soft};">${esc(t.noService)}</div>`
     }</td></tr>`;
 
+  /**
+   * LUẬT HOÀN PHỤ PHÍ bay đặc biệt (Khau Phạ, chủ 02/10/2026): bình minh không
+   * có nắng, hoàng hôn bị mây che, gió yếu không bay lâu được → hoàn phụ phí
+   * sau chuyến bay, chuyến bay thành chuyến thường.
+   */
+  const hasSpecialFlight =
+    Object.entries(input.services || {}).some(
+      ([key, st]) => !!st?.selected && isKhauPhaSpecialKey(key),
+    ) ||
+    (input.price?.servicesBreakdown || []).some((row) => isKhauPhaSpecialKey(row?.key));
+  const refundHtml = hasSpecialFlight
+    ? `<tr><td style="padding-top:8px;"><div style="background:#FFF8EB;border-left:4px solid #F5A524;border-radius:6px;padding:9px 12px;font-size:13px;color:#7A4B00;line-height:1.6;">${esc(kpRefundNote(lang))}</div></td></tr>`
+    : "";
+
   /* ---------- đã bao gồm ---------- */
   const included = (input.includedLines || []).filter(Boolean);
   const includedHtml = included.length
@@ -974,6 +995,7 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
       }
 
       ${servicesHtml}
+      ${refundHtml}
       ${includedHtml}
       ${requestHtml}
 

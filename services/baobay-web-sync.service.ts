@@ -44,7 +44,7 @@ const WEB_LOCATION_BY_SPOT: Record<string, string> = {
 
 export const WEB_SYNC_SPOTS = Object.keys(WEB_LOCATION_BY_SPOT);
 
-type WebServiceField = "flycam" | "video360" | "sunset" | "flagFlight" | "redFlag";
+type WebServiceField = "flycam" | "video360" | "sunset" | "longFlight" | "flagFlight" | "redFlag";
 
 /**
  * Dịch vụ bên trang khách ↔ ô dịch vụ trong app. Xét THEO THỨ TỰ, khớp đầu tiên
@@ -54,6 +54,13 @@ type WebServiceField = "flycam" | "video360" | "sunset" | "flagFlight" | "redFla
  * 100k cho khách mua dù cờ đỏ 400k.
  */
 export const SERVICE_MAP: Array<{ match: RegExp; field: WebServiceField }> = [
+  /**
+   * BAY LÂU 20–25 phút (chủ 02/10/2026) — `khau_pha_pg_long_flight`,
+   * `khau_pha_ppg_long_flight`. Đứng ĐẦU bảng: chữ "flight" dễ bị các luật
+   * kéo cờ / cờ đỏ phía dưới bắt nhầm nếu sau này ai đặt khoá kiểu
+   * "flag_long_flight"; khớp đầu tiên thắng nên để nó lên trước cho chắc.
+   */
+  { match: /long_flight|longflight|bay_lau/i, field: "longFlight" },
   { match: /flycam/i, field: "flycam" },
   { match: /camera360|cam360/i, field: "video360" },
   /**
@@ -68,6 +75,12 @@ export const SERVICE_MAP: Array<{ match: RegExp; field: WebServiceField }> = [
    *
    * Ba đơn đã dính: WEBFF4638 (15/07), WebMBL9A16A9 (03/09), WebMBLBE9CDB
    * (10/09 — Alfredo Pretel Vargas, đã bay).
+   */
+  /**
+   * Từ 02/10/2026 web tách thành từng lựa chọn — `khau_pha_pg_sunrise`,
+   * `khau_pha_pg_sunset`, `khau_pha_ppg_san_may`, `khau_pha_ppg_sunrise`,
+   * `khau_pha_ppg_sunset` — nhưng trong app vẫn là MỘT ô `sunset`
+   * (H.hôn / S.mây / B.minh): cùng giá, cùng cách phi công khai.
    */
   { match: /2000m|san_may|sanmay|binh_minh|sunrise/i, field: "sunset" },
   { match: /sunset|hoang_hon/i, field: "sunset" },
@@ -206,7 +219,7 @@ function shuttleFee(doc: WebDoc, guests: number, spot: string): number {
 }
 
 /** Loại hình bay: Hà Nội theo gói 650m/850m, nơi khác theo có động cơ hay không. */
-function flightKindOf(doc: WebDoc, spot: string): "pg" | "ppg" | "m650" | "m850" {
+export function flightKindOf(doc: WebDoc, spot: string): "pg" | "ppg" | "m650" | "m850" {
   if (spot === "ha-noi") return doc.packageKey === "ha_noi_850m" ? "m850" : "m650";
   const ppgByService = Object.entries(doc.services ?? {}).some(([k, v]) => /paramotor|ppg/i.test(k) && chosen(v));
   return doc.flightTypeKey === "paramotor" || ppgByService ? "ppg" : "pg";
@@ -281,6 +294,12 @@ export function mapWebBooking(doc: WebDoc, spot: string) {
     video360: serviceQty(doc, "video360", guests),
     redFlag: serviceQty(doc, "redFlag", guests),
     sunset: serviceQty(doc, "sunset", guests),
+    /**
+     * Bay lâu (chủ 02/10): web đã miễn phí phần trùng với bình minh/hoàng
+     * hôn/săn mây trong tổng tiền; `bookingTotal` của app áp đúng luật ấy nên
+     * ai mở booking ra sửa thì tổng vẫn ra đúng số web đã báo.
+     */
+    longFlight: serviceQty(doc, "longFlight", guests),
     flagFlight: serviceQty(doc, "flagFlight", guests),
     flightKind: flightKindOf(doc, spot),
     pickup,
@@ -443,7 +462,7 @@ export async function syncWebBookings(
         if (!(twin.email || "").trim() && mapped.email) fill.email = mapped.email;
         if (!twin.unitPrice && mapped.unitPrice) fill.unitPrice = mapped.unitPrice;
         if (!twin.totalAmount && mapped.totalAmount) fill.totalAmount = mapped.totalAmount;
-        for (const k of ["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const) {
+        for (const k of ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight", "mountainCar"] as const) {
           if (!twin[k] && mapped[k]) fill[k] = mapped[k];
         }
         /**

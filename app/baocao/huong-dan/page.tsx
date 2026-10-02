@@ -353,7 +353,7 @@ const BODY = `<div class="wrap">
       </li>
       <li>
         <h4>Khai dịch vụ đã làm</h4>
-        <p>Camera 360, flycam, dù cờ đỏ, bay hoàng hôn, kéo cờ — mỗi loại một ô số kèm ô mã vé của khách dùng dịch vụ đó. Khách ngoại giao khai riêng.</p>
+        <p>Camera 360, flycam, dù cờ đỏ, H.hôn / S.mây / B.minh, bay lâu, kéo cờ — mỗi loại một ô số kèm ô mã vé của khách dùng dịch vụ đó. Khách ngoại giao khai riêng.</p>
       </li>
       <li>
         <h4>Khách được giao cho mình</h4>

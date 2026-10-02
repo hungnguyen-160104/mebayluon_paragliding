@@ -18,7 +18,8 @@ const SERVICES = [
   { id: "flycam", label: "Flycam" },
   { id: "video360", label: "Camera 360" },
   { id: "redFlag", label: "Dù cờ đỏ" },
-  { id: "sunset", label: "Hoàng hôn/săn mây" },
+  { id: "sunset", label: "H.hôn / S.mây / B.minh" },
+  { id: "longFlight", label: "Bay lâu" },
   { id: "flagFlight", label: "Kéo cờ/bánh" },
 ] as const;
 type ServiceId = (typeof SERVICES)[number]["id"];
@@ -155,7 +156,7 @@ export function FlycamCancelCard({
   return (
     <CollapseCard
       className={pending.length ? "border-amber-400" : "border-slate-200"}
-      title="🎥 Huỷ dịch vụ (flycam · 360 · cờ đỏ · hoàng hôn · kéo cờ) & hoàn tiền"
+      title="🎥 Huỷ dịch vụ (flycam · 360 · cờ đỏ · H.hôn/S.mây/B.minh · bay lâu · kéo cờ) & hoàn tiền"
       hint={pending.length ? `${pending.length} lệnh hoàn đang chờ kế toán` : `${items.length} lệnh gần đây`}
       open={pending.length > 0 || undefined}
     >

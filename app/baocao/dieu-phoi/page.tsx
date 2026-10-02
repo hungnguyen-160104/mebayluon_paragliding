@@ -80,6 +80,9 @@ type FormState = {
   redFlagCodesText: string;
   sunset: number;
   sunsetCodesText: string;
+  /** Bay lâu 20–25' — dịch vụ riêng từ chủ 02/10, khai giống hệt hoàng hôn. */
+  longFlight: number;
+  longFlightCodesText: string;
   flagFlight: number;
   flagFlightCodesText: string;
   /** Sổ THU CHI hợp nhất: nội dung – số tiền – thu/chi – TM/CK – ghi chú. */
@@ -112,6 +115,8 @@ const EMPTY_FORM: FormState = {
   redFlagCodesText: "",
   sunset: 0,
   sunsetCodesText: "",
+  longFlight: 0,
+  longFlightCodesText: "",
   flagFlight: 0,
   flagFlightCodesText: "",
   money: [{ content: "", amount: 0, kind: "thu", method: "cash", note: "" }],
@@ -204,6 +209,9 @@ function fromReport(r: DispatcherReportDTO): FormState {
     redFlagCodesText: r.redFlagCodes.join(", "),
     sunset: r.sunset,
     sunsetCodesText: r.sunsetCodes.join(", "),
+    // Báo cáo lưu trước 02/10 chưa có trường bay lâu → coi như 0.
+    longFlight: r.longFlight ?? 0,
+    longFlightCodesText: (r.longFlightCodes ?? []).join(", "),
     flagFlight: r.flagFlight,
     flagFlightCodesText: r.flagFlightCodes.join(", "),
     /**
@@ -800,8 +808,9 @@ export default function DispatcherReportPage() {
               setForm((prev) => {
                 const next = { ...prev };
                 let doi = false;
-                for (const k of ["flycam", "video360", "redFlag", "sunset", "flagFlight"] as const) {
-                  const so = Number(f[k]) || 0;
+                for (const k of ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight"] as const) {
+                  // Sổ khách cũ chưa trả longFlight (chủ 02/10) → đọc lỏng, thiếu thì 0.
+                  const so = Number((f as unknown as Record<string, unknown>)[k]) || 0;
                   const cu = prev[k];
                   if (so <= 0 || cu === so) continue;
                   if (cu !== 0 && cu !== lastAutoSvc.current[k]) continue;
@@ -819,6 +828,7 @@ export default function DispatcherReportPage() {
                 video360: f.video360,
                 redFlag: f.redFlag,
                 sunset: f.sunset,
+                longFlight: Number((f as unknown as { longFlight?: number }).longFlight) || 0,
                 flagFlight: f.flagFlight,
               }))
             }
@@ -836,8 +846,14 @@ export default function DispatcherReportPage() {
               <CountInput compact value={form.redFlag} onChange={(v) => set("redFlag", v)} max={1000} />
             </ServiceBox>
             {spot !== "sapa" && (
-            <ServiceBox tone="sunset" label="Bay hoàng hôn/săn mây">
+            <ServiceBox tone="sunset" label="H.hôn / S.mây / B.minh">
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={1000} />
+            </ServiceBox>
+            )}
+            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — cùng điều kiện hiện, dùng chung màu sunset */}
+            {spot !== "sapa" && (
+            <ServiceBox tone="longFlight" label="Bay lâu">
+              <CountInput compact value={form.longFlight} onChange={(v) => set("longFlight", v)} max={1000} />
             </ServiceBox>
             )}
             <ServiceBox tone="flagFlight" label="Bay kéo cờ đỏ/cờ sinh nhật">
@@ -878,10 +894,21 @@ export default function DispatcherReportPage() {
                 />
               </ServiceBox>
               {spot !== "sapa" && (
-              <ServiceBox tone="sunset" label="Mã vé hoàng hôn/săn mây">
+              <ServiceBox tone="sunset" label="Mã vé H.hôn / S.mây / B.minh">
                 <TextInput
                   value={form.sunsetCodesText}
                   onChange={(e) => set("sunsetCodesText", e.target.value.toUpperCase())}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  disabled={locked}
+                />
+              </ServiceBox>
+              )}
+              {spot !== "sapa" && (
+              <ServiceBox tone="longFlight" label="Mã vé bay lâu">
+                <TextInput
+                  value={form.longFlightCodesText}
+                  onChange={(e) => set("longFlightCodesText", e.target.value.toUpperCase())}
                   autoCapitalize="characters"
                   spellCheck={false}
                   disabled={locked}

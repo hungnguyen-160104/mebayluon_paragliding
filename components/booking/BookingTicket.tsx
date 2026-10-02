@@ -16,6 +16,16 @@ import { shortServiceLabel } from "@/lib/booking/service-label";
 import { isPickupService, resolvePickup } from "@/lib/booking/pickup";
 import { spotPageForBooking } from "@/lib/booking/spot-to-location";
 import { SITE_URL } from "@/lib/site-config";
+import {
+  imageComboDiscountVND,
+  imageComboLabel,
+} from "@/lib/booking/image-combo";
+import {
+  isKhauPhaSpecialKey,
+  kpRefundNote,
+  longFlightFreeLabel,
+  longFlightFreeVND,
+} from "@/lib/booking/khau-pha-dac-biet";
 
 const ADDON_KEYS: AddonKey[] = ["pickup", "flycam", "camera360"];
 
@@ -755,10 +765,44 @@ export default function BookingTicket({
   const totalFromResult = Number(bookingPrice?.total);
   const hasTotalFromResult = Number.isFinite(totalFromResult) && totalFromResult > 0;
 
+  /**
+   * Các khoản GIẢM của dịch vụ khi vé tự cộng lại (không có bảng dịch vụ gửi
+   * kèm — vd. vé ở trang thành công dựng từ bản ghi DB, nơi không lưu bảng):
+   * combo ảnh (flycam + 360) và bay lâu miễn phí kèm bình minh/hoàng hôn/săn
+   * mây (Khau Phạ, chủ 02/10/2026). Thiếu hai dòng này thì cộng các dòng lên
+   * cao hơn dòng tổng mà không dòng nào giải thích.
+   */
+  const fallbackDiscountRows = useMemo(() => {
+    const states = selectedServices.map((svc) => ({
+      key: String(svc.key),
+      selected: true,
+      qty: svc.qty,
+    }));
+    const rows: Array<{ label: string; lineTotal: number }> = [];
+    const combo = imageComboDiscountVND(states);
+    if (combo > 0) rows.push({ label: imageComboLabel(lang), lineTotal: -combo });
+    const longFree = longFlightFreeVND(states);
+    if (longFree > 0) {
+      rows.push({ label: longFlightFreeLabel(lang, states), lineTotal: -longFree });
+    }
+    return rows;
+  }, [selectedServices, lang]);
+
+  /** Khách có chọn bay đặc biệt / bay lâu → vé in luật hoàn phụ phí. */
+  const hasSpecialFlight = selectedServices.some((svc) => isKhauPhaSpecialKey(svc.key));
+
   const selectedServicesTotal = useMemo(() => {
     if (hasServicesTotalFromResult) return servicesTotalFromResult;
-    return selectedServicePriceRows.reduce((sum, row) => sum + Number(row.lineTotal || 0), 0);
-  }, [hasServicesTotalFromResult, servicesTotalFromResult, selectedServicePriceRows]);
+    return [...selectedServicePriceRows, ...fallbackDiscountRows].reduce(
+      (sum, row) => sum + Number(row.lineTotal || 0),
+      0,
+    );
+  }, [
+    hasServicesTotalFromResult,
+    servicesTotalFromResult,
+    selectedServicePriceRows,
+    fallbackDiscountRows,
+  ]);
 
   const totalWithSelectedServices = hasTotalFromResult
     ? totalFromResult
@@ -845,6 +889,13 @@ export default function BookingTicket({
           amountText: formatVND(row.lineTotal),
         });
       });
+      fallbackDiscountRows.forEach((row) => {
+        discountRows.push({
+          label: row.label,
+          amountText: formatVND(row.lineTotal),
+          type: "discount",
+        });
+      });
     }
 
     addonRows.forEach((a) => {
@@ -880,6 +931,7 @@ export default function BookingTicket({
     hasServicesTotalFromResult,
     servicesTotalFromResult,
     selectedServicePriceRows,
+    fallbackDiscountRows,
     totals.baseTotal,
     totals.discountTotal,
     totals.peakSurchargePerPerson,
@@ -1680,6 +1732,21 @@ export default function BookingTicket({
                     ) : null}
                   </span>
                 </div>
+
+                {/* Luật hoàn phụ phí bay đặc biệt (Khau Phạ, chủ 02/10/2026). */}
+                {hasSpecialFlight ? (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: 11,
+                      lineHeight: 1.45,
+                      color: "rgba(255,255,255,0.85)",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    ↺ {kpRefundNote(lang)}
+                  </div>
+                ) : null}
               </div>
             </div>
 

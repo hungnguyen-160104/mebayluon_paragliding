@@ -367,6 +367,41 @@ export default function PpgClient() {
                   </p>
                 </div>
               </div>
+
+              {/* Bay đặc biệt (chủ chốt 02/10/2026): săn mây / bình minh /
+                  hoàng hôn mỗi thứ +700k; bay lâu +700k, miễn phí khi kèm một
+                  trong ba; không bay được thì hoàn phụ phí sau chuyến bay. */}
+              <div className="border-t border-white/15 p-6 sm:p-8">
+                <p className="text-[11px] uppercase tracking-wider text-slate-400">
+                  {c.specialTitle}
+                </p>
+                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {c.specialOptions.map((o) => (
+                    <li key={o.label} className="rounded-xl bg-white/5 p-4">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                        <span className="font-semibold">{o.label}</span>
+                        <span className="font-bold text-amber-300">
+                          +{formatVND(PPG_PRICING.specialVND)}
+                          <span className="text-xs font-normal text-slate-300">{c.perPax}</span>
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-200">{o.note}</p>
+                    </li>
+                  ))}
+                  <li className="rounded-xl bg-emerald-400/10 p-4 ring-1 ring-inset ring-emerald-400/30">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                      <span className="font-semibold">{c.longFlightLabel}</span>
+                      <span className="font-bold text-amber-300">
+                        +{formatVND(PPG_PRICING.specialVND)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-emerald-200">{c.longFlightNote}</p>
+                  </li>
+                </ul>
+                <p className="mt-4 text-sm leading-relaxed text-slate-300">
+                  {c.specialRefund}
+                </p>
+              </div>
             </div>
           </div>
         </section>

@@ -250,6 +250,8 @@ function blankDispatcherReport(username: string, staffName: string, date: string
     redFlagCodes: [],
     sunset: 0,
     sunsetCodes: [],
+    longFlight: 0,
+    longFlightCodes: [],
     flagFlight: 0,
     flagFlightCodes: [],
     diplomaticGuests: 0,
@@ -302,6 +304,8 @@ type DispatcherEditForm = {
   video360: number;
   redFlag: number;
   sunset: number;
+  /** Bay lâu (chủ 02/10) — khung này không sửa, chỉ mang nguyên số đã khai để lưu không xoá mất. */
+  longFlight: number;
   flagFlight: number;
   money: ExpenseRow[];
   cancelledGuests: CancelGuestRow[];
@@ -361,6 +365,7 @@ function dispatcherEditForm(r: DispatcherReportDTO): DispatcherEditForm {
     video360: r.video360,
     redFlag: r.redFlag,
     sunset: r.sunset,
+    longFlight: r.longFlight ?? 0,
     flagFlight: r.flagFlight,
     money: dispatcherMoneyRows(r),
     cancelledGuests: cancelled,
@@ -463,6 +468,7 @@ function DispatcherRow({
           video360: form.video360,
           redFlag: form.redFlag,
           sunset: form.sunset,
+          longFlight: form.longFlight,
           flagFlight: form.flagFlight,
           /**
            * MÃ VÉ THU HỒI phải gửi kèm, nếu không là XOÁ SẠCH của người nhập.
@@ -478,6 +484,7 @@ function DispatcherRow({
           video360CodesText: report.video360ServiceCodes.join(" "),
           redFlagCodesText: report.redFlagCodes.join(" "),
           sunsetCodesText: report.sunsetCodes.join(" "),
+          longFlightCodesText: (report.longFlightCodes ?? []).join(" "),
           flagFlightCodesText: report.flagFlightCodes.join(" "),
           // Sổ THU CHI: dòng thu thành khoản thu có tên (đúng TM/CK), dòng chi vào sổ chi
           cashReceived: 0,

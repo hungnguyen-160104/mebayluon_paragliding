@@ -425,7 +425,7 @@ export async function PATCH(req: Request) {
         services:
           body?.services && typeof body.services === "object"
             ? Object.fromEntries(
-                (["flycam", "video360", "redFlag", "sunset", "flagFlight", "mountainCar"] as const)
+                (["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight", "mountainCar"] as const)
                   .filter((k) => body.services[k] != null)
                   .map((k) => [k, Math.max(0, Math.round(Number(body.services[k]) || 0))]),
               )

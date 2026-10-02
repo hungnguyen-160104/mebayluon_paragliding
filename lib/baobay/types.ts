@@ -182,9 +182,12 @@ export type PilotReportDTO = {
   video360Codes: string[];
   redFlag: number;
   redFlagCodes: string[];
-  /** Bay hoàng hôn — Hà Nội & Khau Phạ (Mù Cang Chải). */
+  /** H.hôn / S.mây / B.minh (một dịch vụ gộp, chủ 02/10) — Hà Nội & Khau Phạ (Mù Cang Chải). */
   sunset: number;
   sunsetCodes: string[];
+  /** Bay lâu 20–25 phút (chủ 02/10/2026). */
+  longFlight: number;
+  longFlightCodes: string[];
   flagFlight: number;
   flagFlightCodes: string[];
   diplomaticGuests: number;
@@ -273,6 +276,8 @@ export type DispatcherReportDTO = {
   redFlagCodes: string[];
   sunset: number;
   sunsetCodes: string[];
+  longFlight: number;
+  longFlightCodes: string[];
   flagFlight: number;
   flagFlightCodes: string[];
   diplomaticGuests: number;
@@ -350,6 +355,8 @@ export type DailyCloseDTO = {
   video360: number;
   redFlag: number;
   sunset: number;
+  /** Bay lâu (chủ 02/10/2026) — số suất BÁN; tiền chỉ tính phần vượt `sunset`. */
+  longFlight: number;
   flagFlight: number;
   /** Sổ THU/CHI riêng của kế toán. */
   ledger: ExpenseDTO[];
@@ -416,6 +423,8 @@ export type BookingDTO = {
   video360: number;
   redFlag: number;
   sunset: number;
+  /** Bay lâu (chủ 02/10/2026) — số suất BÁN; tiền chỉ tính phần vượt `sunset`. */
+  longFlight: number;
   flagFlight: number;
   /** Loại hình bay: "pg" dù lượn · "ppg" có động cơ — quyết định đơn giá. */
   flightKind: "pg" | "ppg" | "m650" | "m850";
@@ -503,7 +512,7 @@ export type BookingDTO = {
    */
   serviceChanges?: Array<{
     kind: "add" | "remove";
-    items: { flycam: number; video360: number; redFlag: number; sunset: number; flagFlight: number };
+    items: { flycam: number; video360: number; redFlag: number; sunset: number; longFlight?: number; flagFlight: number };
     byName: string;
   }>;
   /** Kế toán đã KHOÁ dòng này chưa — khoá rồi thì không ai sửa được. */
@@ -568,6 +577,7 @@ export type BookingDTO = {
   cancelledVideo360: number;
   cancelledRedFlag: number;
   cancelledSunset: number;
+  cancelledLongFlight?: number;
   cancelledFlagFlight: number;
   /** Mã chuyển khoản của khoản cọc (nếu khách CK). */
   transferCode: string;
@@ -755,6 +765,8 @@ export type DailyRollupDTO = {
   diplomaticAmount: number;
   redFlag: number;
   sunset: number;
+  /** Bay lâu (chủ 02/10/2026) — số suất BÁN; tiền chỉ tính phần vượt `sunset`. */
+  longFlight: number;
 
   /** Tổng chi tiêu mọi nhân sự khai trong ngày. */
   expenseTotal: number;
@@ -775,6 +787,8 @@ export type PilotPeriodTotalDTO = {
   video360: number;
   redFlag: number;
   sunset: number;
+  /** Bay lâu (chủ 02/10/2026) — số suất BÁN; tiền chỉ tính phần vượt `sunset`. */
+  longFlight: number;
   flagFlight: number;
   diplomaticGuests: number;
   expenseTotal: number;
@@ -828,6 +842,8 @@ export type MonthlyTotalsDTO = {
   video360: number;
   redFlag: number;
   sunset: number;
+  /** Bay lâu (chủ 02/10/2026) — số suất BÁN; tiền chỉ tính phần vượt `sunset`. */
+  longFlight: number;
   flagFlight: number;
   diplomaticGuests: number;
   /** Phí bãi theo đầu khách (số khách). */

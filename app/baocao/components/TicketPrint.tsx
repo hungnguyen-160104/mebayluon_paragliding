@@ -29,7 +29,7 @@
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { normalizeSpot, spotName } from "@/lib/baobay/spots";
 import type { BookingDTO } from "@/lib/baobay/types";
-import { dichVuChu, veConHieuLuc, veQrPhuText, veQrText, type LoaiVePhu } from "@/lib/baobay/ve-qr";
+import { TEN_DICH_VU, dichVuChu, veConHieuLuc, veQrPhuText, veQrText, type LoaiVePhu } from "@/lib/baobay/ve-qr";
 
 import { inAnhQuaUsb, mayInDaGhep, RONG_CHAM, trinhDuyetCoUsb } from "@/lib/baobay/may-in-usb";
 import { inAnhQuaBluetooth, mayInBluetoothDaGhep, trinhDuyetCoBluetooth } from "@/lib/baobay/may-in-bluetooth";
@@ -74,7 +74,7 @@ function extrasOf(b: BookingDTO, guestNo?: number): string[] {
        */
       const dv = dichVuChu(k.dichVu);
       const cu = k.dichVu?.sunset === undefined && k.dichVu?.flagFlight === undefined;
-      if (cu && b.sunset > 0) dv.push("Hoàng hôn");
+      if (cu && b.sunset > 0) dv.push(TEN_DICH_VU.sunset);
       if (cu && b.flagFlight > 0) dv.push("Kéo cờ");
       if (b.flightKind === "ppg" || (b.ppgGuests ?? 0) > 0) dv.push("PPG");
       return dv;
@@ -85,7 +85,9 @@ function extrasOf(b: BookingDTO, guestNo?: number): string[] {
   if (b.video360 > 0) out.push("Cam 360");
   if (b.flycam > 0) out.push("Flycam");
   if (b.redFlag > 0) out.push("Cờ đỏ");
-  if (b.sunset > 0) out.push("Hoàng hôn");
+  // Một dịch vụ gộp H.hôn / S.mây / B.minh, và bay lâu riêng (chủ 02/10)
+  if (b.sunset > 0) out.push(TEN_DICH_VU.sunset);
+  if ((b.longFlight ?? 0) > 0) out.push(TEN_DICH_VU.longFlight);
   if (b.flagFlight > 0) out.push("Kéo cờ");
   return out;
 }
