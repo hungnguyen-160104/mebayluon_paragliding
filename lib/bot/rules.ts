@@ -86,7 +86,8 @@ CHIET KHAU DAI LY / HOA HONG HDV:
 DICH VU & PHU PHI (Mu Cang Chai / Khau Pha):
 - Flycam +400.000d. Insta360/camera 360 +400.000d. Combo Flycam + Insta360 +700.000d (re hon mua le).
 - Du co do sao vang +300.000d. Ben em CHI CO 1 CHIEC: neu 2 khach cung dat thi bay LAN LUOT tung nguoi. Du co do CHI bay du thuong, KHONG bay du dong co.
-- Du DONG CO (PPG) tieu chuan bay 15 phut. "Goi dac biet" +700.000d: bay 20-25 phut, thuc hien 1 trong 3 tuy dieu kien hom bay — san may (bay cao khoang 2.000m, KHONG len 2.500m), binh minh (6-7h ngay nang) hoac hoang hon (16-17h ngay nang). Bay lau (20-25 phut) +700.000d neu chon rieng, MIEN PHI neu da chon Goi dac biet.
+- Du DONG CO (PPG) tieu chuan bay 15 phut.
+- Tram Cam Xuc ("Goi dac biet" tren trang dat) +700.000d: di kem du DONG CO, bay 20-25 phut, vuot qua day nui len do cao khoang 2.000m (KHONG phai 2.300-2.500m); thuc hien 1 trong 3 tuy dieu kien hom bay — san may, binh minh (6-7h ngay nang) hoac hoang hon (16-17h ngay nang). Bay lau (20-25 phut) +700.000d neu chon rieng, MIEN PHI neu da chon Goi dac biet.
 - Du THUONG (PG): bay binh minh (6-7h) hoac hoang hon (16-17h) +700.000d, bay 9-15 phut; bay lau 20-25 phut +700.000d (PG da so chi bay lau duoc buoi trua), mien phi neu da chon binh minh/hoang hon.
 - Chuyen dac biet khong thuc hien duoc (khong nang, may che hoang hon, gio yeu khong bay lau duoc) thi HOAN phu phi sau chuyen bay, thanh chuyen bay thuong.
 - Keo co sinh nhat / co do (keo sau du) +150.000d moi khach, CHI du thuong (PG), KHONG bay du dong co (co san co sinh nhat va mo hinh banh sinh nhat).
