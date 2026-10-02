@@ -1781,7 +1781,7 @@ Veuillez réserver à l’avance pour que nous puissions organiser au mieux votr
 🏍️ TRÊN CUNG HÀ GIANG LOOP
 Quản Bạ là chặng đầu tiên của Hà Giang Loop – cung đường vòng nổi tiếng Hà Giang – Quản Bạ – Yên Minh – Đồng Văn – Mèo Vạc, cách TP Hà Giang khoảng 45 km. Dừng chân bay dù lượn ngay dưới Cổng Trời Quản Bạ, ngắm trọn cao nguyên đá từ trên cao rồi đi tiếp hành trình. Xem bản đồ vòng loop, điểm check-in và kinh nghiệm tại web Hà Giang Paragliding.
 
-🎉 KHAI TRƯƠNG 15/10/2026 — Mebayluon vận hành
+🪂 Điểm bay do Mebayluon vận hành
 
 📦 GÓI DỊCH VỤ BAO GỒM:
 ✅ Đón trả 2 chiều trong khu vực Quản Bạ (Nậm Đăm, xã Quản Bạ – thị trấn Tam Sơn cũ, Lùng Tám, Cán Tỉ)
@@ -1840,7 +1840,7 @@ Quản Bạ là chặng đầu tiên của Hà Giang Loop – cung đường vò
 🏍️ ON THE HA GIANG LOOP
 Quan Ba is the first stop of the Ha Giang Loop – the famous circuit Ha Giang – Quan Ba – Yen Minh – Dong Van – Meo Vac, about 45 km from Ha Giang city. Stop to paraglide right below Quan Ba Heaven's Gate, see the whole karst plateau from above, then ride on. Loop map, check-in spots and tips on the Ha Giang Paragliding website.
 
-🎉 OPENING 15/10/2026 — operated by Mebayluon
+🪂 Flight site operated by Mebayluon
 
 📦 PACKAGE INCLUDES:
 ✅ Round-trip transfers within the Quản Bạ area (Nậm Đăm, Quản Bạ commune – former Tam Sơn town, Lùng Tám, Cán Tỉ)
@@ -1884,7 +1884,7 @@ Please book in advance so we can arrange your flight in the best possible way!`,
 🏍️ SUR LA BOUCLE DE HA GIANG
 Quan Ba est la première étape de la Ha Giang Loop – le célèbre circuit Ha Giang – Quan Ba – Yen Minh – Dong Van – Meo Vac, à environ 45 km de la ville de Ha Giang. Faites une pause parapente juste sous la Porte du Ciel de Quan Ba, admirez tout le plateau karstique d'en haut, puis reprenez la route. Carte de la boucle, points de vue et conseils sur le site Ha Giang Paragliding.
 
-🎉 OUVERTURE LE 15/10/2026 — exploité par Mebayluon
+🪂 Site de vol exploité par Mebayluon
 
 📦 LE FORFAIT COMPREND :
 ✅ Transferts aller-retour dans la zone de Quản Bạ (Nậm Đăm, commune de Quản Bạ – ancien bourg de Tam Sơn, Lùng Tám, Cán Tỉ)
@@ -1928,7 +1928,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 🏍️ НА ПЕТЛЕ ХАЗЯНГ
 Куан Ба — первая остановка Ha Giang Loop, знаменитого маршрута Хазянг – Куан Ба – Йенминь – Донгван – Мео Вак, примерно в 45 км от города Хазянг. Остановитесь полетать на параплане прямо под Небесными вратами Куан Ба, окиньте взглядом всё каменное плато и продолжайте путь. Карта петли, места для фото и советы — на сайте Ha Giang Paragliding.
 
-🎉 ОТКРЫТИЕ 15/10/2026 — оператор Mebayluon
+🪂 Площадка работает под управлением Mebayluon
 
 📦 В СТОИМОСТЬ ВХОДИТ:
 ✅ Трансфер туда и обратно в пределах района Quản Bạ (Nậm Đăm, община Quản Bạ – бывший посёлок Tam Sơn, Lùng Tám, Cán Tỉ)
@@ -1972,7 +1972,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 🏍️ 河江环线上的一站
 管簿是河江环线（Ha Giang Loop）的第一站——著名环线河江 – 管簿 – 安明 – 同文 – 苗旺，距河江市约 45 公里。在管簿天门下停下来飞一趟滑翔伞，从高空俯瞰整片石灰岩高原，再继续旅程。环线地图、打卡点与攻略见 Ha Giang Paragliding 网站。
 
-🎉 2026年10月15日开业 — 由 Mebayluon 运营
+🪂 由 Mebayluon 运营的飞行点
 
 📦 套餐包含：
 ✅ Quản Bạ 地区内往返接送（Nậm Đăm、Quản Bạ 社 – 原 Tam Sơn 镇、Lùng Tám、Cán Tỉ）
@@ -2016,7 +2016,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 🏍️ हा जियांग लूप पर
 क्वान बा, हा जियांग लूप का पहला पड़ाव है – मशहूर रास्ता हा जियांग – क्वान बा – येन मिन्ह – डोंग वान – मेओ वाक, हा जियांग शहर से लगभग 45 किमी। क्वान बा के स्वर्ग द्वार के ठीक नीचे रुककर पैराग्लाइडिंग करें, ऊपर से पूरा पत्थर का पठार देखें, फिर सफ़र जारी रखें। लूप का नक्शा, चेक-इन स्थान और सुझाव Ha Giang Paragliding वेबसाइट पर।
 
-🎉 उद्घाटन 15/10/2026 — संचालन Mebayluon द्वारा
+🪂 उड़ान स्थल का संचालन Mebayluon द्वारा
 
 📦 पैकेज में शामिल:
 ✅ Quản Bạ क्षेत्र में दोनों तरफ़ की गाड़ी (Nậm Đăm, Quản Bạ कम्यून – पूर्व Tam Sơn कस्बा, Lùng Tám, Cán Tỉ)
@@ -3223,7 +3223,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon Team",
         date: "25/09/2026",
         content:
-          "Từ 15/10/2026, gói PPG bay lâu 20–25 phút đưa khách lên cao lúc mặt trời mọc, khi mây còn phủ kín các thung lũng nhỏ quanh Tam Sơn và chỉ những đỉnh đá nhô lên. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
+          "Gói PPG 20–25 phút đưa khách lên cao lúc mặt trời mọc, khi mây còn phủ kín các thung lũng nhỏ quanh Tam Sơn và chỉ những đỉnh đá nhô lên. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
       },
     ],
     en: [
@@ -3249,7 +3249,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon Team",
         date: "2026-09-25",
         content:
-          "From 15 October 2026 the 20–25-minute PPG package takes you up at sunrise, while cloud still fills the small valleys around Tam Son and only the rock peaks show through. Book ahead so we can schedule by the sun.",
+          "The 20–25-minute PPG package takes you up at sunrise, while cloud still fills the small valleys around Tam Son and only the rock peaks show through. Book ahead so we can schedule by the sun.",
       },
     ],
     fr: [
@@ -3275,7 +3275,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Équipe Mebayluon",
         date: "25/09/2026",
         content:
-          "Dès le 15 octobre 2026, le forfait PPG de 20 à 25 minutes vous emmène en altitude au lever du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Sơn et que seuls les pics rocheux émergent. Réservez pour que nous calions l'horaire sur le soleil.",
+          "Le forfait PPG de 20 à 25 minutes vous emmène en altitude au lever du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Sơn et que seuls les pics rocheux émergent. Réservez pour que nous calions l'horaire sur le soleil.",
       },
     ],
     ru: [
@@ -3301,7 +3301,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Команда Mebayluon",
         date: "25.09.2026",
         content:
-          "С 15 октября 2026 года пакет PPG на 20–25 минут поднимает вас в небо на рассвете, когда облака ещё заполняют маленькие долины вокруг Там Шона и над ними торчат только скальные вершины. Бронируйте заранее, чтобы мы подобрали время по солнцу.",
+          "Пакет PPG на 20–25 минут поднимает вас в небо на рассвете, когда облака ещё заполняют маленькие долины вокруг Там Шона и над ними торчат только скальные вершины. Бронируйте заранее, чтобы мы подобрали время по солнцу.",
       },
     ],
     zh: [
@@ -3327,7 +3327,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon 团队",
         date: "2026-09-25",
         content:
-          "自 2026 年 10 月 15 日起，20–25 分钟 PPG 套餐带您在日出时升空，此时云海仍填满三山周围的小山谷，只露出石峰。请提前预订，我们按日出时间安排。",
+          "20–25 分钟 PPG 套餐带您在日出时升空，此时云海仍填满三山周围的小山谷，只露出石峰。请提前预订，我们按日出时间安排。",
       },
     ],
     hi: [
@@ -3353,7 +3353,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon टीम",
         date: "2026-09-25",
         content:
-          "15 अक्टूबर 2026 से 20–25 मिनट का PPG पैकेज आपको सूर्योदय पर ऊपर ले जाता है, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों को भरे रहते हैं और सिर्फ़ चट्टानी चोटियाँ दिखती हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें।",
+          "20–25 मिनट का PPG पैकेज आपको सूर्योदय पर ऊपर ले जाता है, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों को भरे रहते हैं और सिर्फ़ चट्टानी चोटियाँ दिखती हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें।",
       },
     ],
   },

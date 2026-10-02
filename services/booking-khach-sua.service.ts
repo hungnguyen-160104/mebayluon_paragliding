@@ -256,7 +256,6 @@ export async function khachSuaBooking(input: { the: unknown; thayDoi: ThayDoiKha
     const d = String(td.dateISO);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new LoiKhachSua("Ngày bay không hợp lệ");
     if (quaHan(d)) throw new LoiKhachSua("Ngày mới phải còn hạn: đặt trước 18:00 hôm trước ngày bay");
-    if (b.location === "quan_ba" && d < "2026-10-15") throw new LoiKhachSua("Điểm bay Quản Bạ mở từ 15/10/2026");
     if (ops && (await isDayClosed(ops.spot, d))) throw new LoiKhachSua("Ngày này đã chốt sổ, vui lòng chọn ngày khác");
     ngayMoi = d;
     doi("dateISO", ngayVN(b.dateISO || ""), ngayVN(d), "dateISO", d);

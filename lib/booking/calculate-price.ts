@@ -39,7 +39,7 @@ export type PackageKey =
   | "khau_pha_paramotor"
   | "ha_noi_850m"
   | "ha_noi_650m"
-  // Quản Bạ (Hà Giang, mở 15/10/2026): PG 2.290.000đ đã gồm đón trả 2 chiều;
+  // Quản Bạ (Hà Giang): PG 2.290.000đ đã gồm đón trả 2 chiều;
   // PPG gói cơ bản 15' 2.490.000đ; PPG bay lâu 20–25' săn mây bình minh/hoàng hôn
   // 3.390.000đ (= cơ bản + 900.000đ).
   | "quan_ba_pg"
@@ -1543,7 +1543,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       hi: "हा जियांग",
     },
     /**
-     * QUẢN BẠ — Mebayluon vận hành từ 15/10/2026 (chủ 25/09/2026).
+     * QUẢN BẠ — điểm bay Mebayluon vận hành (chủ 25/09/2026).
      * Ba gói, khách chọn PG hay PPG ngay ở bước 1 như Khau Phạ:
      *  · PG 2.290.000đ (cất cánh 950 m) — ĐÃ GỒM đón trả 2 chiều trong khu vực.
      *  · PPG cơ bản 15' 2.490.000đ.

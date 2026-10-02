@@ -199,9 +199,8 @@ export default function SuaBookingClient() {
   };
 
   const minNgay = useMemo(() => {
-    const d = new Date(Date.now() + 7 * 3600 * 1000 + 24 * 3600 * 1000).toISOString().slice(0, 10);
-    return bk?.location === "quan_ba" && d < "2026-10-15" ? "2026-10-15" : d;
-  }, [bk]);
+    return new Date(Date.now() + 7 * 3600 * 1000 + 24 * 3600 * 1000).toISOString().slice(0, 10);
+  }, []);
 
   const khoa = !!bk?.khoa.khoa;
   const sua = (p: Partial<BookingXem>) => nhap && setNhap({ ...nhap, ...p });

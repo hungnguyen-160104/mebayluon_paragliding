@@ -68,7 +68,7 @@ export const SPOTS_LIST: SpotListItem[] = [
   },
   {
     slug: "ha-giang",
-    // Chủ 25/09: bỏ dốc Bắc Sum, điểm bay của Mebayluon là QUẢN BẠ (mở 15/10/2026).
+    // Chủ 25/09: bỏ dốc Bắc Sum, điểm bay của Mebayluon là QUẢN BẠ.
     name: "Quản Bạ",
     province: "Hà Giang",
     altitude: "950 – 2.000 m",

@@ -300,7 +300,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
     description:
       `Bay dù lượn tại QUẢN BẠ – cửa ngõ Cao nguyên đá Đồng Văn. Cất cánh ở độ cao 950 m, lượn trên toàn cảnh thung lũng Quản Bạ, ngắm Núi Đôi Quản Bạ, Cổng Trời, thung lũng Lùng Tám và dòng sông Miện uốn quanh chân núi.
 
-🎉 KHAI TRƯƠNG 15/10/2026 — Mebayluon vận hành
+🪂 Điểm bay do Mebayluon vận hành
 
 📦 GÓI DỊCH VỤ BAO GỒM:
 ✅ Đón trả 2 chiều trong khu vực Quản Bạ (Nậm Đăm, xã Quản Bạ – thị trấn Tam Sơn cũ, Lùng Tám, Cán Tỉ)

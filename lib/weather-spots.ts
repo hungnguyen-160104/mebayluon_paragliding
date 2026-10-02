@@ -100,7 +100,7 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
   /** Bãi cất 16°07'04.4"N 108°16'24.9"E (chủ 17/09). */
   { slug: "son-tra", ten: "Bán đảo Sơn Trà", tinh: "Đà Nẵng", lat: 16.117889, lon: 108.273583, alt: 600, altHa: 0 },
   /**
-   * QUẢN BẠ — điểm bay Mebayluon vận hành từ 15/10/2026 (chủ 25/09; bỏ hẳn
+   * QUẢN BẠ — điểm bay Mebayluon vận hành (chủ 25/09; bỏ hẳn
    * dốc Bắc Sum). Toạ độ chủ gửi 25/09:
    *  · Bãi cất PG: 23.0604025, 105.0189508 — cao 950 m.
    *  · Bãi hạ 23.0612686, 105.0388558 — cao 450 m, CŨNG là bãi cất của PPG

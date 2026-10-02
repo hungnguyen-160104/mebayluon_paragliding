@@ -40,8 +40,6 @@ const UI_TEXT: Record<
     back: string;
     next: string;
     dateInPast: string;
-    /** Quản Bạ mở bay từ 15/10/2026 — chặn ngày sớm hơn ngay khi khách chọn. */
-    quanBaOpensFrom: string;
   }
 > = {
   vi: {
@@ -74,7 +72,6 @@ const UI_TEXT: Record<
     back: "Quay lại",
     next: "Tiếp theo",
     dateInPast: "Ngày bay phải từ hôm nay trở đi.",
-    quanBaOpensFrom: "Điểm bay Quản Bạ mở từ 15/10/2026 — vui lòng chọn ngày bay từ 15/10/2026.",
   },
 
   en: {
@@ -107,7 +104,6 @@ const UI_TEXT: Record<
     back: "Back",
     next: "Next",
     dateInPast: "Flight date must be from today onward.",
-    quanBaOpensFrom: "The Quan Ba site opens on 15 October 2026 — please choose a flight date from 15/10/2026.",
   },
 
   fr: {
@@ -140,7 +136,6 @@ const UI_TEXT: Record<
     back: "Retour",
     next: "Suivant",
     dateInPast: "La date du vol doit être à partir d'aujourd'hui.",
-    quanBaOpensFrom: "Le site de Quan Ba ouvre le 15 octobre 2026 — veuillez choisir une date de vol à partir du 15/10/2026.",
   },
 
   ru: {
@@ -173,7 +168,6 @@ const UI_TEXT: Record<
     back: "Назад",
     next: "Далее",
     dateInPast: "Дата полёта должна быть не раньше сегодняшнего дня.",
-    quanBaOpensFrom: "Площадка Куан Ба открывается 15 октября 2026 — выберите дату полёта с 15.10.2026.",
   },
 
   hi: {
@@ -206,7 +200,6 @@ const UI_TEXT: Record<
     back: "वापस",
     next: "अगला",
     dateInPast: "फ्लाइट की तारीख आज या उसके बाद की होनी चाहिए।",
-    quanBaOpensFrom: "क्वान बा साइट 15 अक्टूबर 2026 को खुलती है — कृपया 15/10/2026 से उड़ान की तारीख चुनें।",
   },
 
   zh: {
@@ -237,7 +230,6 @@ const UI_TEXT: Record<
     back: "返回",
     next: "下一步",
     dateInPast: "飞行日期必须从今天开始选择。",
-    quanBaOpensFrom: "管坝飞行点于 2026 年 10 月 15 日开放——请选择 2026/10/15 之后的飞行日期。",
   },
 };
 
@@ -315,16 +307,8 @@ export default function ContactInfoStep() {
     return `${year}-${month}-${day}`;
   }, []);
 
-  /**
-   * Ngày sớm nhất được chọn: hôm nay, riêng Quản Bạ (Hà Giang) là 15/10/2026 —
-   * ngày Mebayluon bắt đầu vận hành điểm bay này (chủ 25/09/2026). Sau mốc đó
-   * hằng số tự hết tác dụng, không cần gỡ.
-   */
-  const QUAN_BA_OPENS_ISO = "2026-10-15";
-  const minDateISO =
-    data.location === "quan_ba" && todayISO < QUAN_BA_OPENS_ISO
-      ? QUAN_BA_OPENS_ISO
-      : todayISO;
+  /** Ngày sớm nhất được chọn: hôm nay — mọi điểm bay như nhau. */
+  const minDateISO = todayISO;
 
   const parsedPhone = useMemo(
     () => splitPhone(data.contact?.phone || ""),
@@ -407,11 +391,7 @@ export default function ContactInfoStep() {
                   const value = e.target.value;
                   update({ dateISO: value });
                   setDateError(
-                    value && value < todayISO
-                      ? ui.dateInPast
-                      : value && value < minDateISO
-                        ? ui.quanBaOpensFrom
-                        : null,
+                    value && value < minDateISO ? ui.dateInPast : null,
                   );
                 }}
                 required

@@ -214,9 +214,8 @@ const LOCATION_CARD_PRICE_META: Record<LocationKey, number> = {
 };
 
 // Điểm bay chưa mở lại — thẻ vẫn hiện nhưng không bấm chọn được, kèm nhãn
-// "tạm đóng". Sơn Trà (Đà Nẵng) CHƯA mở (07/09/2026). Quản Bạ (Hà Giang) mở
-// đặt từ 25/09/2026 cho ngày bay từ 15/10/2026 (chặn ngày ở bước 2). Mở lại
-// điểm nào thì bỏ key đó ra khỏi tập này.
+// "tạm đóng". Sơn Trà (Đà Nẵng) CHƯA mở (07/09/2026). Mở lại điểm nào thì bỏ
+// key đó ra khỏi tập này.
 const TEMPORARILY_CLOSED_LOCATIONS = new Set<LocationKey>(["da_nang"]);
 
 function clampInt(value: unknown, min: number, max: number) {
