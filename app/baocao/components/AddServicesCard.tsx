@@ -8,6 +8,7 @@ import {
   SERVICE_PRICE_LABEL,
   servicePriceOf,
   serviceChargedCount,
+  servicePriceLabelsAt,
   comboDiscount,
 } from "@/lib/baobay/flight-price";
 import type { BookingDTO } from "@/lib/baobay/types";
@@ -96,7 +97,8 @@ export function AddServicesCard({
   /** Danh sách dịch vụ được phép sửa trong thẻ này. */
   const serviceRows = onlyFlycam
     ? SERVICE_PRICE_LABEL.filter((s) => s.key === "flycam")
-    : SERVICE_PRICE_LABEL;
+    : // Chỉ dịch vụ điểm này bán — bay lâu chỉ Khau Phạ (chủ 02/10), máy chủ cũng chặn
+      servicePriceLabelsAt(spot);
   const [bookings, setBookings] = useState<BookingDTO[]>([]);
   /** Sổ các lần thêm/huỷ trong ngày — bấm vào một dòng là sửa lại được. */
   const [changes, setChanges] = useState<ServiceChangeDTO[]>([]);
@@ -252,7 +254,7 @@ export function AddServicesCard({
   const dang: Record<ServiceKey, number> = picked
     ? (Object.fromEntries(KEYS.map((k) => [k, Number(picked[k] ?? 0) || 0])) as Record<ServiceKey, number>)
     : { ...EMPTY };
-  const tienDv = (c: Record<ServiceKey, number>) => KEYS.reduce((t, k) => t + serviceChargedCount(k, c) * price[k], 0);
+  const tienDv = (c: Record<ServiceKey, number>) => KEYS.reduce((t, k) => t + serviceChargedCount(k, c, spot) * price[k], 0);
   const cong = (a: Record<ServiceKey, number>, b: Record<ServiceKey, number>, dau: 1 | -1) =>
     Object.fromEntries(KEYS.map((k) => [k, Math.max(0, a[k] + dau * b[k])])) as Record<ServiceKey, number>;
   const addAmount =

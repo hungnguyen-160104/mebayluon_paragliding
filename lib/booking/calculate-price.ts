@@ -40,7 +40,7 @@ export type PackageKey =
   | "ha_noi_850m"
   | "ha_noi_650m"
   // Quản Bạ (Hà Giang, mở 15/10/2026): PG 2.290.000đ đã gồm đón trả 2 chiều;
-  // PPG gói cơ bản 15' 2.490.000đ; PPG bay lâu 22–25' săn mây bình minh/hoàng hôn
+  // PPG gói cơ bản 15' 2.490.000đ; PPG bay lâu 20–25' săn mây bình minh/hoàng hôn
   // 3.390.000đ (= cơ bản + 900.000đ).
   | "quan_ba_pg"
   | "quan_ba_ppg_15"
@@ -1547,7 +1547,7 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
      * Ba gói, khách chọn PG hay PPG ngay ở bước 1 như Khau Phạ:
      *  · PG 2.290.000đ (cất cánh 950 m) — ĐÃ GỒM đón trả 2 chiều trong khu vực.
      *  · PPG cơ bản 15' 2.490.000đ.
-     *  · PPG bay lâu 22–25' săn mây bình minh/hoàng hôn 3.390.000đ (= cơ bản + 900k).
+     *  · PPG bay lâu 20–25' săn mây bình minh/hoàng hôn 3.390.000đ (= cơ bản + 900k).
      * USD quy theo cùng tỉ giá các gói khác (~26k): 88 / 95 / 129.
      * Giá cơ sở (chưa chọn gói) = gói PG, khớp con số trên thẻ điểm bay.
      */
@@ -1717,61 +1717,61 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       {
         key: "quan_ba_ppg_25" as PackageKey,
         label: {
-          vi: "Dù lượn gắn động cơ (PPG) - gói nâng cao 22–25 phút – săn mây / bình minh / hoàng hôn",
-          en: "Powered paragliding (PPG) - advanced package, 22–25 min – cloud-hunting / sunrise / sunset",
-          fr: "Paramoteur (PPG) - formule avancée, 22–25 min – chasse aux nuages / aube / coucher du soleil",
-          ru: "Парамотор (PPG) - расширенный пакет, 22–25 мин – охота за облаками / рассвет / закат",
-          zh: "动力伞 (PPG) - 进阶套餐 22–25 分钟 – 追云 / 日出 / 日落",
-          hi: "पैरामोटर (PPG) - एडवांस पैकेज, 22–25 मिनट – क्लाउड-हंटिंग / सूर्योदय / सूर्यास्त",
+          vi: "Dù lượn gắn động cơ (PPG) - gói nâng cao 20–25 phút – săn mây / bình minh / hoàng hôn",
+          en: "Powered paragliding (PPG) - advanced package, 20–25 min – cloud-hunting / sunrise / sunset",
+          fr: "Paramoteur (PPG) - formule avancée, 20–25 min – chasse aux nuages / aube / coucher du soleil",
+          ru: "Парамотор (PPG) - расширенный пакет, 20–25 мин – охота за облаками / рассвет / закат",
+          zh: "动力伞 (PPG) - 进阶套餐 20–25 分钟 – 追云 / 日出 / 日落",
+          hi: "पैरामोटर (PPG) - एडवांस पैकेज, 20–25 मिनट – क्लाउड-हंटिंग / सूर्योदय / सूर्यास्त",
         },
         subtitle: {
-          vi: "Gói cơ bản + 900.000 đ: bay 22–25 phút vào khung bình minh hoặc hoàng hôn, khi mây còn phủ các thung lũng nhỏ quanh Tam Sơn. Đặt trước để chúng tôi xếp giờ theo mặt trời. Nếu điều kiện thời tiết không cho phép bay săn mây / bình minh / hoàng hôn / bay lâu, chuyến bay chuyển thành bay PPG cơ bản.",
-          en: "Basic package + 900,000 VND: a 22–25-minute flight at sunrise or sunset, while cloud still fills the small valleys around Tam Son. Book ahead so we can schedule by the sun. If conditions do not allow cloud-hunting / sunrise / sunset / a long flight, it becomes a basic PPG flight.",
-          fr: "Formule de base + 900 000 VND : vol de 22 à 25 minutes à l'aube ou au coucher du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Son. Réservez à l'avance pour un horaire calé sur le soleil. Si les conditions ne permettent pas la chasse aux nuages / l'aube / le coucher du soleil / un vol long, il devient un vol PPG de base.",
-          ru: "Базовый пакет + 900 000 VND: полёт 22–25 минут на рассвете или закате, пока облака ещё заполняют маленькие долины вокруг Там Шона. Бронируйте заранее, чтобы мы подобрали время по солнцу. Если условия не позволяют охоту за облаками / рассвет / закат / долгий полёт, он становится базовым полётом PPG.",
-          zh: "基础套餐 + 900,000 越南盾：日出或日落时段 22–25 分钟飞行，此时云海仍填满三山周围的小山谷。请提前预订，我们按日出日落时间安排。如天气条件不允许追云 / 日出 / 日落 / 长时间飞行，将改为基础 PPG 飞行。",
-          hi: "बेसिक पैकेज + 900,000 VND: सूर्योदय या सूर्यास्त पर 22–25 मिनट की उड़ान, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों में भरे रहते हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें। अगर परिस्थितियाँ क्लाउड-हंटिंग / सूर्योदय / सूर्यास्त / लंबी उड़ान की अनुमति न दें, तो यह बेसिक PPG उड़ान बन जाती है।",
+          vi: "Gói cơ bản + 900.000 đ: bay 20–25 phút vào khung bình minh hoặc hoàng hôn, khi mây còn phủ các thung lũng nhỏ quanh Tam Sơn. Đặt trước để chúng tôi xếp giờ theo mặt trời. Nếu điều kiện thời tiết không cho phép bay săn mây / bình minh / hoàng hôn / bay lâu, chuyến bay chuyển thành bay PPG cơ bản.",
+          en: "Basic package + 900,000 VND: a 20–25-minute flight at sunrise or sunset, while cloud still fills the small valleys around Tam Son. Book ahead so we can schedule by the sun. If conditions do not allow cloud-hunting / sunrise / sunset / a long flight, it becomes a basic PPG flight.",
+          fr: "Formule de base + 900 000 VND : vol de 20 à 25 minutes à l'aube ou au coucher du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Son. Réservez à l'avance pour un horaire calé sur le soleil. Si les conditions ne permettent pas la chasse aux nuages / l'aube / le coucher du soleil / un vol long, il devient un vol PPG de base.",
+          ru: "Базовый пакет + 900 000 VND: полёт 20–25 минут на рассвете или закате, пока облака ещё заполняют маленькие долины вокруг Там Шона. Бронируйте заранее, чтобы мы подобрали время по солнцу. Если условия не позволяют охоту за облаками / рассвет / закат / долгий полёт, он становится базовым полётом PPG.",
+          zh: "基础套餐 + 900,000 越南盾：日出或日落时段 20–25 分钟飞行，此时云海仍填满三山周围的小山谷。请提前预订，我们按日出日落时间安排。如天气条件不允许追云 / 日出 / 日落 / 长时间飞行，将改为基础 PPG 飞行。",
+          hi: "बेसिक पैकेज + 900,000 VND: सूर्योदय या सूर्यास्त पर 20–25 मिनट की उड़ान, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों में भरे रहते हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें। अगर परिस्थितियाँ क्लाउड-हंटिंग / सूर्योदय / सूर्यास्त / लंबी उड़ान की अनुमति न दें, तो यह बेसिक PPG उड़ान बन जाती है।",
         },
         priceVND: 3_390_000,
         priceUSD: 129,
         included: {
           vi: [
-            "01 chuyến bay PPG 22–25 phút trong khung bình minh hoặc hoàng hôn — bay săn mây trên cao nguyên đá",
+            "01 chuyến bay PPG 20–25 phút trong khung bình minh hoặc hoàng hôn — bay săn mây trên cao nguyên đá",
             "Đón trả 2 chiều trong khu vực Quản Bạ (Nậm Đăm, xã Quản Bạ, Lùng Tám, Cán Tỉ)",
             "Ảnh & video bằng GoPro",
             "Bảo hiểm dù lượn",
             "Nước uống, giấy chứng nhận và quà lưu niệm",
           ],
           en: [
-            "One 22–25-minute PPG flight at sunrise or sunset — cloud-hunting over the karst plateau",
+            "One 20–25-minute PPG flight at sunrise or sunset — cloud-hunting over the karst plateau",
             "Round-trip transfer within the Quan Ba area (Nam Dam, Quan Ba commune, Lung Tam, Can Ti)",
             "GoPro photos & video",
             "Paragliding insurance",
             "Drinking water, certificate and souvenir",
           ],
           fr: [
-            "Un vol PPG de 22 à 25 minutes à l'aube ou au coucher du soleil — chasse aux nuages au-dessus du plateau karstique",
+            "Un vol PPG de 20 à 25 minutes à l'aube ou au coucher du soleil — chasse aux nuages au-dessus du plateau karstique",
             "Transfert aller-retour dans la zone de Quan Ba (Nam Dam, commune de Quan Ba, Lung Tam, Can Ti)",
             "Photos & vidéo GoPro",
             "Assurance parapente",
             "Eau, certificat et souvenir",
           ],
           ru: [
-            "Один полёт на PPG 22–25 минут на рассвете или закате — охота за облаками над каменным плато",
+            "Один полёт на PPG 20–25 минут на рассвете или закате — охота за облаками над каменным плато",
             "Трансфер туда-обратно в районе Куан Ба (Нам Дам, коммуна Куан Ба, Лунг Там, Кан Ти)",
             "Фото и видео GoPro",
             "Страховка парапланериста",
             "Вода, сертификат и сувенир",
           ],
           zh: [
-            "一次 22–25 分钟 PPG 飞行，日出或日落时段——在石灰岩高原上追云",
+            "一次 20–25 分钟 PPG 飞行，日出或日落时段——在石灰岩高原上追云",
             "管坝地区往返接送（南丹、管坝乡、龙潭、干池）",
             "GoPro 照片与视频",
             "滑翔伞保险",
             "饮用水、证书与纪念品",
           ],
           hi: [
-            "सूर्योदय या सूर्यास्त पर एक 22–25 मिनट की PPG उड़ान — पत्थर के पठार पर क्लाउड-हंटिंग",
+            "सूर्योदय या सूर्यास्त पर एक 20–25 मिनट की PPG उड़ान — पत्थर के पठार पर क्लाउड-हंटिंग",
             "क्वान बा क्षेत्र में राउंड-ट्रिप ट्रांसफ़र (नाम दाम, क्वान बा कम्यून, लुंग ताम, कान ती)",
             "GoPro फ़ोटो व वीडियो",
             "पैराग्लाइडिंग बीमा",

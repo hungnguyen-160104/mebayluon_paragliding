@@ -195,7 +195,7 @@ const vi: PpgCopy = {
   locationTitle: "Địa điểm bay",
   mapLabel: "Toạ độ cất & hạ cánh dù lượn gắn động cơ (Clubhouse Mebayluon)",
   locationBody:
-    "Toàn bộ chuyến bay dù máy diễn ra tại đèo Khau Phạ, Mù Cang Chải — đây là điểm bay duy nhất của Mebayluon có dịch vụ này. Bãi cất cánh nằm ngay tại sân Clubhouse Mebayluon, khách không phải di chuyển lên đỉnh đèo như khi bay dù lượn thường.",
+    "Chuyến bay dù máy giới thiệu ở trang này diễn ra tại đèo Khau Phạ, Mù Cang Chải (Mebayluon còn bay dù lượn gắn động cơ tại Quản Bạ, Hà Giang). Bãi cất cánh nằm ngay tại sân Clubhouse Mebayluon, khách không phải di chuyển lên đỉnh đèo như khi bay dù lượn thường.",
   takeoffLabel: "Bãi cất cánh",
   takeoffValue: "Clubhouse Mebayluon — Thôn Lìm Thái, xã Tú Lệ",
   mapCta: "Xem toạ độ trên Google Maps",
@@ -353,7 +353,7 @@ const en: PpgCopy = {
   locationTitle: "Where you fly",
   mapLabel: "Paramotor take-off & landing coordinates (Clubhouse Mebayluon)",
   locationBody:
-    "Every paramotor flight takes place at Khau Pha Pass, Mu Cang Chai — the only Mebayluon site offering this. The take-off field is the Clubhouse Mebayluon ground itself, so unlike unpowered paragliding you do not have to drive up to the top of the pass.",
+    "The paramotor flight on this page takes place at Khau Pha Pass, Mu Cang Chai (Mebayluon also flies paramotors at Quan Ba, Ha Giang). The take-off field is the Clubhouse Mebayluon ground itself, so unlike unpowered paragliding you do not have to drive up to the top of the pass.",
   takeoffLabel: "Take-off",
   takeoffValue: "Clubhouse Mebayluon — Lim Thai, Tu Le",
   mapCta: "View coordinates on Google Maps",
@@ -512,7 +512,7 @@ const fr: PpgCopy = {
   locationTitle: "Le lieu de vol",
   mapLabel: "Coordonnées décollage & atterrissage paramoteur (Clubhouse Mebayluon)",
   locationBody:
-    "Tous les vols en paramoteur ont lieu au col de Khau Pha, Mu Cang Chai — le seul site Mebayluon qui propose cette activité. Le terrain de décollage est celui du Clubhouse Mebayluon : contrairement au parapente, pas besoin de monter jusqu’au sommet du col.",
+    "Le vol en paramoteur présenté ici a lieu au col de Khau Pha, Mu Cang Chai (Mebayluon propose aussi le paramoteur à Quan Ba, Ha Giang). Le terrain de décollage est celui du Clubhouse Mebayluon : contrairement au parapente, pas besoin de monter jusqu’au sommet du col.",
   takeoffLabel: "Décollage",
   takeoffValue: "Clubhouse Mebayluon — Lim Thai, Tu Le",
   mapCta: "Voir les coordonnées sur Google Maps",
@@ -670,7 +670,7 @@ const ru: PpgCopy = {
   locationTitle: "Где проходит полёт",
   mapLabel: "Координаты старта и посадки парамотора (Clubhouse Mebayluon)",
   locationBody:
-    "Все полёты на парамоторе проходят на перевале Khau Pha, Mu Cang Chai — это единственная площадка Mebayluon с такой услугой. Старт — прямо на площадке Clubhouse Mebayluon, поэтому в отличие от параплана подниматься на вершину перевала не нужно.",
+    "Полёт на парамоторе, описанный здесь, проходит на перевале Khau Pha, Mu Cang Chai (Mebayluon также летает на парамоторе в Quan Ba, Ha Giang). Старт — прямо на площадке Clubhouse Mebayluon, поэтому в отличие от параплана подниматься на вершину перевала не нужно.",
   takeoffLabel: "Старт",
   takeoffValue: "Clubhouse Mebayluon — Lim Thai, Tu Le",
   mapCta: "Смотреть координаты на Google Maps",
@@ -828,7 +828,7 @@ const zh: PpgCopy = {
   locationTitle: "飞行地点",
   mapLabel: "动力滑翔伞起降坐标（Clubhouse Mebayluon）",
   locationBody:
-    "所有动力伞飞行均在 Mù Cang Chải 的 Khau Pha 山口进行——这是 Mebayluon 唯一提供该服务的飞行点。起飞场就是 Clubhouse Mebayluon 的场地，因此不像无动力滑翔伞那样需要驱车上到山口顶部。",
+    "本页介绍的动力伞飞行在 Mù Cang Chải 的 Khau Pha 山口进行（Mebayluon 在 Ha Giang 的 Quan Ba 也提供动力伞飞行）。起飞场就是 Clubhouse Mebayluon 的场地，因此不像无动力滑翔伞那样需要驱车上到山口顶部。",
   takeoffLabel: "起飞场",
   takeoffValue: "Clubhouse Mebayluon — Lìm Thái, Tú Lệ",
   mapCta: "在 Google 地图上查看坐标",
@@ -984,7 +984,7 @@ const hi: PpgCopy = {
   locationTitle: "उड़ान का स्थान",
   mapLabel: "पैरामोटर टेक-ऑफ़ और लैंडिंग निर्देशांक (Clubhouse Mebayluon)",
   locationBody:
-    "सभी पैरामोटर उड़ानें Mù Cang Chải के Khau Pha दर्रे पर होती हैं — Mebayluon का यही एकमात्र स्थल है जहाँ यह सेवा है। टेक-ऑफ़ मैदान Clubhouse Mebayluon का ही है, इसलिए सामान्य पैराग्लाइडिंग की तरह दर्रे की चोटी तक जाने की ज़रूरत नहीं।",
+    "इस पेज पर बताई गई पैरामोटर उड़ान Mù Cang Chải के Khau Pha दर्रे पर होती है (Mebayluon Ha Giang के Quan Ba में भी पैरामोटर उड़ान कराता है)। टेक-ऑफ़ मैदान Clubhouse Mebayluon का ही है, इसलिए सामान्य पैराग्लाइडिंग की तरह दर्रे की चोटी तक जाने की ज़रूरत नहीं।",
   takeoffLabel: "टेक-ऑफ़",
   takeoffValue: "Clubhouse Mebayluon — Lìm Thái, Tú Lệ",
   mapCta: "Google Maps पर निर्देशांक देखें",

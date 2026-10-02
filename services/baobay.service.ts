@@ -58,7 +58,7 @@ import {
   parseTicketCode,
   formatTicketCode,
 } from "@/lib/baobay/ticket-code";
-import { FLIGHT_KIND_SHORT, bookingTotal, comboDiscount, defaultFlightKind, flightUnitPrice, servicePriceOf, type FlightKind,
+import { FLIGHT_KIND_SHORT, boDichVuKhongBan, bookingTotal, comboDiscount, serviceSoldAt, defaultFlightKind, flightUnitPrice, servicePriceOf, type FlightKind,
   loaiBayCuaDiem,
 } from "@/lib/baobay/flight-price";
 import {
@@ -1414,6 +1414,8 @@ export async function upsertPilotReport(
 ): Promise<SaveResult<PilotReportDTO>> {
   await connectDB();
   const spot = assertSpotAllowed(session, input.spot);
+  // Dịch vụ điểm này không bán (bay lâu chỉ Khau Phạ — chủ 02/10) → xoá về 0, KHÔNG báo lỗi: máy cũ / bản nháp còn số cũ vẫn lưu được
+  input = boDichVuKhongBan(spot, input);
   await assertDayOpen(spot, input.date);
 
   const parsed = parseTicketCodeList(input.ticketCodesText);
@@ -2289,6 +2291,8 @@ export async function upsertDispatcherReport(
 ): Promise<SaveResult<DispatcherReportDTO>> {
   await connectDB();
   const spot = assertSpotAllowed(session, input.spot);
+  // Dịch vụ điểm này không bán (bay lâu chỉ Khau Phạ — chủ 02/10) → xoá về 0, KHÔNG báo lỗi: máy cũ / bản nháp còn số cũ vẫn lưu được
+  input = boDichVuKhongBan(spot, input);
   await assertDayOpen(spot, input.date);
 
   const warnings: string[] = [];
@@ -4475,6 +4479,8 @@ function cauBaoTrung(ds: DauTrung[]): string {
 export async function createBooking(session: BaobaySession, input: BookingSaveInput): Promise<BookingDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, input.spot);
+  // Dịch vụ điểm này không bán (bay lâu chỉ Khau Phạ — chủ 02/10) → xoá về 0, KHÔNG báo lỗi: máy cũ / bản nháp còn số cũ vẫn lưu được
+  input = boDichVuKhongBan(spot, input);
 
   if (!input.contactName.trim() && !input.bookingCode.trim() && !input.source.trim()) {
     throw new BaobayError("Booking phải có ít nhất nguồn, tên liên hệ hoặc số booking", 400);
@@ -5019,6 +5025,8 @@ export async function updateBookingInfo(
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
   await assertBookingUnlocked(spot, id, session);
+  // Dịch vụ điểm này không bán (bay lâu chỉ Khau Phạ — chủ 02/10) → xoá về 0, KHÔNG báo lỗi: máy cũ / bản nháp còn số cũ vẫn lưu được
+  input = boDichVuKhongBan(spot, input);
 
   if (input.guestCount <= 0) throw new BaobayError("Booking chưa ghi số khách", 400);
   const before = await BaobayBooking.findOne({ _id: id, spot }).select("status flightDate").lean<any>();
@@ -5139,7 +5147,7 @@ export async function updateBookingInfo(
 const editedTotal = bookingTotal({
     ...input,
     // Máy cũ không gửi bay lâu → giữ số đang có, đừng xoá mất suất web đã bán (chủ 02/10)
-    longFlight: input.longFlight ?? current.longFlight ?? 0,
+    longFlight: serviceSoldAt(spot, "longFlight") ? (input.longFlight ?? current.longFlight ?? 0) : 0,
     spot,
     /**
      * SỬA booking thì GIỮ NGUYÊN bảng giá dịch vụ lúc nó được lập — booking cũ
@@ -5163,7 +5171,7 @@ const editedTotal = bookingTotal({
       video360: input.video360,
       redFlag: input.redFlag,
       sunset: input.sunset,
-      longFlight: input.longFlight ?? current.longFlight ?? 0,
+      longFlight: serviceSoldAt(spot, "longFlight") ? (input.longFlight ?? current.longFlight ?? 0) : 0,
       flagFlight: input.flagFlight,
       /** Lưới chặn: loại bay phải thuộc điểm này (chủ 23/09) — xem loaiBayCuaDiem. */
       flightKind: loaiBayCuaDiem(spot, input.flightKind),
@@ -5925,6 +5933,13 @@ export async function addBookingServices(
   if (closed) throw new BaobayError("Ngày này kế toán đã chốt — không thêm dịch vụ được nữa", 400);
 
   assertCameramanServiceLimits(session, input.add, String(booking.flightDate ?? ""));
+  /**
+   * THÊM dịch vụ là thao tác CỐ Ý → điểm không bán (bay lâu ngoài Khau Phạ, chủ
+   * 02/10) thì báo lỗi rõ ràng, không im lặng nuốt mất số khách vừa chọn.
+   */
+  if ((input.add.longFlight ?? 0) > 0 && !serviceSoldAt(spot, "longFlight")) {
+    throw new BaobayError(`${spotName(spot)} không bán bay lâu — dịch vụ này chỉ có ở Khau Phạ`, 400);
+  }
 
   const keys = ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight"] as const;
   const add = Object.fromEntries(keys.map((k) => [k, Math.max(0, Math.round(input.add[k] ?? 0))])) as Record<
@@ -7079,6 +7094,10 @@ export async function updateBookingCell(
     case "flagFlight":
     case "mountainCar": {
       const n = money();
+      // Sửa ô trên lưới là CỐ Ý → điểm không bán bay lâu thì báo lỗi (chủ 02/10)
+      if (field === "longFlight" && n > 0 && !serviceSoldAt(spot, "longFlight")) {
+        throw new BaobayError(`${spotName(spot)} không bán bay lâu — dịch vụ này chỉ có ở Khau Phạ`, 400);
+      }
       const cap = booking.guestCount ?? 0;
       if (cap > 0 && n > cap) throw new BaobayError(`Chỉ có ${cap} khách — không đặt được ${n} suất`, 400);
       set[field] = n;
@@ -7252,7 +7271,7 @@ export async function recordTicketPrint(
             flycam: Boolean(x.flycam),
             redFlag: Boolean(x.redFlag),
             sunset: Boolean(x.sunset),
-            longFlight: Boolean(x.longFlight),
+            longFlight: Boolean(x.longFlight) && serviceSoldAt(spot, "longFlight"),
             flagFlight: Boolean(x.flagFlight),
           }
         : macDinh;
@@ -7480,7 +7499,7 @@ export async function createBlankBookingRow(
     video360: q?.video360 ?? 0,
     redFlag: q?.redFlag ?? 0,
     sunset: q?.sunset ?? 0,
-    longFlight: q?.longFlight ?? 0,
+    longFlight: serviceSoldAt(spot, "longFlight") ? (q?.longFlight ?? 0) : 0,
     flagFlight: q?.flagFlight ?? 0,
     mountainCar: q?.mountainCar ?? 0,
     discount: q?.discount ?? 0,
@@ -7518,7 +7537,7 @@ export async function createBlankBookingRow(
       video360: Math.min(q?.video360 ?? 0, khach || (q?.video360 ?? 0)),
       redFlag: Math.min(q?.redFlag ?? 0, khach || (q?.redFlag ?? 0)),
       sunset: Math.min(q?.sunset ?? 0, khach || (q?.sunset ?? 0)),
-      longFlight: Math.min(q?.longFlight ?? 0, khach || (q?.longFlight ?? 0)),
+      longFlight: serviceSoldAt(spot, "longFlight") ? Math.min(q?.longFlight ?? 0, khach || (q?.longFlight ?? 0)) : 0,
       flagFlight: Math.min(q?.flagFlight ?? 0, khach || (q?.flagFlight ?? 0)),
       mountainCar: Math.min(q?.mountainCar ?? 0, khach || (q?.mountainCar ?? 0)),
       /** Đơn giá điền sẵn theo bảng giá của điểm — gõ đè được như mọi ô khác. */
@@ -11906,7 +11925,10 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       { key: "video360", label: "Cam360", booked: bookingServices.video360, reported: sum(pilots, (p) => p.video360 ?? 0), source: "phi công" },
       { key: "redFlag", label: "Cờ đỏ", booked: bookingServices.redFlag, reported: sum(pilots, (p) => p.redFlag ?? 0), source: "phi công" },
       { key: "sunset", label: "H.hôn/S.mây/B.minh", booked: bookingServices.sunset, reported: sum(pilots, (p) => p.sunset ?? 0), source: "phi công" },
-      { key: "longFlight", label: "Bay lâu", booked: bookingServices.longFlight, reported: sum(pilots, (p) => p.longFlight ?? 0), source: "phi công" },
+      // Bay lâu chỉ Khau Phạ (chủ 02/10)
+      ...(serviceSoldAt(spot, "longFlight")
+        ? [{ key: "longFlight", label: "Bay lâu", booked: bookingServices.longFlight, reported: sum(pilots, (p) => p.longFlight ?? 0), source: "phi công" }]
+        : []),
       { key: "flagFlight", label: "Kéo cờ", booked: bookingServices.flagFlight, reported: sum(pilots, (p) => p.flagFlight ?? 0), source: "phi công" },
     ],
   };
@@ -12152,6 +12174,8 @@ export async function upsertDailyClose(
 ): Promise<SaveResult<DailyCloseDTO>> {
   await connectDB();
   const spot = assertSpotAllowed(session, input.spot);
+  // Dịch vụ điểm này không bán (bay lâu chỉ Khau Phạ — chủ 02/10) → xoá về 0, KHÔNG báo lỗi: máy cũ / bản nháp còn số cũ vẫn lưu được
+  input = boDichVuKhongBan(spot, input);
   await assertDayOpen(spot, input.date);
 
   const warnings: string[] = [];
@@ -14062,7 +14086,7 @@ export async function getMyPeriodSummary(
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Dù cờ đỏ (red flag)", value: sumOf((d) => d.redFlag) },
         ...(spot !== "sapa" ? [{ label: "H.hôn / S.mây / B.minh (sunset)", value: sumOf((d) => d.sunset) }] : []),
-        ...(spot !== "sapa" ? [{ label: "Bay lâu (long flight)", value: sumOf((d) => d.longFlight ?? 0) }] : []),
+        ...(serviceSoldAt(spot, "longFlight") ? [{ label: "Bay lâu (long flight)", value: sumOf((d) => d.longFlight ?? 0) }] : []),
         { label: "Bay kéo cờ đỏ/cờ sinh nhật (flag flight)", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao (complimentary)", value: sumOf((d) => d.diplomaticGuests) },
         // Phí bãi + nước chỉ có ở Hà Nội; PPG chỉ có ở Khau Phạ
@@ -14131,7 +14155,7 @@ export async function getMyPeriodSummary(
         { label: "Camera 360", value: sumOf((d) => d.video360) },
         { label: "Cờ đỏ", value: sumOf((d) => d.redFlag) },
         ...(spot !== "sapa" ? [{ label: "H.hôn / S.mây / B.minh", value: sumOf((d) => d.sunset) }] : []),
-        ...(spot !== "sapa" ? [{ label: "Bay lâu", value: sumOf((d) => d.longFlight ?? 0) }] : []),
+        ...(serviceSoldAt(spot, "longFlight") ? [{ label: "Bay lâu", value: sumOf((d) => d.longFlight ?? 0) }] : []),
         { label: "Bay kéo cờ đỏ/cờ sinh nhật", value: sumOf((d) => d.flagFlight) },
         { label: "Khách ngoại giao", value: sumOf((d) => d.diplomaticGuests) },
         { label: "Tiền mặt", value: sumOf((d) => d.cashReceived) + collectCash, money: true },

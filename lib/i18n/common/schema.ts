@@ -7,8 +7,8 @@ export type SpotLocationCopy = {
   summary: string;
   /**
    * Thế mạnh riêng, hiện thành dải chữ nổi bật trên thẻ điểm bay (trang chủ +
-   * /spots) và ở hero trang chi tiết. Hiện chỉ Khau Phạ có — là nơi duy nhất
-   * bay được cả dù lượn lẫn dù lượn gắn động cơ.
+   * /spots) và ở hero trang chi tiết. Khau Phạ và Quản Bạ có — hai điểm bay
+   * được cả dù lượn lẫn dù lượn gắn động cơ.
    */
   tagline?: string;
 };

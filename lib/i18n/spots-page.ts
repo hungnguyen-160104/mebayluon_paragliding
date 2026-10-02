@@ -45,7 +45,7 @@ const vi: SpotsPageCopy = {
     },
     {
       title: "Bạn muốn bay lâu và bay cao?",
-      body: "Dù lượn thường phụ thuộc vào gió, thời gian trên không khoảng 10–20 phút. Muốn chủ động độ cao và thời lượng thì chọn dù lượn gắn động cơ — hiện chỉ có tại Khau Phạ, bay được tới 2.000m, chuyến tiêu chuẩn 15 phút, gói đặc biệt hoặc bay lâu 20–25 phút. Đây cũng là lựa chọn hợp lý nhất cho bay ngắm hoàng hôn và bay săn mây.",
+      body: "Dù lượn thường phụ thuộc vào gió, thời gian trên không khoảng 10–20 phút. Muốn chủ động độ cao và thời lượng thì chọn dù lượn gắn động cơ — hiện có tại Khau Phạ và Quản Bạ (Hà Giang), bay được tới 2.000m, chuyến tiêu chuẩn 15 phút, gói đặc biệt hoặc bay lâu 20–25 phút. Đây cũng là lựa chọn hợp lý nhất cho bay ngắm hoàng hôn và bay săn mây.",
     },
   ],
   faqTitle: "Câu hỏi thường gặp",
@@ -64,7 +64,7 @@ const vi: SpotsPageCopy = {
     },
     {
       q: "Điểm bay nào bay được cả khi trời lặng gió?",
-      a: "Đèo Khau Phạ, nhờ có dịch vụ dù lượn gắn động cơ. Động cơ giúp cất cánh từ mặt bằng phẳng và lên cao chủ động, không phải chờ gió như dù lượn thường.",
+      a: "Đèo Khau Phạ và Quản Bạ (Hà Giang), nhờ có dịch vụ dù lượn gắn động cơ. Động cơ giúp cất cánh từ mặt bằng phẳng và lên cao chủ động, không phải chờ gió như dù lượn thường.",
     },
     {
       q: "Có xe đưa đón tới điểm bay không?",
@@ -109,7 +109,7 @@ const en: SpotsPageCopy = {
     },
     {
       title: "Do you want to fly longer and higher?",
-      body: "Unpowered paragliding depends on the wind, with roughly 10–20 minutes of airtime. If you want control over height and duration, choose powered paragliding — available only at Khau Pha, up to 2,000 m, 15 minutes as standard or 20–25 minutes with a special flight or long flight. It is also the better choice for sunset flights and cloud hunting.",
+      body: "Unpowered paragliding depends on the wind, with roughly 10–20 minutes of airtime. If you want control over height and duration, choose powered paragliding — available at Khau Pha and Quan Ba (Ha Giang), up to 2,000 m, 15 minutes as standard or 20–25 minutes with a special flight or long flight. It is also the better choice for sunset flights and cloud hunting.",
     },
   ],
   faqTitle: "Frequently asked questions",
@@ -128,7 +128,7 @@ const en: SpotsPageCopy = {
     },
     {
       q: "Which site can fly even when there is no wind?",
-      a: "Khau Pha, thanks to its powered paragliding. The engine lets you take off from flat ground and climb on demand instead of waiting for wind.",
+      a: "Khau Pha and Quan Ba (Ha Giang), thanks to their powered paragliding. The engine lets you take off from flat ground and climb on demand instead of waiting for wind.",
     },
     {
       q: "Is transport to the site available?",
@@ -173,7 +173,7 @@ const fr: SpotsPageCopy = {
     },
     {
       title: "Voulez-vous voler plus longtemps et plus haut ?",
-      body: "Le parapente classique dépend du vent, avec environ 10 à 20 minutes de vol. Pour maîtriser l’altitude et la durée, choisissez le paramoteur — disponible uniquement à Khau Pha, jusqu’à 2 000 m, 15 minutes en vol standard ou 20 à 25 minutes en vol spécial ou vol long. C’est aussi le meilleur choix pour les vols au coucher du soleil et la chasse aux nuages.",
+      body: "Le parapente classique dépend du vent, avec environ 10 à 20 minutes de vol. Pour maîtriser l’altitude et la durée, choisissez le paramoteur — disponible à Khau Pha et à Quan Ba (Ha Giang), jusqu’à 2 000 m, 15 minutes en vol standard ou 20 à 25 minutes en vol spécial ou vol long. C’est aussi le meilleur choix pour les vols au coucher du soleil et la chasse aux nuages.",
     },
   ],
   faqTitle: "Questions fréquentes",
@@ -192,7 +192,7 @@ const fr: SpotsPageCopy = {
     },
     {
       q: "Quel site permet de voler même sans vent ?",
-      a: "Khau Pha, grâce au paramoteur. Le moteur permet de décoller d’un terrain plat et de monter à la demande, sans attendre le vent.",
+      a: "Khau Pha et Quan Ba (Ha Giang), grâce au paramoteur. Le moteur permet de décoller d’un terrain plat et de monter à la demande, sans attendre le vent.",
     },
     {
       q: "Un transport jusqu’au site est-il proposé ?",
@@ -237,7 +237,7 @@ const ru: SpotsPageCopy = {
     },
     {
       title: "Хотите летать дольше и выше?",
-      body: "Обычный параплан зависит от ветра, время в воздухе примерно 10–20 минут. Если нужен контроль высоты и длительности, выбирайте парамотор — он есть только на Khau Pha: до 2 000 м, стандартный полёт 15 минут, особый или долгий полёт — 20–25 минут. Это же лучший вариант для полёта на закате и для охоты за облаками.",
+      body: "Обычный параплан зависит от ветра, время в воздухе примерно 10–20 минут. Если нужен контроль высоты и длительности, выбирайте парамотор — он есть на Khau Pha и в Quan Ba (Ha Giang): до 2 000 м, стандартный полёт 15 минут, особый или долгий полёт — 20–25 минут. Это же лучший вариант для полёта на закате и для охоты за облаками.",
     },
   ],
   faqTitle: "Частые вопросы",
@@ -256,7 +256,7 @@ const ru: SpotsPageCopy = {
     },
     {
       q: "Где можно летать даже в полный штиль?",
-      a: "На Khau Pha — благодаря парамотору. Мотор позволяет стартовать с ровной площадки и набирать высоту по желанию, не дожидаясь ветра.",
+      a: "На Khau Pha и в Quan Ba (Ha Giang) — благодаря парамотору. Мотор позволяет стартовать с ровной площадки и набирать высоту по желанию, не дожидаясь ветра.",
     },
     {
       q: "Есть ли трансфер до площадки?",
@@ -301,7 +301,7 @@ const zh: SpotsPageCopy = {
     },
     {
       title: "想飞得更久、更高？",
-      body: "无动力滑翔伞依赖风况，空中时间约 10–20 分钟。若想自主掌控高度与时长，请选动力滑翔伞——仅 Khau Pha 提供，最高 2,000 米，标准飞行 15 分钟，特别飞行套餐或长时飞行 20–25 分钟。飞黄昏日落与清晨云海，也以动力滑翔伞最为合适。",
+      body: "无动力滑翔伞依赖风况，空中时间约 10–20 分钟。若想自主掌控高度与时长，请选动力滑翔伞——Khau Pha 与 Quan Ba（Ha Giang）均有提供，最高 2,000 米，标准飞行 15 分钟，特别飞行套餐或长时飞行 20–25 分钟。飞黄昏日落与清晨云海，也以动力滑翔伞最为合适。",
     },
   ],
   faqTitle: "常见问题",
@@ -320,7 +320,7 @@ const zh: SpotsPageCopy = {
     },
     {
       q: "哪个飞行点无风也能飞？",
-      a: "Khau Pha，因为那里有动力滑翔伞。发动机可从平地起飞并按需爬升，无需等风。",
+      a: "Khau Pha 与 Quan Ba（Ha Giang），因为那里有动力滑翔伞。发动机可从平地起飞并按需爬升，无需等风。",
     },
     {
       q: "有接送车前往飞行点吗？",
@@ -365,7 +365,7 @@ const hi: SpotsPageCopy = {
     },
     {
       title: "लंबी और ऊँची उड़ान चाहिए?",
-      body: "बिना इंजन वाली पैराग्लाइडिंग हवा पर निर्भर है, हवाई समय लगभग 10–20 मिनट। ऊँचाई और अवधि पर नियंत्रण चाहिए तो पैरामोटर चुनें — यह केवल Khau Pha पर है, 2,000 मीटर तक, सामान्य उड़ान 15 मिनट, विशेष उड़ान या लंबी उड़ान 20–25 मिनट। सूर्यास्त की उड़ान और बादलों का पीछा करने के लिए भी यही सबसे उपयुक्त है।",
+      body: "बिना इंजन वाली पैराग्लाइडिंग हवा पर निर्भर है, हवाई समय लगभग 10–20 मिनट। ऊँचाई और अवधि पर नियंत्रण चाहिए तो पैरामोटर चुनें — यह Khau Pha और Quan Ba (Ha Giang) पर उपलब्ध है, 2,000 मीटर तक, सामान्य उड़ान 15 मिनट, विशेष उड़ान या लंबी उड़ान 20–25 मिनट। सूर्यास्त की उड़ान और बादलों का पीछा करने के लिए भी यही सबसे उपयुक्त है।",
     },
   ],
   faqTitle: "सामान्य प्रश्न",
@@ -384,7 +384,7 @@ const hi: SpotsPageCopy = {
     },
     {
       q: "हवा न हो तब भी कहाँ उड़ान संभव है?",
-      a: "Khau Pha पर, वहाँ पैरामोटर उपलब्ध है। इंजन से समतल ज़मीन से उड़ान भरी जा सकती है और जब चाहें ऊपर चढ़ा जा सकता है — हवा का इंतज़ार नहीं करना पड़ता।",
+      a: "Khau Pha और Quan Ba (Ha Giang) पर, वहाँ पैरामोटर उपलब्ध है। इंजन से समतल ज़मीन से उड़ान भरी जा सकती है और जब चाहें ऊपर चढ़ा जा सकता है — हवा का इंतज़ार नहीं करना पड़ता।",
     },
     {
       q: "क्या स्थल तक गाड़ी की व्यवस्था है?",

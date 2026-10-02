@@ -2,6 +2,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import type { DailyCloseDTO, ReconcileDTO } from "@/lib/baobay/types";
@@ -859,8 +860,8 @@ function DailyCloseInner() {
                     </div>
                     <div className="mt-1 text-[11px] leading-snug text-emerald-900/80">
                       flycam {suggest.booking.flycam} · 360 {suggest.booking.video360} · cờ đỏ{" "}
-                      {suggest.booking.redFlag} · H.hôn/S.mây/B.minh {suggest.booking.sunset} · bay lâu{" "}
-                      {suggest.booking.longFlight ?? 0} · kéo cờ{" "}
+                      {suggest.booking.redFlag} · H.hôn/S.mây/B.minh {suggest.booking.sunset} ·{" "}
+                      {serviceSoldAt(spot, "longFlight") ? `bay lâu ${suggest.booking.longFlight ?? 0} · ` : ""}kéo cờ{" "}
                       {suggest.booking.flagFlight}
                     </div>
                     <Button
@@ -909,8 +910,8 @@ function DailyCloseInner() {
                       TM {formatVND(suggest.cashTotal)} · CK {formatVND(suggest.transferTotal)}
                       <br />
                       flycam {suggest.dispatcher.flycam} · 360 {suggest.dispatcher.video360} · cờ đỏ{" "}
-                      {suggest.dispatcher.redFlag} · H.hôn/S.mây/B.minh {suggest.dispatcher.sunset} · bay lâu{" "}
-                      {suggest.dispatcher.longFlight ?? 0} · kéo cờ{" "}
+                      {suggest.dispatcher.redFlag} · H.hôn/S.mây/B.minh {suggest.dispatcher.sunset} ·{" "}
+                      {serviceSoldAt(spot, "longFlight") ? `bay lâu ${suggest.dispatcher.longFlight ?? 0} · ` : ""}kéo cờ{" "}
                       {suggest.dispatcher.flagFlight}
                     </div>
                     <Button
@@ -931,7 +932,8 @@ function DailyCloseInner() {
                       {suggest.pilot.ppg ? ` + ${suggest.pilot.ppg} PPG` : ""})
                       <br />
                       flycam {suggest.pilot.flycam} · 360 {suggest.pilot.video360} · cờ đỏ {suggest.pilot.redFlag} ·
-                      H.hôn/S.mây/B.minh {suggest.pilot.sunset} · bay lâu {suggest.pilot.longFlight ?? 0} · kéo cờ{" "}
+                      H.hôn/S.mây/B.minh {suggest.pilot.sunset} ·{" "}
+                      {serviceSoldAt(spot, "longFlight") ? `bay lâu ${suggest.pilot.longFlight ?? 0} · ` : ""}kéo cờ{" "}
                       {suggest.pilot.flagFlight}
                       <br />
                       <span className="text-slate-400">
@@ -1480,8 +1482,8 @@ function DailyCloseInner() {
               <ByPerson list={suggest?.reportedBy?.sunset} prefix="phi công" />
             </ServiceBox>
             )}
-            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — cùng điều kiện hiện, so cùng hai nguồn */}
-            {spot !== "sapa" && (
+            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — CHỈ Khau Phạ bán (serviceSoldAt), so cùng hai nguồn */}
+            {serviceSoldAt(spot, "longFlight") && (
             <ServiceBox tone="longFlight" label="Bay lâu">
               <CountInput compact value={form.longFlight} onChange={(v) => set("longFlight", v)} max={1000} />
               <Compare label="số trên booking" value={(flown as { longFlight?: number } | null)?.longFlight} mine={form.longFlight}
@@ -1519,7 +1521,7 @@ function DailyCloseInner() {
                   <option value="video360">Camera 360</option>
                   <option value="redFlag">Dù cờ đỏ</option>
                   <option value="sunset">H.hôn / S.mây / B.minh</option>
-                  <option value="longFlight">Bay lâu</option>
+                  {serviceSoldAt(spot, "longFlight") && <option value="longFlight">Bay lâu</option>}
                   <option value="flagFlight">Bay kéo cờ đỏ/cờ sinh nhật</option>
                   <option value="general">Số liệu chung</option>
                 </select>
@@ -1898,7 +1900,12 @@ function DailyCloseInner() {
                   ? ([] as Array<[string, number | undefined, number | undefined]>)
                   : ([
                       ["H.hôn / S.mây / B.minh: phi công / điều phối", t?.pilotSunset, t?.dispatcherSunset],
-                      ["Bay lâu: phi công / điều phối", t?.pilotLongFlight, t?.dispatcherLongFlight],
+                      // Bay lâu chỉ Khau Phạ (chủ 02/10)
+                      ...(serviceSoldAt(spot, "longFlight")
+                        ? ([["Bay lâu: phi công / điều phối", t?.pilotLongFlight, t?.dispatcherLongFlight]] as Array<
+                            [string, number | undefined, number | undefined]
+                          >)
+                        : []),
                     ] as Array<
                       [string, number | undefined, number | undefined]
                     >)),

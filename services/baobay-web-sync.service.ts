@@ -17,7 +17,7 @@
 
 import mongoose from "mongoose";
 
-import { comboDiscount } from "@/lib/baobay/flight-price";
+import { comboDiscount, serviceSoldAt } from "@/lib/baobay/flight-price";
 import { todayInVN } from "@/lib/baobay/date";
 import { normalizeSpot } from "@/lib/baobay/spots";
 import { pushQueueNoToWeb } from "@/lib/baobay/web-queue";
@@ -305,7 +305,8 @@ export function mapWebBooking(doc: WebDoc, spot: string) {
      * hôn/săn mây trong tổng tiền; `bookingTotal` của app áp đúng luật ấy nên
      * ai mở booking ra sửa thì tổng vẫn ra đúng số web đã báo.
      */
-    longFlight: serviceQty(doc, "longFlight", guests),
+    // Web Hà Nội / Sa Pa không có bay lâu; lưới chặn nếu lỡ có khoá lạ (chủ 02/10)
+    longFlight: serviceSoldAt(spot, "longFlight") ? serviceQty(doc, "longFlight", guests) : 0,
     flagFlight: serviceQty(doc, "flagFlight", guests),
     flightKind: flightKindOf(doc, spot),
     pickup,

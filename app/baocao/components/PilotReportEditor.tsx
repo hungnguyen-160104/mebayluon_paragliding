@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 
 import { parseTicketCodeList } from "@/lib/baobay/ticket-code";
 import type { PilotReportDTO } from "@/lib/baobay/types";
@@ -254,8 +255,8 @@ function PilotRow({
       { label: "flycam", value: form.flycam },
       { label: "cờ đỏ", value: form.redFlag },
       ...(spot !== "sapa" ? [{ label: "H.hôn / S.mây / B.minh", value: form.sunset }] : []),
-      // Bay lâu tách riêng từ chủ 02/10 — cùng điều kiện hiện với hoàng hôn.
-      ...(spot !== "sapa" ? [{ label: "bay lâu", value: form.longFlight }] : []),
+      // Bay lâu tách riêng từ chủ 02/10 — chỉ Khau Phạ bán.
+      ...(serviceSoldAt(spot, "longFlight") ? [{ label: "bay lâu", value: form.longFlight }] : []),
       { label: "kéo cờ", value: form.flagFlight },
       { label: "ngoại giao", value: form.diplomaticGuests },
     ];
@@ -499,10 +500,12 @@ function PilotRow({
             <ServiceBox tone="sunset" label="H.hôn / S.mây / B.minh">
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={300} />
             </ServiceBox>
-            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — dùng chung màu sunset */}
+            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — CHỈ Khau Phạ bán */}
+            {serviceSoldAt(spot, "longFlight") && (
             <ServiceBox tone="longFlight" label="Bay lâu">
               <CountInput compact value={form.longFlight} onChange={(v) => set("longFlight", v)} max={300} />
             </ServiceBox>
+            )}
             <ServiceBox tone="flagFlight" label="Bay kéo cờ đỏ/cờ sinh nhật">
               <CountInput compact value={form.flagFlight} onChange={(v) => set("flagFlight", v)} max={300} />
             </ServiceBox>
@@ -525,6 +528,7 @@ function PilotRow({
                 spellCheck={false}
               />
             </ServiceBox>
+            {serviceSoldAt(spot, "longFlight") && (
             <ServiceBox tone="longFlight" label="Mã vé bay lâu">
               <TextInput
                 value={form.longFlightCodesText}
@@ -533,6 +537,7 @@ function PilotRow({
                 spellCheck={false}
               />
             </ServiceBox>
+            )}
             <ServiceBox tone="redFlag" label="Mã vé cờ đỏ">
               <TextInput
                 value={form.redFlagCodesText}

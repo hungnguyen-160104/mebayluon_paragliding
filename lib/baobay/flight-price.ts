@@ -10,7 +10,7 @@
  * năm là sai, mà chẳng ai nhớ để sửa.
  */
 
-import { normalizeSpot, type SpotId } from "@/lib/baobay/spots";
+import { normalizeSpot, spotIdOrNull, type SpotId } from "@/lib/baobay/spots";
 
 export type FlightKind = "pg" | "ppg" | "m650" | "m850";
 
@@ -97,6 +97,84 @@ export const SERVICE_PRICE = {
 
 export type ServiceKey = keyof typeof SERVICE_PRICE;
 
+/**
+ * ĐIỂM NÀO BÁN DỊCH VỤ NÀO — chỉ ghi dịch vụ bị GIỚI HẠN điểm; dịch vụ không
+ * có trong bảng thì điểm nào cũng bán (giữ nguyên luật cũ của từng màn hình,
+ * vd. Sa Pa không bán hoàng hôn/kéo cờ vẫn do `spot !== "sapa"` lo như trước).
+ *
+ * BAY LÂU chỉ có ở KHAU PHẠ (chủ 02/10/2026): Hà Nội (Đồi Bù/Viên Nam), Sa Pa,
+ * Đà Nẵng, Quản Bạ đều không bán. Đà Nẵng và Quản Bạ không phải điểm của app
+ * (không có trong SPOTS) nên `spotIdOrNull` trả null → coi như không bán.
+ */
+const SERVICE_SPOTS: Partial<Record<ServiceKey, readonly SpotId[]>> = {
+  longFlight: ["khau-pha"],
+};
+
+/**
+ * Điểm `spot` có bán dịch vụ `key` không. Nguồn DUY NHẤT cho cả giao diện
+ * (ẩn ô, ẩn cột, ẩn lựa chọn trên vé) lẫn máy chủ (xoá số / chặn lưu).
+ *
+ * Không khai điểm (nơi gọi cũ, `bookingTotal` không truyền spot) → coi như bán,
+ * để số tiền của những chỗ ấy không đổi; điểm lạ (Quản Bạ, Đà Nẵng) → không bán.
+ */
+export function serviceSoldAt(spot: string | null | undefined, key: ServiceKey | string): boolean {
+  const only = SERVICE_SPOTS[key as ServiceKey];
+  if (!only) return true;
+  if (spot == null || String(spot).trim() === "") return true;
+  const id = spotIdOrNull(spot);
+  return id !== null && only.includes(id);
+}
+
+/** Bảng giá dịch vụ (nhãn) chỉ gồm những thứ điểm này bán. */
+export function servicePriceLabelsAt(spot: string | null | undefined): typeof SERVICE_PRICE_LABEL {
+  return SERVICE_PRICE_LABEL.filter((s) => serviceSoldAt(spot, s.key));
+}
+
+/**
+ * MÁY CHỦ: xoá về 0 số của dịch vụ điểm này không bán (trả bản sao). Dùng cho
+ * đường LƯU NGẦM (form booking, báo cáo, đồng bộ web, OTA) — máy cũ hay bản
+ * nháp còn mang số cũ thì lưu vẫn được, chỉ không ghi thứ không tồn tại.
+ * Các thao tác CỐ Ý thêm dịch vụ (thẻ thêm dịch vụ, sửa ô trên lưới) thì báo
+ * lỗi 400 rõ ràng thay vì im lặng — xem nơi gọi trong baobay.service.ts.
+ */
+export function boDichVuKhongBan<T extends Record<string, unknown>>(spot: string | null | undefined, obj: T): T {
+  const out: Record<string, unknown> = { ...obj };
+  for (const key of Object.keys(SERVICE_SPOTS)) {
+    if (serviceSoldAt(spot, key)) continue;
+    if (key in out) out[key] = 0;
+    if (`${key}Codes` in out) out[`${key}Codes`] = [];
+    if (`${key}CodesText` in out) out[`${key}CodesText`] = "";
+  }
+  return out as T;
+}
+
+/**
+ * BẢNG XUẤT (Excel/CSV): bỏ hẳn cột của dịch vụ điểm này không bán — cột tên
+ * "Bay lâu" ở Hà Nội / Sa Pa (chủ 02/10). Bỏ theo TÊN cột trong hàng tiêu đề
+ * nên không phải đếm lại vị trí từng bảng; hàng nào dài tới cột ấy (hàng dữ
+ * liệu, hàng TỔNG) cắt cùng chỗ, hàng ghi chú ngắn giữ nguyên.
+ */
+export function boCotKhongBan<C>(
+  spot: string | null | undefined,
+  header: string[],
+  rows: C[][],
+  widths?: number[],
+): { header: string[]; rows: C[][]; widths?: number[] } {
+  const ten: Partial<Record<ServiceKey, string>> = { longFlight: "Bay lâu" };
+  const bo = Object.entries(ten)
+    .filter(([k]) => !serviceSoldAt(spot, k))
+    .map(([, t]) => header.indexOf(t as string))
+    .filter((i) => i >= 0)
+    .sort((x, y) => y - x);
+  if (!bo.length) return { header, rows, widths };
+  const cat = <X,>(r: X[]) => {
+    const o = [...r];
+    for (const i of bo) if (o.length > i) o.splice(i, 1);
+    return o;
+  };
+  return { header: cat(header), rows: rows.map(cat), widths: widths && widths.length > bo[bo.length - 1] ? cat(widths) : widths };
+}
+
 /** Nhãn đầy đủ của dịch vụ gộp (khoá `sunset`) — một chỗ để mọi màn hình dùng chung. */
 export const SUNSET_LABEL = "H.hôn / S.mây / B.minh";
 /** Nhãn dịch vụ bay lâu (khoá `longFlight`). */
@@ -123,7 +201,13 @@ export function longFlightCharged(longFlight?: number, sunset?: number): number 
  * (số × đơn giá) ra cùng con số với `servicesAmount`. Chỉ bay lâu khác số
  * bán, các dịch vụ còn lại trả nguyên.
  */
-export function serviceChargedCount(key: ServiceKey, s: { longFlight?: number; sunset?: number } & Partial<Record<ServiceKey, number>>): number {
+export function serviceChargedCount(
+  key: ServiceKey,
+  s: { longFlight?: number; sunset?: number } & Partial<Record<ServiceKey, number>>,
+  /** Có khai điểm thì dịch vụ điểm ấy không bán tính 0 suất (xem serviceSoldAt). */
+  spot?: string | null,
+): number {
+  if (spot && !serviceSoldAt(spot, key)) return 0;
   if (key === "longFlight") return longFlightCharged(s.longFlight, s.sunset);
   return Number(s[key]) || 0;
 }
@@ -327,8 +411,9 @@ export function servicesAmount(s: {
     (s.redFlag || 0) * price.redFlag +
     (s.flagFlight || 0) * price.flagFlight +
     (s.sunset || 0) * price.sunset +
-    // Bay lâu: chỉ tính phần vượt số suất hoàng hôn (miễn phí kèm H.hôn/S.mây/B.minh — chủ 02/10)
-    longFlightCharged(s.longFlight, s.sunset) * price.longFlight
+    // Bay lâu: chỉ tính phần vượt số suất hoàng hôn (miễn phí kèm H.hôn/S.mây/B.minh — chủ 02/10);
+    // điểm không bán bay lâu (Hà Nội, Sa Pa) thì số lỡ còn trong bản ghi cũng không thành tiền
+    (serviceSoldAt(s.spot, "longFlight") ? longFlightCharged(s.longFlight, s.sunset) * price.longFlight : 0)
   );
 }
 

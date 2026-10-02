@@ -1798,7 +1798,7 @@ Quản Bạ là chặng đầu tiên của Hà Giang Loop – cung đường vò
 
 🚁 DÙ LƯỢN CÓ ĐỘNG CƠ (PPG) — từ 2.490.000 đ/khách
 + Gói cơ bản: bay 15 phút
-+ Gói nâng cao: 22–25 phút, bay săn mây — bình minh / hoàng hôn — 3.390.000 đ/khách
++ Gói nâng cao: 20–25 phút, bay săn mây — bình minh / hoàng hôn — 3.390.000 đ/khách
 + Cất cánh ngay tại thung lũng, leo cao hàng ngàn mét ngắm toàn cảnh
 
 📸 DỊCH VỤ TÙY CHỌN:
@@ -1857,7 +1857,7 @@ Quan Ba is the first stop of the Ha Giang Loop – the famous circuit Ha Giang �
 
 🚁 POWERED PARAGLIDING (PPG) — from 2.490.000 VND/guest
 + Basic package: 15-minute flight
-+ Advanced package: 22–25 minutes, cloud-chasing flight — sunrise / sunset — 3.390.000 VND/guest
++ Advanced package: 20–25 minutes, cloud-chasing flight — sunrise / sunset — 3.390.000 VND/guest
 + Take off right in the valley and climb thousands of metres for the full panorama
 
 📸 OPTIONAL SERVICES:
@@ -1901,7 +1901,7 @@ Quan Ba est la première étape de la Ha Giang Loop – le célèbre circuit Ha 
 
 🚁 PARAMOTEUR (PPG) — à partir de 2.490.000 VND/personne
 + Forfait de base : vol de 15 minutes
-+ Forfait avancé : 22–25 minutes, vol à la chasse aux nuages — lever / coucher du soleil — 3.390.000 VND/personne
++ Forfait avancé : 20–25 minutes, vol à la chasse aux nuages — lever / coucher du soleil — 3.390.000 VND/personne
 + Décollage directement dans la vallée et montée de plusieurs milliers de mètres pour un panorama complet
 
 📸 SERVICES OPTIONNELS :
@@ -1945,7 +1945,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 
 🚁 ПАРАМОТОР (PPG) — от 2.490.000 VND с человека
 + Базовый пакет: полёт 15 минут
-+ Расширенный пакет: 22–25 минут, полёт за облаками — рассвет / закат — 3.390.000 VND с человека
++ Расширенный пакет: 20–25 минут, полёт за облаками — рассвет / закат — 3.390.000 VND с человека
 + Взлёт прямо в долине и набор высоты в несколько тысяч метров ради полной панорамы
 
 📸 ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ:
@@ -1989,7 +1989,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 
 🚁 动力滑翔伞（PPG）— 每位 2.490.000 VND 起
 + 基础套餐：飞行 15 分钟
-+ 进阶套餐：22–25 分钟，日出／日落追云飞行，每位 3.390.000 VND
++ 进阶套餐：20–25 分钟，日出／日落追云飞行，每位 3.390.000 VND
 + 直接在山谷起飞，爬升数千米俯瞰全景
 
 📸 可选服务：
@@ -2033,7 +2033,7 @@ Veuillez réserver à l'avance pour que nous puissions organiser au mieux votre 
 
 🚁 पावर्ड पैराग्लाइडिंग (PPG) — 2.490.000 VND प्रति व्यक्ति से
 + बेसिक पैकेज: 15 मिनट की उड़ान
-+ एडवांस पैकेज: 22–25 मिनट, बादलों का पीछा — सूर्योदय / सूर्यास्त — 3.390.000 VND प्रति व्यक्ति
++ एडवांस पैकेज: 20–25 मिनट, बादलों का पीछा — सूर्योदय / सूर्यास्त — 3.390.000 VND प्रति व्यक्ति
 + घाटी से ही टेक-ऑफ़ और हज़ारों मीटर ऊपर चढ़कर पूरा नज़ारा
 
 📸 वैकल्पिक सेवाएं:
@@ -3223,7 +3223,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon Team",
         date: "25/09/2026",
         content:
-          "Từ 15/10/2026, gói PPG bay lâu 22–25 phút đưa khách lên cao lúc mặt trời mọc, khi mây còn phủ kín các thung lũng nhỏ quanh Tam Sơn và chỉ những đỉnh đá nhô lên. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
+          "Từ 15/10/2026, gói PPG bay lâu 20–25 phút đưa khách lên cao lúc mặt trời mọc, khi mây còn phủ kín các thung lũng nhỏ quanh Tam Sơn và chỉ những đỉnh đá nhô lên. Đặt trước để chúng tôi xếp giờ theo mặt trời.",
       },
     ],
     en: [
@@ -3249,7 +3249,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon Team",
         date: "2026-09-25",
         content:
-          "From 15 October 2026 the 22–25-minute PPG package takes you up at sunrise, while cloud still fills the small valleys around Tam Son and only the rock peaks show through. Book ahead so we can schedule by the sun.",
+          "From 15 October 2026 the 20–25-minute PPG package takes you up at sunrise, while cloud still fills the small valleys around Tam Son and only the rock peaks show through. Book ahead so we can schedule by the sun.",
       },
     ],
     fr: [
@@ -3275,7 +3275,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Équipe Mebayluon",
         date: "25/09/2026",
         content:
-          "Dès le 15 octobre 2026, le forfait PPG de 22 à 25 minutes vous emmène en altitude au lever du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Sơn et que seuls les pics rocheux émergent. Réservez pour que nous calions l'horaire sur le soleil.",
+          "Dès le 15 octobre 2026, le forfait PPG de 20 à 25 minutes vous emmène en altitude au lever du soleil, quand les nuages remplissent encore les petites vallées autour de Tam Sơn et que seuls les pics rocheux émergent. Réservez pour que nous calions l'horaire sur le soleil.",
       },
     ],
     ru: [
@@ -3301,7 +3301,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Команда Mebayluon",
         date: "25.09.2026",
         content:
-          "С 15 октября 2026 года пакет PPG на 22–25 минут поднимает вас в небо на рассвете, когда облака ещё заполняют маленькие долины вокруг Там Шона и над ними торчат только скальные вершины. Бронируйте заранее, чтобы мы подобрали время по солнцу.",
+          "С 15 октября 2026 года пакет PPG на 20–25 минут поднимает вас в небо на рассвете, когда облака ещё заполняют маленькие долины вокруг Там Шона и над ними торчат только скальные вершины. Бронируйте заранее, чтобы мы подобрали время по солнцу.",
       },
     ],
     zh: [
@@ -3327,7 +3327,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon 团队",
         date: "2026-09-25",
         content:
-          "自 2026 年 10 月 15 日起，22–25 分钟 PPG 套餐带您在日出时升空，此时云海仍填满三山周围的小山谷，只露出石峰。请提前预订，我们按日出时间安排。",
+          "自 2026 年 10 月 15 日起，20–25 分钟 PPG 套餐带您在日出时升空，此时云海仍填满三山周围的小山谷，只露出石峰。请提前预订，我们按日出时间安排。",
       },
     ],
     hi: [
@@ -3353,7 +3353,7 @@ const storiesI18n: Record<SpotKey, Record<Lang, StoryBase[]>> = {
         author: "Mebayluon टीम",
         date: "2026-09-25",
         content:
-          "15 अक्टूबर 2026 से 22–25 मिनट का PPG पैकेज आपको सूर्योदय पर ऊपर ले जाता है, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों को भरे रहते हैं और सिर्फ़ चट्टानी चोटियाँ दिखती हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें।",
+          "15 अक्टूबर 2026 से 20–25 मिनट का PPG पैकेज आपको सूर्योदय पर ऊपर ले जाता है, जब बादल अब भी ताम सोन के आसपास की छोटी घाटियों को भरे रहते हैं और सिर्फ़ चट्टानी चोटियाँ दिखती हैं। पहले से बुक करें ताकि हम समय सूरज के हिसाब से रखें।",
       },
     ],
   },

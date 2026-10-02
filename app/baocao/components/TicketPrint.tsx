@@ -28,6 +28,7 @@
 
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { normalizeSpot, spotName } from "@/lib/baobay/spots";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 import type { BookingDTO } from "@/lib/baobay/types";
 import { TEN_DICH_VU, dichVuChu, veConHieuLuc, veQrPhuText, veQrText, type LoaiVePhu } from "@/lib/baobay/ve-qr";
 
@@ -59,7 +60,10 @@ const LUU_Y_2 = "Mất vé không cấp lại.";
 
 
 /** Dịch vụ thêm đã đặt — in lên vé để phi công và thợ quay biết ngay tại bãi. */
-function extrasOf(b: BookingDTO, guestNo?: number): string[] {
+function extrasOf(b: BookingDTO, guestNo?: number, spot?: string): string[] {
+  /** Bay lâu chỉ Khau Phạ (chủ 02/10): điểm khác không in chữ "Bay lâu" dù bản ghi lỡ mang số. */
+  const banBayLau = serviceSoldAt(spot ?? b.spot, "longFlight");
+  const loc = (ds: string[]) => (banBayLau ? ds : ds.filter((x) => x !== TEN_DICH_VU.longFlight));
   /**
    * ĐÃ CẤP MÃ VÉ QR (Sa Pa): dịch vụ in theo TỪNG KHÁCH — đoàn 10 người 8
    * flycam thì vé của ai có flycam mới in chữ Flycam (chủ 17/09).
@@ -77,7 +81,7 @@ function extrasOf(b: BookingDTO, guestNo?: number): string[] {
       if (cu && b.sunset > 0) dv.push(TEN_DICH_VU.sunset);
       if (cu && b.flagFlight > 0) dv.push("Kéo cờ");
       if (b.flightKind === "ppg" || (b.ppgGuests ?? 0) > 0) dv.push("PPG");
-      return dv;
+      return loc(dv);
     }
   }
   /** Chỉ in TÊN dịch vụ, không in "×1": có thì in, không có thì bỏ — chủ 12/09. */
@@ -87,7 +91,7 @@ function extrasOf(b: BookingDTO, guestNo?: number): string[] {
   if (b.redFlag > 0) out.push("Cờ đỏ");
   // Một dịch vụ gộp H.hôn / S.mây / B.minh, và bay lâu riêng (chủ 02/10)
   if (b.sunset > 0) out.push(TEN_DICH_VU.sunset);
-  if ((b.longFlight ?? 0) > 0) out.push(TEN_DICH_VU.longFlight);
+  if (banBayLau && (b.longFlight ?? 0) > 0) out.push(TEN_DICH_VU.longFlight);
   if (b.flagFlight > 0) out.push("Kéo cờ");
   return out;
 }
@@ -227,7 +231,7 @@ function soTem(b: BookingDTO, guestNo: number): string {
  */
 function lienBoarding(b: BookingDTO, spot: string, guestNo: number, luc: string, qrVe?: string): string {
   const th = thuongHieuVe(spot);
-  const extras = extrasOf(b, guestNo);
+  const extras = extrasOf(b, guestNo, spot);
   const ten = vietTatTen(tenKhachBaoHiem(b, guestNo));
   const gioHen = b.expectedTime ? esc(b.expectedTime) : "";
   return `

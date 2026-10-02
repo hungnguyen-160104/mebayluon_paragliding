@@ -43,6 +43,8 @@ import {
   longFlightFree,
   longFlightCharged,
   serviceChargedCount,
+  serviceSoldAt,
+  servicePriceLabelsAt,
 } from "@/lib/baobay/flight-price";
 import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
@@ -2030,7 +2032,10 @@ function ThemDichVuControl({
     longFlight: booking.longFlight || 0,
   };
   /** Sa Pa không bán hoàng hôn / kéo cờ / bay lâu (chỉ 360, flycam, cờ đỏ — chủ 17/09, 02/10). */
-  const banO = (k: ServiceKey) => (normalizeSpot(spot) === "sapa" ? k === "flycam" || k === "video360" || k === "redFlag" : true);
+  const banO = (k: ServiceKey) =>
+    (normalizeSpot(spot) === "sapa" ? k === "flycam" || k === "video360" || k === "redFlag" : true) &&
+    // Bay lâu chỉ Khau Phạ (chủ 02/10) — luật chung ở serviceSoldAt
+    serviceSoldAt(spot, k);
   const gia = servicePriceOf(spot, booking.createdAt);
   const hang = SERVICE_PRICE_LABEL.filter(({ key }) => banO(key));
   const soThem = hang.reduce((t, { key }) => t + add[key], 0);
@@ -3799,7 +3804,8 @@ function BookingDetailControl({
     }
     for (const { key, label } of SERVICE_PRICE_LABEL) {
       const n = b[key] || 0;
-      if (n <= 0) continue;
+      // Điểm không bán (bay lâu ngoài Khau Phạ) thì không có dòng tiền — servicesAmount cũng bỏ qua
+      if (n <= 0 || !serviceSoldAt(spot, key)) continue;
       /** Bay lâu: chỉ nhân số suất PHẢI THU — phần trùng H.hôn/S.mây/B.minh miễn phí (chủ 02/10). */
       const thu = serviceChargedCount(key, b);
       const free = n - thu;
@@ -5710,7 +5716,7 @@ export function BookingTodayBanner({
                       ["longFlight", "B.lâu"],
                       ["flagFlight", "Kéo cờ"],
                     ] as Array<[keyof BookingDTO & string, string]>
-                  ).some(([k]) => Number(b[k]) > 0) && (
+                  ).some(([k]) => Number(b[k]) > 0 && serviceSoldAt(spot, k)) && (
                     <div className="w-full rounded-lg border border-indigo-200 bg-indigo-50/70 p-1">
                       <p className="text-[11px] font-semibold text-indigo-900">Dịch vụ mang theo nhóm dời:</p>
                       <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
@@ -5725,7 +5731,7 @@ export function BookingTodayBanner({
                             ["flagFlight", "Kéo cờ"],
                           ] as Array<[keyof BookingDTO & string, string]>
                         )
-                          .filter(([k]) => Number(b[k]) > 0)
+                          .filter(([k]) => Number(b[k]) > 0 && serviceSoldAt(spot, k))
                           .map(([k, label]) => {
                             const have = Number(b[k]) || 0;
                             const part = moving.guests ?? 0;
@@ -8568,7 +8574,8 @@ export function BookingCard({
           <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} max={serviceCap} />
         </ServiceBox>
         )}
-        {bookSpot !== "sapa" && (
+        {/* Bay lâu CHỈ Khau Phạ (chủ 02/10) — Hà Nội, Sa Pa không bán */}
+        {serviceSoldAt(bookSpot, "longFlight") && (
         <ServiceBox tone="longFlight" label="Bay lâu (20–25′)">
           <CountInput compact value={form.longFlight} onChange={(v) => set("longFlight", v)} max={serviceCap} />
         </ServiceBox>
@@ -8585,7 +8592,7 @@ export function BookingCard({
           ? "⚠ Nhớ nhập số khách — dịch vụ không được nhiều hơn số khách. "
           : ""}
         Đơn giá dịch vụ:{" "}
-        {SERVICE_PRICE_LABEL.map((x, i) => (
+        {servicePriceLabelsAt(bookSpot).map((x, i) => (
           <span key={x.key}>
             {i ? " · " : ""}
             {x.label} {(servicePriceOf(bookSpot, formPriceAt)[x.key] / 1000).toLocaleString("vi-VN")}k
@@ -8594,7 +8601,7 @@ export function BookingCard({
         {bookSpot === "ha-noi" ? ` · Xe lên núi ${(MOUNTAIN_CAR_PRICE / 1000).toLocaleString("vi-VN")}k/khách` : ""}
       </p>
       {/* Báo ngay số suất bay lâu miễn phí / phải thu để nhân viên khỏi báo giá sai (chủ 02/10) */}
-      {bookSpot !== "sapa" && form.longFlight > 0 && form.sunset > 0 && (
+      {serviceSoldAt(bookSpot, "longFlight") && form.longFlight > 0 && form.sunset > 0 && (
         <p className="mt-0.5 text-[11px] font-semibold leading-tight text-emerald-700">
           Bay lâu: {longFlightFree(form.longFlight, form.sunset)} suất miễn phí kèm {SUNSET_LABEL}
           {longFlightCharged(form.longFlight, form.sunset) > 0

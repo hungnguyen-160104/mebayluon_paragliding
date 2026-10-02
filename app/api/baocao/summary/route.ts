@@ -5,6 +5,7 @@ import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import { firstZodMessage, summaryQuerySchema } from "@/lib/baobay/validation";
 import type { BaobaySummaryDTO, IssuedRangeDTO, RescheduledDTO } from "@/lib/baobay/types";
 import { resolveSpot } from "@/lib/baobay/request-spot";
+import { boCotKhongBan } from "@/lib/baobay/flight-price";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { voidStats, getSummary } from "@/services/baobay.service";
 
@@ -185,7 +186,9 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
     }
   }
 
-  const body = rows.map((row) => row.map(csvCell).join(";")).join("\r\n");
+  // Bỏ cột "Bay lâu" ở điểm không bán (chỉ Khau Phạ — chủ 02/10); hàng đầu là tiêu đề
+  const gon = boCotKhongBan(summary.spot, (rows[0] ?? []).map(String), rows.slice(1));
+  const body = (rows.length ? [gon.header, ...gon.rows] : rows).map((row) => row.map(csvCell).join(";")).join("\r\n");
 
   // ﻿ (BOM) để Excel nhận đúng UTF-8, không thì tiếng Việt thành ký tự lạ.
   return `﻿${body}\r\n`;

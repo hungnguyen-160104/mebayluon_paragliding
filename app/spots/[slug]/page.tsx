@@ -317,7 +317,7 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
 
 🚁 DÙ LƯỢN CÓ ĐỘNG CƠ (PPG) — từ 2.490.000 đ/khách
 + Gói cơ bản: bay 15 phút
-+ Gói nâng cao: 22–25 phút, bay săn mây — bình minh / hoàng hôn — 3.390.000 đ/khách
++ Gói nâng cao: 20–25 phút, bay săn mây — bình minh / hoàng hôn — 3.390.000 đ/khách
 + Cất cánh ngay tại thung lũng, leo cao hàng ngàn mét ngắm toàn cảnh
 
 📸 DỊCH VỤ TÙY CHỌN:
@@ -403,9 +403,9 @@ Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải 
       {
         name: "PPG bay lâu — săn mây / bình minh / hoàng hôn",
         price: 3390000,
-        description: "Bay 22–25 phút (gói cơ bản + 900.000 đ)",
+        description: "Bay 20–25 phút (gói cơ bản + 900.000 đ)",
         features: [
-          "Bay 22–25 phút, săn mây",
+          "Bay 20–25 phút, săn mây",
           "Khung giờ bình minh hoặc hoàng hôn",
           "Đón trả 2 chiều trong khu vực Quản Bạ",
           "Ảnh & video GoPro toàn chuyến bay",

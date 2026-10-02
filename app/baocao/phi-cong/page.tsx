@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
 import type { Issue } from "@/lib/baobay/reconcile";
@@ -725,8 +726,8 @@ export default function PilotReportPage() {
               <CountInput compact value={form.sunset} onChange={(v) => set("sunset", v)} />
             </ServiceBox>
             )}
-            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — cùng điều kiện hiện, dùng chung màu sunset */}
-            {spot !== "sapa" && (
+            {/* Bay lâu tách riêng khỏi hoàng hôn (chủ 02/10) — CHỈ Khau Phạ bán (serviceSoldAt) */}
+            {serviceSoldAt(spot, "longFlight") && (
             <ServiceBox tone="longFlight" label={bi("Bay lâu", "long flight 20–25'")}>
               <CountInput compact value={form.longFlight} onChange={(v) => set("longFlight", v)} />
             </ServiceBox>
@@ -782,7 +783,7 @@ export default function PilotReportPage() {
                 />
               </ServiceBox>
               )}
-              {spot !== "sapa" && (
+              {serviceSoldAt(spot, "longFlight") && (
               <ServiceBox tone="longFlight" label="Mã vé bay lâu">
                 <TextInput
                   value={form.longFlightCodesText}

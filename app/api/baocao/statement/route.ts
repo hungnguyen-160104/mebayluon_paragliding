@@ -7,6 +7,7 @@ import { isDispatcherLike } from "@/lib/baobay/roles";
 import { spotName } from "@/lib/baobay/spots";
 import { PILOT_VIEW_LIMIT_DAYS } from "@/lib/baobay/validation";
 import { buildXlsx, type SheetSpec } from "@/lib/baobay/xlsx";
+import { boCotKhongBan } from "@/lib/baobay/flight-price";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { BaobayError, getStaffStatement } from "@/services/baobay.service";
 
@@ -59,7 +60,8 @@ export async function GET(req: Request) {
 
   try {
     const st = await getStaffStatement(spot, username, from, to);
-    const xlsx = buildXlsx(buildStatementSheets(st, clamped));
+    // Bỏ cột "Bay lâu" ở điểm không bán (chỉ Khau Phạ — chủ 02/10)
+    const xlsx = buildXlsx(buildStatementSheets(st, clamped).map((sp) => ({ ...sp, ...boCotKhongBan(spot, sp.header, sp.rows, sp.widths) })));
 
     const filename = `bang-ke-${st.username}-${from}-${to}.xlsx`;
     return new NextResponse(new Uint8Array(xlsx), {

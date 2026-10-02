@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { anhSangCanvas, docQrTuCanvas } from "@/lib/baobay/doc-qr";
 import type { BookingDTO } from "@/lib/baobay/types";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 import { formatVND } from "@/lib/pricing";
 import type { KetQuaQuet, MaVeDTO } from "@/services/ve-qr.service";
 
@@ -28,7 +29,8 @@ const TEN_DV: Array<[keyof BookingDTO, string]> = [
  * hiện tổng tiền. Nút mở thẻ dịch vụ để thêm / bớt / đổi ngay trên booking ấy.
  */
 function ThongTinBooking({ b, ma, onSua }: { b: BookingDTO; ma: MaVeDTO; onSua: () => void }) {
-  const dv = TEN_DV.filter(([k]) => Number(b[k]) > 0).map(([k, t]) => `${Number(b[k])}×${t}`);
+  // Bay lâu chỉ Khau Phạ (chủ 02/10) — điểm khác không kể ra dù bản ghi lỡ có số
+  const dv = TEN_DV.filter(([k]) => Number(b[k]) > 0 && serviceSoldAt(b.spot, k)).map(([k, t]) => `${Number(b[k])}×${t}`);
   const bh = (b.insured ?? []).filter((g) => !g.cancelled).map((g) => g.fullName).filter(Boolean);
   const thanhVien = bh.length ? bh : (b.otaGuests ?? []).map((g) => g.fullName).filter(Boolean);
   return (

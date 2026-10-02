@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 
 import { formatDateKeyVN, todayInVN } from "@/lib/baobay/date";
 import type { MonthlyPilotDTO, MonthlyReportDTO, MonthlyTotalsDTO } from "@/lib/baobay/types";
@@ -181,7 +182,7 @@ export default function MonthlyReportPage() {
               <Stat label="Dù cờ đỏ cả tháng" value={String(data.grandMonth.redFlag)} />
               <Stat label="Kéo cờ/bánh cả tháng" value={String(data.grandMonth.flagFlight)} />
               {data.spot !== "sapa" && <Stat label="H.hôn / S.mây / B.minh cả tháng" value={String(data.grandMonth.sunset)} />}
-              {data.spot !== "sapa" && <Stat label="Bay lâu cả tháng" value={String(data.grandMonth.longFlight ?? 0)} />}
+              {serviceSoldAt(data.spot, "longFlight") && <Stat label="Bay lâu cả tháng" value={String(data.grandMonth.longFlight ?? 0)} />}
               <Stat label="Khách ngoại giao" value={String(data.grandMonth.diplomaticGuests)} />
               <Stat label="Khách huỷ đến hôm nay (sổ booking)" value={String(data.cancelledGuests?.toDate ?? 0)} />
               <Stat label="Khách huỷ cả tháng (sổ booking)" value={String(data.cancelledGuests?.month ?? 0)} strong />
@@ -235,7 +236,8 @@ function PilotBlock({ pilot, data }: { pilot: MonthlyPilotDTO; data: MonthlyRepo
   // Khối đưa đón + nước khách chỉ có ở điểm Hà Nội
   // Mỗi điểm chỉ hiện dịch vụ mình có: PPG riêng Khau Phạ; phí bãi/nước/đưa đón riêng Hà Nội
   const metrics = [
-    ...BASE_METRICS,
+    // Bay lâu chỉ Khau Phạ (chủ 02/10) — luật chung ở serviceSoldAt
+    ...BASE_METRICS.filter((m) => m.key !== "longFlight" || serviceSoldAt(data.spot, "longFlight")),
     ...(data.spot === "khau-pha" ? KHAUPHA_METRICS : []),
     ...(data.spot === "ha-noi" ? HANOI_METRICS : []),
     ...MONEY_METRICS,

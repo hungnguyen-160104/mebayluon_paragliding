@@ -7,6 +7,7 @@ import { spotName } from "@/lib/baobay/spots";
 import type { BaobaySummaryDTO } from "@/lib/baobay/types";
 import { firstZodMessage, summaryQuerySchema } from "@/lib/baobay/validation";
 import { buildXlsx, type SheetSpec } from "@/lib/baobay/xlsx";
+import { boCotKhongBan } from "@/lib/baobay/flight-price";
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { requireBaobay } from "@/middlewares/requireBaobay";
 import { getReconcile, getSummary, listHandovers } from "@/services/baobay.service";
@@ -79,7 +80,10 @@ export async function GET(req: Request) {
     }
   }
 
-  const xlsx = buildXlsx(buildSheets(summary, handovers, expenseRows));
+  // Bỏ cột "Bay lâu" ở điểm không bán (chỉ Khau Phạ — chủ 02/10)
+  const xlsx = buildXlsx(
+    buildSheets(summary, handovers, expenseRows).map((sp) => ({ ...sp, ...boCotKhongBan(spot, sp.header, sp.rows, sp.widths) })),
+  );
   const name = `baobay-${spot}-${month ? `thang-${month}` : `${summary.from}_${summary.to}`}.xlsx`;
 
   return new Response(new Uint8Array(xlsx), {

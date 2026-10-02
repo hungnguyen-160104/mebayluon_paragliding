@@ -67,6 +67,23 @@ export function normalizeSpot(value: unknown): SpotId {
   return loose?.id ?? DEFAULT_SPOT;
 }
 
+/**
+ * Như `normalizeSpot` nhưng KHÔNG rơi về điểm mặc định: giá trị lạ ("Quản Bạ",
+ * "Đà Nẵng" — điểm có trên web nhưng không chạy app) trả null. Dùng cho các
+ * luật "điểm nào bán dịch vụ nào" (chủ 02/10/2026): rơi về Khau Phạ ở đây là
+ * cho Quản Bạ bán bay lâu trong khi Quản Bạ không có dịch vụ ấy.
+ */
+export function spotIdOrNull(value: unknown): SpotId | null {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  if (isSpotId(raw)) return raw;
+  const id = normalizeSpot(raw);
+  // normalizeSpot trả DEFAULT_SPOT cho cả giá trị lạ — chỉ nhận khi chuỗi thật sự là Khau Phạ
+  if (id !== DEFAULT_SPOT) return id;
+  const flat = raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return flat === "khaupha" ? id : null;
+}
+
 /** Lọc danh sách điểm được chỉ định cho một tài khoản, bỏ giá trị lạ và trùng. */
 export function normalizeSpotList(value: unknown): SpotId[] {
   const list = Array.isArray(value) ? value : [value];

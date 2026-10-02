@@ -23,6 +23,7 @@
  */
 
 import { formatDateKeyVN, isDateKey } from "./date";
+import { serviceSoldAt } from "./flight-price";
 
 /**
  * Ba dịch vụ phi công QUÉT MÃ rồi tính lương (chủ 17/09: "chỉ có 360, flycam
@@ -45,6 +46,15 @@ export const DICH_VU_VE_TAT_CA = [...DICH_VU_VE, ...DICH_VU_VE_THEM] as const;
 export type DichVuVeBatKy = DichVuVe | DichVuVeThem;
 
 export type DichVuKhach = Record<DichVuVe, boolean> & Partial<Record<DichVuVeThem, boolean>>;
+
+/**
+ * Dịch vụ gắn được cho khách Ở ĐIỂM NÀY — bỏ thứ điểm không bán (bay lâu chỉ
+ * Khau Phạ, chủ 02/10/2026; luật nằm ở `serviceSoldAt`). Hộp tích dịch vụ vé,
+ * trang quét và vé in đều lọc qua đây để không hiện cột/chữ "Bay lâu" ở Sa Pa.
+ */
+export function dichVuVeCuaDiem(spot: string | null | undefined): DichVuVeBatKy[] {
+  return DICH_VU_VE_TAT_CA.filter((k) => serviceSoldAt(spot, k));
+}
 
 export const TEN_DICH_VU: Record<DichVuVeBatKy, string> = {
   video360: "Cam 360",

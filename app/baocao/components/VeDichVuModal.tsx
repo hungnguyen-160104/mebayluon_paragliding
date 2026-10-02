@@ -8,6 +8,7 @@ import type { BookingDTO } from "@/lib/baobay/types";
 import {
   chiaDichVu,
   DICH_VU_VE_TAT_CA,
+  dichVuVeCuaDiem,
   DV_CAM_VOI_PPG,
   khachCoMaQrMacDinh,
   KHONG_DICH_VU,
@@ -187,7 +188,8 @@ export function VeDichVuModal({
    * và phải tích ĐÚNG số đã đặt mới cấp mã được.
    */
   const daCapMa = Boolean(booking.veQr?.khach?.length);
-  const cot = DICH_VU_VE_TAT_CA.filter((k) => dat[k] > 0 || (daCapMa && rows.some((r) => r[k])));
+  /** Chỉ cột dịch vụ điểm này bán — bay lâu chỉ Khau Phạ (chủ 02/10). */
+  const cot = dichVuVeCuaDiem(spotBk).filter((k) => dat[k] > 0 || (daCapMa && rows.some((r) => r[k])));
   const khoa = (k: DichVuVeBatKy) => !booking.veQr && dat[k] >= n;
   /**
    * CHỈ CHẶN VIỆC BẮT BUỘC (chủ 23/09: bỏ dòng "tích cho đúng … rồi mới cấp
@@ -203,7 +205,7 @@ export function VeDichVuModal({
         <h3 className="text-base font-bold text-slate-900">{title ?? "Dịch vụ trên vé"} — #{booking.daySeq} {booking.contactName}</h3>
         {/* Dòng "Đã đặt" tô ĐỎ, dạng "0xCam360 · 1xFlycam" cho nổi (chủ 18/09). */}
         <p className="mt-0.5 text-xs text-slate-600">
-          Đã đặt: <span className="font-bold text-rose-700">{DICH_VU_VE_TAT_CA.filter((k) => dat[k] > 0).map((k) => `${dat[k]}x${k === "video360" ? "Cam360" : TEN_DICH_VU[k]}`).join(" · ") || "không có dịch vụ kèm"}</span>
+          Đã đặt: <span className="font-bold text-rose-700">{dichVuVeCuaDiem(spotBk).filter((k) => dat[k] > 0).map((k) => `${dat[k]}x${k === "video360" ? "Cam360" : TEN_DICH_VU[k]}`).join(" · ") || "không có dịch vụ kèm"}</span>
         </p>
         {/**
          * DỊCH VỤ CẢ ĐOÀN (chủ 23/09: "book 16 có 4 hoàng hôn mà in vé không

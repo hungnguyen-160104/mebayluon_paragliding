@@ -33,6 +33,7 @@
  */
 
 import { normalizeSpot } from "@/lib/baobay/spots";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 
 export type SheetColKind = "text" | "num" | "money" | "time" | "status" | "names";
 
@@ -261,7 +262,10 @@ function cotDiemKhac(spot: string, dests: SheetDest[], thang: boolean): SheetCol
      * Lưới này chỉ dùng cho điểm khác Sa Pa (Sa Pa không bán hai dịch vụ này).
      */
     { key: "sunset", label: "HH/SM/BM", edit: "sunset", kind: "num", w: 58, right: true, g1: "THÔNG TIN VÉ", title: "H.hôn / S.mây / B.minh" },
-    { key: "longFlight", label: "B.lâu", edit: "longFlight", kind: "num", w: 40, right: true, g1: "THÔNG TIN VÉ", title: "Bay lâu 20–25 phút — miễn phí kèm H.hôn/S.mây/B.minh" },
+    // Bay lâu CHỈ Khau Phạ (chủ 02/10) — Hà Nội cũng không có cột này; luật chung ở serviceSoldAt
+    ...(serviceSoldAt(spot, "longFlight")
+      ? ([{ key: "longFlight", label: "B.lâu", edit: "longFlight", kind: "num", w: 40, right: true, g1: "THÔNG TIN VÉ", title: "Bay lâu 20–25 phút — miễn phí kèm H.hôn/S.mây/B.minh" }] as SheetCol[])
+      : []),
     { key: "flagFlight", label: "K.cờ", edit: "flagFlight", kind: "num", w: 38, right: true, g1: "THÔNG TIN VÉ", title: "Bay kéo cờ đỏ / cờ sinh nhật" },
     ...(hn ? ([{ key: "mountainCar", label: "Xe", edit: "mountainCar", kind: "num", w: 32, right: true, g1: "THÔNG TIN VÉ", title: "Xe lên núi" }] as SheetCol[]) : []),
     { key: "pickupFee", label: "Phí đón", edit: "pickupFee", kind: "money", w: 68, right: true, g1: "THÔNG TIN VÉ" },

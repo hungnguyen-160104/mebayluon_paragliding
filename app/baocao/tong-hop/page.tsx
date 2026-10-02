@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 import Link from "next/link";
 
 import { formatDateKeyVN, shiftDateKey, todayInVN } from "@/lib/baobay/date";
@@ -602,6 +603,8 @@ function rescheduledText(list: RescheduledDTO[]): string {
 
 function DispatcherTable({ data }: { data: BaobaySummaryDTO }) {
   if (!data.dispatcherReports.length) return <Empty />;
+  /** Bay lâu chỉ Khau Phạ (chủ 02/10) — điểm khác bỏ hẳn cột. */
+  const coBayLau = serviceSoldAt(data.spot, "longFlight");
 
   return (
     <Scroll>
@@ -622,7 +625,7 @@ function DispatcherTable({ data }: { data: BaobaySummaryDTO }) {
             <th className={th}>Cờ đỏ</th>
             <th className={th}>H.hôn / S.mây / B.minh</th>
             {/* Bay lâu là dịch vụ riêng từ chủ 02/10 — cột riêng cạnh hoàng hôn */}
-            <th className={th}>Bay lâu</th>
+            {coBayLau && <th className={th}>Bay lâu</th>}
             <th className={th}>Kéo cờ</th>
             <th className={th}>Ngoại giao (vé · thu)</th>
             <th className={th}>Tiền mặt</th>
@@ -657,7 +660,7 @@ function DispatcherTable({ data }: { data: BaobaySummaryDTO }) {
                 <td className={td}>{r.video360}</td>
                 <td className={td}>{r.redFlag}</td>
                 <td className={td}>{r.sunset}</td>
-                <td className={td}>{r.longFlight ?? 0}</td>
+                {coBayLau && <td className={td}>{r.longFlight ?? 0}</td>}
                 <td className={td}>{r.flagFlight}</td>
                 <td className={td}>{r.diplomaticGuests}</td>
                 <td className={td}>{formatVND(r.cashReceived)}</td>

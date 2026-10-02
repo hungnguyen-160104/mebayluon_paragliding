@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 
 import { formatDateKeyVN } from "@/lib/baobay/date";
 import { nhanKhach } from "@/lib/baobay/nhan-khach";
@@ -165,7 +166,8 @@ export function FlycamCancelCard({
 
       {/* Chọn DỊCH VỤ bị huỷ trước — danh sách đoàn và chữ nghĩa chạy theo */}
       <div className="mb-2 flex flex-wrap gap-1">
-        {SERVICES.map((sv) => (
+        {/* Bay lâu chỉ Khau Phạ (chủ 02/10) */}
+        {SERVICES.filter((sv) => serviceSoldAt(spot, sv.id)).map((sv) => (
           <button
             key={sv.id}
             type="button"

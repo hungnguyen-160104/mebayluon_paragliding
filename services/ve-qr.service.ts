@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { formatDateKeyVN, isDateKey } from "@/lib/baobay/date";
 import type { BaobaySession } from "@/lib/baobay/token";
+import { serviceSoldAt } from "@/lib/baobay/flight-price";
 import {
   DICH_VU_VE,
   DICH_VU_VE_TAT_CA,
@@ -670,7 +671,8 @@ export async function suaDichVuVe(
       flycam: Boolean(x.flycam),
       redFlag: Boolean(x.redFlag),
       sunset: Boolean(x.sunset),
-      longFlight: Boolean(x.longFlight),
+      // Bay lâu chỉ Khau Phạ (chủ 02/10) — điểm khác không gắn lên vé
+      longFlight: Boolean(x.longFlight) && serviceSoldAt(spot, "longFlight"),
       flagFlight: Boolean(x.flagFlight),
     };
     if (DICH_VU_VE_TAT_CA.every((t) => Boolean(ra.dichVu?.[t]) === Boolean(moi[t]))) return ra;
