@@ -382,6 +382,57 @@ function buildBlocks(d: BookingImageData): Block[] {
   return blocks;
 }
 
+/** Một điểm chỉ đường in trên phiếu: tiêu đề, lời dặn, link Google Maps (để tạo QR). */
+export type DiemChiDuong = { title: string; note: string; url: string };
+
+/**
+ * CHỈ ĐƯỜNG KHAU PHẠ theo loại bay (luật chủ 04/09) — in kèm QR toạ độ:
+ * PPG về thẳng Clubhouse; PG nhận bãi cất cánh (check-in Quầy Vé đỉnh đèo
+ * nếu từ hướng Ngã Ba Kim) + bãi hạ cánh (Tú Lệ/Cao Phạ qua đây rồi xe
+ * trung chuyển); đoàn lẫn in cả ba.
+ */
+export function diemChiDuong(d: BookingImageData): DiemChiDuong[] {
+  if (!/khau/.test(d.spot)) return [];
+  const labelPpg = /ppg/i.test(d.flightKindLabel || "");
+  const hasPpg = labelPpg || (d.ppgGuests ?? 0) > 0;
+  const pts: DiemChiDuong[] = [];
+  if (hasPpg)
+    pts.push({
+      title: "ĐIỂM BAY DÙ MÁY (PPG) — Mebayluon Clubhouse",
+      note: "Bay dù máy: quét QR, đến thẳng điểm này để làm thủ tục và bay.",
+      url: CLUBHOUSE_MAP_URL,
+    });
+  if (!labelPpg) {
+    pts.push({
+      title: "BÃI CẤT CÁNH — đỉnh đèo Khau Phạ",
+      note: "Từ hướng Ngã Ba Kim / Mù Cang Chải / Garrya: ghé QUẦY VÉ tại đỉnh đèo để check-in lấy vé bay.",
+      url: KHAU_PHA_TAKEOFF_MAP_URL,
+    });
+    pts.push({
+      title: "BÃI HẠ CÁNH — Mebayluon Clubhouse",
+      note: "Ở Tú Lệ / Cao Phạ (cũ): qua bãi hạ cánh làm thủ tục trước, rồi đi xe trung chuyển lên bãi cất cánh.",
+      url: CLUBHOUSE_MAP_URL,
+    });
+  }
+  return pts;
+}
+
+/** Link Google Maps gọn theo toạ độ (link "place" đầy đủ dài cả dòng trong tin nhắn). */
+export function linkBanDoGon(url: string): string {
+  const m = /!3d(-?[\d.]+)!4d(-?[\d.]+)/.exec(url);
+  return m ? `https://www.google.com/maps/search/?api=1&query=${m[1]},${m[2]}` : url;
+}
+
+/**
+ * Chữ gửi kèm ảnh phiếu: ảnh PNG không bấm được link, còn Zalo/Messenger tự
+ * biến link trong tin nhắn thành link bấm mở bản đồ. Rỗng nếu điểm bay không có chỉ đường.
+ */
+export function chiDuongText(d: BookingImageData): string {
+  const pts = diemChiDuong(d);
+  if (!pts.length) return "";
+  return ["📍 ĐƯỜNG ĐẾN ĐIỂM BAY", ...pts.map((p) => `${p.title}\n${linkBanDoGon(p.url)}`)].join("\n\n");
+}
+
 export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasElement> {
   /**
    * NỘI DUNG CHUYỂN KHOẢN theo đúng chuẩn sổ điều hành ("2508 k18 KP2508-5678")
@@ -397,37 +448,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
     phone: d.phone,
   });
 
-  /**
-   * CHỈ ĐƯỜNG KHAU PHẠ theo loại bay (luật chủ 04/09) — in kèm QR toạ độ:
-   * PPG về thẳng Clubhouse; PG nhận bãi cất cánh (check-in Quầy Vé đỉnh đèo
-   * nếu từ hướng Ngã Ba Kim) + bãi hạ cánh (Tú Lệ/Cao Phạ qua đây rồi xe
-   * trung chuyển); đoàn lẫn in cả ba.
-   */
-  const dirPoints = (() => {
-    if (!/khau/.test(d.spot)) return [] as Array<{ title: string; note: string; url: string }>;
-    const labelPpg = /ppg/i.test(d.flightKindLabel || "");
-    const hasPpg = labelPpg || (d.ppgGuests ?? 0) > 0;
-    const pts: Array<{ title: string; note: string; url: string }> = [];
-    if (hasPpg)
-      pts.push({
-        title: "ĐIỂM BAY DÙ MÁY (PPG) — Mebayluon Clubhouse",
-        note: "Bay dù máy: quét QR, đến thẳng điểm này để làm thủ tục và bay.",
-        url: CLUBHOUSE_MAP_URL,
-      });
-    if (!labelPpg) {
-      pts.push({
-        title: "BÃI CẤT CÁNH — đỉnh đèo Khau Phạ",
-        note: "Từ hướng Ngã Ba Kim / Mù Cang Chải / Garrya: ghé QUẦY VÉ tại đỉnh đèo để check-in lấy vé bay.",
-        url: KHAU_PHA_TAKEOFF_MAP_URL,
-      });
-      pts.push({
-        title: "BÃI HẠ CÁNH — Mebayluon Clubhouse",
-        note: "Ở Tú Lệ / Cao Phạ (cũ): qua bãi hạ cánh làm thủ tục trước, rồi đi xe trung chuyển lên bãi cất cánh.",
-        url: CLUBHOUSE_MAP_URL,
-      });
-    }
-    return pts;
-  })();
+  const dirPoints = diemChiDuong(d);
 
   const th = thuongHieu(d.spot);
   const [logo, payQr, ...dirQrs] = await Promise.all([
@@ -847,7 +868,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
 }
 
 /** Ảnh phiếu đã dựng xong: file PNG + địa chỉ data: để bày lên màn hình. */
-export type AnhPhieu = { file: File; blob: Blob; name: string; dataUrl: string };
+export type AnhPhieu = { file: File; blob: Blob; name: string; dataUrl: string; /** Link chỉ đường dạng chữ, gửi kèm ảnh. */ chiDuong: string };
 
 /** Vẽ phiếu rồi đóng gói thành file PNG — dùng chung cho xem, lưu, chia sẻ. */
 export async function taoAnhPhieu(d: BookingImageData): Promise<AnhPhieu> {
@@ -856,7 +877,7 @@ export async function taoAnhPhieu(d: BookingImageData): Promise<AnhPhieu> {
   if (!blob) throw new Error("Không tạo được ảnh phiếu");
   const name = `booking-${d.flightDate}-${(d.contactName || d.bookingCode || "khach").replace(/\s+/g, "-")}.png`;
   const file = new File([blob], name, { type: "image/png" });
-  return { file, blob, name, dataUrl: canvas.toDataURL("image/png") };
+  return { file, blob, name, dataUrl: canvas.toDataURL("image/png"), chiDuong: chiDuongText(d) };
 }
 
 /** Máy này có mở được khay chia sẻ kèm FILE ảnh không (iPhone/Android có, máy tính thường không). */
@@ -874,7 +895,8 @@ export function chiaSeDuocFile(file: File): boolean {
 export async function chiaSeAnhPhieu(a: AnhPhieu): Promise<boolean> {
   if (!chiaSeDuocFile(a.file)) return false;
   try {
-    await navigator.share({ files: [a.file], title: "Phiếu booking" });
+    // Kèm chữ có link bản đồ: Zalo/Messenger hiện link bấm được ngay dưới ảnh.
+    await navigator.share({ files: [a.file], title: "Phiếu booking", ...(a.chiDuong ? { text: a.chiDuong } : {}) });
     return true;
   } catch {
     return false;

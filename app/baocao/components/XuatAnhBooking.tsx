@@ -147,6 +147,44 @@ export function XuatAnhBooking({
                 <div className="mt-10 text-center text-sm text-white/80">Đang dựng ảnh phiếu…</div>
               )}
             </div>
+            {/* Link chỉ đường dạng chữ: ảnh PNG không bấm được, nên gửi thêm dòng
+                này vào Zalo/Messenger — khách bấm là mở Google Maps. */}
+            {anh?.chiDuong && (
+              <div className="shrink-0 px-3 pt-2" onClick={(e) => e.stopPropagation()}>
+                <div className="mx-auto max-w-3xl rounded-lg bg-white/10 px-3 py-2 text-sm text-white">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold">📍 Link chỉ đường (bấm mở bản đồ)</span>
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-md bg-white/20 px-2.5 py-1 text-xs font-bold hover:bg-white/30"
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(anh.chiDuong).then(
+                          () => setBaoLuu("Đã chép link chỉ đường — dán vào Zalo/Messenger ngay sau ảnh phiếu."),
+                          () => setBaoLuu("Máy này không chép được — nhấn giữ vào link để sao chép."),
+                        );
+                      }}
+                    >
+                      📋 Chép link chỉ đường
+                    </button>
+                  </div>
+                  <ul className="mt-1 space-y-0.5">
+                    {anh.chiDuong
+                      .split("\n\n")
+                      .slice(1)
+                      .map((dong) => {
+                        const [ten, link] = dong.split("\n");
+                        return (
+                          <li key={link + ten}>
+                            <a href={link} target="_blank" rel="noopener noreferrer" className="underline decoration-white/50 hover:decoration-white">
+                              {ten}
+                            </a>
+                          </li>
+                        );
+                      })}
+                  </ul>
+                </div>
+              </div>
+            )}
             {/* Nút thao tác — dính đáy */}
             <div
               className="shrink-0 border-t border-white/15 bg-slate-900 px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2"
