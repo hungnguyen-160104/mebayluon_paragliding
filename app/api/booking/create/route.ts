@@ -348,7 +348,7 @@ export async function POST(req: NextRequest) {
             ok: false,
             error: "VALIDATION_ERROR",
             message:
-              "Mỗi khách chỉ chọn một chuyến bay đặc biệt (bình minh, hoàng hôn hoặc săn mây); số suất không vượt số khách.",
+              "Mỗi khách chỉ chọn một chuyến bay đặc biệt (gói đặc biệt, bình minh hoặc hoàng hôn); số suất không vượt số khách.",
           },
           { status: 400 }
         );

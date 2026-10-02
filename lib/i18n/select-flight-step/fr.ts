@@ -51,7 +51,7 @@ export const FR_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
       "Le parapente sans moteur dépend entièrement du vent naturel et procure une véritable sensation de liberté en plein ciel.",
     ],
     paramotorDescription: [
-      "Le paramoteur décolle depuis la vallée de Lim Mong (au Clubhouse Mebayluon), remonte vers le col de Khau Pha puis revient au point de départ. Le vol dure environ 10 à 25 minutes selon la condition du passager.",
+      "Le paramoteur décolle depuis la vallée de Lim Mong (au Clubhouse Mebayluon), remonte vers le col de Khau Pha puis revient au point de départ. Un vol standard dure 15 minutes (20 à 25 minutes en vol spécial ou vol long).",
       "Comme il est motorisé, ce vol dépend moins du vent, monte plus facilement et offre des angles de vue uniques.",
     ],
     locationDescription: {

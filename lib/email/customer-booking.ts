@@ -858,7 +858,7 @@ export function customerEmailHtml(input: CustomerEmailInput): string {
     ) ||
     (input.price?.servicesBreakdown || []).some((row) => isKhauPhaSpecialKey(row?.key));
   const refundHtml = hasSpecialFlight
-    ? `<tr><td style="padding-top:8px;"><div style="background:#FFF8EB;border-left:4px solid #F5A524;border-radius:6px;padding:9px 12px;font-size:13px;color:#7A4B00;line-height:1.6;">${esc(kpRefundNote(lang))}</div></td></tr>`
+    ? `<tr><td style="padding-top:8px;"><div style="background:#FFF8EB;border-left:4px solid #F5A524;border-radius:6px;padding:9px 12px;font-size:13px;color:#7A4B00;line-height:1.6;">${esc(kpRefundNote(lang, [...Object.keys(input.services || {}).filter((k) => input.services?.[k]?.selected), ...(input.price?.servicesBreakdown || []).map((row) => row?.key)]))}</div></td></tr>`
     : "";
 
   /* ---------- đã bao gồm ---------- */

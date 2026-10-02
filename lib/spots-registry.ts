@@ -29,7 +29,7 @@ export const SPOTS_LIST: SpotListItem[] = [
     name: "Đèo Khau Phạ",
     province: "Tú Lệ - Mù Cang Chải",
     altitude: "1.268 – 2.000 m",
-    duration: "10 – 20'",
+    duration: "10 – 25'",
     priceVND: 2_190_000,
     image: "/spots/khau-pha/hero.jpg",
     i18nKey: "khauPha",

@@ -46,7 +46,7 @@ export const VI_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
       "Dù lượn không động cơ bay hoàn toàn nhờ sức gió tự nhiên, mang đến cảm giác bay tự do đúng nghĩa. Khách bay được trải nghiệm cảm giác “nhảy dù” bằng chính đôi chân của mình và ngắm trọn Mùa vàng từ trên không.",
     ],
     paramotorDescription: [
-      "Dù lượn gắn động cơ cất cánh từ thung lũng Lìm Mông (tại Mebayluon Clubhouse) độ cao 700m, bay ngược lên đỉnh đèo Khau Pha độ cao ~1.500m và quay trở lại điểm xuất phát. Chuyến bay dài từ 10-25 phút tùy sức khoẻ của khách ngắm trọn đèo Khau Pha, một trong Tứ đại Đỉnh đèo của Việt Nam và chiêm ngưỡng toàn cảnh danh thắng ruộng bậc thang Thung lũng Lìm Mông tuyệt đẹp, nơi được đánh giá “có vẻ đẹp siêu thực”.",
+      "Dù lượn gắn động cơ cất cánh từ thung lũng Lìm Mông (tại Mebayluon Clubhouse) độ cao 700m, bay ngược lên đỉnh đèo Khau Pha độ cao ~1.500m và quay trở lại điểm xuất phát. Chuyến bay tiêu chuẩn dài 15 phút (gói đặc biệt hoặc bay lâu: 20–25 phút), ngắm trọn đèo Khau Pha, một trong Tứ đại Đỉnh đèo của Việt Nam và chiêm ngưỡng toàn cảnh danh thắng ruộng bậc thang Thung lũng Lìm Mông tuyệt đẹp, nơi được đánh giá “có vẻ đẹp siêu thực”.",
       "Chuyến bay có động cơ nên ít bị phụ thuộc vào gió, chủ động và dễ dàng lên cao kéo dài chuyến bay, giúp bạn khám phá những góc bay độc đáo mà dù lượn thông thường khó chạm tới.",
     ],
     locationDescription: {

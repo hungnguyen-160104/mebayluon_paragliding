@@ -185,7 +185,7 @@ const service = `
 <ul>
   <li>Active flying sites are listed on the <a href="/en/spots">Flying spots</a> page and in the booking form (currently Khau Phạ Pass – Mù Cang Chải, Đồi Bù/Viên Nam – Hanoi, Mường Hoa – Sa Pa, Sơn Trà – Đà Nẵng, Phình Hồ – Trạm Tấu, Quản Bạ – Hà Giang). Coordinates and directions are included in the confirmation email.</li>
   <li>Flight time slots run from 07:00 to 18:00 depending on the site and wind; the exact time is confirmed by our staff.</li>
-  <li>Expected airtime is around 10 minutes per non-motorised flight (shorter in weak wind, extended free of charge in good conditions); paramotor flights can be 10–25 minutes.</li>
+  <li>Expected airtime is around 10 minutes per non-motorised flight (shorter in weak wind, extended free of charge in good conditions); paramotor flights last 15 minutes as standard, or 20–25 minutes with a special flight or long flight.</li>
   <li>Please arrive 15–30 minutes before your flight for check-in and the safety briefing.</li>
 </ul>
 

@@ -186,7 +186,7 @@ const cungCap = `
 <ul>
   <li>Các điểm bay đang khai thác được giới thiệu tại trang <a href="/spots">Điểm bay</a> và ở bước chọn điểm bay khi đặt (hiện gồm Đèo Khau Phạ – Mù Cang Chải, Đồi Bù/Viên Nam – Hà Nội, Mường Hoa – Sa Pa, Sơn Trà – Đà Nẵng, Phình Hồ – Trạm Tấu, Quản Bạ – Hà Giang). Tọa độ và chỉ đường được gửi kèm email xác nhận.</li>
   <li>Khung giờ bay trong ngày từ 07:00 đến 18:00, tùy điểm bay và điều kiện gió; giờ cụ thể được nhân viên xác nhận với khách.</li>
-  <li>Thời lượng bay dự kiến khoảng trên dưới 10 phút mỗi chuyến với dù lượn không động cơ (có thể ngắn hơn khi gió kém, hoặc kéo dài miễn phí khi thời tiết tốt); dù lượn gắn động cơ có thể chủ động từ 10–25 phút.</li>
+  <li>Thời lượng bay dự kiến khoảng trên dưới 10 phút mỗi chuyến với dù lượn không động cơ (có thể ngắn hơn khi gió kém, hoặc kéo dài miễn phí khi thời tiết tốt); dù lượn gắn động cơ bay 15 phút với chuyến tiêu chuẩn, 20–25 phút với gói đặc biệt hoặc bay lâu.</li>
   <li>Khách vui lòng có mặt tại điểm bay trước giờ bay 15–30 phút để làm thủ tục và nghe hướng dẫn an toàn.</li>
 </ul>
 

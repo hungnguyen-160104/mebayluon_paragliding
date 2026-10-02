@@ -191,7 +191,7 @@ const vi = `
 </ul>
 
 <h2>2. Thời lượng bay</h2>
-<p>Khách bay hiểu rằng dù lượn không gắn động cơ bay phụ thuộc 100% vào gió, thời lượng bay trên trời dự kiến khoảng trên dưới 10 phút mỗi chuyến bay (trừ khi khách bay bằng dù lượn gắn động cơ thì có thể chủ động thời lượng bay lâu tuỳ ý từ 10–25 phút). Do vậy khách tham gia bay dù chấp nhận rằng:</p>
+<p>Khách bay hiểu rằng dù lượn không gắn động cơ bay phụ thuộc 100% vào gió, thời lượng bay trên trời dự kiến khoảng trên dưới 10 phút mỗi chuyến bay (trừ khi khách bay bằng dù lượn gắn động cơ: chuyến tiêu chuẩn bay 15 phút, gói đặc biệt hoặc bay lâu bay 20–25 phút). Do vậy khách tham gia bay dù chấp nhận rằng:</p>
 <ul>
   <li>Thời lượng chuyến bay có thể ngắn hơn dự kiến trong điều kiện gió kém.</li>
   <li>Trong điều kiện thời tiết tốt, có thể kéo dài thời lượng chuyến bay miễn phí.</li>
@@ -305,7 +305,7 @@ const en = `
 </ul>
 
 <h2>2. Flight duration</h2>
-<p>The flying Passenger understands that non-motorized paragliding depends 100% on the wind; the expected flight duration in the sky is around 10 minutes per flight (unless the Passenger flies with a motorized paraglider, in which case they can proactively choose a duration from 10–25 minutes). Therefore, Passengers accept that:</p>
+<p>The flying Passenger understands that non-motorized paragliding depends 100% on the wind; the expected flight duration in the sky is around 10 minutes per flight (unless the Passenger flies with a motorized paraglider: a standard flight lasts 15 minutes, a special flight or long flight 20–25 minutes). Therefore, Passengers accept that:</p>
 <ul>
   <li>The flight duration may be shorter than expected in poor wind conditions.</li>
   <li>In good weather conditions, the flight duration may be extended free of charge.</li>
@@ -419,7 +419,7 @@ const fr = `
 </ul>
 
 <h2>2. Durée du vol</h2>
-<p>Le passager comprend que le parapente sans moteur dépend à 100 % du vent ; la durée en l'air est d'environ 10 minutes par vol (sauf en paramoteur, où la durée peut être choisie entre 10 et 25 minutes). Le passager accepte donc que :</p>
+<p>Le passager comprend que le parapente sans moteur dépend à 100 % du vent ; la durée en l'air est d'environ 10 minutes par vol (sauf en paramoteur : un vol standard dure 15 minutes, un vol spécial ou un vol long de 20 à 25 minutes). Le passager accepte donc que :</p>
 <ul>
   <li>La durée du vol puisse être plus courte que prévu si le vent est faible.</li>
   <li>Par bonnes conditions, la durée puisse être prolongée gratuitement.</li>
@@ -533,7 +533,7 @@ const ru = `
 </ul>
 
 <h2>2. Продолжительность полёта</h2>
-<p>Гость понимает, что безмоторный параплан на 100 % зависит от ветра; ожидаемое время в воздухе — около 10 минут за полёт (кроме парамотора, где длительность выбирается в пределах 10–25 минут). Поэтому гость принимает, что:</p>
+<p>Гость понимает, что безмоторный параплан на 100 % зависит от ветра; ожидаемое время в воздухе — около 10 минут за полёт (кроме парамотора: стандартный полёт длится 15 минут, особый или долгий полёт — 20–25 минут). Поэтому гость принимает, что:</p>
 <ul>
   <li>При слабом ветре полёт может оказаться короче ожидаемого.</li>
   <li>При хорошей погоде время полёта может быть продлено бесплатно.</li>
@@ -647,7 +647,7 @@ const zh = `
 </ul>
 
 <h2>2. 飞行时长</h2>
-<p>乘客理解无动力滑翔伞飞行 100% 依赖于风，预计每次飞行的空中时间约为 10 分钟左右（除非乘客乘坐动力滑翔伞，则可以主动将飞行时间选择在 10–25 分钟）。因此，参与滑翔伞的乘客接受：</p>
+<p>乘客理解无动力滑翔伞飞行 100% 依赖于风，预计每次飞行的空中时间约为 10 分钟左右（乘坐动力滑翔伞除外：标准飞行 15 分钟，特别飞行套餐或长时飞行 20–25 分钟）。因此，参与滑翔伞的乘客接受：</p>
 <ul>
   <li>在风力条件较差的情况下，飞行时长可能短于预期。</li>
   <li>在天气条件良好的情况下，可能会免费延长飞行时长。</li>
@@ -761,7 +761,7 @@ const hi = `
 </ul>
 
 <h2>2. उड़ान की अवधि</h2>
-<p>यात्री समझता है कि बिना इंजन वाली पैराग्लाइडिंग 100% हवा पर निर्भर है; हवा में अनुमानित समय प्रति उड़ान लगभग 10 मिनट है (पैरामोटर को छोड़कर, जहाँ 10–25 मिनट चुने जा सकते हैं)। अतः यात्री स्वीकार करता है कि:</p>
+<p>यात्री समझता है कि बिना इंजन वाली पैराग्लाइडिंग 100% हवा पर निर्भर है; हवा में अनुमानित समय प्रति उड़ान लगभग 10 मिनट है (पैरामोटर को छोड़कर: सामान्य उड़ान 15 मिनट, विशेष उड़ान या लंबी उड़ान 20–25 मिनट)। अतः यात्री स्वीकार करता है कि:</p>
 <ul>
   <li>कमज़ोर हवा में उड़ान अपेक्षा से छोटी हो सकती है।</li>
   <li>अच्छे मौसम में उड़ान निःशुल्क बढ़ाई जा सकती है।</li>

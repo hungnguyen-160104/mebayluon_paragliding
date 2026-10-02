@@ -188,16 +188,16 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 📸 DỊCH VỤ TÙY CHỌN:
 🚁 Quay Flycam/Drone và Quay camera 360°
 🚐 Đón trả 2 chiều từ khách sạn
-🌅 Bay bình minh (06:00–07:00) / bay hoàng hôn (16:00–17:00) ngày nắng: +700.000đ/khách — dù lượn bay 9–15 phút, dù lượn gắn động cơ bay 20–25 phút
-☁️ Bay săn mây cao khoảng 2.000m (chỉ dù lượn gắn động cơ, 20–25 phút): +700.000đ/khách
-⏱️ Bay lâu 20–25 phút (tuỳ điều kiện): +700.000đ/khách, miễn phí khi đã chọn bình minh, hoàng hôn hoặc săn mây; dù lượn đa số chỉ bay lâu được vào khung giờ trưa
+🌅 Dù lượn bay bình minh (06:00–07:00) / bay hoàng hôn (16:00–17:00) ngày nắng: +700.000đ/khách, bay 9–15 phút
+☁️ Gói đặc biệt dù lượn gắn động cơ: +700.000đ/khách, bay 20–25 phút — bình minh (6–7h, ngày nắng), hoàng hôn (16–17h, ngày nắng) hoặc săn mây bay cao ~2.000m; thực hiện 1 trong 3 tuỳ điều kiện hôm bay (có hoàng hôn thì không có mây, có mây thì không có hoàng hôn/bình minh)
+⏱️ Bay lâu 20–25 phút (tuỳ điều kiện): +700.000đ/khách, miễn phí khi đã chọn gói đặc biệt (dù lượn gắn động cơ) hoặc bình minh / hoàng hôn (dù lượn); dù lượn đa số chỉ bay lâu được vào khung giờ trưa
 ↩️ Không thực hiện được chuyến bay đặc biệt (bình minh không có nắng, mây che hoàng hôn, gió yếu không bay lâu được) thì hoàn phụ phí sau chuyến bay, chuyến bay trở thành chuyến bay cơ bản
 
 📌 THÔNG TIN THÊM:
 🎥 Miễn phí ảnh/video bay dù từ GoPro
 🕒 Thời gian bay trải nghiệm:
 + Dù lượn: 10–15 phút (tùy điều kiện thời tiết phi công có thể bay lâu hơn)
-+ Dù lượn gắn động cơ: 10–20 phút
++ Dù lượn gắn động cơ: 15 phút (gói đặc biệt / bay lâu: 20–25 phút)
 ⏳ Tổng hành trình khoảng 40~60 phút
 🔄 Miễn phí đổi/hủy lịch do thời tiết
 💳 Thanh toán tiền mặt (tại điểm bay)
@@ -207,7 +207,7 @@ Mùa lúa chín – mùa vàng (tháng 8–9): ruộng bậc thang nhuộm vàng
 Vui lòng đặt trước để chúng tôi sắp xếp tốt nhất cho trải nghiệm dù lượn của bạn!`,
     landscape: "Đèo cao – thung lũng – mùa vàng",
     metaLandscape: "Hùng vĩ – ruộng bậc thang – mùa vàng",
-    duration: "10 – 20 phút",
+    duration: "10 – 25 phút",
     landingPoint: "Thung lũng dưới chân đèo",
     basePrice: 2190000,
     image: "/spots/khau-pha/hero.jpg",

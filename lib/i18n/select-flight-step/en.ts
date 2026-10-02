@@ -46,7 +46,7 @@ export const EN_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
       "Paragliding relies entirely on natural wind, offering the true feeling of free flight. Guests experience the sensation of 'sky running' with their own feet and enjoy the golden season from above.",
     ],
     paramotorDescription: [
-      "The paramotor takes off from Lim Mong Valley (at Mebayluon Clubhouse) at 700m altitude, climbs back up toward Khau Pha Pass at around 1,500m, then returns to the starting point. The flight lasts around 10–25 minutes depending on the guest’s condition, offering panoramic views of Khau Pha Pass and Lim Mong Valley.",
+      "The paramotor takes off from Lim Mong Valley (at Mebayluon Clubhouse) at 700m altitude, climbs back up toward Khau Pha Pass at around 1,500m, then returns to the starting point. A standard flight lasts 15 minutes (20–25 minutes with a special flight or long flight), offering panoramic views of Khau Pha Pass and Lim Mong Valley.",
       "Because it is motor-powered, this flight is less dependent on wind, more flexible, and can climb higher and stay longer, allowing you to explore unique aerial views that regular paragliding cannot easily reach.",
     ],
     locationDescription: {

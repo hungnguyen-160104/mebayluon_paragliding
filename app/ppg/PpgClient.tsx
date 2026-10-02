@@ -368,9 +368,12 @@ export default function PpgClient() {
                 </div>
               </div>
 
-              {/* Bay đặc biệt (chủ chốt 02/10/2026): săn mây / bình minh /
-                  hoàng hôn mỗi thứ +700k; bay lâu +700k, miễn phí khi kèm một
-                  trong ba; không bay được thì hoàn phụ phí sau chuyến bay. */}
+              {/* Bay đặc biệt (chủ chốt 02/10/2026, gộp lại cùng ngày): PPG
+                  chỉ có MỘT "Gói đặc biệt" +700k, 20–25' — phi công bay bình
+                  minh, hoàng hôn hoặc săn mây tuỳ trời hôm đó (khách mua gói,
+                  không chọn một trong ba). Bay lâu +700k, miễn phí khi kèm gói
+                  đặc biệt; không bay được thì hoàn phụ phí sau chuyến bay.
+                  PPG tiêu chuẩn luôn 15 phút. */}
               <div className="border-t border-white/15 p-6 sm:p-8">
                 <p className="text-[11px] uppercase tracking-wider text-slate-400">
                   {c.specialTitle}

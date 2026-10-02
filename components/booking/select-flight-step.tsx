@@ -1421,6 +1421,9 @@ export default function SelectFlightStep() {
   const lastSpecialKey = [...servicesWithMeta]
     .reverse()
     .find(({ svc }) => isKhauPhaSpecialKey(svc.key))?.svc.key;
+  /** Nhóm giới hạn có hơn một lựa chọn đang bày (PG: bình minh + hoàng hôn). */
+  const capGroupHasChoice =
+    servicesWithMeta.filter(({ svc }) => !!svc.capGroup).length > 1;
   /** Tổng bình minh + hoàng hôn + săn mây vượt số khách (vd. vừa bớt khách). */
   const dacBietOverCap = servicesWithMeta.some(({ svc }) => {
     if (!svc.capGroup) return false;
@@ -2217,10 +2220,15 @@ export default function SelectFlightStep() {
                           bay đặc biệt / bay lâu cuối cùng (chủ 02/10/2026). */}
                       {svc.key === lastSpecialKey ? (
                         <div className="rounded-xl border border-[#F5C26B] bg-[#FFF8EB] px-3 py-2.5 text-[13px] leading-5 text-[#7A4B00] sm:text-[14px]">
-                          <p className="font-semibold">
-                            {kpOnePerGuestNote(lang)}
-                          </p>
-                          <p className="mt-1">{kpRefundNote(lang)}</p>
+                          {/* Chỉ PG còn nhiều lựa chọn đặc biệt (bình minh /
+                              hoàng hôn) để phải nói "mỗi khách một chuyến";
+                              PPG đã gộp thành một "Gói đặc biệt". */}
+                          {capGroupHasChoice ? (
+                            <p className="mb-1 font-semibold">
+                              {kpOnePerGuestNote(lang)}
+                            </p>
+                          ) : null}
+                          <p>{kpRefundNote(lang, servicesWithMeta.map(({ svc }) => svc.key))}</p>
                           {dacBietOverCap ? (
                             <p className="mt-1 font-bold text-[#DC2626]">
                               ⚠ {kpOnePerGuestNote(lang)}

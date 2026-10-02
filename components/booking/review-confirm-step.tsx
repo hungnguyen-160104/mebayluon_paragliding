@@ -1903,7 +1903,7 @@ export default function ReviewConfirmStep() {
                 {/* Luật hoàn phụ phí bay đặc biệt (Khau Phạ, chủ 02/10/2026). */}
                 {hasSpecialFlight ? (
                   <p className="rounded-lg border border-[#F5C26B] bg-[#FFF8EB] px-2.5 py-2 text-xs leading-5 text-[#7A4B00]">
-                    {kpRefundNote(lang)}
+                    {kpRefundNote(lang, comboServiceStates.filter((st) => st.selected).map((st) => st.key))}
                   </p>
                 ) : null}
               </div>

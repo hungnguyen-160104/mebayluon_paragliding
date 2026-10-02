@@ -46,7 +46,7 @@ export const ZH_SELECT_FLIGHT_LOCALE: SelectFlightStepLocale = {
       "无动力滑翔伞完全依赖自然风，能够带来真正自由飞行的体验。",
     ],
     paramotorDescription: [
-      "动力伞从 Lim Mong Valley（Mebayluon Clubhouse）起飞，飞向考帕山口高处，再返回起点，飞行时间约 10–25 分钟。",
+      "动力伞从 Lim Mong Valley（Mebayluon Clubhouse）起飞，飞向考帕山口高处，再返回起点，标准飞行时间 15 分钟（特别飞行套餐或长时飞行 20–25 分钟）。",
       "由于带有发动机，这种飞行方式对风的依赖更小，更容易爬升到更高的位置，看到更多独特风景。",
     ],
     locationDescription: {

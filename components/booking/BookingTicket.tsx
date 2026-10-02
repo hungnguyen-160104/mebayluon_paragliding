@@ -1744,7 +1744,7 @@ export default function BookingTicket({
                       fontStyle: "italic",
                     }}
                   >
-                    ↺ {kpRefundNote(lang)}
+                    ↺ {kpRefundNote(lang, selectedServices.map((svc) => svc.key))}
                   </div>
                 ) : null}
               </div>

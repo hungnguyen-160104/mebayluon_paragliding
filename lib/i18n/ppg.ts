@@ -155,7 +155,7 @@ const vi: PpgCopy = {
   heroBadge: "Đèo Khau Phạ — Mù Cang Chải",
   heroTitle: "Dù lượn gắn động cơ",
   heroSubtitle:
-    "Tự chọn thời lượng, chủ động độ cao, bay được cả khi trời lặng gió.",
+    "Chủ động độ cao, bay được cả khi trời lặng gió.",
   heroFrom: "Giá từ",
   ctaBook: "Đặt bay ngay",
   ctaPartners: "Đặt qua đối tác",
@@ -204,7 +204,7 @@ const vi: PpgCopy = {
   altitudeLabel: "Độ cao bay",
   altitudeValue: "Tới 2.000 m",
   durationLabel: "Thời lượng bay",
-  durationValue: "10 – 20 phút · bay lâu 20 – 25 phút",
+  durationValue: "15 phút · gói đặc biệt / bay lâu 20 – 25 phút",
 
   pricingTitle: "Giá dịch vụ",
   pricingSubtitle: "Giá cho một khách, một chuyến bay.",
@@ -224,14 +224,15 @@ const vi: PpgCopy = {
   perPax: "/khách",
   specialTitle: "Bay đặc biệt (cộng thêm vào giá bay)",
   specialOptions: [
-    { label: "Bay săn mây", note: "Bay cao khoảng 2.000m, 20–25 phút" },
-    { label: "Bay bình minh", note: "Khung 06:00–07:00 ngày nắng, 20–25 phút" },
-    { label: "Bay hoàng hôn", note: "Khung 16:00–17:00 ngày nắng, 20–25 phút" },
+    {
+      label: "Gói đặc biệt",
+      note: "Bay 20–25 phút. Bình minh (6–7h, ngày nắng), hoàng hôn (16–17h, ngày nắng) hoặc săn mây bay cao ~2.000m — thực hiện 1 trong 3 tuỳ điều kiện hôm bay (có hoàng hôn thì không có mây, có mây thì không có hoàng hôn/bình minh).",
+    },
   ],
   longFlightLabel: "Bay lâu (20–25 phút, tuỳ điều kiện)",
-  longFlightNote: "Miễn phí khi đã chọn săn mây, bình minh hoặc hoàng hôn",
+  longFlightNote: "Miễn phí khi đã chọn gói đặc biệt",
   specialRefund:
-    "Nếu không thực hiện được chuyến bay đặc biệt (bình minh không có nắng, mây che hoàng hôn, gió yếu không bay lâu được), phụ phí được hoàn lại sau chuyến bay và chuyến bay trở thành chuyến bay cơ bản.",
+    "Nếu không thực hiện được cả 3 trải nghiệm của gói đặc biệt, hoặc gió yếu không bay lâu được, phụ phí được hoàn lại sau chuyến bay và chuyến bay trở thành chuyến bay cơ bản.",
 
   guideTitle: "Chuyến bay diễn ra thế nào",
   steps: [
@@ -313,7 +314,7 @@ const en: PpgCopy = {
   heroBadge: "Khau Pha Pass — Mu Cang Chai",
   heroTitle: "Powered paragliding",
   heroSubtitle:
-    "Choose your own airtime, control your altitude, fly even when the wind is still.",
+    "Control your altitude and fly even when the wind is still.",
   heroFrom: "From",
   ctaBook: "Book a flight",
   ctaPartners: "Book via partners",
@@ -361,7 +362,7 @@ const en: PpgCopy = {
   altitudeLabel: "Altitude",
   altitudeValue: "Up to 2,000 m",
   durationLabel: "Airtime",
-  durationValue: "10 – 20 minutes · long flight 20 – 25 minutes",
+  durationValue: "15 minutes · special flight / long flight 20 – 25 minutes",
 
   pricingTitle: "Prices",
   pricingSubtitle: "Per passenger, per flight.",
@@ -381,14 +382,15 @@ const en: PpgCopy = {
   perPax: "/passenger",
   specialTitle: "Special flights (added to the flight price)",
   specialOptions: [
-    { label: "Cloud hunting", note: "Up to around 2,000 m, 20–25 minutes" },
-    { label: "Sunrise flight", note: "06:00–07:00 on sunny days, 20–25 minutes" },
-    { label: "Sunset flight", note: "16:00–17:00 on sunny days, 20–25 minutes" },
+    {
+      label: "Special flight",
+      note: "20–25 minutes. Sunrise (6–7 am, sunny days), sunset (4–5 pm, sunny days) or cloud hunting up to ~2,000 m — we fly one of the three depending on the day's conditions (a sunset means no cloud; cloud means no sunset or sunrise).",
+    },
   ],
   longFlightLabel: "Long flight (20–25 minutes, conditions permitting)",
-  longFlightNote: "Free when you also choose cloud hunting, sunrise or sunset",
+  longFlightNote: "Free with the special flight",
   specialRefund:
-    "If the special flight cannot be done (no sun at sunrise, sunset lost to cloud, wind too weak for a long flight), the surcharge is refunded after the flight, which becomes a standard flight.",
+    "If none of the three special-flight options can be flown, or the wind is too weak for a long flight, the surcharge is refunded after the flight, which becomes a standard flight.",
 
   guideTitle: "How the flight works",
   steps: [
@@ -470,7 +472,7 @@ const fr: PpgCopy = {
   heroBadge: "Col de Khau Pha — Mu Cang Chai",
   heroTitle: "Vol en paramoteur",
   heroSubtitle:
-    "Vous choisissez la durée, maîtrisez l’altitude et volez même par vent nul.",
+    "Vous maîtrisez l’altitude et volez même par vent nul.",
   heroFrom: "À partir de",
   ctaBook: "Réserver un vol",
   ctaPartners: "Réserver via nos partenaires",
@@ -519,7 +521,7 @@ const fr: PpgCopy = {
   altitudeLabel: "Altitude",
   altitudeValue: "Jusqu’à 2 000 m",
   durationLabel: "Durée de vol",
-  durationValue: "10 à 20 minutes · vol long 20 à 25 minutes",
+  durationValue: "15 minutes · vol spécial / vol long 20 à 25 minutes",
 
   pricingTitle: "Tarifs",
   pricingSubtitle: "Par passager et par vol.",
@@ -539,14 +541,15 @@ const fr: PpgCopy = {
   perPax: "/passager",
   specialTitle: "Vols spéciaux (en supplément du prix du vol)",
   specialOptions: [
-    { label: "Vol sur mer de nuages", note: "Jusqu’à environ 2 000 m, 20 à 25 minutes" },
-    { label: "Vol au lever du soleil", note: "6 h–7 h les jours de soleil, 20 à 25 minutes" },
-    { label: "Vol au coucher du soleil", note: "16 h–17 h les jours de soleil, 20 à 25 minutes" },
+    {
+      label: "Vol spécial",
+      note: "20 à 25 minutes. Lever du soleil (6 h–7 h, jours de soleil), coucher du soleil (16 h–17 h, jours de soleil) ou mer de nuages vers 2 000 m — nous réalisons l’un des trois selon les conditions du jour (avec un coucher de soleil, pas de nuages ; avec des nuages, ni lever ni coucher).",
+    },
   ],
   longFlightLabel: "Vol long (20 à 25 minutes, selon les conditions)",
-  longFlightNote: "Offert si vous choisissez aussi la mer de nuages, le lever ou le coucher du soleil",
+  longFlightNote: "Offert avec le vol spécial",
   specialRefund:
-    "Si le vol spécial ne peut pas avoir lieu (pas de soleil au lever, coucher masqué par les nuages, vent trop faible pour un vol long), le supplément est remboursé après le vol, qui devient un vol standard.",
+    "Si aucune des trois options du vol spécial n’est possible, ou si le vent est trop faible pour un vol long, le supplément est remboursé après le vol, qui devient un vol standard.",
 
   guideTitle: "Comment se déroule le vol",
   steps: [
@@ -628,7 +631,7 @@ const ru: PpgCopy = {
   heroBadge: "Перевал Khau Pha — Mu Cang Chai",
   heroTitle: "Полёт на парамоторе",
   heroSubtitle:
-    "Вы выбираете длительность, управляете высотой и летите даже в полный штиль.",
+    "Вы управляете высотой и летите даже в полный штиль.",
   heroFrom: "От",
   ctaBook: "Забронировать полёт",
   ctaPartners: "Бронирование у партнёров",
@@ -676,7 +679,7 @@ const ru: PpgCopy = {
   altitudeLabel: "Высота",
   altitudeValue: "До 2 000 м",
   durationLabel: "Время в воздухе",
-  durationValue: "10 – 20 минут · долгий полёт 20 – 25 минут",
+  durationValue: "15 минут · особый / долгий полёт 20 – 25 минут",
 
   pricingTitle: "Цены",
   pricingSubtitle: "За одного пассажира за один полёт.",
@@ -696,14 +699,15 @@ const ru: PpgCopy = {
   perPax: "/пассажир",
   specialTitle: "Особые полёты (доплата к цене полёта)",
   specialOptions: [
-    { label: "Полёт над облаками", note: "Примерно до 2 000 м, 20–25 минут" },
-    { label: "Полёт на рассвете", note: "06:00–07:00 в солнечные дни, 20–25 минут" },
-    { label: "Полёт на закате", note: "16:00–17:00 в солнечные дни, 20–25 минут" },
+    {
+      label: "Особый полёт",
+      note: "20–25 минут. Рассвет (6–7 ч, солнечные дни), закат (16–17 ч, солнечные дни) или полёт над облаками на ~2 000 м — выполняем один из трёх по условиям дня (есть закат — нет облаков; есть облака — нет заката и рассвета).",
+    },
   ],
   longFlightLabel: "Долгий полёт (20–25 минут, если позволяют условия)",
-  longFlightNote: "Бесплатно, если выбран полёт над облаками, на рассвете или на закате",
+  longFlightNote: "Бесплатно вместе с особым полётом",
   specialRefund:
-    "Если особый полёт не удался (на рассвете нет солнца, закат скрыт облаками, ветер слишком слабый для долгого полёта), доплата возвращается после полёта, а полёт считается обычным.",
+    "Если ни один из трёх вариантов особого полёта невозможен или ветер слишком слабый для долгого полёта, доплата возвращается после полёта, а полёт считается обычным.",
 
   guideTitle: "Как проходит полёт",
   steps: [
@@ -785,7 +789,7 @@ const zh: PpgCopy = {
   heroBadge: "Khau Pha 山口 — Mù Cang Chải",
   heroTitle: "动力滑翔伞飞行",
   heroSubtitle:
-    "自选时长、自主控制高度，无风的日子也能飞。",
+    "自主控制高度，无风的日子也能飞。",
   heroFrom: "起价",
   ctaBook: "立即预订",
   ctaPartners: "通过合作平台预订",
@@ -833,7 +837,7 @@ const zh: PpgCopy = {
   altitudeLabel: "飞行高度",
   altitudeValue: "最高 2,000 米",
   durationLabel: "飞行时长",
-  durationValue: "10–20 分钟 · 长时飞行 20–25 分钟",
+  durationValue: "15 分钟 · 特别飞行套餐 / 长时飞行 20–25 分钟",
 
   pricingTitle: "价格",
   pricingSubtitle: "每位乘客每次飞行的价格。",
@@ -853,14 +857,15 @@ const zh: PpgCopy = {
   perPax: "/人",
   specialTitle: "特色飞行（在飞行价格上加收）",
   specialOptions: [
-    { label: "追云飞行", note: "爬升至约 2,000 米，20–25 分钟" },
-    { label: "日出飞行", note: "晴天 06:00–07:00，20–25 分钟" },
-    { label: "日落飞行", note: "晴天 16:00–17:00，20–25 分钟" },
+    {
+      label: "特别飞行套餐",
+      note: "飞行 20–25 分钟。日出（6–7 点，晴天）、日落（16–17 点，晴天）或爬升约 2,000 米追云——根据当天条件三选一执行（有日落就没有云海，有云海就没有日出/日落）。",
+    },
   ],
   longFlightLabel: "长时飞行（20–25 分钟，视条件而定）",
-  longFlightNote: "同时选择追云、日出或日落飞行即可免费",
+  longFlightNote: "搭配特别飞行套餐免费",
   specialRefund:
-    "如特色飞行无法实现（日出时无阳光、日落被云遮挡、风力太弱无法长时飞行），附加费将在飞行结束后退还，该次飞行按普通飞行计算。",
+    "如特别飞行套餐的三种体验都无法实现，或风力太弱无法长时飞行，附加费将在飞行结束后退还，该次飞行按普通飞行计算。",
 
   guideTitle: "飞行流程",
   steps: [
@@ -940,7 +945,7 @@ const hi: PpgCopy = {
   heroBadge: "Khau Pha दर्रा — Mu Cang Chai",
   heroTitle: "पैरामोटर उड़ान",
   heroSubtitle:
-    "अवधि आप चुनें, ऊँचाई आपके नियंत्रण में, हवा शांत हो तब भी उड़ान।",
+    "ऊँचाई आपके नियंत्रण में, हवा शांत हो तब भी उड़ान।",
   heroFrom: "शुरू",
   ctaBook: "उड़ान बुक करें",
   ctaPartners: "पार्टनर के ज़रिए बुक करें",
@@ -988,7 +993,7 @@ const hi: PpgCopy = {
   altitudeLabel: "ऊँचाई",
   altitudeValue: "2,000 मीटर तक",
   durationLabel: "उड़ान अवधि",
-  durationValue: "10 – 20 मिनट · लंबी उड़ान 20 – 25 मिनट",
+  durationValue: "15 मिनट · विशेष उड़ान / लंबी उड़ान 20 – 25 मिनट",
 
   pricingTitle: "मूल्य",
   pricingSubtitle: "प्रति यात्री, प्रति उड़ान।",
@@ -1008,14 +1013,15 @@ const hi: PpgCopy = {
   perPax: "/यात्री",
   specialTitle: "विशेष उड़ानें (उड़ान की कीमत के अतिरिक्त)",
   specialOptions: [
-    { label: "बादलों के ऊपर उड़ान", note: "लगभग 2,000 मीटर तक, 20–25 मिनट" },
-    { label: "सूर्योदय उड़ान", note: "धूप वाले दिन 06:00–07:00, 20–25 मिनट" },
-    { label: "सूर्यास्त उड़ान", note: "धूप वाले दिन 16:00–17:00, 20–25 मिनट" },
+    {
+      label: "विशेष उड़ान",
+      note: "20–25 मिनट। सूर्योदय (6–7 बजे, धूप वाले दिन), सूर्यास्त (16–17 बजे, धूप वाले दिन) या लगभग 2,000 मीटर पर बादलों के ऊपर उड़ान — उस दिन की परिस्थिति के अनुसार तीन में से एक की जाती है (सूर्यास्त हो तो बादल नहीं, बादल हों तो सूर्योदय/सूर्यास्त नहीं)।",
+    },
   ],
   longFlightLabel: "लंबी उड़ान (20–25 मिनट, परिस्थिति अनुसार)",
-  longFlightNote: "बादल, सूर्योदय या सूर्यास्त उड़ान के साथ चुनने पर मुफ़्त",
+  longFlightNote: "विशेष उड़ान के साथ मुफ़्त",
   specialRefund:
-    "अगर विशेष उड़ान संभव न हो (सूर्योदय पर धूप न हो, सूर्यास्त बादलों में छिप जाए, लंबी उड़ान के लिए हवा कमज़ोर हो), तो अतिरिक्त शुल्क उड़ान के बाद लौटा दिया जाता है और उड़ान सामान्य उड़ान मानी जाती है।",
+    "अगर विशेष उड़ान के तीनों विकल्प संभव न हों, या लंबी उड़ान के लिए हवा कमज़ोर हो, तो अतिरिक्त शुल्क उड़ान के बाद लौटा दिया जाता है और उड़ान सामान्य उड़ान मानी जाती है।",
 
   guideTitle: "उड़ान कैसे होती है",
   steps: [

@@ -293,42 +293,42 @@ function getKhauPhaQuotedBaseUSD(
  */
 const KHAU_PHA_PARAMOTOR_INCLUDED = {
   vi: [
-    "01 chuyến bay từ 10–20 phút (tuỳ chọn)",
+    "01 chuyến bay tiêu chuẩn 15 phút",
     "Ảnh & video bằng GoPro",
     "Trà & cà phê tại điểm bay",
     "Bảo hiểm dù lượn",
     "Giấy chứng nhận",
   ],
   en: [
-    "One flight 10–20 minutes (option)",
+    "One standard 15-minute flight",
     "GoPro photos & video",
     "Coffee & tea at flight site",
     "Paragliding insurance",
     "Certificate",
   ],
   fr: [
-    "Un vol de 10 à 20 minutes (au choix)",
+    "Un vol standard de 15 minutes",
     "Photos & vidéo GoPro",
     "Café et thé sur le lieu du vol",
     "Assurance parapente",
     "Certificat",
   ],
   ru: [
-    "Один полет от 10 до 20 минут (по выбору)",
+    "Один стандартный полёт 15 минут",
     "Фото и видео GoPro",
     "Кофе и чай на месте старта",
     "Страховка парапланериста",
     "Сертификат",
   ],
   zh: [
-    "1 次飞行 10-20 分钟（可选）",
+    "1 次标准飞行 15 分钟",
     "GoPro 照片与视频",
     "飞行点提供咖啡和茶",
     "滑翔伞保险",
     "证书",
   ],
   hi: [
-    "10-20 मिनट से 01 उड़ान (वैकल्पिक)",
+    "01 मानक उड़ान 15 मिनट",
     "GoPro फ़ोटो व वीडियो",
     "उड़ान स्थल पर चाय और कॉफ़ी",
     "पैराग्लाइडिंग बीमा",
@@ -774,7 +774,41 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       },
       // ---- PPG (dù gắn động cơ) ----
       {
+        /**
+         * GÓI ĐẶC BIỆT PPG (chủ 02/10/2026, lần 2): GỘP săn mây / bình minh /
+         * hoàng hôn thành MỘT lựa chọn. Khách mua gói, phi công bay một trong
+         * ba tuỳ điều kiện hôm bay. Bay lâu miễn phí khi kèm gói này; không
+         * bay được cả ba thì hoàn phụ phí (lib/booking/khau-pha-dac-biet.ts).
+         * Ba khoá tách rời bên dưới giữ làm khoá cũ (`legacy`).
+         */
+        key: "khau_pha_ppg_dac_biet",
+        label: {
+          vi: "Gói đặc biệt (20–25 phút)",
+          en: "Special flight (20–25 minutes)",
+          fr: "Vol spécial (20–25 minutes)",
+          ru: "Особый полёт (20–25 минут)",
+          zh: "特别飞行套餐（20–25 分钟）",
+          hi: "विशेष उड़ान (20–25 मिनट)",
+        },
+        description: {
+          vi: "Bình minh (6–7h, ngày nắng), hoàng hôn (16–17h, ngày nắng) hoặc săn mây bay cao ~2.000m — thực hiện 1 trong 3 tuỳ điều kiện hôm bay (có hoàng hôn thì không có mây, có mây thì không có hoàng hôn/bình minh).",
+          en: "Sunrise (6–7 am, sunny days), sunset (4–5 pm, sunny days) or cloud hunting high up at ~2,000 m — we fly one of the three depending on the day's conditions (with a sunset there is no cloud sea; with a cloud sea there is no sunset/sunrise).",
+          fr: "Lever du soleil (6h–7h, jours ensoleillés), coucher du soleil (16h–17h, jours ensoleillés) ou chasse aux nuages à ~2 000 m — nous réalisons l'un des trois selon les conditions du jour (avec un coucher de soleil il n'y a pas de mer de nuages ; avec une mer de nuages, pas de lever/coucher de soleil).",
+          ru: "Рассвет (6–7 ч, в солнечные дни), закат (16–17 ч, в солнечные дни) или охота за облаками на высоте ~2 000 м — выполняем один из трёх вариантов по условиям дня (если есть закат, нет моря облаков; если есть облака, нет заката/рассвета).",
+          zh: "日出（6–7 点，晴天）、日落（16–17 点，晴天）或高空约 2,000 米追云——根据当天条件三选一执行（有日落时没有云海，有云海时没有日落/日出）。",
+          hi: "सूर्योदय (सुबह 6–7 बजे, धूप वाले दिन), सूर्यास्त (शाम 4–5 बजे, धूप वाले दिन) या ~2,000 मीटर ऊँचाई पर क्लाउड हंटिंग — उस दिन की परिस्थितियों के अनुसार तीन में से एक (सूर्यास्त हो तो बादल नहीं, बादल हों तो सूर्यास्त/सूर्योदय नहीं)।",
+        },
+        controlType: "counter",
+        priceVND: KP_DAC_BIET_VND,
+        priceUSD: KP_DAC_BIET_USD,
+        capGroup: KP_DAC_BIET_CAP_GROUP,
+        visibleForPackages: ["khau_pha_paramotor", "khau_pha_paramotor_pkg_1", "khau_pha_paramotor_pkg_2"],
+        visibleForFlightTypes: ["paramotor"],
+      },
+      {
         key: "khau_pha_ppg_san_may",
+        // KHOÁ CŨ từ 02/10/2026 (lần 2): thay bằng "Gói đặc biệt" khau_pha_ppg_dac_biet.
+        legacy: true,
         label: {
           vi: "Bay săn mây ~2.000m",
           en: "Cloud hunting ~2,000 m",
@@ -800,6 +834,8 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       },
       {
         key: "khau_pha_ppg_sunrise",
+        // KHOÁ CŨ từ 02/10/2026 (lần 2): thay bằng "Gói đặc biệt" khau_pha_ppg_dac_biet.
+        legacy: true,
         label: {
           vi: "Bay bình minh (6–7h, ngày nắng)",
           en: "Sunrise flight (6–7 am, sunny days)",
@@ -825,6 +861,8 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
       },
       {
         key: "khau_pha_ppg_sunset",
+        // KHOÁ CŨ từ 02/10/2026 (lần 2): thay bằng "Gói đặc biệt" khau_pha_ppg_dac_biet.
+        legacy: true,
         label: {
           vi: "Bay hoàng hôn (16–17h, ngày nắng)",
           en: "Sunset flight (4–5 pm, sunny days)",
@@ -859,12 +897,12 @@ export const LOCATIONS: Record<LocationKey, LocationConfig> = {
           hi: "लंबी उड़ान 20–25 मिनट",
         },
         description: {
-          vi: "Mỗi chuyến bay 20–25 phút, tuỳ điều kiện. Miễn phí nếu khách đã chọn săn mây, bình minh hoặc hoàng hôn.",
-          en: "20–25 minutes per flight, conditions permitting. Free if the guest also picks cloud hunting, sunrise or sunset.",
-          fr: "20 à 25 minutes par vol, selon les conditions. Offert si le passager choisit aussi la chasse aux nuages, le lever ou le coucher du soleil.",
-          ru: "20–25 минут на полёт, если позволяют условия. Бесплатно, если гость выбрал также охоту за облаками, рассвет или закат.",
-          zh: "每次飞行 20–25 分钟，视条件而定。若客人同时选择追云、日出或日落，则免费。",
-          hi: "हर उड़ान 20–25 मिनट, परिस्थितियों के अनुसार। अगर मेहमान क्लाउड हंटिंग, सूर्योदय या सूर्यास्त भी चुनता है तो मुफ़्त।",
+          vi: "Mỗi chuyến bay 20–25 phút, tuỳ điều kiện. Miễn phí nếu khách đã chọn Gói đặc biệt.",
+          en: "20–25 minutes per flight, conditions permitting. Free if the guest also picks the Special flight.",
+          fr: "20 à 25 minutes par vol, selon les conditions. Offert si le passager choisit aussi le Vol spécial.",
+          ru: "20–25 минут на полёт, если позволяют условия. Бесплатно, если гость выбрал также «Особый полёт».",
+          zh: "每次飞行 20–25 分钟，视条件而定。若客人同时选择特别飞行套餐，则免费。",
+          hi: "हर उड़ान 20–25 मिनट, परिस्थितियों के अनुसार। अगर मेहमान विशेष उड़ान भी चुनता है तो मुफ़्त।",
         },
         controlType: "counter",
         priceVND: KP_DAC_BIET_VND,

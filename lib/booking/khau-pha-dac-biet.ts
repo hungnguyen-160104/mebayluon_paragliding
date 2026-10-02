@@ -7,7 +7,8 @@
  * `khau_pha_paramotor_2000m`, 700k. Nay tách thành từng lựa chọn, và dù
  * không động cơ (PG) cũng có bình minh / hoàng hôn / bay lâu:
  *
- *   PPG: săn mây (~2.000m, CHỈ PPG), bình minh, hoàng hôn — mỗi thứ +700k/khách,
+ *   PPG: "Gói đặc biệt" (chủ chốt lại 02/10) — MỘT lựa chọn: phi công bay bình minh,
+ *        hoàng hôn hoặc săn mây (~2.000m) tuỳ trời; +700k/khách,
  *        bay 20–25 phút. Bay lâu (20–25 phút) +700k nếu chọn RIÊNG.
  *   PG : bình minh / hoàng hôn — chuyến bay riêng 9–15 phút, +700k/khách.
  *        Bay lâu 20–25 phút +700k (PG đa số chỉ bay lâu được buổi trưa).
@@ -38,6 +39,14 @@ export const KP_KEYS = {
   pgSunrise: "khau_pha_pg_sunrise",
   pgSunset: "khau_pha_pg_sunset",
   pgLongFlight: "khau_pha_pg_long_flight",
+  /**
+   * PPG "Gói đặc biệt" (chủ 02/10/2026, lần 2): GỘP săn mây / bình minh /
+   * hoàng hôn thành MỘT lựa chọn — khách mua gói, phi công bay một trong ba
+   * tuỳ trời hôm đó (có hoàng hôn thì không có mây, có mây thì không có
+   * hoàng hôn/bình minh).
+   */
+  ppgDacBiet: "khau_pha_ppg_dac_biet",
+  /** Ba khoá PPG tách rời (bán vài giờ ngày 02/10) — nay là KHOÁ CŨ, chỉ để hiển thị/đồng bộ. */
   ppgCloud: "khau_pha_ppg_san_may",
   ppgSunrise: "khau_pha_ppg_sunrise",
   ppgSunset: "khau_pha_ppg_sunset",
@@ -46,12 +55,13 @@ export const KP_KEYS = {
   legacy2000m: "khau_pha_paramotor_2000m",
 } as const;
 
-export type DacBietKind = "sunrise" | "sunset" | "cloud" | "legacy";
+export type DacBietKind = "sunrise" | "sunset" | "cloud" | "package" | "legacy";
 
 /** Loại chuyến bay đặc biệt của một khoá dịch vụ; không phải thì null. */
 export function dacBietKindOf(key: unknown): DacBietKind | null {
   const k = String(key || "");
   if (k === KP_KEYS.legacy2000m) return "legacy";
+  if (k === KP_KEYS.ppgDacBiet) return "package";
   if (k === KP_KEYS.ppgCloud) return "cloud";
   if (k === KP_KEYS.pgSunrise || k === KP_KEYS.ppgSunrise) return "sunrise";
   if (k === KP_KEYS.pgSunset || k === KP_KEYS.ppgSunset) return "sunset";
@@ -112,6 +122,7 @@ const KIND_NAME: Record<DacBietKind, Record<Lang, string>> = {
   sunrise: { vi: "bình minh", en: "sunrise", fr: "lever du soleil", ru: "рассвет", zh: "日出", hi: "सूर्योदय" },
   sunset: { vi: "hoàng hôn", en: "sunset", fr: "coucher du soleil", ru: "закат", zh: "日落", hi: "सूर्यास्त" },
   cloud: { vi: "săn mây", en: "cloud hunting", fr: "chasse aux nuages", ru: "охота за облаками", zh: "追云", hi: "क्लाउड हंटिंग" },
+  package: { vi: "gói đặc biệt", en: "special flight", fr: "vol spécial", ru: "особый полёт", zh: "特别飞行套餐", hi: "विशेष उड़ान" },
   legacy: { vi: "bay đặc biệt", en: "special flight", fr: "vol spécial", ru: "особый полёт", zh: "特别飞行", hi: "विशेष उड़ान" },
 };
 
@@ -135,7 +146,7 @@ export function longFlightFreeLabel(lang: unknown, services: DacBietServiceState
     const k = dacBietKindOf(s.key);
     if (k && s.selected && !kinds.includes(k)) kinds.push(k);
   }
-  const order: DacBietKind[] = ["cloud", "sunrise", "sunset", "legacy"];
+  const order: DacBietKind[] = ["package", "cloud", "sunrise", "sunset", "legacy"];
   kinds.sort((a, b) => order.indexOf(a) - order.indexOf(b));
   const names = (kinds.length ? kinds : (["legacy"] as DacBietKind[])).map((k) => KIND_NAME[k][l]);
   const joiner = l === "zh" ? "／" : " / ";
@@ -158,7 +169,22 @@ export const KP_REFUND_NOTE: Record<Lang, string> = {
   hi: "यदि विशेष उड़ान संभव न हो (सूर्योदय पर धूप न हो, सूर्यास्त बादलों में छिप जाए, कमज़ोर हवा के कारण लंबी उड़ान संभव न हो), तो उड़ान के बाद अतिरिक्त शुल्क लौटा दिया जाता है और उड़ान सामान्य उड़ान बन जाती है।",
 };
 
-export const kpRefundNote = (lang: unknown) => KP_REFUND_NOTE[langOf(lang)];
+/**
+ * Bản cho PPG "Gói đặc biệt": khách mua gói, phi công bay một trong ba — chỉ
+ * hoàn khi CẢ BA đều không bay được (mây che hoàng hôn thì đã có săn mây).
+ */
+export const KP_REFUND_NOTE_PPG: Record<Lang, string> = {
+  vi: "Nếu hôm bay không thực hiện được cả bình minh, hoàng hôn lẫn săn mây (hoặc gió yếu không bay lâu được), phụ phí được hoàn lại sau chuyến bay và chuyến bay trở thành chuyến bay thường.",
+  en: "If none of sunrise, sunset or cloud hunting can be done that day (or the wind is too weak for a long flight), the surcharge is refunded after the flight, which becomes a normal flight.",
+  fr: "Si ni le lever, ni le coucher du soleil, ni la chasse aux nuages ne sont réalisables ce jour-là (ou si le vent est trop faible pour un vol long), le supplément est remboursé après le vol, qui devient un vol normal.",
+  ru: "Если в этот день невозможны ни рассвет, ни закат, ни охота за облаками (или ветер слишком слабый для долгого полёта), доплата возвращается после полёта, который становится обычным.",
+  zh: "如果当天日出、日落和追云都无法实现（或风太弱无法长时间飞行），附加费将在飞行后退还，该次飞行改为普通飞行。",
+  hi: "अगर उस दिन सूर्योदय, सूर्यास्त और क्लाउड हंटिंग में से कोई भी संभव न हो (या लंबी उड़ान के लिए हवा बहुत कमज़ोर हो), तो उड़ान के बाद अतिरिक्त शुल्क लौटा दिया जाता है और उड़ान सामान्य उड़ान बन जाती है।",
+};
+
+/** Lời hoàn phụ phí theo loại bay: có khoá PPG thì dùng bản "Gói đặc biệt". */
+export const kpRefundNote = (lang: unknown, keys: unknown[] = []) =>
+  (keys.some((k) => /^khau_pha_(ppg_|paramotor_2000m)/.test(String(k))) ? KP_REFUND_NOTE_PPG : KP_REFUND_NOTE)[langOf(lang)];
 
 /** Lời nhắc khi khách PG tích "bay lâu" (chủ 02/10, câu nguyên văn bản tiếng Việt). */
 export const PG_LONG_FLIGHT_NOTE: Record<Lang, string> = {
@@ -170,14 +196,14 @@ export const PG_LONG_FLIGHT_NOTE: Record<Lang, string> = {
   hi: "पैराग्लाइडिंग (PG) में लंबी उड़ान ज़्यादातर दोपहर के समय ही संभव होती है; सुबह और शाम के स्लॉट में आमतौर पर नहीं।",
 };
 
-/** Lời giải thích trần "mỗi khách một chuyến đặc biệt". */
+/** Lời giải thích trần "mỗi khách một chuyến đặc biệt" — chỉ còn hiện cho PG (PPG đã gộp một gói). */
 export const KP_ONE_PER_GUEST_NOTE: Record<Lang, string> = {
-  vi: "Mỗi khách chỉ chọn một chuyến đặc biệt (bình minh, hoàng hôn hoặc săn mây) — tổng không vượt số khách.",
-  en: "Each guest picks at most one special flight (sunrise, sunset or cloud hunting) — the total can't exceed the number of guests.",
-  fr: "Chaque passager choisit au plus un vol spécial (lever, coucher du soleil ou chasse aux nuages) — le total ne peut pas dépasser le nombre de passagers.",
-  ru: "Каждый гость выбирает не более одного особого полёта (рассвет, закат или охота за облаками) — всего не больше числа гостей.",
-  zh: "每位客人最多选择一种特别飞行（日出、日落或追云），总数不能超过客人数。",
-  hi: "हर मेहमान अधिकतम एक विशेष उड़ान चुनता है (सूर्योदय, सूर्यास्त या क्लाउड हंटिंग) — कुल संख्या मेहमानों से अधिक नहीं हो सकती।",
+  vi: "Mỗi khách chỉ chọn một chuyến đặc biệt (bình minh hoặc hoàng hôn) — tổng không vượt số khách.",
+  en: "Each guest picks at most one special flight (sunrise or sunset) — the total can't exceed the number of guests.",
+  fr: "Chaque passager choisit au plus un vol spécial (lever ou coucher du soleil) — le total ne peut pas dépasser le nombre de passagers.",
+  ru: "Каждый гость выбирает не более одного особого полёта (рассвет или закат) — всего не больше числа гостей.",
+  zh: "每位客人最多选择一种特别飞行（日出或日落），总数不能超过客人数。",
+  hi: "हर मेहमान अधिकतम एक विशेष उड़ान चुनता है (सूर्योदय या सूर्यास्त) — कुल संख्या मेहमानों से अधिक नहीं हो सकती।",
 };
 
 export const kpOnePerGuestNote = (lang: unknown) => KP_ONE_PER_GUEST_NOTE[langOf(lang)];

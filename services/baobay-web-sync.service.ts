@@ -82,7 +82,13 @@ export const SERVICE_MAP: Array<{ match: RegExp; field: WebServiceField }> = [
    * `khau_pha_ppg_sunset` — nhưng trong app vẫn là MỘT ô `sunset`
    * (H.hôn / S.mây / B.minh): cùng giá, cùng cách phi công khai.
    */
-  { match: /2000m|san_may|sanmay|binh_minh|sunrise/i, field: "sunset" },
+  /**
+   * 02/10/2026 (chủ chốt lần 2): PPG gộp ba lựa chọn thành MỘT "Gói đặc biệt"
+   * — khoá `khau_pha_ppg_dac_biet`; phi công bay bình minh / hoàng hôn / săn
+   * mây tuỳ trời hôm đó. Vẫn vào ô `sunset`. Ba khoá PPG tách rời ở trên giữ
+   * làm khoá cũ, vẫn khớp các luật này.
+   */
+  { match: /dac_biet|2000m|san_may|sanmay|binh_minh|sunrise/i, field: "sunset" },
   { match: /sunset|hoang_hon/i, field: "sunset" },
   { match: /keo_co|flag_flight|flagflight/i, field: "flagFlight" },
   { match: /flag|co_do|red_flag/i, field: "redFlag" },
