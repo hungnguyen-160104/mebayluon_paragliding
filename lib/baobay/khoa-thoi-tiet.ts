@@ -45,6 +45,7 @@ const TEN_GON: Record<string, string> = {
   "ha-giang": "Quản Bạ",
   "tram-tau": "Phình Hồ",
   "dai-tue": "Đại Huệ",
+  "da-teh": "Đạ Tẻh",
   "doi-bu": "Đồi Bù",
   "muong-hoa-sapa": "Sa Pa",
 };

@@ -151,6 +151,16 @@ export type ThoiTietCopy = {
   mapToggleOpen: string;
   mapToggleClose: string;
   disclaimer: string;
+  /** Khối "Cuối tuần này" trên thẻ điểm có cờ `cuoiTuan` (Đạ Tẻh — phi công Sài Gòn đi bay cuối tuần). */
+  weekendTitle: string;
+  /** Ngày cuối tuần không có khung đẹp. */
+  weekendNoWindow: string;
+  /**
+   * GHI CHÚ RIÊNG TỪNG ĐIỂM, hiện dưới tên trên thẻ: giới thiệu (ở đâu, cách
+   * Sài Gòn bao xa, hướng gió), mùa trong năm, và dòng "dự báo cho cộng đồng"
+   * với điểm Mebayluon không vận hành. Khoá là slug ở lib/weather-spots.ts.
+   */
+  spotNotes: Partial<Record<string, { intro: string; season: string; community: string }>>;
 };
 
 const vi: ThoiTietCopy = {
@@ -302,6 +312,17 @@ const vi: ThoiTietCopy = {
   mapToggleClose: "Ẩn bản đồ gió",
   disclaimer:
     "Dự báo mang tính tham khảo. Phi công quyết định bay hay hoãn tại bãi, ưu tiên an toàn tuyệt đối; nếu hoãn do thời tiết, bạn được đổi lịch hoặc hoàn tiền.",
+  weekendTitle: "Cuối tuần này",
+  weekendNoWindow: "không có khung đẹp",
+  spotNotes: {
+    "da-teh": {
+      intro:
+        "Đạ Tẻh, Lâm Đồng (Google Maps: “Điểm bay dù lượn Dateh”) — cách TP.HCM khoảng 180 km đường bộ (~130 km đường chim bay), chừng 3,5–4 giờ lái xe theo QL20. Bãi cất 620 m. Gió tốt từ Đông Đông Nam qua Nam tới Tây Tây Nam, đẹp nhất gió Nam hoặc Đông Nam; gió phía Bắc là gió sau.",
+      season:
+        "Khí hậu chung: mùa mưa miền Nam (khoảng tháng 5–11) chiều hay có dông, nên tranh thủ bay buổi sáng; mùa khô khoảng tháng 12–4. Chỉ là quy luật chung, từng ngày vẫn phải xem dự báo.",
+      community: "Dự báo cho cộng đồng phi công — Mebayluon không vận hành điểm bay này.",
+    },
+  },
 };
 
 const en: ThoiTietCopy = {
@@ -446,6 +467,17 @@ const en: ThoiTietCopy = {
   mapToggleClose: "Hide wind map",
   disclaimer:
     "Forecasts are indicative. The pilot decides on site whether to fly, with safety first; if a flight is postponed for weather you may reschedule or get a refund.",
+  weekendTitle: "This weekend",
+  weekendNoWindow: "no good window",
+  spotNotes: {
+    "da-teh": {
+      intro:
+        "Đạ Tẻh, Lâm Đồng (on Google Maps: “Điểm bay dù lượn Dateh”) — about 180 km by road from Ho Chi Minh City (~130 km in a straight line), roughly 3.5–4 hours' drive via QL20. Launch 620 m. Flyable winds from ESE through S to WSW, best from S or SE; northerly winds blow from behind launch.",
+      season:
+        "General climate: the southern rainy season (roughly May–Nov) often brings afternoon thunderstorms, so fly in the morning; the dry season runs roughly Dec–Apr. A general pattern only — always check the daily forecast.",
+      community: "Forecast for the pilot community — Mebayluon does not operate this site.",
+    },
+  },
 };
 
 const fr: ThoiTietCopy = {
@@ -591,6 +623,17 @@ const fr: ThoiTietCopy = {
   mapToggleClose: "Masquer la carte des vents",
   disclaimer:
     "Prévisions données à titre indicatif. Le pilote décide sur place, la sécurité avant tout ; en cas de report pour météo, vous pouvez reprogrammer ou être remboursé.",
+  weekendTitle: "Ce week-end",
+  weekendNoWindow: "pas de bon créneau",
+  spotNotes: {
+    "da-teh": {
+      intro:
+        "Đạ Tẻh, Lâm Đồng (sur Google Maps : « Điểm bay dù lượn Dateh ») — à environ 180 km par la route de Hô Chi Minh-Ville (~130 km à vol d’oiseau), soit 3 h 30 à 4 h de route par la QL20. Décollage à 620 m. Vents favorables de l’ESE à l’OSO en passant par le S, idéalement S ou SE ; les vents du nord arrivent de dos.",
+      season:
+        "Climat général : la saison des pluies du Sud (environ mai–novembre) amène souvent des orages l’après-midi, mieux vaut voler le matin ; saison sèche environ décembre–avril. Simple tendance — consultez toujours la prévision du jour.",
+      community: "Prévision pour la communauté des pilotes — Mebayluon n’exploite pas ce site.",
+    },
+  },
 };
 
 const ru: ThoiTietCopy = {
@@ -735,6 +778,17 @@ const ru: ThoiTietCopy = {
   mapToggleClose: "Скрыть карту ветра",
   disclaimer:
     "Прогноз носит справочный характер. Решение принимает пилот на месте, безопасность превыше всего; при переносе из-за погоды возможен перенос даты или возврат денег.",
+  weekendTitle: "В эти выходные",
+  weekendNoWindow: "нет хорошего окна",
+  spotNotes: {
+    "da-teh": {
+      intro:
+        "Дате (Đạ Tẻh), провинция Ламдонг (в Google Maps: «Điểm bay dù lượn Dateh») — около 180 км по дороге от Хошимина (~130 км по прямой), примерно 3,5–4 часа езды по трассе QL20. Старт 620 м. Лётный ветер от ВЮВ через Ю до ЗЮЗ, лучше всего Ю или ЮВ; северный ветер дует в спину старту.",
+      season:
+        "Общий климат: в сезон дождей на юге (примерно май–ноябрь) после обеда часто бывают грозы — летайте утром; сухой сезон примерно декабрь–апрель. Это лишь общая закономерность — всегда смотрите прогноз на день.",
+      community: "Прогноз для сообщества пилотов — Mebayluon не управляет этой площадкой.",
+    },
+  },
 };
 
 const zh: ThoiTietCopy = {
@@ -878,6 +932,17 @@ const zh: ThoiTietCopy = {
   mapToggleOpen: "查看 Windy 风场图",
   mapToggleClose: "隐藏风场图",
   disclaimer: "预报仅供参考。是否飞行由飞行员在现场决定，安全第一；若因天气延期，可改期或退款。",
+  weekendTitle: "本周末",
+  weekendNoWindow: "无理想时段",
+  spotNotes: {
+    "da-teh": {
+      intro:
+        "林同省 Đạ Tẻh（谷歌地图：“Điểm bay dù lượn Dateh”）— 距胡志明市公路约 180 公里（直线约 130 公里），经 QL20 国道车程约 3.5–4 小时。起飞场海拔 620 米。适飞风向从东南东经南至西南西，最佳为南风或东南风；北面来风为背风。",
+      season:
+        "一般气候：南部雨季（约 5–11 月）午后常有雷暴，宜上午飞；旱季约 12 月至次年 4 月。仅为一般规律，每天仍需查看预报。",
+      community: "供飞行员社区参考的预报 — Mebayluon 不运营此飞行点。",
+    },
+  },
 };
 
 const hi: ThoiTietCopy = {
@@ -1022,6 +1087,17 @@ const hi: ThoiTietCopy = {
   mapToggleClose: "पवन मानचित्र छिपाएँ",
   disclaimer:
     "पूर्वानुमान केवल संकेत मात्र है। उड़ान का निर्णय पायलट मौके पर लेता है, सुरक्षा सर्वोपरि; मौसम के कारण स्थगित होने पर तिथि बदली जा सकती है या धन वापस मिलता है।",
+  weekendTitle: "इस सप्ताहांत",
+  weekendNoWindow: "कोई अच्छा समय नहीं",
+  spotNotes: {
+    "da-teh": {
+      intro:
+        "Đạ Tẻh, लाम डोंग (Google Maps पर: “Điểm bay dù lượn Dateh”) — हो ची मिन्ह सिटी से सड़क मार्ग से लगभग 180 किमी (सीधी दूरी ~130 किमी), QL20 से करीब 3.5–4 घंटे की ड्राइव। टेक-ऑफ़ 620 मी। उड़ान योग्य हवा पूर्व-दक्षिण-पूर्व से दक्षिण होते हुए पश्चिम-दक्षिण-पश्चिम तक, सबसे अच्छी दक्षिण या दक्षिण-पूर्व; उत्तरी हवा टेक-ऑफ़ के पीछे से आती है।",
+      season:
+        "सामान्य जलवायु: दक्षिण में बरसात के मौसम (लगभग मई–नवंबर) में दोपहर बाद अक्सर आंधी-तूफ़ान आते हैं, इसलिए सुबह उड़ें; सूखा मौसम लगभग दिसंबर–अप्रैल। यह केवल सामान्य प्रवृत्ति है — हर दिन का पूर्वानुमान ज़रूर देखें।",
+      community: "पायलट समुदाय के लिए पूर्वानुमान — Mebayluon इस स्थल का संचालन नहीं करता।",
+    },
+  },
 };
 
 const BANG: Record<ThoiTietLang, ThoiTietCopy> = { vi, en, fr, ru, zh, hi };

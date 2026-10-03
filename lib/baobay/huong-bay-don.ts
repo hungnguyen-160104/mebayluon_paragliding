@@ -14,6 +14,16 @@
  *  - BAY ĐƯỢC (không đẹp bằng): ĐÔNG, ĐÔNG NAM, TÂY NAM — với ĐÔNG / ĐÔNG NAM
  *    thermal không lên bãi cất mà bị đẩy ra bãi hạ.
  *
+ * ĐẠ TẺH, Lâm Đồng (cất 620 m — chủ 03/10/2026): "gió tốt từ ĐÔNG ĐÔNG NAM tới
+ * TÂY TÂY NAM, đẹp nhất gió NAM hoặc ĐÔNG NAM". Chủ chỉ cho hai mốc (cung tốt và
+ * hai hướng đẹp nhất), nên bậc giữa xếp theo SỐ NẤC 16 hướng cách cung đẹp nhất:
+ *  - RẤT ĐẸP: NAM, ĐÔNG NAM, và NAM ĐÔNG NAM — nằm GIỮA hai hướng đẹp nhất.
+ *  - ĐẸP (lệch một nấc): ĐÔNG ĐÔNG NAM, NAM TÂY NAM.
+ *  - KHÁ ĐẸP (lệch hai nấc): TÂY NAM.
+ *  - BAY ĐƯỢC (lệch ba nấc, mép cung): TÂY TÂY NAM.
+ *  - ĐÔNG, TÂY (và ĐĐB, TTB): ngoài cung chủ cho → ngoài hướng bãi.
+ *  - Phía BẮC (TB → ĐB) là GIÓ SAU.
+ *
  * Hướng chủ không nhắc tới coi là NGOÀI HƯỚNG BÃI (không khuyến khích); phía
  * sau bãi ghi rõ GIÓ SAU. Sức gió lý tưởng 3–4 m/s (chủ nói cho Đồi Bù; Viên
  * Nam chưa có số riêng nên dùng cùng thang), gió chính trên 6 m/s là gió xiết.
@@ -56,6 +66,13 @@ const LUAT: Record<string, LuatBai> = {
     },
     macDinh: 5,
     /** Viên Nam quay về phía nam: gió từ phía bắc là gió sau. */
+    gioSau: [14, 15, 0, 1, 2],
+  },
+  "da-teh": {
+    hang: { 6: 1, 7: 1, 8: 1, 5: 2, 9: 2, 10: 3, 11: 4 },
+    ghiChu: {},
+    macDinh: 5,
+    /** Đạ Tẻh quay về phía nam: gió từ phía bắc là gió sau. */
     gioSau: [14, 15, 0, 1, 2],
   },
 };

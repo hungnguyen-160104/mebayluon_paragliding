@@ -21,6 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "thời tiết bay dù lượn",
       "thời tiết Khau Phạ",
       "thời tiết Sa Pa bay dù lượn",
+      "thời tiết bay dù lượn Đạ Tẻh",
       "gió bay dù lượn",
       "paragliding weather Vietnam",
     ],

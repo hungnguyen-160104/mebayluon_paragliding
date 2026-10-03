@@ -50,6 +50,12 @@ export type DiemThoiTiet = {
    * tiết giấu nút "Xem điểm bay" để khỏi dẫn khách vào trang 404.
    */
   khongCoTrang?: true;
+  /**
+   * Thẻ thời tiết hiện khối "CUỐI TUẦN NÀY" (T7 + CN) ngay đầu thẻ — cho điểm
+   * mà phi công chủ yếu đi xa tới bay vào cuối tuần (Đạ Tẻh: phi công Sài Gòn).
+   * Bật cho điểm khác thì chỉ cần thêm cờ này.
+   */
+  cuoiTuan?: true;
 };
 
 export const DIEM_THOI_TIET: DiemThoiTiet[] = [
@@ -139,6 +145,39 @@ export const DIEM_THOI_TIET: DiemThoiTiet[] = [
     altHa: 50,
     luatHuong: { tot: [112, 247] },
     khongCoTrang: true,
+  },
+  /**
+   * ĐẠ TẺH (Lâm Đồng) — Google Maps ghi "Điểm bay dù lượn Dateh". Thêm 03/10/2026
+   * cho phi công miền Nam / Sài Gòn. MEBAYLUON KHÔNG VẬN HÀNH điểm này: chỉ là
+   * dự báo cho cộng đồng phi công — không trang /spots, không đặt bay, không giá.
+   *
+   * Số chủ: bãi cất 11.6017445, 107.5521629, cao 620 m.
+   * Gió TỐT: từ ĐÔNG ĐÔNG NAM qua NAM tới TÂY TÂY NAM; ĐẸP NHẤT gió NAM hoặc ĐÔNG NAM.
+   *  · `tot` [101, 259]: lấy MÉP ngoài của ô ĐĐN (112,5° − 11,25°) tới mép ngoài
+   *    ô TTN (247,5° + 11,25°) — cùng cách khai cung với Viên Nam [68, 292].
+   *  · `xau` [304, 56]: phía BẮC (TB → BTB → B → BĐB → ĐB) là GIÓ SAU — sau lưng bãi.
+   *  · Đông, Tây (và ĐĐB, TTB) nằm ngoài cung tốt nhưng chưa phải gió sau: không
+   *    khai `xau`, máy coi là GIÓ NGANG — không nới ngưỡng gió, chuyên gia trừ điểm hướng.
+   *
+   * altHa 160 m là SỐ ƯỚC TÍNH (chủ chưa cho): đáy thung lũng phía nam / đông nam
+   * bãi cất, tra Open-Meteo elevation 03/10/2026 — cách 3–4 km về phía N/ĐN/NĐN/NTN
+   * ra 150–195 m (150, 151, 158, 160, 195). Lấy 160 cho khỏi khai chênh cao quá tay;
+   * chủ có số thật thì sửa ở đây.
+   *
+   * Ngưỡng gió dùng mặc định chung (lý tưởng 3–4 m/s; GIÓ XIẾT = gió chính > 6 m/s
+   * ở tầng bãi cất, không phải giật).
+   */
+  {
+    slug: "da-teh",
+    ten: "Đạ Tẻh",
+    tinh: "Lâm Đồng",
+    lat: 11.6017445,
+    lon: 107.5521629,
+    alt: 620,
+    altHa: 160,
+    luatHuong: { tot: [101, 259], xau: [304, 56] },
+    khongCoTrang: true,
+    cuoiTuan: true,
   },
 ];
 

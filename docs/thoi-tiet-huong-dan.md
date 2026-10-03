@@ -10,7 +10,7 @@
 Hệ thời tiết khoá dữ liệu theo `lib/baobay/khoa-thoi-tiet.ts`: mã sổ nội bộ
 (`khau-pha`, `ha-noi`, `sapa`) là chính nó; slug trang khách có sổ (`doi-bu` →
 `ha-noi`, `muong-hoa-sapa` → `sapa`) dùng sổ ấy; slug **chỉ có trên trang
-khách** (`vien-nam`, `son-tra`, `ha-giang`, `tram-tau`, `dai-tue`) dùng chính
+khách** (`vien-nam`, `son-tra`, `ha-giang`, `tram-tau`, `dai-tue`, `da-teh`) dùng chính
 slug làm khoá — có sổ kinh nghiệm, nhận định chuyên gia và ⚙ riêng. Trước đây
 slug lạ bị quy về Khau Phạ nên nhận định "nghỉ bay do mưa" của Khau Phạ hiện
 lên **mọi** điểm trên web (chủ báo 17/09).
@@ -666,6 +666,7 @@ nghịch nhiệt có nằm trong đường bay không. Gọi "chênh cao" chứ 
 | Phình Hồ – Trạm Tấu | 1.050 m | 400 m | 650 m |
 | Sơn Trà (Đà Nẵng) | 600 m | 0 m | 600 m |
 | Đại Huệ – Chùa Đại Tuệ (Nghệ An) | 350 m | 50 m | 300 m |
+| Đạ Tẻh (Lâm Đồng) | 620 m | ~160 m (**ước tính**) | ~460 m |
 
 **Đồi Bù KHÔNG phải 833 m**: 833 là đỉnh núi (tên dân gian "núi 833"), còn chỗ
 cất cánh nằm ở ~650 m (chủ nhắc 11/09 — trước ghi nhầm 833). Viên Nam có **hai**
@@ -867,6 +868,15 @@ Nam** (112°–247°). Chủ nói **Bắc, Đông Bắc, Tây Bắc "cũng bay �
 cất 18°45'22.5"N 105°32'08.4"E, hạ 18°44'26.9"N 105°31'26.8"E. Điểm này chưa
 có trang /spots nên thẻ thời tiết giấu nút "Xem điểm bay".
 
+**Đạ Tẻh** (Lâm Đồng — thêm 03/10/2026 cho phi công miền Nam / Sài Gòn; Google
+Maps "Điểm bay dù lượn Dateh"; Mebayluon **không vận hành**, chỉ dự báo): bãi cất
+11.6017445, 107.5521629 (620 m). Tốt với gió **Đông Đông Nam → Nam → Tây Tây Nam**
+(cung 101°→259°), đẹp nhất **Nam, Đông Nam**; phía **Bắc (TB → ĐB) là GIÓ SAU**
+(304°→56°); Đông, Tây để "thường" (gió ngang). Bãi hạ **chưa có số chủ** — 160 m là
+ước tính đáy thung lũng phía nam/đông nam theo Open-Meteo elevation. Thẻ có khối
+**"Cuối tuần này"** (cờ `cuoiTuan`) và ghi chú riêng (`spotNotes` trong
+`lib/i18n/thoi-tiet.ts`, đủ 6 ngôn ngữ).
+
 **Quản Bạ** (Hà Giang — số chủ 17/09): bãi cất 23.060488, 105.019054 (950 m),
 bãi hạ 23°03'40.5"N 105°02'19.9"E (450 m). Gió **Tây, Tây Bắc, Tây Nam là GIÓ
 SAU**: dự báo mạnh hơn **3 m/s** là không bay — khai bằng trần tốc độ theo
@@ -908,7 +918,7 @@ khung bay rồi viết ra một trong ba câu:
 - **Khau Phạ, Đồi Bù (Hà Nội), Sa Pa**: sửa ngay trên web, `/baocao/thoi-tiet`
   → nút **⚙ Toạ độ & ngưỡng gió**. Đây là toạ độ dùng cho **cả** trang nội bộ
   **lẫn** trang khách.
-- **Sơn Trà, Bắc Sum – Quản Bạ, Phình Hồ – Trạm Tấu, Viên Nam, Đại Huệ, Đà Lạt**: chưa
+- **Sơn Trà, Bắc Sum – Quản Bạ, Phình Hồ – Trạm Tấu, Viên Nam, Đại Huệ, Đạ Tẻh, Đà Lạt**: chưa
   có sổ nội bộ nên toạ độ nằm trong mã nguồn, tệp `lib/weather-spots.ts`.
 
 Lấy toạ độ: mở Google Maps, bấm giữ đúng chỗ cất cánh, chép hai số hiện ra.

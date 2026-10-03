@@ -329,6 +329,103 @@ function DaiNgay({
 }
 
 /**
+ * KHỐI "CUỐI TUẦN NÀY" — Thứ Bảy và Chủ Nhật sắp tới, đặt ngay đầu thẻ.
+ *
+ * Phi công Sài Gòn đi Đạ Tẻh vào cuối tuần (chủ 03/10/2026): câu họ hỏi là
+ * "T7, CN này có bay được không, khung nào", chứ không phải hôm nay. Khối này
+ * chỉ đọc lại số đã có của từng ngày (mức, điểm chuyên gia, khung đẹp, gió) —
+ * không chấm riêng. Bật bằng cờ `cuoiTuan` trong lib/weather-spots.ts.
+ *
+ * Hôm nay là T7 thì lấy T7 hôm nay + CN mai; hôm nay là CN thì chỉ còn CN.
+ */
+function ngayCuoiTuan(ngay: Ngay[]): Ngay[] {
+  const thu = (d: string) => new Date(`${d}T12:00:00+07:00`).getUTCDay();
+  const i = ngay.findIndex((n) => thu(n.ngay) === 6 || thu(n.ngay) === 0);
+  if (i < 0) return [];
+  const sau = ngay[i + 1];
+  return thu(ngay[i].ngay) === 6 && sau && thu(sau.ngay) === 0 ? [ngay[i], sau] : [ngay[i]];
+}
+
+function KhoiCuoiTuan({
+  ngay,
+  chon,
+  onChon,
+  t,
+  lang,
+}: {
+  ngay: Ngay[];
+  chon: string | null;
+  onChon: (d: string) => void;
+  t: ThoiTietCopy;
+  lang: string;
+}) {
+  const ds = ngayCuoiTuan(ngay);
+  if (!ds.length) return null;
+  const homNay = homNayVN();
+  return (
+    <div className="mb-2 rounded-xl border border-sky-200 bg-sky-50 p-2">
+      <div className="mb-1 text-[11px] font-black uppercase tracking-wide text-sky-900">🗓 {t.weekendTitle}</div>
+      <div className="grid grid-cols-2 gap-1.5">
+        {ds.map((n) => {
+          const huong = huongTroiCuaNgay(n);
+          /** Khung đẹp: ưu tiên khung 3 giờ của chuyên gia, thiếu thì khung giờ xanh; ngày đỏ thì nói thẳng không có. */
+          const khung = n.muc === "do" ? null : (n.chuyenGia?.khungTotNhat ?? n.khungDep);
+          return (
+            <button
+              key={n.ngay}
+              type="button"
+              onClick={() => onChon(n.ngay)}
+              title={moTaMuc(n.muc, t)}
+              className={
+                "rounded-lg border px-2 py-1.5 text-left text-xs leading-snug transition hover:brightness-95 " +
+                (chon === n.ngay ? "border-orange-500 bg-orange-200 text-orange-950 ring-2 ring-orange-500" : VIEN[n.muc])
+              }
+            >
+              <div className="flex items-center justify-between gap-1">
+                {/* Luôn ghi THỨ + ngày (không thay bằng "Hôm nay"): khối này là để thấy rõ T7 / CN. */}
+                <strong className="whitespace-nowrap" title={n.ngay === homNay ? t.today : undefined}>
+                  {nhanNgay(n.ngay, "", lang, t)}
+                </strong>
+                <span className="whitespace-nowrap text-sm font-black">
+                  {BIEU_TUONG_MUC[n.muc]}
+                  {n.chuyenGia ? (
+                    <span className="ml-1 text-xs">
+                      {n.chuyenGia.diem}
+                      <span className="font-bold opacity-60">/100</span>
+                    </span>
+                  ) : null}
+                </span>
+              </div>
+              <div className="mt-0.5 font-semibold">
+                {khung ? (
+                  <>
+                    {t.bestWindow} <span className="whitespace-nowrap font-black">{khung}</span>
+                  </>
+                ) : (
+                  <span className="opacity-80">{t.weekendNoWindow}</span>
+                )}
+              </div>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-1 text-[11px] opacity-90">
+                {huong !== null && (
+                  <span className="inline-flex items-center gap-0.5 font-bold uppercase" title={`${Math.round(huong)}°`}>
+                    <WindArrow deg={huong} className="!h-3.5 !w-3.5" />
+                    {huongTheoNgonNgu(huong, lang)}
+                  </span>
+                )}
+                <span className="whitespace-nowrap">
+                  {n.gioMax.toFixed(1)} {t.windUnit}
+                </span>
+                {n.xacSuatDongMax >= 20 && <span className="whitespace-nowrap">⚡{n.xacSuatDongMax}%</span>}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
  * KHỐI VỊ TRÍ: toạ độ bãi, độ cao, mặt trời mọc/lặn và độ dài ngày.
  *
  * Mọc/lặn LẤY THEO NGÀY ĐANG CHỌN chứ không phải một con số cố định: ở Khau Phạ
@@ -1218,6 +1315,15 @@ export function WeatherSpotCard({
   const thermal = ngayHien.thermal?.muc ?? thermalCuaNgay(ngayHien);
   /** Hướng gió trội của ngày — chủ 11/09: đây là thứ quan trọng nhất, phải đứng ngay trước tốc độ. */
   const huongNgay = huongTroiCuaNgay(ngayHien);
+  /** Bản khai của điểm (cờ cuối tuần, có trang /spots hay không) và ghi chú riêng theo ngôn ngữ. */
+  const khai = diemThoiTietTheoSlug(diem.slug);
+  const ghiChu = t.spotNotes[diem.slug];
+  /** Bấm lại đúng ngày đang mở = đóng; bấm ngày khác = mở ngày ấy và ĐÓNG thẻ kia. */
+  const chonNgay = (d: string) => {
+    const dong = chonHienTai === d;
+    setChon(dong ? null : d);
+    onMo?.(dong ? null : diem.slug);
+  };
 
   return (
     <>
@@ -1267,7 +1373,7 @@ export function WeatherSpotCard({
         </div>
         {/* Lối sang trang điểm bay — tô CAM cho nổi giữa thẻ toàn màu nhạt (chủ 11/09).
             Điểm chưa có trang (Đại Huệ) thì giấu nút, khỏi dẫn vào 404. */}
-        {!diemThoiTietTheoSlug(diem.slug)?.khongCoTrang && (
+        {!khai?.khongCoTrang && (
           <Link
             href={`/spots/${diem.slug}`}
             className="ml-auto rounded-lg bg-orange-500 px-2.5 py-1 text-xs font-bold text-white shadow-sm hover:bg-orange-600"
@@ -1276,6 +1382,16 @@ export function WeatherSpotCard({
           </Link>
         )}
       </div>
+
+      {/* Ghi chú riêng của điểm (Đạ Tẻh: ở đâu, cách Sài Gòn bao xa, hướng gió, mùa) — chữ nhỏ, ngay dưới tên. */}
+      {ghiChu && (
+        <div className="mb-2 space-y-1 text-[11px] leading-snug text-slate-600">
+          <p>{ghiChu.intro}</p>
+          <p>🌦 {ghiChu.season}</p>
+          <p className="italic text-slate-500">{ghiChu.community}</p>
+        </div>
+      )}
+      {khai?.cuoiTuan && <KhoiCuoiTuan ngay={du.ngay} chon={chonHienTai} onChon={chonNgay} t={t} lang={lang} />}
 
       {/**
        * DÒNG TÓM TẮT PHẢI NÓI RÕ CỦA NGÀY NÀO (chủ chốt 11/09).
@@ -1326,12 +1442,7 @@ export function WeatherSpotCard({
         nguong={du.nguong}
         ngay={du.ngay}
         chon={chonHienTai}
-        onChon={(d) => {
-          /** Bấm lại đúng ngày đang mở = đóng; bấm ngày khác = mở ngày ấy và ĐÓNG thẻ kia. */
-          const dong = chonHienTai === d;
-          setChon(dong ? null : d);
-          onMo?.(dong ? null : diem.slug);
-        }}
+        onChon={chonNgay}
         t={t}
         lang={lang}
       />
