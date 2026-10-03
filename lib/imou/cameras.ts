@@ -136,6 +136,14 @@ export const WEBCAM_SITES: Record<WebcamSite, readonly CamId[]> = {
   "khau-pha": ["khau-pha", "khau-pha-2"],
   "vien-nam": ["vien-nam", "vien-nam-bhc"],
 };
+/**
+ * Điểm có một máy HAI MẮT (03/10/2026): hai camera hiện trên – dưới với MỘT
+ * thanh thời gian chung (components/baobay/DualCameraGallery). [mắt 1, mắt 2].
+ */
+export const DUAL_LENS: Partial<Record<WebcamSite, readonly [CamId, CamId]>> = {
+  "khau-pha": ["khau-pha", "khau-pha-2"],
+};
+
 /** Trang /webcam của một camera (camera phụ nằm chung trang với điểm của nó) */
 export function webcamSiteOf(cam: CamId): WebcamSite {
   return (Object.keys(WEBCAM_SITES) as WebcamSite[]).find((s) => WEBCAM_SITES[s].includes(cam)) ?? "vien-nam";

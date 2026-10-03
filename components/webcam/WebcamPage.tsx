@@ -6,9 +6,10 @@
  */
 import CameraGallery from "@/components/baobay/CameraGallery";
 import { OptionalCameraGallery } from "@/components/baobay/CameraSwitcher";
+import DualCameraGallery from "@/components/baobay/DualCameraGallery";
 import Link from "@/components/locale-link";
 import { Navigation } from "@/components/navigation";
-import { CAMERAS, WEBCAM_SITES, type CamLang, type WebcamSite } from "@/lib/imou/cameras";
+import { CAMERAS, DUAL_LENS, WEBCAM_SITES, type CamLang, type WebcamSite } from "@/lib/imou/cameras";
 import { WEBCAM_SPOT_PATH, type WebcamCopy } from "@/lib/i18n/webcam";
 
 const linkCls =
@@ -33,19 +34,26 @@ function CamBlock({ cam, t, heading, lang }: { cam: WebcamSite; t: WebcamCopy; h
       </H>
       <p className="text-[15px] leading-relaxed text-white/80">{c.intro}</p>
       {/* Điểm có nhiều camera (Viên Nam: bãi cất rồi bãi hạ cánh) — mỗi khung một tiêu đề nhỏ */}
-      {camIds.map((id) => {
-        const title =
-          camIds.length > 1 ? <h3 className="mt-4 text-base font-semibold text-white/90">📷 {CAMERAS[id].name[lang]}</h3> : null;
-        // Mắt phụ (hideWhenEmpty) chưa có ảnh nào thì ẩn hẳn — khung + tiêu đề
-        return CAMERAS[id].hideWhenEmpty ? (
-          <OptionalCameraGallery key={id} cam={id} title={title} />
-        ) : (
-          <div key={id}>
-            {title}
-            <CameraGallery cam={id} />
-          </div>
-        );
-      })}
+      {DUAL_LENS[cam] ? (
+        // Máy hai mắt (Khau Phạ): hai ảnh trên – dưới, MỘT thanh thời gian chung
+        <DualCameraGallery a={DUAL_LENS[cam][0]} b={DUAL_LENS[cam][1]} />
+      ) : (
+        camIds.map((id) => {
+          const title =
+            camIds.length > 1 ? (
+              <h3 className="mt-4 text-base font-semibold text-white/90">📷 {CAMERAS[id].name[lang]}</h3>
+            ) : null;
+          // Mắt phụ (hideWhenEmpty) chưa có ảnh nào thì ẩn hẳn — khung + tiêu đề
+          return CAMERAS[id].hideWhenEmpty ? (
+            <OptionalCameraGallery key={id} cam={id} title={title} />
+          ) : (
+            <div key={id}>
+              {title}
+              <CameraGallery cam={id} />
+            </div>
+          );
+        })
+      )}
       <div className="flex flex-wrap gap-2 pt-1">
         <Link href={WEBCAM_SPOT_PATH[cam]} className={linkCls}>
           {t.spotLink(c.spotName)}
