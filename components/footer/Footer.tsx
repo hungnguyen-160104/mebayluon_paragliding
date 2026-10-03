@@ -110,6 +110,8 @@ type FooterDict = {
   pilotEvent: string;
   /** Link /baobay cho phi công bay đơn — thay chỗ /muavang ở footer (chủ 30/09/2026). */
   pilotReport: string;
+  /** Link /thoi-tiet-bay, cùng kiểu chữ, đứng cạnh "Báo bay cho phi công" (chủ 03/10/2026). */
+  weatherAll: string;
   /** Link trang webcam bãi cất, ngay trên "Báo bay cho phi công" (chủ 03/10/2026). Địa danh giữ nguyên. */
   webcamKhauPha: string;
   webcamVienNam: string;
@@ -158,6 +160,7 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "Theo dõi chúng tôi",
     pilotEvent: "Đăng ký Mùa vàng 2026",
     pilotReport: "Báo bay cho phi công",
+    weatherAll: "Xem thời tiết các điểm bay",
     webcamKhauPha: "Webcam Khau Phạ",
     webcamVienNam: "Webcam Viên Nam 850",
     spotsInfo: "Thông tin điểm bay",
@@ -192,6 +195,7 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "Follow Us",
     pilotEvent: "Golden Season 2026 registration",
     pilotReport: "Pilot flight register",
+    weatherAll: "Flying-site weather",
     webcamKhauPha: "Webcam Khau Phạ",
     webcamVienNam: "Webcam Viên Nam 850",
     spotsInfo: "Flying Spots Info",
@@ -226,6 +230,7 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "Suivez-nous",
     pilotEvent: "Inscription Mùa Vàng 2026",
     pilotReport: "Déclaration de vol (pilotes)",
+    weatherAll: "Météo des sites de vol",
     webcamKhauPha: "Webcam Khau Phạ",
     webcamVienNam: "Webcam Viên Nam 850",
     spotsInfo: "Infos sites de vol",
@@ -260,6 +265,7 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "Подписывайтесь",
     pilotEvent: "Регистрация Mùa Vàng 2026",
     pilotReport: "Регистрация полёта (пилоты)",
+    weatherAll: "Погода на площадках",
     webcamKhauPha: "Веб-камера Khau Phạ",
     webcamVienNam: "Веб-камера Viên Nam 850",
     spotsInfo: "О местах полётов",
@@ -294,6 +300,7 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "关注我们",
     pilotEvent: "Mùa Vàng 2026 报名",
     pilotReport: "飞行员飞行登记",
+    weatherAll: "各飞行点天气",
     webcamKhauPha: "Khau Phạ 摄像头",
     webcamVienNam: "Viên Nam 850 摄像头",
     spotsInfo: "飞行点信息",
@@ -327,6 +334,7 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "हमें फ़ॉलो करें",
     pilotEvent: "Mùa Vàng 2026 पंजीकरण",
     pilotReport: "पायलट उड़ान पंजीकरण",
+    weatherAll: "उड़ान स्थलों का मौसम",
     webcamKhauPha: "Khau Phạ वेबकैम",
     webcamVienNam: "Viên Nam 850 वेबकैम",
     spotsInfo: "उड़ान स्थल जानकारी",
@@ -743,12 +751,20 @@ export default function Footer() {
                 >
                   📷 {t.webcamVienNam}
                 </Link>
-                <Link
-                  href={makeLocalizedHref("/baobay", pathname)}
-                  className="inline-block text-[15px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
-                >
-                  {t.pilotReport}
-                </Link>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+                  <Link
+                    href={makeLocalizedHref("/baobay", pathname)}
+                    className="inline-block text-[15px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
+                  >
+                    {t.pilotReport}
+                  </Link>
+                  <Link
+                    href={makeLocalizedHref("/thoi-tiet-bay", pathname)}
+                    className="inline-block text-[15px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
+                  >
+                    {t.weatherAll}
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
