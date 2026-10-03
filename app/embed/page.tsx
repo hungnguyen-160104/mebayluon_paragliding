@@ -9,10 +9,10 @@ import EmbedGuide from "@/components/embed/EmbedGuide";
 import { SITE_URL } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Nhúng camera bãi cất Viên Nam / Embed the launch camera — Mebayluon",
-  description: "Hướng dẫn nhúng miễn phí camera bãi cất cánh dù lượn Viên Nam vào website của bạn.",
+  title: "Nhúng camera bãi cất Viên Nam, Khau Phạ / Embed the launch cameras — Mebayluon",
+  description: "Hướng dẫn nhúng miễn phí camera bãi cất cánh dù lượn Viên Nam và Khau Phạ vào website của bạn.",
   robots: { index: false, follow: true, googleBot: { index: false, follow: true } },
-  alternates: { canonical: "/baobay" },
+  alternates: { canonical: "/webcam" },
 };
 
 export default async function EmbedGuidePage({

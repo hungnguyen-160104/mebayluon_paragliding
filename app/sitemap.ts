@@ -125,6 +125,9 @@ const STATIC_CONTENT_UPDATED = new Date("2026-08-10T00:00:00Z");
 /** Ngày viết các trang chính sách — khớp POLICY_UPDATED_AT (lib/policies/shared.ts). */
 const POLICIES_UPDATED = new Date("2026-09-30T00:00:00Z");
 
+/** Ngày ra trang webcam công khai (/webcam/*). */
+const WEBCAM_PAGES_ADDED = new Date("2026-10-03T00:00:00Z");
+
 /** Số sản phẩm đã đăng theo danh mục cửa hàng; null nếu DB lỗi. */
 async function loadStoreCategoryCounts(): Promise<Record<string, number> | null> {
   try {
@@ -229,6 +232,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
       alternates: alts(`${BASE}/thoi-tiet-bay`),
     },
+    /**
+     * Webcam bãi cất (03/10/2026) — ảnh đổi mỗi 1–3 phút nhưng NỘI DUNG chữ của
+     * trang cố định, nên lastmod là mốc lúc ra trang chứ không phải giờ build.
+     */
+    ...["/webcam", "/webcam/khau-pha", "/webcam/vien-nam"].map((path) => ({
+      url: `${BASE}${path}`,
+      lastModified: WEBCAM_PAGES_ADDED,
+      changeFrequency: "daily" as const,
+      priority: path === "/webcam" ? 0.6 : 0.7,
+      alternates: alts(`${BASE}${path}`),
+    })),
     {
       url: `${BASE}/pre-notice`,
       lastModified: STATIC_CONTENT_UPDATED,

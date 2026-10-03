@@ -1,8 +1,9 @@
 // app/api/cron/camera-snap/route.ts
 import { NextResponse } from "next/server";
 
-import { CAMERAS, inCamActiveHours, isCamId, shouldSnapNow, vnHHMM, type CamId } from "@/lib/imou/cameras";
-import { ImouError, imouConfigured, snapWithAutoBind, waitSnapReady } from "@/lib/imou/client";
+import { CAM_IDS, CAMERAS, inCamActiveHours, isCamId, shouldSnapNow, vnHHMM, type CamId } from "@/lib/imou/cameras";
+import { ImouError, checkDeviceBind, deviceOnline, imouConfigured, snapWithAutoBind, waitSnapReady } from "@/lib/imou/client";
+import { camBindCode, camChannel, camSerial } from "@/lib/imou/defaults.server";
 import { cleanupLegacySnaps, ensureSnapIndex, pruneSnaps, saveSnap } from "@/lib/imou/snaps";
 
 export const runtime = "nodejs";
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * CHỤP ẢNH CAMERA BÃI CAO VIÊN NAM — 05:30–19:30 giờ VN (chủ 01/10; trước 08:00–18:00) (chủ 30/09/2026): 1 ảnh/phút
+ * CHỤP ẢNH CAMERA BÃI CẤT (Viên Nam; Khau Phạ từ 03/10/2026) — 05:30–19:30 giờ VN (chủ 01/10; trước 08:00–18:00) (chủ 30/09/2026): 1 ảnh/phút
  * 10:00–15:00, 3 phút/ảnh 08–10h và 15–18h (chủ 01/10).
  *
  * Ai gọi: Vercel cron trong vercel.json ("* 0-12,22-23 * * *" = mỗi phút 05–19h59 VN, route tự bỏ phút ngoài 05:30–19:30; gói
@@ -26,7 +27,15 @@ export const maxDuration = 60;
  * Imou sống 7 ngày, trình duyệt tải thẳng từ Imou nên web không đầy dung lượng
  * và không tốn băng thông ảnh. Còn bản ghi kiểu cũ (ảnh Cloudinary) thì dọn một lần.
  *
- * `?cam=vien-nam` (mặc định) chọn camera; `?force=1` (chỉ khi có key) chụp cả ngoài giờ để thử.
+ * NHIỀU CAMERA (03/10/2026, thêm bãi cất Khau Phạ): không có `?cam` thì chụp
+ * MỌI camera trong CAMERAS song song (Promise.allSettled) — camera này hỏng/mất
+ * 4G không chặn camera kia, mỗi máy có hạn giờ riêng dưới maxDuration. Trả kết
+ * quả theo từng camera trong `results`.
+ *
+ * `?cam=<id>` chỉ chụp một camera (trả như cũ); `?force=1` (chỉ khi có key) chụp
+ * cả ngoài giờ để thử; `?info=1` (chỉ khi có key) KHÔNG chụp, chỉ hỏi Imou trạng
+ * thái gắn + danh sách kênh của từng camera (deviceOnline) — để biết máy hai ống
+ * kính dùng kênh "0" hay "1".
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -44,10 +53,16 @@ export async function GET(req: Request) {
     : req.headers.get("x-vercel-cron-schedule") !== null;
   if (!laCron && !goiTay) return NextResponse.json({ message: "Không có quyền" }, { status: 401 });
 
-  const camParam = url.searchParams.get("cam") || "vien-nam";
-  if (!isCamId(camParam)) return NextResponse.json({ message: "Không có camera này" }, { status: 404 });
-  const cam: CamId = camParam;
-  const cfg = CAMERAS[cam];
+  const camParam = url.searchParams.get("cam");
+  if (camParam && !isCamId(camParam)) return NextResponse.json({ message: "Không có camera này" }, { status: 404 });
+  const cams: CamId[] = camParam ? [camParam as CamId] : CAM_IDS;
+
+  // Chỉ hỏi thông tin thiết bị (kênh), không chụp — chỉ chủ gọi tay
+  if (goiTay && url.searchParams.get("info") === "1") {
+    if (!imouConfigured()) return NextResponse.json({ ok: false, skip: "chưa khai IMOU_APP_ID / IMOU_APP_SECRET" }, { status: 503 });
+    const results = await Promise.all(cams.map((cam) => withBudget(deviceInfo(cam), cam)));
+    return NextResponse.json({ ok: true, results });
+  }
 
   const now = new Date();
   const force = goiTay && url.searchParams.get("force") === "1";
@@ -59,14 +74,58 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, skip: "ngoài giờ cao điểm: 3 phút/lần", vn: vnHHMM(now) });
   }
 
-  const sn = (process.env[cfg.snEnv] || "").trim();
+  // Một camera (?cam=): giữ nguyên dạng trả lời + mã HTTP như trước
+  if (camParam) {
+    const r = await withBudget(snapOne(cams[0], now), cams[0]);
+    return NextResponse.json(r, { status: r.status });
+  }
+
+  const settled = await Promise.allSettled(cams.map((cam) => withBudget(snapOne(cam, now), cam)));
+  const results = settled.map((s, i) =>
+    s.status === "fulfilled"
+      ? s.value
+      : { ok: false, cam: cams[i], code: "ERR", message: String(s.reason), status: 502 },
+  );
+  // Lịch chỉ báo lỗi khi KHÔNG camera nào chụp được vì lỗi thật — camera chưa
+  // cấu hình / mất 4G (DV1007) không làm đỏ lịch mỗi phút
+  const anyOk = results.some((r) => r.ok);
+  const hardFail = results.some((r) => !r.ok && r.status >= 500 && r.status !== 503);
+  const status = anyOk || !hardFail ? 200 : 502;
+  return NextResponse.json({ ok: anyOk, vn: vnHHMM(now), results }, { status });
+}
+
+type SnapResult = { ok: boolean; cam: CamId; status: number; [k: string]: unknown };
+
+/** Mỗi camera tối đa 55 giây — dưới maxDuration 60, để kịp trả kết quả các máy khác. */
+const CAM_BUDGET_MS = 55_000;
+
+function withBudget<T extends { ok: boolean }>(p: Promise<T>, cam: CamId): Promise<T | SnapResult> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<SnapResult>((resolve) => {
+    timer = setTimeout(
+      () => resolve({ ok: false, cam, code: "TIMEOUT", message: `Quá ${CAM_BUDGET_MS / 1000}s`, status: 504 }),
+      CAM_BUDGET_MS,
+    );
+  });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+}
+
+/** Chụp một camera → ghi link vào MongoDB → dọn bản ghi cũ. Không bao giờ ném lỗi. */
+async function snapOne(cam: CamId, now: Date): Promise<SnapResult> {
+  const cfg = CAMERAS[cam];
+  const sn = camSerial(cam);
   if (!imouConfigured() || !sn) {
-    return NextResponse.json({ ok: false, skip: "camera chưa cấu hình" }, { status: 503 });
+    return {
+      ok: false,
+      cam,
+      skip: !imouConfigured() ? "camera chưa cấu hình (thiếu IMOU_APP_ID / IMOU_APP_SECRET)" : `camera chưa cấu hình (thiếu ${cfg.snEnv})`,
+      status: 503,
+    };
   }
 
   const t0 = Date.now();
   try {
-    const { url: snapUrl, bound } = await snapWithAutoBind(sn, cfg.channelId, (process.env[cfg.codeEnv] || "").trim());
+    const { url: snapUrl, bound } = await snapWithAutoBind(sn, camChannel(cam), camBindCode(cam));
     const ready = await waitSnapReady(snapUrl);
     const shot = await saveSnap(cam, snapUrl, now);
     await ensureSnapIndex();
@@ -79,7 +138,7 @@ export async function GET(req: Request) {
       console.warn("[camera-snap] dọn ảnh Cloudinary kiểu cũ lỗi:", e instanceof Error ? e.message : e);
       return 0;
     });
-    return NextResponse.json({
+    return {
       ok: true,
       cam,
       vn: vnHHMM(now),
@@ -89,13 +148,38 @@ export async function GET(req: Request) {
       pruned,
       ...(legacyCleaned ? { legacyCleaned } : {}),
       ms: Date.now() - t0,
-    });
+      status: 200,
+    };
   } catch (err) {
     const code = err instanceof ImouError ? err.code : "ERR";
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("GET /api/cron/camera-snap error:", msg);
+    let msg = err instanceof Error ? err.message : String(err);
+    // Chưa gắn vào tài khoản dev mà chưa có mã an toàn → nói rõ phải khai biến nào
+    if (code === "NOCODE") msg = `Camera chưa gắn vào tài khoản dev Imou — cần khai ${cfg.codeEnv} trên Vercel`;
+    console.error(`GET /api/cron/camera-snap [${cam}] error:`, msg);
     // DV1007 = camera mất mạng (4G yếu) — báo 200 để lịch không đánh dấu lỗi liên tục
-    const status = code === "DV1007" ? 200 : 502;
-    return NextResponse.json({ ok: false, cam, code, message: msg, ms: Date.now() - t0 }, { status });
+    const status = code === "DV1007" ? 200 : code === "NOCODE" ? 503 : 502;
+    return { ok: false, cam, code, message: msg, ms: Date.now() - t0, status };
   }
+}
+
+/** Trạng thái gắn + danh sách kênh của một camera (deviceOnline). Không ném lỗi. */
+async function deviceInfo(cam: CamId): Promise<SnapResult> {
+  const sn = camSerial(cam);
+  if (!sn) return { ok: false, cam, skip: `thiếu ${CAMERAS[cam].snEnv}`, status: 503 };
+  const out: SnapResult = { ok: true, cam, deviceId: sn, channelInUse: camChannel(cam), status: 200 };
+  try {
+    out.bind = await checkDeviceBind(sn);
+  } catch (e) {
+    out.ok = false;
+    out.bindError = e instanceof Error ? e.message : String(e);
+  }
+  try {
+    const d = await deviceOnline(sn);
+    out.onLine = d.onLine;
+    out.channels = d.channels ?? [];
+  } catch (e) {
+    out.ok = false;
+    out.channelsError = e instanceof Error ? e.message : String(e);
+  }
+  return out;
 }

@@ -47,7 +47,6 @@ const TX = {
   slider: { vi: "Chọn giờ ảnh (60 phút gần nhất)", en: "Pick photo time (last 60 min)" },
   latest: { vi: "Về ảnh mới nhất", en: "Back to latest" },
   count: { vi: "ảnh / 60 phút", en: "photos / 60 min" },
-  source: { vi: "Camera bãi cất cánh Viên Nam — Mebayluon.com", en: "Vien Nam launch camera — Mebayluon.com" },
 } as const;
 
 function agoText(takenAt: string, now: number, lang: EmbedLang): string {
@@ -320,7 +319,7 @@ export default function CameraEmbed({ cam, lang, theme }: { cam: CamId; lang: Em
       {/* Dòng nguồn cố định — xin đối tác giữ nguyên */}
       <div className={`border-t px-3 py-1.5 text-center text-xs ${T.footer}`}>
         <a href={EMBED_SOURCE_URL} target="_blank" rel="noopener" className={`font-semibold hover:underline ${T.link}`}>
-          📷 {TX.source[lang]}
+          📷 {cfg.credit[lang]}
         </a>
       </div>
     </div>

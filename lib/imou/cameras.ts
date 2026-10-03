@@ -3,7 +3,8 @@
  * DANH SÁCH CAMERA BÃI CẤT (chủ 30/09/2026) — dùng chung cho máy chủ lẫn trình
  * duyệt, nên ở đây TUYỆT ĐỐI không có bí mật: chỉ tên biến môi trường, khung giờ chụp.
  *
- * Camera Imou (AOV PT, 4G) ở bãi cất cánh cao Viên Nam chụp 05:30–19:30 giờ Việt
+ * Camera Imou ở bãi cất cánh cao Viên Nam (AOV PT, 4G), bãi hạ cánh Viên Nam
+ * (AOV PT) và bãi cất Khau Phạ (Cruiser Dual 2C 4G) — hai máy sau thêm 03/10/2026 — chụp 05:30–19:30 giờ Việt
  * Nam (nhịp xem shouldSnapNow); trang /baobay hiện ảnh mới nhất + 60 phút gần
  * nhất. Thêm camera mới = thêm một mục vào CAMERAS, không phải sửa route.
  *
@@ -12,29 +13,103 @@
  * thẳng từ máy chủ Imou, Vercel/Cloudinary không chứa và không chuyển byte ảnh nào.
  */
 
-export type CamId = "vien-nam";
+export type CamId = "vien-nam" | "vien-nam-bhc" | "khau-pha";
+
+/** Sáu ngôn ngữ của site — tên camera hiện trên trang /webcam theo ngôn ngữ URL */
+export type CamLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
 export type CamConfig = {
   id: CamId;
   /** Tên hiện trên trang */
-  name: { vi: string; en: string };
+  name: Record<CamLang, string>;
+  /** Dòng nguồn cuối khung nhúng iframe (/embed/camera/<cam>) */
+  credit: { vi: string; en: string };
   /** Biến môi trường chứa số serial (deviceId) của camera */
   snEnv: string;
-  /** Biến môi trường chứa mã an toàn 6 số dán dưới đáy máy — chỉ dùng khi bindDevice */
+  /** Biến môi trường chứa mã an toàn dán dưới đáy máy — chỉ dùng khi bindDevice */
   codeEnv: string;
-  /** Kênh của camera — máy một ống kính luôn là "0" */
+  /** Kênh mặc định của camera — máy một ống kính luôn là "0" */
   channelId: string;
+  /** Biến môi trường (tuỳ chọn) ghi đè kênh — máy hai ống kính chọn "0" hay "1" mà không phải sửa mã */
+  channelEnv?: string;
 };
 
 export const CAMERAS: Record<CamId, CamConfig> = {
   "vien-nam": {
     id: "vien-nam",
-    name: { vi: "Camera bãi cao Viên Nam", en: "Vien Nam top launch camera" },
+    // Đổi tên hiển thị 03/10/2026 (trước: "Camera bãi cao Viên Nam"); id giữ nguyên
+    // để dữ liệu camera_snaps và mã nhúng của đối tác vẫn chạy
+    name: {
+      vi: "Camera bãi cất Viên Nam 850",
+      en: "Vien Nam 850 m launch camera",
+      fr: "Caméra du décollage de Viên Nam (850 m)",
+      ru: "Камера старта Viên Nam (850 м)",
+      zh: "Viên Nam 850 米起飞场摄像头",
+      hi: "Viên Nam 850 मी टेक-ऑफ़ कैमरा",
+    },
+    credit: { vi: "Camera bãi cất cánh Viên Nam — Mebayluon.com", en: "Vien Nam launch camera — Mebayluon.com" },
     snEnv: "IMOU_CAM_VIENNAM_SN",
     codeEnv: "IMOU_CAM_VIENNAM_CODE",
     channelId: "0",
   },
+  /**
+   * Bãi HẠ CÁNH Viên Nam (chủ 03/10/2026): Imou AOV PT một ống kính (cùng đời
+   * máy bãi cất) → kênh "0". Tên trong app "Viên Nam BHC". Serial mặc định ở
+   * lib/imou/defaults.server.ts; mã an toàn chỉ ở env IMOU_CAM_VIENNAM_BHC_CODE.
+   */
+  "vien-nam-bhc": {
+    id: "vien-nam-bhc",
+    name: {
+      vi: "Camera bãi hạ cánh Viên Nam",
+      en: "Vien Nam landing field camera",
+      fr: "Caméra de l'atterrissage de Viên Nam",
+      ru: "Камера посадочной площадки Viên Nam",
+      zh: "Viên Nam 降落场摄像头",
+      hi: "Viên Nam लैंडिंग फ़ील्ड कैमरा",
+    },
+    credit: { vi: "Camera bãi hạ cánh Viên Nam — Mebayluon.com", en: "Vien Nam landing field camera — Mebayluon.com" },
+    snEnv: "IMOU_CAM_VIENNAM_BHC_SN",
+    codeEnv: "IMOU_CAM_VIENNAM_BHC_CODE",
+    channelId: "0",
+  },
+  /**
+   * Bãi cất cánh Khau Phạ (chủ 03/10/2026): Imou Cruiser Dual 2C 4G, tên trong
+   * app "MCC Bãi cất". Máy HAI ống kính → mặc định kênh "0", đổi bằng
+   * IMOU_CAM_KHAUPHA_CHANNEL nếu ống kính nhìn bãi là kênh khác. Số serial
+   * mặc định nằm ở lib/imou/defaults.server.ts (chỉ máy chủ đọc).
+   */
+  "khau-pha": {
+    id: "khau-pha",
+    name: {
+      vi: "Camera bãi cất Khau Phạ",
+      en: "Khau Pha launch camera",
+      fr: "Caméra du décollage de Khau Phạ",
+      ru: "Камера старта Khau Phạ",
+      zh: "Khau Phạ 起飞场摄像头",
+      hi: "Khau Phạ टेक-ऑफ़ कैमरा",
+    },
+    credit: { vi: "Camera bãi cất cánh Khau Phạ — Mebayluon.com", en: "Khau Pha launch camera — Mebayluon.com" },
+    snEnv: "IMOU_CAM_KHAUPHA_SN",
+    codeEnv: "IMOU_CAM_KHAUPHA_CODE",
+    channelId: "0",
+    channelEnv: "IMOU_CAM_KHAUPHA_CHANNEL",
+  },
 };
+
+export const CAM_IDS = Object.keys(CAMERAS) as CamId[];
+
+/**
+ * Camera theo ĐIỂM BAY (03/10/2026): trang /webcam/<điểm> và /baobay hiện mọi
+ * camera của điểm đó, bãi cất trước, bãi hạ cánh sau. Khoá là slug trang webcam.
+ */
+export type WebcamSite = "khau-pha" | "vien-nam";
+export const WEBCAM_SITES: Record<WebcamSite, readonly CamId[]> = {
+  "khau-pha": ["khau-pha"],
+  "vien-nam": ["vien-nam", "vien-nam-bhc"],
+};
+export function isWebcamSite(x: unknown): x is WebcamSite {
+  return typeof x === "string" && Object.prototype.hasOwnProperty.call(WEBCAM_SITES, x);
+}
 
 export function isCamId(x: unknown): x is CamId {
   return typeof x === "string" && Object.prototype.hasOwnProperty.call(CAMERAS, x);

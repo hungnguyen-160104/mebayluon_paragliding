@@ -110,6 +110,9 @@ type FooterDict = {
   pilotEvent: string;
   /** Link /baobay cho phi công bay đơn — thay chỗ /muavang ở footer (chủ 30/09/2026). */
   pilotReport: string;
+  /** Link trang webcam bãi cất, ngay trên "Báo bay cho phi công" (chủ 03/10/2026). Địa danh giữ nguyên. */
+  webcamKhauPha: string;
+  webcamVienNam: string;
   spotsInfo: string;
   /** Tiêu đề dải link đặt qua nơi uy tín. */
   trustTitle: string;
@@ -155,6 +158,8 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "Theo dõi chúng tôi",
     pilotEvent: "Đăng ký Mùa vàng 2026",
     pilotReport: "Báo bay cho phi công",
+    webcamKhauPha: "Webcam Khau Phạ",
+    webcamVienNam: "Webcam Viên Nam 850",
     spotsInfo: "Thông tin điểm bay",
     trustTitle: "Đặt qua nơi uy tín",
     trustNoteBefore: "Hoặc đặt thẳng ",
@@ -187,6 +192,8 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "Follow Us",
     pilotEvent: "Golden Season 2026 registration",
     pilotReport: "Pilot flight register",
+    webcamKhauPha: "Webcam Khau Phạ",
+    webcamVienNam: "Webcam Viên Nam 850",
     spotsInfo: "Flying Spots Info",
     trustTitle: "Book on trusted platforms",
     trustNoteBefore: "Or book direct ",
@@ -219,6 +226,8 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "Suivez-nous",
     pilotEvent: "Inscription Mùa Vàng 2026",
     pilotReport: "Déclaration de vol (pilotes)",
+    webcamKhauPha: "Webcam Khau Phạ",
+    webcamVienNam: "Webcam Viên Nam 850",
     spotsInfo: "Infos sites de vol",
     trustTitle: "Réserver sur des plateformes de confiance",
     trustNoteBefore: "Ou réservez en direct ",
@@ -251,6 +260,8 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "Подписывайтесь",
     pilotEvent: "Регистрация Mùa Vàng 2026",
     pilotReport: "Регистрация полёта (пилоты)",
+    webcamKhauPha: "Веб-камера Khau Phạ",
+    webcamVienNam: "Веб-камера Viên Nam 850",
     spotsInfo: "О местах полётов",
     trustTitle: "Бронирование на проверенных площадках",
     trustNoteBefore: "Или бронируйте напрямую ",
@@ -283,6 +294,8 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "关注我们",
     pilotEvent: "Mùa Vàng 2026 报名",
     pilotReport: "飞行员飞行登记",
+    webcamKhauPha: "Khau Phạ 摄像头",
+    webcamVienNam: "Viên Nam 850 摄像头",
     spotsInfo: "飞行点信息",
     trustTitle: "在可信平台预订",
     trustNoteBefore: "或",
@@ -314,6 +327,8 @@ const DICT: Record<Language, FooterDict> = {
     followUs: "हमें फ़ॉलो करें",
     pilotEvent: "Mùa Vàng 2026 पंजीकरण",
     pilotReport: "पायलट उड़ान पंजीकरण",
+    webcamKhauPha: "Khau Phạ वेबकैम",
+    webcamVienNam: "Viên Nam 850 वेबकैम",
     spotsInfo: "उड़ान स्थल जानकारी",
     trustTitle: "भरोसेमंद प्लेटफ़ॉर्म पर बुक करें",
     trustNoteBefore: "सबसे अच्छे दाम के लिए ",
@@ -711,12 +726,30 @@ export default function Footer() {
               {/* /muavang (đăng ký sự kiện Mùa vàng) tạm ẩn khỏi footer — trang vẫn còn,
                   dùng lại cho sự kiện năm sau: đổi href về "/muavang" và nhãn về
                   t.pilotEvent (chủ 30/09/2026). */}
-              <Link
-                href={makeLocalizedHref("/baobay", pathname)}
-                className="mt-20 inline-block text-[15px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
-              >
-                {t.pilotReport}
-              </Link>
+              {/* Webcam bãi cất (chủ 03/10/2026) — hai dòng NGAY TRÊN "Báo bay cho
+                  phi công". Mỗi dòng cao 20px + khe 8px = 56px, nên khối này
+                  mt-6 (24px) thay cho mt-20 (80px) cũ: dòng báo bay vẫn ngang
+                  hàng dòng cuối cột "Thông tin điểm bay" như chú thích trên. */}
+              <div className="mt-6 flex flex-col items-start gap-2">
+                <Link
+                  href={makeLocalizedHref("/webcam/khau-pha", pathname)}
+                  className="text-sm leading-5 text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
+                >
+                  📷 {t.webcamKhauPha}
+                </Link>
+                <Link
+                  href={makeLocalizedHref("/webcam/vien-nam", pathname)}
+                  className="text-sm leading-5 text-slate-300 transition-colors hover:text-white hover:underline underline-offset-4"
+                >
+                  📷 {t.webcamVienNam}
+                </Link>
+                <Link
+                  href={makeLocalizedHref("/baobay", pathname)}
+                  className="inline-block text-[15px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline underline-offset-4"
+                >
+                  {t.pilotReport}
+                </Link>
+              </div>
             </div>
           </div>
 

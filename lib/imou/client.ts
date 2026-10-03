@@ -98,8 +98,22 @@ async function tokenColl() {
   return db.collection<TokenDoc>(TOKEN_COLL);
 }
 
+/**
+ * Lượt xin token đang chạy — cron chụp nhiều camera SONG SONG (03/10/2026), không
+ * gộp thì lambda mới có thể xin hai token cùng lúc cho một appId.
+ */
+let tokenInFlight: Promise<string> | null = null;
+
 /** accessToken quản trị; `force` = bỏ cache, xin mới (sau TK1002/TK1003). */
 export async function imouToken(force = false): Promise<string> {
+  if (tokenInFlight) return tokenInFlight;
+  tokenInFlight = fetchToken(force).finally(() => {
+    tokenInFlight = null;
+  });
+  return tokenInFlight;
+}
+
+async function fetchToken(force: boolean): Promise<string> {
   const { appId } = creds();
   const now = Date.now();
   if (!force && memToken && memToken.appId === appId && memToken.expiresAt - TOKEN_MARGIN_MS > now) return memToken.token;
@@ -170,6 +184,19 @@ export async function bindDevice(deviceId: string, code: string) {
   }
 }
 
+/**
+ * deviceOnline → trạng thái mạng của máy và DANH SÁCH KÊNH ({channelId, onLine}).
+ * Dùng để biết máy hai ống kính (Cruiser Dual) có kênh "0" và "1" hay không —
+ * gọi qua /api/cron/camera-snap?info=1&key=… (chỉ chủ gọi tay).
+ */
+export function deviceOnline(deviceId: string) {
+  return imouCallWithToken<{
+    deviceId?: string;
+    onLine?: string;
+    channels?: { channelId: string; onLine?: string }[];
+  }>("deviceOnline", { deviceId });
+}
+
 /** Mã lỗi nghĩa là "thiết bị chưa gắn vào tài khoản dev" — gặp thì thử bindDevice. */
 export const NOT_BOUND_CODES = new Set(["DV1011", "OP1009", "OP1015"]);
 
@@ -194,7 +221,7 @@ export async function snapWithAutoBind(deviceId: string, channelId: string, bind
     if (st.isBind && !st.isMine) {
       throw new ImouError("DV1001", "Camera đang gắn vào tài khoản Imou KHÁC — gỡ trong app Imou rồi thử lại");
     }
-    if (!bindCode) throw new ImouError("NOCODE", "Camera chưa gắn vào tài khoản dev và chưa khai mã an toàn");
+    if (!bindCode) throw new ImouError("NOCODE", "Camera chưa gắn vào tài khoản dev và chưa khai mã an toàn (biến *_CODE)");
     await bindDevice(deviceId, bindCode);
     return { url: await snapDevice(deviceId, channelId), bound: true };
   }

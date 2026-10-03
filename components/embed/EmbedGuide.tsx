@@ -8,14 +8,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { CAM_ACTIVE, CAM_IDS, CAMERAS, type CamId } from "@/lib/imou/cameras";
+
 type Lang = "vi" | "en";
 type Theme = "dark" | "light";
 
 const TXT = {
   vi: {
-    title: "Nhúng camera bãi cất cánh Viên Nam",
+    title: "Nhúng camera bãi cất cánh dù lượn",
     intro:
-      "Hiện ảnh camera bãi cao Viên Nam (cập nhật mỗi 1–3 phút, 08:00–18:00) ngay trên website của bạn. Miễn phí, vui lòng giữ dòng nguồn.",
+      `Hiện ảnh camera bãi cất Viên Nam, bãi hạ cánh Viên Nam hoặc bãi cất Khau Phạ (cập nhật mỗi 1–3 phút, ${CAM_ACTIVE.label}) ngay trên website của bạn. Miễn phí, vui lòng giữ dòng nguồn.`,
     preview: "Xem trước",
     options: "Tuỳ chọn",
     langLabel: "Ngôn ngữ khung (lang)",
@@ -34,17 +36,18 @@ const TXT = {
     paramHeight:
       "Chiều cao khuyến nghị (không dùng script): khoảng 0,5625 × chiều rộng + 130px. Ví dụ rộng 360px → 335; 600px → 470; 800px → 580.",
     notes: "Ghi chú",
-    note1: "Miễn phí, vui lòng giữ dòng nguồn “📷 Camera bãi cất cánh Viên Nam — Mebayluon.com”.",
+    note1: "Miễn phí, vui lòng giữ dòng nguồn “📷 Camera bãi cất cánh … — Mebayluon.com” cuối khung.",
     note2: "Ảnh lấy trực tiếp từ camera, khung tự làm mới mỗi 60 giây khi trang đang mở.",
-    note3: "Ngoài giờ 08:00–18:00 khung hiện “Camera nghỉ” kèm ảnh cuối cùng.",
+    note3: `Ngoài giờ ${CAM_ACTIVE.label} khung hiện “Camera nghỉ” kèm ảnh cuối cùng.`,
+    camLabel: "Camera",
     copy: "Copy",
     copied: "Đã copy ✓",
     switchUi: "English",
   },
   en: {
-    title: "Embed the Vien Nam launch camera",
+    title: "Embed a paragliding launch camera",
     intro:
-      "Show the Vien Nam top launch camera (updated every 1–3 minutes, 08:00–18:00 Vietnam time) on your website. Free — please keep the credit line.",
+      `Show the Vien Nam launch, Vien Nam landing field or Khau Pha launch camera (updated every 1–3 minutes, ${CAM_ACTIVE.label} Vietnam time) on your website. Free — please keep the credit line.`,
     preview: "Preview",
     options: "Options",
     langLabel: "Widget language (lang)",
@@ -63,9 +66,10 @@ const TXT = {
     paramHeight:
       "Recommended height without the script: about 0.5625 × width + 130px. E.g. 360px wide → 335; 600px → 470; 800px → 580.",
     notes: "Notes",
-    note1: "Free to use — please keep the credit line “📷 Camera bãi cất cánh Viên Nam — Mebayluon.com”.",
+    note1: "Free to use — please keep the credit line “📷 … launch camera — Mebayluon.com” at the bottom of the widget.",
     note2: "Photos come straight from the camera; the widget refreshes every 60 seconds while visible.",
-    note3: "Outside 08:00–18:00 the widget shows “Camera resting” with the last photo.",
+    note3: `Outside ${CAM_ACTIVE.label} the widget shows “Camera resting” with the last photo.`,
+    camLabel: "Camera",
     copy: "Copy",
     copied: "Copied ✓",
     switchUi: "Tiếng Việt",
@@ -116,7 +120,17 @@ function CodeBlock({ code, copyLabel, copiedLabel }: { code: string; copyLabel: 
   );
 }
 
-function Toggle<V extends string>({ value, options, onChange }: { value: V; options: readonly V[]; onChange: (v: V) => void }) {
+function Toggle<V extends string>({
+  value,
+  options,
+  onChange,
+  labels,
+}: {
+  value: V;
+  options: readonly V[];
+  onChange: (v: V) => void;
+  labels?: Partial<Record<V, string>>;
+}) {
   return (
     <div className="inline-flex overflow-hidden rounded-lg border border-slate-300">
       {options.map((o) => (
@@ -127,7 +141,7 @@ function Toggle<V extends string>({ value, options, onChange }: { value: V; opti
           onClick={() => onChange(o)}
           className={`px-3 py-1 text-sm ${value === o ? "bg-slate-900 text-white" : "bg-white text-slate-700"}`}
         >
-          {o}
+          {labels?.[o] ?? o}
         </button>
       ))}
     </div>
@@ -138,6 +152,8 @@ export default function EmbedGuide({ siteUrl, ui }: { siteUrl: string; ui: Lang 
   const t = TXT[ui];
   const [lang, setLang] = useState<Lang>(ui);
   const [theme, setTheme] = useState<Theme>("dark");
+  const [cam, setCam] = useState<CamId>("vien-nam");
+  const credit = CAMERAS[cam].credit.vi;
   const origin = siteUrl.replace(/\/$/, "");
   const previewRef = useRef<HTMLIFrameElement>(null);
 
@@ -151,13 +167,13 @@ export default function EmbedGuide({ siteUrl, ui }: { siteUrl: string; ui: Lang 
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
-  const src = `${origin}/embed/camera/vien-nam?lang=${lang}&theme=${theme}`;
+  const src = `${origin}/embed/camera/${cam}?lang=${lang}&theme=${theme}`;
   const iframe = useMemo(
     () =>
-      `<iframe src="${src}" title="Camera bãi cất cánh Viên Nam — Mebayluon" data-mbl-camera width="100%" height="470" style="border:0;width:100%;max-width:800px;display:block" loading="lazy" allowfullscreen></iframe>`,
-    [src],
+      `<iframe src="${src}" title="${credit}" data-mbl-camera width="100%" height="470" style="border:0;width:100%;max-width:800px;display:block" loading="lazy" allowfullscreen></iframe>`,
+    [src, credit],
   );
-  const wordpress = `<!-- Camera bãi cất cánh Viên Nam — Mebayluon.com -->\n${iframe}\n${heightScript(origin)}`;
+  const wordpress = `<!-- ${credit} -->\n${iframe}\n${heightScript(origin)}`;
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900">
@@ -176,6 +192,14 @@ export default function EmbedGuide({ siteUrl, ui }: { siteUrl: string; ui: Lang 
           <h2 className="text-lg font-bold">{t.options}</h2>
           <div className="flex flex-wrap gap-4 text-sm">
             <div className="flex items-center gap-2">
+              {t.camLabel}: <Toggle
+                value={cam}
+                options={CAM_IDS}
+                onChange={setCam}
+                labels={Object.fromEntries(CAM_IDS.map((c) => [c, CAMERAS[c].name[ui]]))}
+              />
+            </div>
+            <div className="flex items-center gap-2">
               {t.langLabel}: <Toggle value={lang} options={["vi", "en"] as const} onChange={setLang} />
             </div>
             <div className="flex items-center gap-2">
@@ -188,9 +212,9 @@ export default function EmbedGuide({ siteUrl, ui }: { siteUrl: string; ui: Lang 
           <h2 className="text-lg font-bold">{t.preview}</h2>
           {/* Xem trước dùng đường dẫn cùng origin để chạy được cả ở máy dev */}
           <iframe
-            key={`${lang}-${theme}`}
-            src={`/embed/camera/vien-nam?lang=${lang}&theme=${theme}`}
-            title="Camera bãi cất cánh Viên Nam — Mebayluon"
+            key={`${cam}-${lang}-${theme}`}
+            src={`/embed/camera/${cam}?lang=${lang}&theme=${theme}`}
+            title={credit}
             data-mbl-camera
             height={470}
             className="block w-full max-w-[800px] border-0"

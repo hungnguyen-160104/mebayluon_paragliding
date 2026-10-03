@@ -1,8 +1,9 @@
 // app/api/camera/[cam]/route.ts
 import { NextResponse } from "next/server";
 
-import { CAM_ACTIVE, CAMERAS, inCamActiveHours, isCamId, type CamFeed } from "@/lib/imou/cameras";
+import { CAM_ACTIVE, inCamActiveHours, isCamId, type CamFeed } from "@/lib/imou/cameras";
 import { imouConfigured } from "@/lib/imou/client";
+import { camSerial } from "@/lib/imou/defaults.server";
 import { listSnaps } from "@/lib/imou/snaps";
 
 export const runtime = "nodejs";
@@ -21,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ cam: st
 
   const now = new Date();
   const base: CamFeed = {
-    configured: imouConfigured() && Boolean((process.env[CAMERAS[cam].snEnv] || "").trim()),
+    configured: imouConfigured() && Boolean(camSerial(cam)),
     activeHours: {
       from: CAM_ACTIVE.label.slice(0, 5),
       to: CAM_ACTIVE.label.slice(-5),

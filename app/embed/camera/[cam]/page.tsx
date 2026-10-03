@@ -1,5 +1,6 @@
 /**
- * TRANG NHÚNG CAMERA (iframe) cho web đối tác — /embed/camera/vien-nam (30/09/2026).
+ * TRANG NHÚNG CAMERA (iframe) cho web đối tác — /embed/camera/vien-nam (30/09/2026),
+ * /embed/camera/khau-pha, /embed/camera/vien-nam-bhc (03/10/2026).
  *
  * Không menu/nút nổi (lib/internal-paths.ts có /embed), không GA/Vercel Analytics
  * (middleware gắn x-mbl-embed → app/layout.tsx bỏ qua), không footer (layout gốc
@@ -29,9 +30,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isCamId(cam)) return { robots: { index: false, follow: true } };
   return {
     title: `${CAMERAS[cam].name.vi} — Mebayluon`,
-    description: "Ảnh camera trực tiếp bãi cất cánh dù lượn Viên Nam, cập nhật mỗi phút.",
+    description: `${CAMERAS[cam].name.vi} — ảnh trực tiếp bãi cất cánh dù lượn, cập nhật 1–3 phút.`,
     robots: { index: false, follow: true, googleBot: { index: false, follow: true } },
-    alternates: { canonical: "/baobay" },
+    // Bản công khai, được index của camera này là /webcam/<cam>
+    alternates: { canonical: `/webcam/${cam === "vien-nam-bhc" ? "vien-nam" : cam}` },
   };
 }
 
