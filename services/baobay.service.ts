@@ -6456,7 +6456,14 @@ export async function removeBookingServices(
       400,
     );
   }
-  const newDeposit = deposit - refunded;
+  /**
+   * KHÔNG trừ tiền đã trả ở đây (sửa 03/10/2026). Khoản hoàn đi qua lệnh hoàn
+   * (createRefund): tiền mặt ghi ngay, chuyển khoản ghi khi kế toán bấm đã trả —
+   * chính lúc đó `ghiTienHoanVaoBooking` mới trừ "đã trả" và cộng "đã hoàn".
+   * Trừ thêm ở đây là trừ HAI LẦN (booking #41 ngày 03/10: thu 7.180k, huỷ 1 cờ
+   * đỏ hoàn 300k mà sổ còn ghi 6.580k thay vì 6.880k → báo LỆCH SỔ oan).
+   */
+  const newDeposit = deposit;
 
   const cutText = keys
     .filter((k) => (input.remove[k] ?? 0) > 0)
