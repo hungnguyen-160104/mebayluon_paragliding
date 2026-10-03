@@ -132,7 +132,7 @@ function Toggle<V extends string>({
   labels?: Partial<Record<V, string>>;
 }) {
   return (
-    <div className="inline-flex overflow-hidden rounded-lg border border-slate-300">
+    <div className="inline-flex flex-wrap overflow-hidden rounded-lg border border-slate-300">
       {options.map((o) => (
         <button
           key={o}

@@ -1,6 +1,6 @@
 /**
  * TRANG NHÚNG CAMERA (iframe) cho web đối tác — /embed/camera/vien-nam (30/09/2026),
- * /embed/camera/khau-pha, /embed/camera/vien-nam-bhc (03/10/2026).
+ * /embed/camera/khau-pha, khau-pha-2 (mắt 2), vien-nam-bhc (03/10/2026).
  *
  * Không menu/nút nổi (lib/internal-paths.ts có /embed), không GA/Vercel Analytics
  * (middleware gắn x-mbl-embed → app/layout.tsx bỏ qua), không footer (layout gốc
@@ -13,7 +13,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import CameraEmbed, { type EmbedLang, type EmbedTheme } from "@/components/embed/CameraEmbed";
-import { CAMERAS, isCamId } from "@/lib/imou/cameras";
+import { CAMERAS, isCamId, webcamSiteOf } from "@/lib/imou/cameras";
 
 type Props = {
   params: Promise<{ cam: string }>;
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: `${CAMERAS[cam].name.vi} — ảnh trực tiếp bãi cất cánh dù lượn, cập nhật 1–3 phút.`,
     robots: { index: false, follow: true, googleBot: { index: false, follow: true } },
     // Bản công khai, được index của camera này là /webcam/<cam>
-    alternates: { canonical: `/webcam/${cam === "vien-nam-bhc" ? "vien-nam" : cam}` },
+    alternates: { canonical: `/webcam/${webcamSiteOf(cam)}` },
   };
 }
 

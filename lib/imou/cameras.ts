@@ -13,7 +13,7 @@
  * thẳng từ máy chủ Imou, Vercel/Cloudinary không chứa và không chuyển byte ảnh nào.
  */
 
-export type CamId = "vien-nam" | "vien-nam-bhc" | "khau-pha";
+export type CamId = "vien-nam" | "vien-nam-bhc" | "khau-pha" | "khau-pha-2";
 
 /** Sáu ngôn ngữ của site — tên camera hiện trên trang /webcam theo ngôn ngữ URL */
 export type CamLang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
@@ -32,6 +32,11 @@ export type CamConfig = {
   channelId: string;
   /** Biến môi trường (tuỳ chọn) ghi đè kênh — máy hai ống kính chọn "0" hay "1" mà không phải sửa mã */
   channelEnv?: string;
+  /**
+   * Chưa có ảnh nào thì ẨN (tab /baobay, khung /webcam) thay vì hiện "chưa kết
+   * nối" — dùng cho mắt thứ hai của máy hai ống kính, phòng khi máy chỉ báo một kênh.
+   */
+  hideWhenEmpty?: boolean;
 };
 
 export const CAMERAS: Record<CamId, CamConfig> = {
@@ -94,6 +99,30 @@ export const CAMERAS: Record<CamId, CamConfig> = {
     channelId: "0",
     channelEnv: "IMOU_CAM_KHAUPHA_CHANNEL",
   },
+  /**
+   * MẮT 2 của cùng máy Khau Phạ (chủ 03/10/2026: "máy 2 mắt mà chỉ hiện 1"). Cùng
+   * serial + mã an toàn với "khau-pha" (cùng biến env), chỉ khác kênh: "1", đổi
+   * bằng IMOU_CAM_KHAUPHA2_CHANNEL. Kênh 0 là mắt toàn cảnh (bãi cỏ + thung
+   * lũng); mắt 2 của Cruiser Dual thường là mắt xoay/zoom. Cron chụp hai kênh
+   * của một máy LẦN LƯỢT (xem camera-snap). Chưa có ảnh nào thì giao diện ẩn.
+   */
+  "khau-pha-2": {
+    id: "khau-pha-2",
+    name: {
+      vi: "Camera bãi cất Khau Phạ — mắt 2",
+      en: "Khau Pha launch camera — lens 2",
+      fr: "Caméra du décollage de Khau Phạ — objectif 2",
+      ru: "Камера старта Khau Phạ — объектив 2",
+      zh: "Khau Phạ 起飞场摄像头 — 镜头 2",
+      hi: "Khau Phạ टेक-ऑफ़ कैमरा — लेंस 2",
+    },
+    credit: { vi: "Camera bãi cất cánh Khau Phạ (mắt 2) — Mebayluon.com", en: "Khau Pha launch camera (lens 2) — Mebayluon.com" },
+    snEnv: "IMOU_CAM_KHAUPHA_SN",
+    codeEnv: "IMOU_CAM_KHAUPHA_CODE",
+    channelId: "1",
+    channelEnv: "IMOU_CAM_KHAUPHA2_CHANNEL",
+    hideWhenEmpty: true,
+  },
 };
 
 export const CAM_IDS = Object.keys(CAMERAS) as CamId[];
@@ -104,9 +133,13 @@ export const CAM_IDS = Object.keys(CAMERAS) as CamId[];
  */
 export type WebcamSite = "khau-pha" | "vien-nam";
 export const WEBCAM_SITES: Record<WebcamSite, readonly CamId[]> = {
-  "khau-pha": ["khau-pha"],
+  "khau-pha": ["khau-pha", "khau-pha-2"],
   "vien-nam": ["vien-nam", "vien-nam-bhc"],
 };
+/** Trang /webcam của một camera (camera phụ nằm chung trang với điểm của nó) */
+export function webcamSiteOf(cam: CamId): WebcamSite {
+  return (Object.keys(WEBCAM_SITES) as WebcamSite[]).find((s) => WEBCAM_SITES[s].includes(cam)) ?? "vien-nam";
+}
 export function isWebcamSite(x: unknown): x is WebcamSite {
   return typeof x === "string" && Object.prototype.hasOwnProperty.call(WEBCAM_SITES, x);
 }

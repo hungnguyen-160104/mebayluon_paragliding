@@ -110,6 +110,23 @@ function withBudget<T extends { ok: boolean }>(p: Promise<T>, cam: CamId): Promi
   return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
 }
 
+/**
+ * Khoá theo serial: lệnh chụp của các kênh cùng một máy xếp hàng nối đuôi nhau
+ * (chỉ bước setDeviceSnapEnhanced/bindDevice — bước chờ link ảnh vẫn song song).
+ * Sống trong một lượt gọi route; lượt sau là lambda/tiến trình mới cũng không sao.
+ */
+const deviceQueue = new Map<string, Promise<unknown>>();
+function perDevice<T>(sn: string, fn: () => Promise<T>): Promise<T> {
+  const prev = deviceQueue.get(sn) ?? Promise.resolve();
+  const run = prev.catch(() => {}).then(fn);
+  const tail = run.catch(() => {});
+  deviceQueue.set(sn, tail);
+  void tail.then(() => {
+    if (deviceQueue.get(sn) === tail) deviceQueue.delete(sn);
+  });
+  return run;
+}
+
 /** Chụp một camera → ghi link vào MongoDB → dọn bản ghi cũ. Không bao giờ ném lỗi. */
 async function snapOne(cam: CamId, now: Date): Promise<SnapResult> {
   const cfg = CAMERAS[cam];
@@ -125,7 +142,9 @@ async function snapOne(cam: CamId, now: Date): Promise<SnapResult> {
 
   const t0 = Date.now();
   try {
-    const { url: snapUrl, bound } = await snapWithAutoBind(sn, camChannel(cam), camBindCode(cam));
+    // Hai kênh của CÙNG một máy (Khau Phạ mắt 1 + mắt 2) gọi chụp LẦN LƯỢT —
+    // máy 4G nhận hai lệnh chụp cùng lúc dễ trả lỗi bận; máy khác vẫn song song
+    const { url: snapUrl, bound } = await perDevice(sn, () => snapWithAutoBind(sn, camChannel(cam), camBindCode(cam)));
     const ready = await waitSnapReady(snapUrl);
     const shot = await saveSnap(cam, snapUrl, now);
     await ensureSnapIndex();

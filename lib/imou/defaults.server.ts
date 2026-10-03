@@ -22,6 +22,8 @@ if (typeof window !== "undefined") {
 const DEFAULT_SN: Partial<Record<CamId, string>> = {
   // Imou Cruiser Dual 2C 4G "MCC Bãi cất" — chủ gửi 03/10/2026
   "khau-pha": "C7AE1BDPCGAA27F",
+  // Mắt 2 của CÙNG máy đó (kênh "1") — cùng serial
+  "khau-pha-2": "C7AE1BDPCGAA27F",
   // Imou AOV PT "Viên Nam BHC" (bãi hạ cánh) — chủ gửi 03/10/2026
   "vien-nam-bhc": "526EBBJPSF99088",
 };
