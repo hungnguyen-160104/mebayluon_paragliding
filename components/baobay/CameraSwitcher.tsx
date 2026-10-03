@@ -2,9 +2,9 @@
 
 /**
  * Camera theo ĐIỂM trên /baobay (03/10/2026): Viên Nam có hai máy (bãi cất 850
- * và bãi hạ cánh), Khau Phạ có một máy HAI MẮT (kênh 0 toàn cảnh, kênh 1) → các
- * nút nhỏ chuyển qua lại, mỗi lúc chỉ MỘT CameraGallery (một ảnh, một lượt gọi
- * API) — nhẹ ở màn 390px. Còn một camera thì hiện thẳng, không có nút.
+ * và bãi hạ cánh) → các nút nhỏ chuyển qua lại; Khau Phạ có một máy HAI MẮT
+ * (kênh 0 toàn cảnh, kênh 1 khu chuẩn bị) → hiện trên – dưới cùng lúc (chủ 03/10).
+ * Tab Viên Nam: mỗi lúc chỉ MỘT CameraGallery (một ảnh, một lượt gọi API) — nhẹ ở 390px. Còn một camera thì hiện thẳng, không có nút.
  *
  * Camera đánh dấu `hideWhenEmpty` (mắt 2 Khau Phạ) chỉ hiện khi đã có ít nhất
  * một ảnh — máy chỉ báo một kênh thì tab tự ẩn, không hiện lỗi.
@@ -19,7 +19,7 @@ const SHORT: Partial<Record<CamId, { vi: string; en: string }>> = {
   "vien-nam": { vi: "Bãi cất 850", en: "Launch 850 m" },
   "vien-nam-bhc": { vi: "Bãi hạ cánh", en: "Landing field" },
   "khau-pha": { vi: "Mắt 1 – toàn cảnh", en: "Lens 1 – wide view" },
-  "khau-pha-2": { vi: "Mắt 2", en: "Lens 2" },
+  "khau-pha-2": { vi: "Mắt 2 – khu chuẩn bị & lối lên bãi", en: "Lens 2 – prep area & launch steps" },
 };
 
 /**
@@ -65,6 +65,23 @@ export default function CameraSwitcher({ site }: { site: WebcamSite }) {
   // Tab đang chọn bị ẩn (hiếm) → quay về camera đầu
   const cam = cams.includes(picked) ? picked : cams[0];
   if (cams.length < 2) return <CameraGallery cam={cams[0]} />;
+  const label = (c: CamId) => (SHORT[c] ? (language === "vi" ? SHORT[c].vi : SHORT[c].en) : c);
+  /**
+   * Khau Phạ: hai MẮT của cùng một máy hiện TRÊN – DƯỚI cùng lúc (chủ 03/10),
+   * không chuyển tab. Viên Nam (hai máy ở hai bãi) vẫn dùng tab cho nhẹ.
+   */
+  if (site === "khau-pha") {
+    return (
+      <div className="space-y-4">
+        {cams.map((c) => (
+          <div key={c}>
+            <p className="mt-3 text-xs font-bold text-white/70">📷 {label(c)}</p>
+            <CameraGallery cam={c} />
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div>
       <div className="mt-3 flex flex-wrap gap-1.5" role="tablist">
