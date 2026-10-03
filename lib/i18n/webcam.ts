@@ -73,7 +73,7 @@ const VI: WebcamCopy = {
       metaDescription: `Webcam Viên Nam: ảnh trực tiếp bãi cất cánh cao Viên Nam (~850 m) và bãi hạ cánh, Hà Nội, cập nhật 1–3 phút, ${H}. Xem trời, mây trước khi lên bãi.`,
       h1: "Webcam Viên Nam 850 – bãi cất cánh dù lượn trực tiếp",
       intro:
-        "Camera đặt tại bãi cất cánh cao núi Viên Nam (khoảng 850 m), Lương Sơn — điểm bay dù lượn gần Hà Nội nhất. Nhìn ảnh để biết đỉnh núi có mây hay quang trước khi chạy xe lên. Bên dưới là camera bãi hạ cánh dưới chân núi.",
+        "Camera đặt tại bãi cất cánh cao núi Viên Nam (khoảng 850 m) — điểm bay dù lượn gần Hà Nội nhất. Nhìn ảnh để biết đỉnh núi có mây hay quang trước khi chạy xe lên. Bên dưới là camera bãi hạ cánh dưới chân núi.",
       spotName: "Đồi Bù – Viên Nam",
       keywords: ["webcam Viên Nam", "camera núi Viên Nam", "camera bãi hạ cánh Viên Nam", "dù lượn Viên Nam", "bay dù lượn Hà Nội", "thời tiết Viên Nam hôm nay"],
     },
@@ -111,7 +111,7 @@ const EN: WebcamCopy = {
       metaDescription: `Vien Nam webcam: live photos of the Vien Nam top launch (~850 m) and landing field near Hanoi, updated every 1–3 minutes, ${H}. Check the sky before driving up.`,
       h1: "Vien Nam 850 webcam – live paragliding launch",
       intro:
-        "This camera sits on the top launch of Vien Nam mountain (about 850 m), Luong Son — the closest paragliding site to Hanoi. See whether the summit is clear or in cloud before you drive up. The landing field camera at the foot of the mountain is below.",
+        "This camera sits on the top launch of Vien Nam mountain (about 850 m) — the closest paragliding site to Hanoi. See whether the summit is clear or in cloud before you drive up. The landing field camera at the foot of the mountain is below.",
       spotName: "Doi Bu – Vien Nam",
       keywords: ["Vien Nam webcam", "Hanoi paragliding webcam", "Vien Nam paragliding", "Vien Nam mountain camera"],
     },
@@ -149,7 +149,7 @@ const FR: WebcamCopy = {
       metaDescription: `Webcam Viên Nam : photos en direct du décollage haut de Viên Nam (~850 m) et de l'atterrissage, près de Hanoï, toutes les 1–3 minutes, ${H}.`,
       h1: "Webcam Viên Nam 850 – décollage parapente en direct",
       intro:
-        "Caméra installée au décollage haut du mont Viên Nam (environ 850 m), Lương Sơn — le site de parapente le plus proche de Hanoï. Voyez si le sommet est dégagé avant de monter. La caméra de l'atterrissage, au pied de la montagne, est plus bas.",
+        "Caméra installée au décollage haut du mont Viên Nam (environ 850 m) — le site de parapente le plus proche de Hanoï. Voyez si le sommet est dégagé avant de monter. La caméra de l'atterrissage, au pied de la montagne, est plus bas.",
       spotName: "Đồi Bù – Viên Nam",
       keywords: ["webcam Viên Nam", "parapente Hanoï", "parapente Viên Nam"],
     },
@@ -187,7 +187,7 @@ const RU: WebcamCopy = {
       metaDescription: `Веб-камера Viên Nam: фото верхнего старта Viên Nam (~850 м) под Ханоем онлайн, обновление каждые 1–3 минуты, ${H}.`,
       h1: "Веб-камера Viên Nam 850 – старт парапланов онлайн",
       intro:
-        "Камера стоит на верхнем старте горы Viên Nam (около 850 м), Лыонгшон — ближайшее к Ханою место для полётов на параплане. Проверьте, нет ли облаков на вершине, прежде чем ехать. Ниже — камера посадочной площадки у подножия горы.",
+        "Камера стоит на верхнем старте горы Viên Nam (около 850 м) — ближайшее к Ханою место для полётов на параплане. Проверьте, нет ли облаков на вершине, прежде чем ехать. Ниже — камера посадочной площадки у подножия горы.",
       spotName: "Đồi Bù – Viên Nam",
       keywords: ["веб-камера Viên Nam", "параплан Ханой"],
     },
@@ -222,7 +222,7 @@ const ZH: WebcamCopy = {
       metaTitle: "Viên Nam 850 实时摄像头 – 滑翔伞起飞场 | Mebayluon",
       metaDescription: `Viên Nam 摄像头：河内附近 Viên Nam 高起飞场（约 850 米）实时照片，每 1–3 分钟更新，${H}。`,
       h1: "Viên Nam 850 实时摄像头 – 滑翔伞起飞场",
-      intro: "摄像头位于 Viên Nam 山高起飞场（约 850 米，Lương Sơn），是离河内最近的滑翔伞飞行点。上山前先看看山顶有没有云。下方是山脚降落场的摄像头。",
+      intro: "摄像头位于 Viên Nam 山高起飞场（约 850 米），是离河内最近的滑翔伞飞行点。上山前先看看山顶有没有云。下方是山脚降落场的摄像头。",
       spotName: "Đồi Bù – Viên Nam",
       keywords: ["Viên Nam 摄像头", "河内 滑翔伞"],
     },
@@ -260,7 +260,7 @@ const HI: WebcamCopy = {
       metaDescription: `Viên Nam वेबकैम: हनोई के पास Viên Nam ऊपरी टेक-ऑफ़ (~850 मी) के लाइव फ़ोटो, हर 1–3 मिनट में, ${H}।`,
       h1: "Viên Nam 850 वेबकैम – लाइव पैराग्लाइडिंग टेक-ऑफ़",
       intro:
-        "यह कैमरा Viên Nam पर्वत (लगभग 850 मी, Lương Sơn) के ऊपरी टेक-ऑफ़ पर लगा है — हनोई के सबसे पास का पैराग्लाइडिंग स्थल। ऊपर जाने से पहले देखें कि चोटी पर बादल हैं या नहीं। नीचे पहाड़ की तलहटी में लैंडिंग फ़ील्ड का कैमरा है।",
+        "यह कैमरा Viên Nam पर्वत (लगभग 850 मी) के ऊपरी टेक-ऑफ़ पर लगा है — हनोई के सबसे पास का पैराग्लाइडिंग स्थल। ऊपर जाने से पहले देखें कि चोटी पर बादल हैं या नहीं। नीचे पहाड़ की तलहटी में लैंडिंग फ़ील्ड का कैमरा है।",
       spotName: "Đồi Bù – Viên Nam",
       keywords: ["Viên Nam webcam", "हनोई पैराग्लाइडिंग"],
     },
