@@ -34,6 +34,8 @@ import {
   lechGoc,
   MUA_BAY,
   DONG_TO_MM,
+  GIO_LANG_MS,
+  nguongGioSau,
   tranMay,
   trongCung,
   xacSuatMuaThat,
@@ -187,7 +189,7 @@ export function danhGiaGio(
     const xiet = Boolean(luat?.xiet?.length && manh && luat.xiet.some((h) => Math.abs(lechGoc(g.huong, h)) <= 22.5));
     const trongXau = Boolean(luat?.xau && trongCung(g.huong, luat.xau));
     /** Cung xấu chỉ cấm từ `xauTuToc` trở lên (Khau Phạ: Tây/TTB dưới 2,5 m/s bay được — chủ 17/09). */
-    const xau = trongXau && g.gio10m >= (luat?.xauTuToc ?? 0);
+    const xau = trongXau && g.gio10m >= nguongGioSau(luat);
     /** Cung gió sau TUỲ TỐC ĐỘ (Khau Phạ, chủ 17/09): >5 nghỉ · 2,5–5 cảnh báo · <2,5 không sao. */
     const gs = luat?.gioSauTheoToc;
     const trongGs = Boolean(gs && trongCung(g.huong, gs.cung));
@@ -199,7 +201,10 @@ export function danhGiaGio(
       ghi = `${huongChu(g.huong)} — GIÓ SAU`;
     } else if (trongXau) {
       diem = 70;
-      ghi = `${huongChu(g.huong)} nhẹ ${g.gio10m.toFixed(1)} m/s — dưới ${luat!.xauTuToc} m/s bay được`;
+      ghi =
+        g.gio10m < GIO_LANG_MS
+          ? `gió lặng (${g.gio10m.toFixed(1)} m/s) — không tính gió sau`
+          : `${huongChu(g.huong)} nhẹ ${g.gio10m.toFixed(1)} m/s — dưới ${nguongGioSau(luat)} m/s bay được`;
     } else if (gioSauManh && gs) {
       diem = 0;
       ghi = `${huongChu(g.huong)} ${g.gio10m.toFixed(1)} m/s — GIÓ SAU mạnh (trên ${gs.cam} m/s)`;

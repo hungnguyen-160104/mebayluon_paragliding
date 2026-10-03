@@ -573,9 +573,19 @@ export type HuongTheNao = "tot" | "xau" | "thuong";
  * Điểm chưa khai luật hướng thì trả "thường": thà để xám còn hơn tô xanh một
  * hướng mà mình không biết có phải gió chính bãi hay không.
  */
+/**
+ * GIÓ LẶNG (chủ 03/10/2026): gió dưới 1 m/s từ phía sau bãi KHÔNG phải gió sau —
+ * coi như lặng, không tô đỏ. Áp cho mọi điểm; điểm nào khai `xauTuToc` cao hơn
+ * (Khau Phạ 2,5 m/s) thì dùng số của điểm đó.
+ */
+export const GIO_LANG_MS = 1;
+export function nguongGioSau(luat?: { xauTuToc?: number }): number {
+  return Math.max(luat?.xauTuToc ?? 0, GIO_LANG_MS);
+}
+
 export function huongTheNao(huong: number, gio: number, luat?: LuatHuong): HuongTheNao {
   if (!luat) return "thuong";
-  if (luat.xau && trongCung(huong, luat.xau) && gio >= (luat.xauTuToc ?? 0)) return "xau";
+  if (luat.xau && trongCung(huong, luat.xau) && gio >= nguongGioSau(luat)) return "xau";
   if (luat.gioSauTheoToc && trongCung(huong, luat.gioSauTheoToc.cung) && gio > luat.gioSauTheoToc.cam) return "xau";
   if (vuotCapToc(huong, gio, luat)) return "xau";
   const manh = gio > 6;
@@ -1054,13 +1064,17 @@ export function chamGio(
   const gs = luat?.gioSauTheoToc;
   const trongGs = Boolean(gs && Number.isFinite(g.huong) && trongCung(g.huong, gs.cung));
   const trongXau = Boolean(luat?.xau && Number.isFinite(g.huong) && trongCung(g.huong, luat.xau));
-  const gioSauNhe = trongXau && luat?.xauTuToc !== undefined && g.gio10m < luat.xauTuToc;
+  const gioSauNhe = trongXau && g.gio10m < nguongGioSau(luat);
   if (trongXau && !gioSauNhe) {
     lyDo.push(`gió ${huongChu(g.huong)} — GIÓ SAU (thổi sau lưng bãi cất), không bay`);
     len("do");
   } else if (gioSauNhe) {
     /** Tây/TTB dưới 2,5 m/s ở Khau Phạ: nhẹ, bay được (chủ 17/09) — ghi cho biết, không đổi màu. */
-    lyDo.push(`gió ${huongChu(g.huong)} nhẹ ${g.gio10m.toFixed(1)} m/s — dưới ${luat!.xauTuToc} m/s bay được`);
+    lyDo.push(
+      g.gio10m < GIO_LANG_MS
+        ? `gió lặng (${g.gio10m.toFixed(1)} m/s) — không tính gió sau`
+        : `gió ${huongChu(g.huong)} nhẹ ${g.gio10m.toFixed(1)} m/s — dưới ${nguongGioSau(luat)} m/s bay được`,
+    );
   } else if (trongGs && gs && g.gio10m > gs.cam) {
     /** Khau Phạ (chủ 17/09): cung phía nam chỉ NGHỈ khi mạnh hơn 5 m/s tại bãi cất. */
     lyDo.push(`gió ${huongChu(g.huong)} ${g.gio10m.toFixed(1)} m/s — GIÓ SAU mạnh (trên ${gs.cam} m/s), không bay`);

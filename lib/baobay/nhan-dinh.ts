@@ -39,6 +39,7 @@ import {
   TANG_BAY_TREN_BAI,
   nhanAmsl,
   caoAmsl,
+  nguongGioSau,
   trongCung,
   type GioThoiTiet,
   type LuatHuong,
@@ -247,13 +248,13 @@ export function nhanDinhNgay(
     const gs = opts.luatHuong?.gioSauTheoToc;
     const laGioSau = (h: number, v: number) =>
       Boolean(
-        (opts.luatHuong?.xau && trongCung(h, opts.luatHuong.xau) && v >= (opts.luatHuong.xauTuToc ?? 0)) ||
+        (opts.luatHuong?.xau && trongCung(h, opts.luatHuong.xau) && v >= nguongGioSau(opts.luatHuong)) ||
           (gs && trongCung(h, gs.cung) && v > gs.cam),
       );
     const coTheGioSau = (h: number, v: number) => Boolean(gs && trongCung(h, gs.cung) && v >= gs.nhe && v <= gs.cam);
     if (huong !== null) {
       noi += `, hướng trội ${huongChu(huong)}`;
-      if (opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau) && gioMax >= (opts.luatHuong.xauTuToc ?? 0)) {
+      if (opts.luatHuong?.xau && trongCung(huong, opts.luatHuong.xau) && gioMax >= nguongGioSau(opts.luatHuong)) {
         noi += " — GIÓ SAU";
         tong = "xau";
       } else if (gs && trongCung(huong, gs.cung) && gioMax > gs.cam) {
