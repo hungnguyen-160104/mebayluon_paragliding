@@ -182,25 +182,38 @@ export function inCamActiveHours(t: Date | number = Date.now()): boolean {
 }
 
 /**
- * NHỊP CHỤP (chủ 01/10/2026, cho đỡ tốn lượt gọi): 10:00–15:00 giờ VN chụp MỖI
- * PHÚT (giờ bay chính); 05:30–10:00 và 15:00–19:30 chỉ chụp phút chia hết cho 3
- * (3 phút/lần). ≈ 481 ảnh/ngày. Lịch gọi vẫn mỗi phút,
+ * NHỊP CHỤP (chủ 01/10/2026, cho đỡ tốn lượt gọi): 10:00–15:00 giờ VN chụp
+ * 3 ẢNH/PHÚT (chủ 04/10, trước 1 ảnh/phút — giây 0, 20, 40; mọi camera); 05:30–10:00 và 15:00–19:30 chỉ chụp phút chia hết cho 3
+ * (3 phút/lần). ≈ 1.081 ảnh/ngày/camera. Lịch gọi vẫn mỗi phút,
  * route tự bỏ qua các phút không cần chụp.
  */
 export const CAM_PEAK = { fromMin: 10 * 60, toMin: 15 * 60 } as const;
 export const CAM_OFFPEAK_EVERY_MIN = 3;
+/** Số ảnh mỗi phút trong giờ cao điểm — một lượt cron chụp ở giây 0, 20, 40 */
+export const CAM_PEAK_SHOTS_PER_MIN = 3;
+
+/** Đang trong giờ cao điểm 10:00–15:00 giờ VN? */
+export function inCamPeak(t: Date | number = Date.now()): boolean {
+  const m = vnMinuteOfDay(t);
+  return m >= CAM_PEAK.fromMin && m < CAM_PEAK.toMin;
+}
 
 export function shouldSnapNow(t: Date | number = Date.now()): boolean {
   if (!inCamActiveHours(t)) return false;
-  const m = vnMinuteOfDay(t);
-  if (m >= CAM_PEAK.fromMin && m < CAM_PEAK.toMin) return true;
-  return m % CAM_OFFPEAK_EVERY_MIN === 0;
+  if (inCamPeak(t)) return true;
+  return vnMinuteOfDay(t) % CAM_OFFPEAK_EVERY_MIN === 0;
 }
 
 /** "08:41" theo giờ Việt Nam */
 export function vnHHMM(t: Date | number | string): string {
   const d = new Date(new Date(t).getTime() + VN_OFFSET_MS);
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+/** "08:41:20" theo giờ Việt Nam — giờ cao điểm có 3 ảnh trong một phút */
+export function vnHHMMSS(t: Date | number | string): string {
+  const d = new Date(new Date(t).getTime() + VN_OFFSET_MS);
+  return `${vnHHMM(t)}:${String(d.getUTCSeconds()).padStart(2, "0")}`;
 }
 
 /** Nhãn theo giờ VN dùng làm khoá bản ghi: "20260930-0841" */

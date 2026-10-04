@@ -27,7 +27,7 @@ import { createPortal } from "react-dom";
 
 import { Scrubber, TX, agoText, useCamFeed, useInView, useNow, useTimeline, type Txt } from "@/components/baobay/camera-timeline";
 import { useLanguage } from "@/contexts/language-context";
-import { CAM_STALE_MINUTES, CAMERAS, vnHHMM, type CamId, type CamShot } from "@/lib/imou/cameras";
+import { CAM_STALE_MINUTES, CAMERAS, vnHHMMSS, type CamId, type CamShot } from "@/lib/imou/cameras";
 
 /** Một điểm trên thanh thời gian = một ảnh */
 type Pt = { at: string; shot: CamShot };
@@ -108,7 +108,7 @@ export default function CameraGallery({ cam }: { cam: CamId }) {
           {status === "live" && !viewingPast ? (
             <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden />
           ) : null}
-          {showImage && sliderShot ? `${vnHHMM(sliderShot.takenAt)} · ${agoText(sliderShot.takenAt, now, vi)}` : null}
+          {showImage && sliderShot ? `${vnHHMMSS(sliderShot.takenAt)} · ${agoText(sliderShot.takenAt, now, vi)}` : null}
         </span>
       </div>
 
@@ -119,7 +119,7 @@ export default function CameraGallery({ cam }: { cam: CamId }) {
             <img
               key={shown.url}
               src={shown.url}
-              alt={`${cfg.name.vi} ${vnHHMM(shown.takenAt)}`}
+              alt={`${cfg.name.vi} ${vnHHMMSS(shown.takenAt)}`}
               loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"
@@ -149,7 +149,7 @@ export default function CameraGallery({ cam }: { cam: CamId }) {
               ) : null}
               {latest && status !== "notConfigured" ? (
                 <span className="mt-0.5 block text-xs font-normal text-white/70">
-                  {L(TX.lastShot)}: {vnHHMM(latest.takenAt)} · {agoText(latest.takenAt, now, vi)}
+                  {L(TX.lastShot)}: {vnHHMMSS(latest.takenAt)} · {agoText(latest.takenAt, now, vi)}
                 </span>
               ) : null}
             </span>
@@ -195,7 +195,7 @@ export default function CameraGallery({ cam }: { cam: CamId }) {
             <div className="fixed inset-0 z-[100] flex flex-col bg-black/95" role="dialog" aria-modal="true" onClick={closeZoom}>
               <div className="flex items-center justify-between gap-2 px-3 py-2 text-white" onClick={(e) => e.stopPropagation()}>
                 <span className="min-w-0 truncate text-sm">
-                  <b>{vnHHMM((sliderShot ?? shown).takenAt)}</b> · {agoText((sliderShot ?? shown).takenAt, now, vi)}
+                  <b>{vnHHMMSS((sliderShot ?? shown).takenAt)}</b> · {agoText((sliderShot ?? shown).takenAt, now, vi)}
                   {curIdx >= 0 && chron.length ? (
                     <span className="text-white/50">
                       {" "}
@@ -214,7 +214,7 @@ export default function CameraGallery({ cam }: { cam: CamId }) {
                   <img
                     key={shown.url}
                     src={shown.url}
-                    alt={vnHHMM(shown.takenAt)}
+                    alt={vnHHMMSS(shown.takenAt)}
                     decoding="async"
                     referrerPolicy="no-referrer"
                     onLoad={() => onImgLoad(shown.url)}

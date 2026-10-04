@@ -33,7 +33,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ cam: st
     latest: null,
     items: [],
   };
-  const headers = { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=30" };
+  const headers = { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=15" };
   if (!base.configured) return NextResponse.json(base, { headers });
 
   try {

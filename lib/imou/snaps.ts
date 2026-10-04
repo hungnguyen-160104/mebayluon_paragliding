@@ -8,7 +8,8 @@
  * còn băng thông ảnh do máy chủ Imou chịu (trình duyệt tải thẳng từ Imou).
  * Bản ghi cũ hơn CAM_KEEP_MINUTES (90 phút) bị xoá ở mỗi lượt cron.
  *
- * Khoá bản ghi: "<cam>/<YYYYMMDD-HHmm giờ VN>" — trùng phút thì ghi đè.
+ * Khoá bản ghi: "<cam>/<YYYYMMDD-HHmm giờ VN>-<giây 00/20/40>" — giờ cao điểm 3 ảnh/phút
+ * (chủ 04/10); trùng khe thì ghi đè.
  *
  * Dọn dẹp kiểu cũ: bản cũ (trước 01/10) đẩy ảnh lên Cloudinary thư mục
  * `baobay-cam/<cam>` và bản ghi có trường `thumb`. Nếu cron còn gặp bản ghi như
@@ -18,7 +19,7 @@
 import { initCloudinary } from "@/lib/cloudinary";
 import { connectDB } from "@/lib/mongodb";
 
-import { CAM_KEEP_MINUTES, CAM_WINDOW_MINUTES, vnStamp, type CamId, type CamShot } from "./cameras";
+import { CAM_KEEP_MINUTES, CAM_PEAK_SHOTS_PER_MIN, CAM_WINDOW_MINUTES, vnStamp, type CamId, type CamShot } from "./cameras";
 
 type SnapDoc = {
   _id: string;
@@ -44,7 +45,7 @@ async function snapColl() {
 export async function saveSnap(cam: CamId, url: string, takenAt = new Date()): Promise<CamShot> {
   const coll = await snapColl();
   await coll.updateOne(
-    { _id: `${cam}/${vnStamp(takenAt)}` },
+    { _id: `${cam}/${vnStamp(takenAt)}-${String(Math.floor(takenAt.getUTCSeconds() / 20) * 20).padStart(2, "0")}` },
     { $set: { cam, takenAt, url }, $unset: { thumb: "" } },
     { upsert: true },
   );
@@ -99,7 +100,7 @@ export async function listSnaps(cam: CamId): Promise<{ latest: CamShot | null; i
     coll
       .find({ ...base, takenAt: { $gte: since } }, proj)
       .sort({ takenAt: -1 })
-      .limit(CAM_WINDOW_MINUTES + 5)
+      .limit(CAM_WINDOW_MINUTES * CAM_PEAK_SHOTS_PER_MIN + 5)
       .toArray(),
   ]);
   return { latest: latestDoc ? toShot(latestDoc as SnapDoc) : null, items: docs.map((d) => toShot(d as SnapDoc)) };

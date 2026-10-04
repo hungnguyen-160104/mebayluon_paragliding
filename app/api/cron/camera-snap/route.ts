@@ -1,18 +1,22 @@
 // app/api/cron/camera-snap/route.ts
 import { NextResponse } from "next/server";
 
-import { CAM_IDS, CAMERAS, inCamActiveHours, isCamId, shouldSnapNow, vnHHMM, type CamId } from "@/lib/imou/cameras";
+import { CAM_IDS, CAM_PEAK_SHOTS_PER_MIN, CAMERAS, inCamActiveHours, inCamPeak, isCamId, shouldSnapNow, vnHHMM, type CamId } from "@/lib/imou/cameras";
 import { ImouError, checkDeviceBind, deviceOnline, imouConfigured, snapWithAutoBind, waitSnapReady } from "@/lib/imou/client";
 import { camBindCode, camChannel, camSerial } from "@/lib/imou/defaults.server";
 import { cleanupLegacySnaps, ensureSnapIndex, pruneSnaps, saveSnap } from "@/lib/imou/snaps";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-/** Chụp (≤15s) + chờ link ảnh dùng được (≤~20s) + ghi MongoDB — dưới 60s */
-export const maxDuration = 60;
+/**
+ * Một lượt chụp: chụp (≤15s) + chờ link ảnh dùng được (≤~20s) + ghi MongoDB ≤ 55s.
+ * Giờ cao điểm có 3 lượt bắt đầu ở giây 0, 20, 40 (chủ 04/10: 3 ảnh/phút) →
+ * lượt cuối xong chậm nhất ≈ 40 + 55 = 95s, nên cho 120s.
+ */
+export const maxDuration = 120;
 
 /**
- * CHỤP ẢNH CAMERA BÃI CẤT (Viên Nam; Khau Phạ từ 03/10/2026) — 05:30–19:30 giờ VN (chủ 01/10; trước 08:00–18:00) (chủ 30/09/2026): 1 ảnh/phút
+ * CHỤP ẢNH CAMERA (Viên Nam bãi cất + bãi hạ; Khau Phạ từ 03/10/2026) — 05:30–19:30 giờ VN (chủ 01/10; trước 08:00–18:00) (chủ 30/09/2026): 3 ảnh/phút (chủ 04/10)
  * 10:00–15:00, 3 phút/ảnh 08–10h và 15–18h (chủ 01/10).
  *
  * Ai gọi: Vercel cron trong vercel.json ("* 0-12,22-23 * * *" = mỗi phút 05–19h59 VN, route tự bỏ phút ngoài 05:30–19:30; gói
@@ -80,12 +84,26 @@ export async function GET(req: Request) {
     return NextResponse.json(r, { status: r.status });
   }
 
-  const settled = await Promise.allSettled(cams.map((cam) => withBudget(snapOne(cam, now), cam)));
-  const results = settled.map((s, i) =>
-    s.status === "fulfilled"
-      ? s.value
-      : { ok: false, cam: cams[i], code: "ERR", message: String(s.reason), status: 502 },
+  /**
+   * 3 ẢNH/PHÚT giờ cao điểm (chủ 04/10, mọi camera — bãi cất và bãi hạ): lịch
+   * Vercel nhỏ nhất là mỗi phút, nên trong một lượt gọi chụp thêm ở giây 20 và 40.
+   * Mỗi lượt chụp là một vòng riêng — vòng này chậm/hỏng không chặn vòng sau.
+   */
+  const rounds = force || !inCamPeak(now) ? 1 : CAM_PEAK_SHOTS_PER_MIN;
+  const gapMs = 60_000 / CAM_PEAK_SHOTS_PER_MIN;
+  const roundResults = await Promise.all(
+    Array.from({ length: rounds }, async (_, k) => {
+      if (k) await new Promise((r) => setTimeout(r, k * gapMs));
+      const at = k ? new Date() : now;
+      const settled = await Promise.allSettled(cams.map((cam) => withBudget(snapOne(cam, at), cam)));
+      return settled.map((s, i) =>
+        s.status === "fulfilled"
+          ? s.value
+          : { ok: false, cam: cams[i], code: "ERR", message: String(s.reason), status: 502 },
+      );
+    }),
   );
+  const results = roundResults.flat();
   // Lịch chỉ báo lỗi khi KHÔNG camera nào chụp được vì lỗi thật — camera chưa
   // cấu hình / mất 4G (DV1007) không làm đỏ lịch mỗi phút
   const anyOk = results.some((r) => r.ok);

@@ -18,12 +18,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { CAM_ACTIVE, CAM_STALE_MINUTES, CAMERAS, vnHHMM, type CamFeed, type CamId, type CamShot } from "@/lib/imou/cameras";
+import { CAM_ACTIVE, CAM_STALE_MINUTES, CAMERAS, vnHHMM, vnHHMMSS, type CamFeed, type CamId, type CamShot } from "@/lib/imou/cameras";
 
 export type EmbedLang = "vi" | "en";
 export type EmbedTheme = "dark" | "light";
 
-const REFRESH_MS = 60_000;
+const REFRESH_MS = 20_000;
 const SCRUB_DEBOUNCE_MS = 300;
 export const EMBED_SOURCE_URL =
   "https://www.mebayluon.com/baobay?utm_source=embed&utm_medium=iframe&utm_campaign=camera";
@@ -210,7 +210,7 @@ export default function CameraEmbed({ cam, lang, theme }: { cam: CamId; lang: Em
         <span className="min-w-0 truncate text-sm font-bold">📷 {cfg.name[lang]}</span>
         <span className={`flex shrink-0 items-center gap-1.5 text-xs ${T.muted}`}>
           {status === "live" && !viewingPast ? <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden /> : null}
-          {showImage && sliderShot ? `${vnHHMM(sliderShot.takenAt)} · ${agoText(sliderShot.takenAt, now, lang)}` : null}
+          {showImage && sliderShot ? `${vnHHMMSS(sliderShot.takenAt)} · ${agoText(sliderShot.takenAt, now, lang)}` : null}
         </span>
       </div>
 

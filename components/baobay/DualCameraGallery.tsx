@@ -22,7 +22,7 @@ import { createPortal } from "react-dom";
 
 import { Scrubber, TX, agoText, useCamFeed, useInView, useNow, useTimeline, type Txt } from "@/components/baobay/camera-timeline";
 import { useLanguage } from "@/contexts/language-context";
-import { CAM_STALE_MINUTES, CAMERAS, vnHHMM, type CamId, type CamShot } from "@/lib/imou/cameras";
+import { CAM_STALE_MINUTES, CAMERAS, vnHHMMSS, type CamId, type CamShot } from "@/lib/imou/cameras";
 
 /** Ghép ảnh hai mắt lệch nhau tối đa chừng này */
 const PAIR_WINDOW_MS = 2 * 60_000;
@@ -155,7 +155,7 @@ export default function DualCameraGallery({ a: camA, b: camB }: { a: CamId; b: C
             <img
               key={shot.url}
               src={shot.url}
-              alt={`${CAMERAS[lens.cam].name.vi} ${vnHHMM(shot.takenAt)}`}
+              alt={`${CAMERAS[lens.cam].name.vi} ${vnHHMMSS(shot.takenAt)}`}
               decoding="async"
               referrerPolicy="no-referrer"
               onLoad={() => tl.onImgLoad(shot.url)}
@@ -167,7 +167,7 @@ export default function DualCameraGallery({ a: camA, b: camB }: { a: CamId; b: C
               <img
                 key={shot.url}
                 src={shot.url}
-                alt={`${CAMERAS[lens.cam].name.vi} ${vnHHMM(shot.takenAt)}`}
+                alt={`${CAMERAS[lens.cam].name.vi} ${vnHHMMSS(shot.takenAt)}`}
                 loading="lazy"
                 decoding="async"
                 referrerPolicy="no-referrer"
@@ -209,7 +209,7 @@ export default function DualCameraGallery({ a: camA, b: camB }: { a: CamId; b: C
               ) : null}
               {newest && status !== "notConfigured" ? (
                 <span className="mt-0.5 block text-xs font-normal text-white/70">
-                  {L(TX.lastShot)}: {vnHHMM(newest.takenAt)} · {agoText(newest.takenAt, now, vi)}
+                  {L(TX.lastShot)}: {vnHHMMSS(newest.takenAt)} · {agoText(newest.takenAt, now, vi)}
                 </span>
               ) : null}
             </span>
@@ -231,7 +231,7 @@ export default function DualCameraGallery({ a: camA, b: camB }: { a: CamId; b: C
           {status === "live" && !viewingPast ? (
             <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden />
           ) : null}
-          {showImage && sliderPair ? `${vnHHMM(sliderPair.at)} · ${agoText(sliderPair.at, now, vi)}` : null}
+          {showImage && sliderPair ? `${vnHHMMSS(sliderPair.at)} · ${agoText(sliderPair.at, now, vi)}` : null}
         </span>
       </div>
 
@@ -275,7 +275,7 @@ export default function DualCameraGallery({ a: camA, b: camB }: { a: CamId; b: C
             <div className="fixed inset-0 z-[100] flex flex-col bg-black/95" role="dialog" aria-modal="true" onClick={closeZoom}>
               <div className="flex items-center justify-between gap-2 px-3 py-2 text-white" onClick={(e) => e.stopPropagation()}>
                 <span className="min-w-0 truncate text-sm">
-                  <b>{vnHHMM((sliderPair ?? shown).at)}</b> · {agoText((sliderPair ?? shown).at, now, vi)}
+                  <b>{vnHHMMSS((sliderPair ?? shown).at)}</b> · {agoText((sliderPair ?? shown).at, now, vi)}
                   {curIdx >= 0 && chron.length ? (
                     <span className="text-white/50">
                       {" "}

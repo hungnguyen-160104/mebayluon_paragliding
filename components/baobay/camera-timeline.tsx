@@ -17,11 +17,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 
 import { CAM_ACTIVE, vnHHMM, type CamFeed, type CamId } from "@/lib/imou/cameras";
 
-export const REFRESH_MS = 60_000;
+export const REFRESH_MS = 20_000;
 /** Kéo thanh trượt: dừng tay chừng này mới tải ảnh */
 const SCRUB_DEBOUNCE_MS = 300;
 /** Timelapse: nghỉ chừng này SAU KHI ảnh hiện xong mới sang ảnh kế */
-const PLAY_MS = 700;
+const PLAY_MS = 350; // 3 ảnh/phút giờ cao điểm (chủ 04/10) → nhiều khung gấp 3, chạy nhanh hơn cho đỡ lâu
 
 export type Txt = { vi: string; en: string };
 export const TX = {
@@ -33,8 +33,8 @@ export const TX = {
   offline: { vi: "Camera tạm mất kết nối", en: "Camera temporarily offline" },
   loading: { vi: "Đang tải ảnh…", en: "Loading…" },
   schedule: {
-    vi: `Chụp ${CAM_ACTIVE.label}: mỗi phút lúc 10–15h, 3 phút/ảnh giờ khác`,
-    en: `Shoots ${CAM_ACTIVE.label}: every minute 10–15h, every 3 min otherwise`,
+    vi: `Chụp ${CAM_ACTIVE.label}: 3 ảnh/phút lúc 10–15h, 3 phút/ảnh giờ khác`,
+    en: `Shoots ${CAM_ACTIVE.label}: 3 photos/min 10–15h, every 3 min otherwise`,
   },
   noShots: {
     vi: "Chưa có ảnh trong 60 phút qua",
