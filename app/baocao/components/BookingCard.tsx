@@ -45,6 +45,7 @@ import {
   serviceChargedCount,
   serviceSoldAt,
   servicePriceLabelsAt,
+  bayLauHuyKem,
 } from "@/lib/baobay/flight-price";
 import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
@@ -2020,6 +2021,8 @@ function ThemDichVuControl({
   const [bot, setBot] = useState<Record<ServiceKey, number>>(trong);
   const [tienLui, setTienLui] = useState<"credit" | "cash" | "transfer">("credit");
   const [stk, setStk] = useState("");
+  /** Huỷ H.hôn/S.mây/B.minh nhưng khách VẪN bay lâu và chịu tiền (mặc định: bay lâu miễn phí kèm gói huỷ theo). */
+  const [giuBayLau, setGiuBayLau] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const n = Math.max(1, booking.guestCount || 1);
@@ -2049,7 +2052,12 @@ function ThemDichVuControl({
   const congTru = (dau: 1 | -1, d: Record<ServiceKey, number>) =>
     Object.fromEntries(Object.keys(daCo).map((k) => [k, Math.max(0, daCo[k as ServiceKey] + dau * (d[k as ServiceKey] || 0))])) as Record<ServiceKey, number>;
   const tongThem = tienDv(congTru(1, add)) - tienDv(daCo);
-  const tongBot = tienDv(daCo) - tienDv(congTru(-1, bot));
+  /** Bay lâu miễn phí đi kèm gói bị huỷ — huỷ theo y như máy chủ (bayLauHuyKem). */
+  const bayLauKem = giuBayLau ? 0 : bayLauHuyKem(daCo, bot);
+  const botThat = { ...bot, longFlight: bot.longFlight + bayLauKem };
+  const tongBot = tienDv(daCo) - tienDv(congTru(-1, botThat));
+  /** Có bớt H.hôn/S.mây/B.minh mà đang có bay lâu → hiện lựa chọn giữ bay lâu. */
+  const coHoiBayLau = bot.sunset > 0 && (giuBayLau ? bayLauHuyKem(daCo, bot) : bayLauKem) > 0;
   const daTra = booking.deposit || 0;
 
   if (booking.status === "cancelled" || booking.status === "voided") return null;
@@ -2113,7 +2121,20 @@ function ThemDichVuControl({
       {soThem > 0 && <div className="mt-1.5 font-bold text-rose-700">Thêm {soThem} suất → phải thu thêm ~{formatVND(tongThem)}</div>}
       {soBot > 0 && (
         <div className="mt-1.5 space-y-1">
-          <div className="font-bold text-emerald-700">Bớt {soBot} suất → lùi lại ~{formatVND(tongBot)}</div>
+          <div className="font-bold text-emerald-700">Bớt {soBot + bayLauKem} suất → lùi lại ~{formatVND(tongBot)}</div>
+          {coHoiBayLau && (
+            <div className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-amber-900">
+              {bayLauKem > 0 ? (
+                <>Kèm theo: huỷ {bayLauKem}× Bay lâu đang <b>miễn phí theo gói</b> (gói không bay được → chuyến bay thường).</>
+              ) : (
+                <>Khách giữ bay lâu: phần bay lâu hết miễn phí, tính {formatVND(gia.longFlight)}/suất — đã trừ vào số lùi lại.</>
+              )}
+              <label className="mt-0.5 flex items-center gap-1">
+                <input type="checkbox" checked={giuBayLau} onChange={(e) => setGiuBayLau(e.target.checked)} />
+                Khách vẫn bay lâu (thu {formatVND(gia.longFlight)}/suất)
+              </label>
+            </div>
+          )}
           {/* Tiền lùi đi đâu: trừ vào phần còn thu (mặc định), hay khách đã trả rồi thì hoàn TM / CK */}
           <div className="flex flex-wrap items-center gap-2">
             {(
@@ -2138,6 +2159,9 @@ function ThemDichVuControl({
             )}
           </div>
           {daTra <= 0 && tienLui !== "credit" && <div className="text-amber-700">Khách chưa trả đồng nào — không có gì để hoàn, nên chọn “trừ vào còn thu”.</div>}
+          {daTra > 0 && tienLui !== "credit" && tongBot <= 0 && (
+            <div className="font-semibold text-rose-700">Không có khoản nào để hoàn (0đ) — kiểm tra lại.</div>
+          )}
         </div>
       )}
       {error && <div className="mt-1 text-rose-700">{error}</div>}
@@ -2145,7 +2169,12 @@ function ThemDichVuControl({
         <Button
           type="button"
           className="h-8 bg-indigo-600 px-3 text-xs hover:bg-indigo-700"
-          disabled={busy || (soThem === 0 && soBot === 0) || (soBot > 0 && tienLui === "transfer" && !stk.trim())}
+          disabled={
+            busy ||
+            (soThem === 0 && soBot === 0) ||
+            (soBot > 0 && tienLui === "transfer" && !stk.trim()) ||
+            (soBot > 0 && tienLui !== "credit" && tongBot <= 0)
+          }
           onClick={async () => {
             setBusy(true);
             setError(null);
@@ -2162,16 +2191,17 @@ function ThemDichVuControl({
                 conThu = r.booking?.remaining ?? null;
               }
               if (soBot > 0) {
-                const r = await apiPatch<{ back: number; refunded: number }>(`/api/baocao/booking/add-services?spot=${spot}`, {
+                const r = await apiPatch<{ back: number; refunded: number; longFlightAlso?: number }>(`/api/baocao/booking/add-services?spot=${spot}`, {
                   id: booking.id,
                   remove: bot,
                   mode: tienLui === "credit" ? "credit" : "refund",
                   refundMethod: tienLui === "cash" ? "cash" : "transfer",
                   bankAccount: stk.trim(),
                   reason: "bớt tại dòng booking",
+                  keepLongFlight: giuBayLau,
                 });
                 ket.push(
-                  `bớt ${soBot} dịch vụ (lùi ${formatVND(r.back)}${r.refunded > 0 ? `, hoàn khách ${formatVND(r.refunded)} ${tienLui === "cash" ? "TM" : "CK — chờ kế toán"}` : ", trừ vào còn thu"})`,
+                  `bớt ${soBot} dịch vụ${(r.longFlightAlso ?? 0) > 0 ? ` + ${r.longFlightAlso} bay lâu miễn phí kèm gói` : ""} (lùi ${formatVND(r.back)}${r.refunded > 0 ? `, hoàn khách ${formatVND(r.refunded)} ${tienLui === "cash" ? "TM" : "CK — chờ kế toán"}` : ", trừ vào còn thu"})`,
                 );
                 conThu = null;
               }
@@ -2181,6 +2211,7 @@ function ThemDichVuControl({
               );
               setAdd(trong());
               setBot(trong());
+              setGiuBayLau(false);
               setOpen(false);
             } catch (e: unknown) {
               setError(e instanceof Error ? e.message : "Không sửa được dịch vụ");

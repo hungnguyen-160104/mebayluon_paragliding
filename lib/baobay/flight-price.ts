@@ -197,6 +197,31 @@ export function longFlightCharged(longFlight?: number, sunset?: number): number 
 }
 
 /**
+ * HUỶ H.HÔN / S.MÂY / B.MINH thì BAY LÂU MIỄN PHÍ ĐI KÈM CŨNG HUỶ THEO (chủ 04/10/2026).
+ *
+ * Bay lâu miễn phí là MỘT PHẦN của gói đặc biệt: gói không bay được thì "chuyến
+ * bay trở thành chuyến bay thường" và hoàn phụ phí (KP_REFUND_NOTE_PPG). Trước
+ * đây huỷ 2 suất gói thì 2 suất bay lâu đang 0đ lập tức thành 700k/suất — tiền
+ * lùi lại = 1.400.000 − 1.400.000 = 0đ, khách mất trắng phần hoàn (booking #13
+ * Khau Phạ 04/10, web "Gói đặc biệt" ×2 + "Bay lâu" ×2).
+ *
+ * Trả về số suất bay lâu PHẢI HUỶ KÈM để không có suất nào từ miễn phí chuyển
+ * sang tính tiền: = (bay lâu tính tiền SAU) − (bay lâu tính tiền TRƯỚC), sau
+ * khi đã trừ phần người dùng tự bớt. Khách vẫn muốn bay lâu và chịu trả tiền
+ * thì nơi gọi bỏ qua hàm này (ô "khách vẫn bay lâu, thu tiền").
+ */
+export function bayLauHuyKem(
+  dang: { sunset?: number; longFlight?: number },
+  bot: { sunset?: number; longFlight?: number },
+): number {
+  const lf = Number(dang.longFlight) || 0;
+  const ss = Number(dang.sunset) || 0;
+  const lf1 = Math.max(0, lf - (Number(bot.longFlight) || 0));
+  const ss1 = Math.max(0, ss - (Number(bot.sunset) || 0));
+  return Math.max(0, Math.min(lf1, longFlightCharged(lf1, ss1) - longFlightCharged(lf, ss)));
+}
+
+/**
  * Số suất dịch vụ ĐƯỢC TÍNH TIỀN — để các bảng tính doanh thu từng dịch vụ
  * (số × đơn giá) ra cùng con số với `servicesAmount`. Chỉ bay lâu khác số
  * bán, các dịch vụ còn lại trả nguyên.

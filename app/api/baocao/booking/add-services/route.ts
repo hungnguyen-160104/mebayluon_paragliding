@@ -95,6 +95,8 @@ export async function PATCH(req: Request) {
       backAmount: body?.backAmount === undefined || body?.backAmount === null
         ? undefined
         : Number(body.backAmount) || 0,
+      // Huỷ H.hôn/S.mây/B.minh mà khách vẫn bay lâu (chịu tiền) — mặc định bay lâu miễn phí kèm gói huỷ theo
+      keepLongFlight: body?.keepLongFlight === true,
     });
     return NextResponse.json(res);
   } catch (err) {

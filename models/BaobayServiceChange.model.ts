@@ -42,6 +42,8 @@ export interface IBaobayServiceChange {
   /** "credit" = trừ vào tiền còn thu · "refund" = trả lại tiền khách. */
   mode?: "credit" | "refund";
   refundMethod?: "cash" | "transfer";
+  /** STK khách nhận hoàn (huỷ dịch vụ, hoàn CK) — lưu cả ở đây để số đã gõ không bao giờ mất. */
+  bankAccount?: string;
   reason?: string;
 
   /** Ảnh chụp booking TRƯỚC khi sửa — nguồn duy nhất để hoàn tác. */
@@ -97,6 +99,7 @@ const ServiceChangeSchema = new Schema<IBaobayServiceChange>(
     refunded: { type: Number, default: 0 },
     mode: { type: String, enum: ["credit", "refund"] },
     refundMethod: { type: String, enum: ["cash", "transfer"] },
+    bankAccount: { type: String, default: "" },
     reason: String,
     before: {
       flycam: { type: Number, default: 0 },

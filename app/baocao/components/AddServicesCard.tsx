@@ -10,6 +10,7 @@ import {
   serviceChargedCount,
   servicePriceLabelsAt,
   comboDiscount,
+  bayLauHuyKem,
 } from "@/lib/baobay/flight-price";
 import type { BookingDTO } from "@/lib/baobay/types";
 import type { ServiceChangeDTO } from "@/services/baobay.service";
@@ -115,6 +116,8 @@ export function AddServicesCard({
   const [backMode, setBackMode] = useState<"credit" | "refund">("credit");
   const [refundMethod, setRefundMethod] = useState<"cash" | "transfer">("transfer");
   const [bankAccount, setBankAccount] = useState("");
+  /** Huỷ H.hôn/S.mây/B.minh nhưng khách VẪN bay lâu, chịu tiền — mặc định bay lâu miễn phí kèm gói huỷ theo. */
+  const [giuBayLau, setGiuBayLau] = useState(false);
   const [pickId, setPickId] = useState(bookingId ?? "");
   /** Số booking phi công gõ (chế độ selfOnly). */
   const [soGo, setSoGo] = useState("");
@@ -257,8 +260,17 @@ export function AddServicesCard({
   const tienDv = (c: Record<ServiceKey, number>) => KEYS.reduce((t, k) => t + serviceChargedCount(k, c, spot) * price[k], 0);
   const cong = (a: Record<ServiceKey, number>, b: Record<ServiceKey, number>, dau: 1 | -1) =>
     Object.fromEntries(KEYS.map((k) => [k, Math.max(0, a[k] + dau * b[k])])) as Record<ServiceKey, number>;
+  /**
+   * HUỶ GÓI H.HÔN/S.MÂY/B.MINH thì bay lâu miễn phí đi kèm huỷ theo (chủ 04/10,
+   * booking #13) — y hệt máy chủ (bayLauHuyKem). Không thì bay lâu đang 0đ hoá
+   * 700k và tiền lùi lại thành 0đ.
+   */
+  const bayLauKem = mode === "remove" && !giuBayLau ? bayLauHuyKem(dang, add) : 0;
+  const coHoiBayLau = mode === "remove" && add.sunset > 0 && bayLauHuyKem(dang, add) > 0;
   const addAmount =
-    mode === "remove" ? tienDv(dang) - tienDv(cong(dang, add, -1)) : tienDv(cong(dang, add, 1)) - tienDv(dang);
+    mode === "remove"
+      ? tienDv(dang) - tienDv(cong(dang, { ...add, longFlight: add.longFlight + bayLauKem }, -1))
+      : tienDv(cong(dang, add, 1)) - tienDv(dang);
   const comboBefore = picked ? comboDiscount(picked.flycam, picked.video360) : 0;
   const comboAfter = picked ? comboDiscount(picked.flycam + add.flycam, picked.video360 + add.video360) : 0;
   const comboGain = Math.max(0, comboAfter - comboBefore);
@@ -323,6 +335,7 @@ export function AddServicesCard({
     setBackTouched(false);
     setRefundAmount(0);
     setRefundTouched(false);
+    setGiuBayLau(false);
     setError(null);
   }
 
@@ -330,6 +343,9 @@ export function AddServicesCard({
     if (!picked) return setError("Chọn khách đã đặt trước đã");
     if (backMode === "refund" && refundMethod === "transfer" && !bankAccount.trim()) {
       return setError("Hoàn chuyển khoản thì phải có số tài khoản của khách");
+    }
+    if (backMode === "refund" && refundAmount <= 0) {
+      return setError("Không có khoản nào để hoàn (0đ) — kiểm tra lại");
     }
     if (backMode === "refund" && refundAmount > picked.deposit) {
       return setError(
@@ -340,7 +356,7 @@ export function AddServicesCard({
     setError(null);
     setDone(null);
     try {
-      const res = await apiPatch<{ back: number; refunded: number }>(
+      const res = await apiPatch<{ back: number; refunded: number; longFlightAlso?: number }>(
         `/api/baocao/booking/add-services?spot=${spot}`,
         {
           id: picked.id,
@@ -350,11 +366,14 @@ export function AddServicesCard({
           bankAccount,
           reason: note,
           backAmount,
+          keepLongFlight: giuBayLau,
           ...(backMode === "refund" ? { refundAmount } : {}),
         },
       );
       setDone(
-        `✓ Đã huỷ dịch vụ cho ${picked.contactName || "khách"} — lùi lại ${formatVND(res.back)}` +
+        `✓ Đã huỷ dịch vụ cho ${picked.contactName || "khách"}` +
+          ((res.longFlightAlso ?? 0) > 0 ? ` (kèm ${res.longFlightAlso} bay lâu miễn phí theo gói)` : "") +
+          ` — lùi lại ${formatVND(res.back)}` +
           (res.refunded > 0
             ? `, hoàn khách ${formatVND(res.refunded)} ${refundMethod === "cash" ? "tiền mặt" : "(chờ kế toán chuyển)"}.`
             : " (trừ vào phần còn phải thu)."),
@@ -386,6 +405,8 @@ export function AddServicesCard({
         mode: "credit",
         reason: note || "đổi dịch vụ",
         backAmount: botAmount,
+        // Đổi là ý khách: bay lâu khách giữ thì tính tiền như cũ, không tự huỷ kèm
+        keepLongFlight: true,
       });
       await apiPost(`/api/baocao/booking/add-services?spot=${spot}`, { id: picked.id, add, discount: 0, note: note || "đổi dịch vụ" });
       setDone(
@@ -611,6 +632,23 @@ export function AddServicesCard({
             </p>
           )}
 
+          {coHoiBayLau && (
+            <div className="mt-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] leading-snug text-amber-900">
+              {bayLauKem > 0 ? (
+                <>
+                  Kèm theo: huỷ <b>{bayLauKem}× Bay lâu</b> đang miễn phí theo gói — gói không bay được thì chuyến bay
+                  thành chuyến bay thường, hoàn đủ phụ phí.
+                </>
+              ) : (
+                <>Khách giữ bay lâu: phần bay lâu hết miễn phí, tính {formatVND(price.longFlight)}/suất — đã trừ vào số lùi lại.</>
+              )}
+              <label className="mt-0.5 flex items-center gap-1.5 font-medium">
+                <input type="checkbox" checked={giuBayLau} onChange={(e) => setGiuBayLau(e.target.checked)} />
+                Khách vẫn bay lâu (thu {formatVND(price.longFlight)}/suất)
+              </label>
+            </div>
+          )}
+
           {mode === "remove" ? (
             <>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs">
@@ -730,6 +768,9 @@ export function AddServicesCard({
                     {refundAmount > backAmount ? ` · hoàn thừa ${formatVND(refundAmount - backAmount)} sẽ thành tiền khách còn nợ` : ""}
                     {refundMethod === "transfer" ? " · lệnh hoàn sẽ chờ kế toán chuyển khoản" : ""}
                   </span>
+                  {refundAmount <= 0 && (
+                    <span className="w-full text-xs font-semibold text-rose-700">Không có khoản nào để hoàn (0đ) — kiểm tra lại.</span>
+                  )}
                 </div>
               )}
             </>

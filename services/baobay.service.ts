@@ -58,7 +58,7 @@ import {
   parseTicketCode,
   formatTicketCode,
 } from "@/lib/baobay/ticket-code";
-import { FLIGHT_KIND_SHORT, boDichVuKhongBan, bookingTotal, comboDiscount, serviceSoldAt, defaultFlightKind, flightUnitPrice, servicePriceOf, type FlightKind,
+import { FLIGHT_KIND_SHORT, bayLauHuyKem, boDichVuKhongBan, bookingTotal, comboDiscount, serviceSoldAt, defaultFlightKind, flightUnitPrice, servicePriceOf, type FlightKind,
   loaiBayCuaDiem,
 } from "@/lib/baobay/flight-price";
 import {
@@ -6360,8 +6360,14 @@ export async function removeBookingServices(
      * cũng sửa tay được. Bỏ trống thì lấy số theo bảng giá.
      */
     backAmount?: number;
+    /**
+     * Khách VẪN BAY LÂU và chịu trả tiền khi huỷ H.hôn/S.mây/B.minh. Mặc định
+     * (false) thì bay lâu miễn phí đi kèm gói huỷ theo — xem `bayLauHuyKem`.
+     * Đường "đổi dịch vụ" (ý khách) truyền true để giữ cách tính cũ.
+     */
+    keepLongFlight?: boolean;
   },
-): Promise<{ booking: BookingDTO; back: number; refunded: number }> {
+): Promise<{ booking: BookingDTO; back: number; refunded: number; longFlightAlso: number }> {
   await connectDB();
   const spot = assertSpotAllowed(session, spotRaw);
   await assertBookingUnlocked(spot, id, session);
@@ -6376,6 +6382,21 @@ export async function removeBookingServices(
   assertCameramanServiceLimits(session, input.remove, String(booking.flightDate ?? ""));
 
   const before = serviceSnapshot(booking);
+  /**
+   * BAY LÂU MIỄN PHÍ KÈM GÓI HUỶ THEO GÓI (chủ 04/10, booking #13 Khau Phạ):
+   * huỷ H.hôn/S.mây/B.minh mà để nguyên bay lâu thì suất bay lâu đang 0đ hoá
+   * 700k, tiền lùi lại thành 0đ và lệnh hoàn không bao giờ được lập.
+   */
+  const longFlightAlso = input.keepLongFlight
+    ? 0
+    : bayLauHuyKem(
+        { sunset: booking.sunset ?? 0, longFlight: booking.longFlight ?? 0 },
+        { sunset: input.remove.sunset ?? 0, longFlight: input.remove.longFlight ?? 0 },
+      );
+  input = {
+    ...input,
+    remove: { ...input.remove, longFlight: Math.max(0, Math.round(input.remove.longFlight ?? 0)) + longFlightAlso },
+  };
   const keys = ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight"] as const;
   const label: Record<(typeof keys)[number], string> = {
     flycam: "Flycam",
@@ -6450,6 +6471,23 @@ export async function removeBookingServices(
     ? Math.max(0, Math.round(input.refundAmount as number))
     : back;
   const refunded = input.mode === "refund" ? Math.min(wanted, deposit) : 0;
+  /**
+   * CHỌN "HOÀN TIỀN" MÀ RA 0đ THÌ DỪNG, KHÔNG GHI GÌ (chủ 04/10): trước đây máy
+   * vẫn huỷ dịch vụ, ghi "hoàn khách 0 đ" rồi im lặng không lập lệnh hoàn — STK
+   * khách vừa gõ mất luôn, người huỷ tưởng đã xong. Báo lỗi để người huỷ xem
+   * lại (form giữ nguyên STK đã gõ).
+   */
+  if (input.mode === "refund" && refunded <= 0) {
+    throw new BaobayError(
+      deposit <= 0
+        ? "Khách chưa trả đồng nào — không có khoản nào để hoàn (0đ). Chọn “trừ vào còn thu”."
+        : "Không có khoản nào để hoàn (0đ) — kiểm tra lại",
+      400,
+    );
+  }
+  if (input.mode === "refund" && input.refundMethod !== "cash" && !(input.bankAccount ?? "").trim()) {
+    throw new BaobayError("Hoàn chuyển khoản thì phải có số tài khoản của khách", 400);
+  }
   if (input.mode === "refund" && wanted > deposit) {
     throw new BaobayError(
       `Khách mới trả ${deposit.toLocaleString("vi-VN")} đ — không hoàn được ${wanted.toLocaleString("vi-VN")} đ`,
@@ -6467,7 +6505,11 @@ export async function removeBookingServices(
 
   const cutText = keys
     .filter((k) => (input.remove[k] ?? 0) > 0)
-    .map((k) => `${input.remove[k]}×${label[k]}`)
+    .map((k) =>
+      k === "longFlight" && longFlightAlso > 0
+        ? `${input.remove[k]}×${label[k]} (${longFlightAlso} suất miễn phí kèm gói huỷ theo)`
+        : `${input.remove[k]}×${label[k]}`,
+    )
     .join(", ");
 
   const updated = await BaobayBooking.findOneAndUpdate(
@@ -6546,6 +6588,7 @@ export async function removeBookingServices(
     refunded,
     mode: input.mode,
     refundMethod: input.refundMethod === "cash" ? "cash" : "transfer",
+    bankAccount: input.mode === "refund" && input.refundMethod !== "cash" ? (input.bankAccount ?? "").trim() : "",
     reason: input.reason?.trim() || "",
     before,
     collectIds: [],
@@ -6555,7 +6598,7 @@ export async function removeBookingServices(
   });
 
   updated.notifyPendingBase = await markBookingChanged(booking, updated);
-  return { booking: toBookingDTO(updated), back, refunded };
+  return { booking: toBookingDTO(updated), back, refunded, longFlightAlso };
 }
 
 
@@ -8447,9 +8490,22 @@ export async function undoServiceChange(
     .lean<any[]>();
   const collectedSum = money.reduce((t, c) => t + (c.amount || 0), 0);
   const bookingNow = await BaobayBooking.findOne({ _id: change.bookingId, spot })
-    .select("deposit note agencyPaidAmount")
+    .select("deposit note agencyPaidAmount cancelledFlycam cancelledVideo360 cancelledRedFlag cancelledSunset cancelledLongFlight cancelledFlagFlight")
     .lean<any>();
   const depositNow = bookingNow?.deposit ?? 0;
+  /**
+   * Bỏ lệnh HUỶ thì số "đã huỷ" (dòng booking in "huỷ 2" đỏ) cũng lùi lại —
+   * trước đây quên, dịch vụ đã trả về mà dòng booking vẫn báo đã huỷ.
+   */
+  const cancelledBack: Record<string, number> = {};
+  if (change.kind === "remove") {
+    const cap = (k: string) => k.charAt(0).toUpperCase() + k.slice(1);
+    for (const k of SERVICE_KEYS) {
+      const f = `cancelled${cap(k)}`;
+      const cut = Math.max(0, Number(change.items?.[k]) || 0);
+      if (cut > 0) cancelledBack[f] = Math.max(0, (Number(bookingNow?.[f]) || 0) - cut);
+    }
+  }
   const newTotal = b.totalAmount ?? 0;
 
   const items = SERVICE_KEYS.filter((k) => (change.items?.[k] ?? 0) > 0)
@@ -8470,6 +8526,7 @@ export async function undoServiceChange(
         sunset: b.sunset ?? 0,
         longFlight: b.longFlight ?? 0,
         flagFlight: b.flagFlight ?? 0,
+        ...cancelledBack,
         comboDiscount: b.comboDiscount ?? 0,
         discount: b.discount ?? 0,
         totalAmount: newTotal,
