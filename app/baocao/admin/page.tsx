@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { ROLE_LABEL, roleTabs, uniqueTabs } from "@/lib/baobay/roles";
-import { spotName } from "@/lib/baobay/spots";
+import { appSpotList, spotName } from "@/lib/baobay/spots";
 
 import { apiPost } from "../components/client-api";
 import { PersonnelPanel } from "../components/PersonnelPanel";
@@ -46,7 +46,7 @@ export default function BaobayAdminPage() {
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-sky-700">
             {ROLE_LABEL[user.role]}
-            {user.spots?.length ? ` · ${user.spots.map(spotName).join(" + ")}` : ""}
+            {user.spots?.length ? ` · ${appSpotList(user.spots).map(spotName).join(" + ")}` : ""}
           </div>
           {(user.extraRoles ?? []).length > 0 && (
             <div className="text-[11px] font-medium text-emerald-700">

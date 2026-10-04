@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { SPOTS, type SpotId } from "@/lib/baobay/spots";
+import { APP_SPOTS, type SpotId } from "@/lib/baobay/spots";
 import { todayInVN } from "@/lib/baobay/date";
 
 /**
@@ -226,7 +226,7 @@ export function ShiftBoard({
 
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <div className="flex flex-wrap gap-1">
-          {SPOTS.map((sp) => (
+          {APP_SPOTS.map((sp) => (
             <button
               key={sp.id}
               type="button"

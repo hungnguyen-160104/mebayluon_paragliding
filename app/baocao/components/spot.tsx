@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { normalizeSpot, spotName, type SpotId } from "@/lib/baobay/spots";
+import { appSpotList, normalizeSpot, spotName, type SpotId } from "@/lib/baobay/spots";
 
 import { ghiSpotUrl, spotTuUrl } from "./ngay-lam-viec";
 
@@ -25,7 +25,8 @@ export function useSpot(spots: string[] | undefined): {
   setSpot: (next: SpotId) => void;
   options: SpotId[];
 } {
-  const options = (spots ?? []).map(normalizeSpot);
+  /** Điểm tạm ẩn (Sa Pa, chủ 04/10) không hiện nút chọn — xem APP_HIDDEN_SPOTS. */
+  const options = appSpotList((spots ?? []).map(normalizeSpot));
   const [spot, setSpotState] = useState<SpotId | null>(null);
 
   useEffect(() => {

@@ -11,7 +11,7 @@ import { BAOBAY_ROLES, ROLE_LABEL, type BaobayRole } from "@/lib/baobay/roles";
 
 import { MoneyOrderCard } from "./MoneyOrderCard";
 import { ShiftBoard } from "./ShiftBoard";
-import { SPOTS, spotName, type SpotId } from "@/lib/baobay/spots";
+import { APP_SPOTS, SPOTS, spotName, type SpotId } from "@/lib/baobay/spots";
 import type { BaobayAccountDTO, BaobaySummaryDTO } from "@/lib/baobay/types";
 import { formatVND } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
@@ -203,7 +203,7 @@ export function PersonnelPanel() {
               className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700"
             >
               <option value="all">Mọi điểm bay ({inStatus.length})</option>
-              {SPOTS.map((sp) => (
+              {APP_SPOTS.map((sp) => (
                 <option key={sp.id} value={sp.id}>
                   {sp.name} ({spotCount(sp.id)})
                 </option>
@@ -751,7 +751,7 @@ function HandoverCard() {
         xác nhận — không ai bấm thay được. Tự làm mới mỗi 20 giây.
       </p>
       <div className="mt-2 flex flex-wrap gap-1">
-        {SPOTS.map((sp) => {
+        {APP_SPOTS.map((sp) => {
           const count = pendingBySpot[sp.id] ?? 0;
           return (
             <button
@@ -908,7 +908,7 @@ function PeriodTotalsCard() {
         <div>
           <h2 className="font-semibold text-slate-900">Tổng theo chu kỳ (chỉ ngày đã chốt)</h2>
           <div className="mt-2 flex flex-wrap gap-1">
-            {SPOTS.map((sp) => (
+            {APP_SPOTS.map((sp) => (
               <button
                 key={sp.id}
                 type="button"
@@ -1113,7 +1113,7 @@ function SingleCreateCard({
         <div>
           <span className="mb-1 block text-sm font-medium text-slate-700">Điểm bay được chỉ định</span>
           <div className="flex flex-wrap gap-2">
-            {SPOTS.map((sp) => {
+            {APP_SPOTS.map((sp) => {
               const on = spots.includes(sp.id);
               return (
                 <button
@@ -1206,7 +1206,7 @@ function BulkCreateCard({
       <div className="mb-3">
         <span className="mb-1 block text-sm font-medium text-slate-700">Điểm bay được chỉ định</span>
         <div className="flex flex-wrap gap-2">
-          {SPOTS.map((sp) => {
+          {APP_SPOTS.map((sp) => {
             const on = spots.includes(sp.id);
             return (
               <button
@@ -1430,7 +1430,7 @@ function AccountRow({
       <td className="py-2 pr-3">
         {/* Điểm bay do admin chỉ định — tick nhiều điểm nếu người này làm nhiều nơi */}
         <div className="flex flex-wrap gap-1">
-          {SPOTS.map((sp) => {
+          {APP_SPOTS.map((sp) => {
             const on = account.spots.includes(sp.id);
             return (
               <button
@@ -1578,7 +1578,7 @@ function StatementCard({ accounts }: { accounts: BaobayAccountDTO[] }) {
 
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <div className="flex flex-wrap gap-1">
-          {SPOTS.map((sp) => (
+          {APP_SPOTS.map((sp) => (
             <button
               key={sp.id}
               type="button"
@@ -1634,7 +1634,7 @@ function AdminMoneyOrder() {
   return (
     <div>
       <div className="mb-2 flex flex-wrap gap-1">
-        {SPOTS.map((sp) => (
+        {APP_SPOTS.map((sp) => (
           <button
             key={sp.id}
             type="button"

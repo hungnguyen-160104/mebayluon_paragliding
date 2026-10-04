@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
 
 import { tidyBankRaw } from "@/lib/baobay/bank-check";
 import { formatDateKeyVN } from "@/lib/baobay/date";
-import { SPOTS } from "@/lib/baobay/spots";
+import { APP_SPOTS } from "@/lib/baobay/spots";
 import { spotName } from "@/lib/baobay/spots";
 import { formatVND } from "@/lib/pricing";
 
@@ -650,7 +650,7 @@ export function BankCheckCard({ date }: { date: string }) {
       {/* Soát dữ liệu điểm nào — tích 1, 2 hay cả 3 điểm; tích hết (hoặc chưa
           tích gì) tự hiểu là soát mọi điểm, khỏi cần nút riêng */}
       <div className="mb-2 flex h-9 w-fit overflow-hidden rounded-lg border border-slate-300">
-        {SPOTS.map((x, i) => {
+        {APP_SPOTS.map((x, i) => {
           const on = spots.includes(x.id);
           return (
             <button

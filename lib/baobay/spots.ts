@@ -20,6 +20,20 @@ export const SPOTS = [
 
 export type SpotId = (typeof SPOTS)[number]["id"];
 
+/**
+ * ĐIỂM TẠM ẨN TRONG APP (chủ 04/10/2026: Sa Pa không dùng app nữa). Dữ liệu cũ
+ * vẫn giữ nguyên, chỉ không hiện tab/nút chọn. Bỏ "sapa" khỏi danh sách này là
+ * hiện lại.
+ */
+export const APP_HIDDEN_SPOTS: readonly SpotId[] = ["sapa"];
+export const APP_SPOTS = SPOTS.filter((s) => !APP_HIDDEN_SPOTS.includes(s.id));
+
+/** Lọc bỏ điểm tạm ẩn khỏi danh sách điểm của một người; còn trống thì giữ nguyên để trang không vỡ. */
+export function appSpotList<T extends string>(spots: T[]): T[] {
+  const kept = spots.filter((s) => !(APP_HIDDEN_SPOTS as readonly string[]).includes(s));
+  return kept.length ? kept : spots;
+}
+
 export const SPOT_IDS = SPOTS.map((s) => s.id) as SpotId[];
 
 /** Điểm mặc định khi tài khoản chưa được chỉ định điểm nào. */

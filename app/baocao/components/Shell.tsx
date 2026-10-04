@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { ROLE_LABEL, roleTabs, uniqueTabs } from "@/lib/baobay/roles";
-import { spotName } from "@/lib/baobay/spots";
+import { appSpotList, spotName } from "@/lib/baobay/spots";
 import type { BaobayUserDTO } from "@/lib/baobay/types";
 
 import { apiPost } from "./client-api";
@@ -82,7 +82,7 @@ export function Shell({
         <div className="min-w-0">
           <div className="truncate text-xs font-medium uppercase tracking-wide text-sky-700">
             {ROLE_LABEL[user.role]}
-            {user.spots?.length ? ` · ${user.spots.map(spotName).join(" + ")}` : ""}
+            {user.spots?.length ? ` · ${appSpotList(user.spots).map(spotName).join(" + ")}` : ""}
           </div>
           {/* Nói thẳng người này đang mang những vai nào — khỏi đoán qua thanh thẻ */}
           {(user.extraRoles ?? []).length > 0 && (
