@@ -37,6 +37,7 @@ import { useNgayLamViec } from "../../components/ngay-lam-viec";
 import { DateBar } from "../../components/DateBar";
 import { ExpenseRows, toExpenseRows, type ExpenseRow } from "../../components/rows";
 import { HandoverBox } from "../../components/HandoverBox";
+import { CafeMoneySummary } from "../../components/CafeMoneySummary";
 import { useBaobaySession } from "../../components/session";
 import { Shell } from "../../components/Shell";
 import {
@@ -681,6 +682,11 @@ export default function CafeReportPage() {
             </p>
           </Card>
         )}
+      </div>
+
+      {/* Tổng đã chi · còn giữ đến hiện tại · từng tháng (chủ 04/10) — cùng đường tính với số "đang giữ" bên dưới */}
+      <div className="mt-3">
+        <CafeMoneySummary refreshKey={`${date}-${justSaved}`} />
       </div>
 
       {/* Nộp tiền cho quản lý + xin ứng tiền — SỔ QUẦY, không dính tiền bán dù */}

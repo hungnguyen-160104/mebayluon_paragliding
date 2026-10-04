@@ -341,11 +341,11 @@ export function AddServicesCard({
 
   async function submitRemove() {
     if (!picked) return setError("Chọn khách đã đặt trước đã");
-    if (backMode === "refund" && refundMethod === "transfer" && !bankAccount.trim()) {
-      return setError("Hoàn chuyển khoản thì phải có số tài khoản của khách");
-    }
     if (backMode === "refund" && refundAmount <= 0) {
       return setError("Không có khoản nào để hoàn (0đ) — kiểm tra lại");
+    }
+    if (backMode === "refund" && refundMethod === "transfer" && !bankAccount.trim()) {
+      return setError("Hoàn chuyển khoản thì phải có số tài khoản của khách");
     }
     if (backMode === "refund" && refundAmount > picked.deposit) {
       return setError(

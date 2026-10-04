@@ -171,7 +171,10 @@ export function BookingSheet({
   renderInsurance,
   renderMoneyCell,
   renderCodeExtra,
+  isNew,
 }: {
+  /** Booking mới nhập (ghim đầu — chủ 04/10): ô STT hiện nhãn "mới". */
+  isNew?: (b: BookingDTO) => boolean;
   spot: string;
   /** Ngày đang xem — nút "thêm hàng" tạo booking trống cho đúng ngày này. */
   date: string;
@@ -672,6 +675,14 @@ export function BookingSheet({
                               <GoiSdt sdt={cellText(b, col, spot)} className="text-sky-800" />
                             ) : (
                               cellText(b, col, spot)
+                            )}
+                            {col.key === "daySeq" && isNew?.(b) && (
+                              <span
+                                className="block rounded bg-emerald-600 text-center text-[8px] font-bold leading-tight text-white"
+                                title="Nhập trong 30 phút gần nhất — ghim trên đầu"
+                              >
+                                mới
+                              </span>
                             )}
                             {/**
                              * NÚT 📄 CHI TIẾT ghép vào ô "Số booking" — đúng chỗ

@@ -47,6 +47,7 @@ import {
   servicePriceLabelsAt,
   bayLauHuyKem,
 } from "@/lib/baobay/flight-price";
+import { MOI_NHAP_PHUT, docKieuXep, luuKieuXep, moiNhap, phutTruoc, soBooking, xepBooking, type BookingSort } from "@/lib/baobay/booking-order";
 import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
@@ -2121,7 +2122,9 @@ function ThemDichVuControl({
       {soThem > 0 && <div className="mt-1.5 font-bold text-rose-700">Thêm {soThem} suất → phải thu thêm ~{formatVND(tongThem)}</div>}
       {soBot > 0 && (
         <div className="mt-1.5 space-y-1">
-          <div className="font-bold text-emerald-700">Bớt {soBot + bayLauKem} suất → lùi lại ~{formatVND(tongBot)}</div>
+          <div className="font-bold text-emerald-700">
+            Bớt {soBot} suất{bayLauKem > 0 ? ` + ${bayLauKem} bay lâu kèm gói` : ""} → lùi lại ~{formatVND(tongBot)}
+          </div>
           {coHoiBayLau && (
             <div className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-amber-900">
               {bayLauKem > 0 ? (
@@ -4267,6 +4270,19 @@ function Nhan({
   );
 }
 
+/** Nhãn nhỏ "mới · 12'" cho booking nhập trong MOI_NHAP_PHUT phút gần nhất. */
+function NhanMoi({ b }: { b: BookingDTO }) {
+  const p = phutTruoc(b);
+  return (
+    <span
+      className="ml-1 mr-1 inline-block rounded bg-emerald-600 px-1 py-px align-middle text-[10px] font-bold leading-tight text-white"
+      title={`Nhập ${p} phút trước — ghim trên đầu trong ${MOI_NHAP_PHUT} phút`}
+    >
+      mới · {p}&apos;
+    </span>
+  );
+}
+
 function SortTh({
   col,
   label,
@@ -4316,7 +4332,16 @@ function BookingDayTable({
   renderMoneyCell,
   renderSourceExtra,
   tall = false,
+  orderKey,
+  isNew,
 }: {
+  /**
+   * Kiểu xếp đang chọn ở dải công cụ. Đổi kiểu là bảng bỏ xếp theo cột, quay
+   * về đúng thứ tự danh sách (đã ghim booking mới nhập lên đầu).
+   */
+  orderKey?: string;
+  /** Booking mới nhập (ghim đầu, nhãn "mới"). */
+  isNew?: (b: BookingDTO) => boolean;
   /**
    * Điểm bay đang xem — quyết định có cột "Loại" hay không. Chỉ KHAU PHẠ bán
    * lẫn PG và PPG trong một booking; Sa Pa và Hà Nội chỉ bay PG nên cột đó
@@ -4347,7 +4372,18 @@ function BookingDayTable({
   /** Đang toàn màn hình — bảng ăn hết chiều cao cửa sổ thay vì cụt ở 72%. */
   tall?: boolean;
 }) {
-  const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: "seq", dir: 1 });
+  /**
+   * col "" = GIỮ THỨ TỰ DANH SÁCH (kiểu xếp ở dải công cụ + ghim booking mới
+   * nhập). Bấm tiêu đề cột thì xếp theo cột đó như trước.
+   */
+  const [sortState, setSortState] = useState<{ col: string; dir: 1 | -1; key?: string }>({ col: "", dir: 1, key: orderKey });
+  /** Xếp theo cột chỉ còn hiệu lực khi kiểu xếp ở dải công cụ chưa đổi. */
+  const sort: { col: string; dir: 1 | -1 } = sortState.key === orderKey ? sortState : { col: "", dir: 1 };
+  const setSort = useCallback(
+    (f: (s: { col: string; dir: 1 | -1 }) => { col: string; dir: 1 | -1 }) =>
+      setSortState((prev) => ({ ...f(prev.key === orderKey ? prev : { col: "", dir: 1 }), key: orderKey })),
+    [orderKey],
+  );
   /** Cột "Loại" (PG/PPG) chỉ có ở Khau Phạ — xem chú thích prop `spot`. */
   const coCotLoai = spot === "khau-pha";
   /** Tổng số cột của bảng — dòng xổ ngang phải trùm đúng bấy nhiêu, thiếu là lệch. */
@@ -4475,7 +4511,7 @@ function BookingDayTable({
       default: return 0;
     }
   };
-  const sorted = [...all].sort((x, y) => {
+  const sorted = !sort.col ? all : [...all].sort((x, y) => {
     const a = val(x, sort.col);
     const b2 = val(y, sort.col);
     const c = typeof a === "number" && typeof b2 === "number" ? a - b2 : String(a).localeCompare(String(b2), "vi");
@@ -4549,7 +4585,10 @@ function BookingDayTable({
                  * trước rồi mới soi người bấm.
                  */}
                 <td className="w-[120px] max-w-[120px] border-b border-slate-100 px-1.5 py-1 tabular-nums">
-                  <div className="font-bold text-rose-600">{b.daySeq || "?"}</div>
+                  <div className="font-bold text-rose-600">
+                    {b.daySeq || "?"}
+                    {!r.moved && isNew?.(b) && <NhanMoi b={b} />}
+                  </div>
                   {b.status === "done" && (
                     <Nhan tone="emerald" label="✈ đã bay" by={shortName(b.doneBy ?? "")} big />
                   )}
@@ -4970,7 +5009,15 @@ export function BookingTodayBanner({
    * hay đưa "đã xuất vé" lên trước. Hai kiểu sau vẫn tie-break theo số booking
    * để thứ tự ổn định, không nhảy lung tung mỗi lần tải lại.
    */
-  const [sortBy, setSortBy] = useState<"seq" | "flown" | "ticket">("seq");
+  const [sortBy, setSortByRaw] = useState<BookingSort>("seq");
+  /** Kiểu xếp NHỚ THEO MÁY (chủ 04/10) — đọc sau khi gắn để khỏi lệch lúc dựng trang. */
+  useEffect(() => {
+    setSortByRaw(docKieuXep());
+  }, []);
+  const setSortBy = (v: BookingSort) => {
+    setSortByRaw(v);
+    luuKieuXep(v);
+  };
   /**
    * LỌC "CHƯA THU ĐỦ" cho kế toán truy thu (luật chủ 03/09): bật lên là danh
    * sách chỉ còn booking còn nợ tiền — nhất là nhóm ĐÃ BAY mà chưa trả hết,
@@ -5242,21 +5289,8 @@ export function BookingTodayBanner({
       </Button>
     ) : null;
 
-  const bookingCmp = (a: BookingDTO, b: BookingDTO) => {
-    if (sortBy === "flown") {
-      const d = Number(b.status === "done") - Number(a.status === "done");
-      if (d) return d;
-    }
-    if (sortBy === "ticket") {
-      const d = Number(Boolean(b.ticketIssued)) - Number(Boolean(a.ticketIssued));
-      if (d) return d;
-      // Cùng đã xuất vé thì xếp theo GIỜ XUẤT (= thứ tự khách đến) — luật chủ 04/09
-      const ta = a.ticketIssuedAt ? Date.parse(a.ticketIssuedAt) : Number.MAX_SAFE_INTEGER;
-      const tb = b.ticketIssuedAt ? Date.parse(b.ticketIssuedAt) : Number.MAX_SAFE_INTEGER;
-      if (ta !== tb) return ta - tb;
-    }
-    return (a.daySeq || 0) - (b.daySeq || 0);
-  };
+  /** Xếp theo kiểu đã chọn — luật chung ở lib/baobay/booking-order.ts (thẻ, bảng, sheet dùng chung). */
+  const bookingCmp = soBooking(sortBy);
   /** So khớp tìm kiếm KHÔNG DẤU: gõ "ngoc anh" phải ra "Ngọc Anh". */
   const norm = (s: string) =>
     (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
@@ -5272,10 +5306,16 @@ export function BookingTodayBanner({
   const isPpgBooking = (b: BookingDTO) => b.flightKind === "ppg" || (b.ppgGuests ?? 0) > 0;
   const ppgOk = (b: BookingDTO) => !onlyPpg || isPpgBooking(b);
   const ticketedOk = (b: BookingDTO) => !onlyTicketed || b.ticketIssued;
-  const open = rows
-    .filter((b) => b.status === "open" && matchQ(b) && unpaidOk(b) && ppgOk(b) && ticketedOk(b))
-    // BOOKING MỚI chưa ai thấy trên máy này: nổi LÊN ĐẦU, bất kể kiểu xếp
-    .sort((a, b) => Number(isNewBooking(b)) - Number(isNewBooking(a)) || bookingCmp(a, b));
+  /**
+   * GHIM LÊN ĐẦU, bất kể kiểu xếp: booking NHẬP TRONG ${MOI_NHAP_PHUT} PHÚT gần
+   * nhất (chủ 04/10, nhãn "mới") và booking mới chưa ai thấy trên máy này (luật
+   * 03/09). Hết khoảng đó thì tự về đúng chỗ theo kiểu xếp.
+   */
+  const open = xepBooking(
+    rows.filter((b) => b.status === "open" && matchQ(b) && unpaidOk(b) && ppgOk(b) && ticketedOk(b)),
+    sortBy,
+    (b) => moiNhap(b) || isNewBooking(b),
+  );
   const doneGuestsAll = rows.filter((b) => b.status === "done").reduce((t, b) => t + b.guestCount, 0);
   const cancelledGuests = rows.filter((b) => b.status === "cancelled").reduce((t, b) => t + b.guestCount, 0);
   const closed = rows.filter((b) => b.status !== "open" && matchQ(b) && unpaidOk(b) && ppgOk(b) && ticketedOk(b)).sort(bookingCmp);
@@ -6533,10 +6573,14 @@ export function BookingTodayBanner({
     <>
             {renderOpenActions(b)}
             <div className="min-w-0">
-              {isNewBooking(b) && (
-                <span className="mr-1.5 animate-pulse rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  ✦ BOOKING MỚI
-                </span>
+              {moiNhap(b) ? (
+                <NhanMoi b={b} />
+              ) : (
+                isNewBooking(b) && (
+                  <span className="mr-1.5 animate-pulse rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    ✦ BOOKING MỚI
+                  </span>
+                )
               )}
               {/* Số thứ tự đỏ — gọi nhau "booking số 3" là biết ngay dòng nào */}
               <span className="mr-1 text-sm font-bold tabular-nums text-rose-600">{i + 1}.</span>
@@ -6673,10 +6717,11 @@ export function BookingTodayBanner({
           <span className="text-sky-800/70">Xếp:</span>
           {(
             [
-              ["seq", "Số booking"],
+              ["seq", "Theo số thứ tự"],
+              ["newest", "Mới nhập"],
               ["flown", "Đã bay trước"],
               ["ticket", "🎫 Đã xuất vé trước"],
-            ] as Array<["seq" | "flown" | "ticket", string]>
+            ] as Array<[BookingSort, string]>
           ).map(([key, label]) => (
             <button
               key={key}
@@ -6785,6 +6830,7 @@ export function BookingTodayBanner({
           spot={spot}
           date={date}
           tall={fullScreen}
+          isNew={moiNhap}
           canEdit
           canLock={canLock}
           onAdded={load}
@@ -6841,6 +6887,8 @@ export function BookingTodayBanner({
         <BookingDayTable
           spot={spot}
           tall={fullScreen}
+          orderKey={sortBy}
+          isNew={moiNhap}
           open={open}
           closed={closed}
           movedOut={movedOut.filter(matchQ)}
@@ -6893,7 +6941,7 @@ export function BookingTodayBanner({
               "mb-1.5 break-inside-avoid rounded-lg bg-white px-2.5 py-1.5" +
               (b.locked ? " opacity-60" : "") +
               // BOOKING MỚI chưa thấy trên máy này: viền + nền nổi hẳn cho tới lần mở trang sau
-              (isNewBooking(b) ? " border-2 border-emerald-500 bg-emerald-50" : "")
+              (moiNhap(b) || isNewBooking(b) ? " border-2 border-emerald-500 bg-emerald-50" : "")
             }
             style={{ display: "flow-root" }}
           >

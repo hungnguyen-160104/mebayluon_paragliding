@@ -3880,67 +3880,194 @@ async function getCafeCashOnHand(
   to: string | undefined,
   scopeFilter: Record<string, unknown>,
 ): Promise<CashOnHandDTO> {
-  const dateFilter = from && to ? { date: { $gte: from, $lte: to } } : {};
-
-  let collected = 0;
-  let spent = 0;
-
-  /** Phiếu máy bán, tính theo NGƯỜI BẤM. */
-  const tickets = await CafeSale.find({ byUsername: session.username, voidedAt: null, ...dateFilter })
-    .select("kind direction method total")
-    .lean<any[]>();
-  for (const t of tickets) {
-    if (t.method !== "cash") continue;
-    if (t.kind === "expense") {
-      if (t.direction === "thu") collected += t.total || 0;
-      else spent += t.total || 0;
-    } else collected += t.total || 0;
-  }
-
-  /** Sổ thu chi gõ tay trong báo cáo ngày của quầy. */
-  const reports = await CafeDailyReport.find({
-    accountId: new mongoose.Types.ObjectId(session.id),
-    spot,
-    ...dateFilter,
-  })
-    .select("expenses")
-    .lean<any[]>();
-  for (const d of reports) {
-    collected += thuCashTotal(d.expenses);
-    spent += expenseTotal(d.expenses);
-  }
-
-  const handovers = await BaobayHandover.find({
-    accountId: new mongoose.Types.ObjectId(session.id),
-    spot,
-    kind: { $ne: "advance" },
-    ...scopeFilter,
-    ...dateFilter,
-  })
-    .select("amount confirmed rejected")
-    .lean<any[]>();
-
-  let handedConfirmed = 0;
-  let handedPending = 0;
-  let handedRejected = 0;
-  for (const h of handovers) {
-    if (h.rejected) handedRejected += h.amount || 0;
-    else if (h.confirmed) handedConfirmed += h.amount || 0;
-    else handedPending += h.amount || 0;
-  }
-
+  const days = await cafeCashDays({ username: session.username, accountId: session.id }, spot, from, to, scopeFilter);
+  const t = days.reduce(
+    (a, d) => ({
+      collected: a.collected + d.collected,
+      spent: a.spent + d.spent,
+      handedConfirmed: a.handedConfirmed + d.handedConfirmed,
+      handedPending: a.handedPending + d.handedPending,
+      handedRejected: a.handedRejected + d.handedRejected,
+    }),
+    { collected: 0, spent: 0, handedConfirmed: 0, handedPending: 0, handedRejected: 0 },
+  );
   return {
     spot,
     from: from ?? "",
     to: to ?? "",
     received: 0,
-    collected,
-    spent,
-    handedConfirmed,
-    handedPending,
-    handedRejected,
-    holding: collected - spent - handedConfirmed - handedPending,
+    ...t,
+    holding: t.collected - t.spent - t.handedConfirmed - t.handedPending,
   };
+}
+
+/** Tiền quầy cafe của MỘT người trong MỘT ngày — viên gạch chung của số "đang giữ" và bảng theo tháng. */
+type CafeCashDay = {
+  date: string;
+  collected: number;
+  spent: number;
+  handedConfirmed: number;
+  handedPending: number;
+  handedRejected: number;
+};
+
+/**
+ * NGUỒN DUY NHẤT của tiền quầy cafe theo người (luật như ghi chú ở trên):
+ * phiếu máy bán theo NGƯỜI BẤM + sổ thu chi gõ tay trong báo cáo ngày + lệnh
+ * nộp tiền sổ cafe. Gom theo NGÀY để cả số "đang giữ" (cộng hết) lẫn bảng
+ * theo tháng (cộng theo tháng) đi cùng một đường — không có công thức thứ ba.
+ */
+async function cafeCashDays(
+  who: { username: string; accountId: string },
+  spot: string,
+  from: string | undefined,
+  to: string | undefined,
+  scopeFilter: Record<string, unknown> = { scope: "cafe" },
+): Promise<CafeCashDay[]> {
+  const dateFilter = from && to ? { date: { $gte: from, $lte: to } } : {};
+  const byDate = new Map<string, CafeCashDay>();
+  const day = (date: string) => {
+    let d = byDate.get(date);
+    if (!d) {
+      d = { date, collected: 0, spent: 0, handedConfirmed: 0, handedPending: 0, handedRejected: 0 };
+      byDate.set(date, d);
+    }
+    return d;
+  };
+  const accountId = mongoose.Types.ObjectId.isValid(who.accountId) ? new mongoose.Types.ObjectId(who.accountId) : null;
+
+  const [tickets, reports, handovers] = await Promise.all([
+    /** Phiếu máy bán, tính theo NGƯỜI BẤM. */
+    who.username
+      ? CafeSale.find({ byUsername: who.username, voidedAt: null, ...dateFilter })
+          .select("date kind direction method total")
+          .lean<any[]>()
+      : Promise.resolve([] as any[]),
+    /** Sổ thu chi gõ tay trong báo cáo ngày của quầy. */
+    accountId
+      ? CafeDailyReport.find({ accountId, spot, ...dateFilter }).select("date expenses").lean<any[]>()
+      : Promise.resolve([] as any[]),
+    accountId
+      ? BaobayHandover.find({ accountId, spot, kind: { $ne: "advance" }, ...scopeFilter, ...dateFilter })
+          .select("date amount confirmed rejected")
+          .lean<any[]>()
+      : Promise.resolve([] as any[]),
+  ]);
+
+  for (const t of tickets) {
+    if (t.method !== "cash") continue;
+    const d = day(t.date);
+    if (t.kind === "expense") {
+      if (t.direction === "thu") d.collected += t.total || 0;
+      else d.spent += t.total || 0;
+    } else d.collected += t.total || 0;
+  }
+  for (const r of reports) {
+    const d = day(r.date);
+    d.collected += thuCashTotal(r.expenses);
+    d.spent += expenseTotal(r.expenses);
+  }
+  for (const h of handovers) {
+    const d = day(h.date);
+    if (h.rejected) d.handedRejected += h.amount || 0;
+    else if (h.confirmed) d.handedConfirmed += h.amount || 0;
+    else d.handedPending += h.amount || 0;
+  }
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export type CafeMoneyMonth = {
+  /** "YYYY-MM" */
+  month: string;
+  /** Thu tiền mặt: bán hàng TM + khoản THU tiền mặt. */
+  collected: number;
+  /** Chi tiền mặt tại quầy (phiếu chi máy bán + chi gõ tay trong báo cáo). */
+  spent: number;
+  /** Đã nộp/giao: đã ký nhận + còn chờ (cả hai đều đã rời tay người trực). */
+  handed: number;
+  handedPending: number;
+  /** Còn giữ CUỐI THÁNG — luỹ kế từ đầu tới hết tháng này. */
+  holdingEnd: number;
+};
+
+export type CafeMoneyPerson = {
+  username: string;
+  name: string;
+  /** Tổng đã chi (mọi thời gian). */
+  spentTotal: number;
+  collectedTotal: number;
+  handedTotal: number;
+  /** Còn giữ đến hiện tại — đúng số "đang giữ" của khung nộp tiền sổ cafe. */
+  holding: number;
+  /** Mới nhất trước. */
+  months: CafeMoneyMonth[];
+};
+
+/**
+ * TỔNG TIỀN QUẦY CAFE THEO NGƯỜI (chủ 04/10: "cần hiện tổng tiền đã chi, tổng
+ * tiền còn giữ đến hiện tại, và theo tháng").
+ *
+ * Quản trị / kế toán thấy MỌI người từng đứng quầy; người khác chỉ thấy chính
+ * mình. Số còn giữ đi cùng đường `cafeCashDays` với getCafeCashOnHand nên
+ * trùng khít số "đang giữ" ở khung nộp tiền.
+ */
+export async function getCafeMoneySummary(session: BaobaySession, spotRaw: string): Promise<CafeMoneyPerson[]> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const roles = [session.role, ...(session.extraRoles ?? [])];
+  const seeAll = roles.includes("admin") || roles.includes("accountant");
+
+  let people: Array<{ username: string; accountId: string; name: string }>;
+  if (!seeAll) {
+    people = [{ username: session.username, accountId: session.id, name: session.name || session.username }];
+  } else {
+    const [sellers, reporters, handers] = await Promise.all([
+      CafeSale.distinct("byUsername", { voidedAt: null }),
+      CafeDailyReport.distinct("accountId", { spot }),
+      BaobayHandover.distinct("accountId", { spot, scope: "cafe" }),
+    ]);
+    const ids = [...reporters, ...handers].map(String);
+    const accounts = await BaobayAccount.find({
+      $or: [{ username: { $in: (sellers as string[]).filter(Boolean) } }, { _id: { $in: ids } }],
+    })
+      .select("username displayName")
+      .lean<any[]>();
+    people = accounts.map((a) => ({ username: a.username, accountId: String(a._id), name: a.displayName || a.username }));
+    /** Người bấm máy bán mà không còn tài khoản — vẫn tính phần phiếu của họ. */
+    for (const u of sellers as string[]) {
+      if (u && !people.some((p) => p.username === u)) people.push({ username: u, accountId: "", name: u });
+    }
+  }
+
+  const out: CafeMoneyPerson[] = [];
+  for (const p of people) {
+    const days = await cafeCashDays(p, spot, undefined, undefined);
+    if (!days.length) continue;
+    const byMonth = new Map<string, CafeMoneyMonth>();
+    let run = 0;
+    for (const d of days) {
+      const key = d.date.slice(0, 7);
+      const m = byMonth.get(key) ?? { month: key, collected: 0, spent: 0, handed: 0, handedPending: 0, holdingEnd: 0 };
+      m.collected += d.collected;
+      m.spent += d.spent;
+      m.handed += d.handedConfirmed + d.handedPending;
+      m.handedPending += d.handedPending;
+      run += d.collected - d.spent - d.handedConfirmed - d.handedPending;
+      m.holdingEnd = run;
+      byMonth.set(key, m);
+    }
+    const months = [...byMonth.values()].sort((a, b) => b.month.localeCompare(a.month));
+    out.push({
+      username: p.username,
+      name: p.name,
+      spentTotal: months.reduce((t, m) => t + m.spent, 0),
+      collectedTotal: months.reduce((t, m) => t + m.collected, 0),
+      handedTotal: months.reduce((t, m) => t + m.handed, 0),
+      holding: run,
+      months,
+    });
+  }
+  return out.sort((a, b) => b.holding - a.holding || a.name.localeCompare(b.name));
 }
 
 export async function getCashOnHand(
