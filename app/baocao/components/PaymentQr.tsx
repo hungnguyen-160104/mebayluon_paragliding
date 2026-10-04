@@ -4,9 +4,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { buildVietQrPayload, PAY_ACCOUNT_FLIGHT, toAsciiNote } from "@/lib/vietqr";
+import { buildVietQrPayload, flightPayAccount, PAY_ACCOUNT_FLIGHT, toAsciiNote, type PayAccountInfo } from "@/lib/vietqr";
+import { PAY_ACCOUNT_URL_CODE, type PayAccountKind } from "@/lib/baobay/pay-account";
 import { formatVND } from "@/lib/pricing";
 
+import { ensurePayAccountClient, TkctBadge, type QrPayRef } from "./PayAccount";
 import { Button } from "./ui";
 
 /**
@@ -49,7 +51,14 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /** Vẽ tấm ảnh gửi khách: mã QR + số tiền + số tài khoản + nội dung. */
-async function drawQrCard(d: { amount: number; note: string; purpose: string; qrUrl: string }): Promise<HTMLCanvasElement> {
+async function drawQrCard(d: {
+  amount: number;
+  note: string;
+  purpose: string;
+  qrUrl: string;
+  acc: PayAccountInfo;
+}): Promise<HTMLCanvasElement> {
+  const PAY_ACCOUNT = d.acc;
   const img = await loadImage(d.qrUrl);
   const W = 720;
   const QR = 460;
@@ -121,7 +130,16 @@ export function PaymentQrButton({
   label = "QR",
   className,
   disabled,
+  pay,
+  onShown,
 }: {
+  /**
+   * TÀI KHOẢN NHẬN TIỀN của booking (chủ 04/10 — TK công ty / TK cá nhân), xem
+   * qrPayRef() ở ./PayAccount. Bỏ trống = TK cá nhân như trước.
+   */
+  pay?: QrPayRef;
+  /** Gọi khi mã QR vừa được mở — form chưa lưu dùng để ghi "đã đưa QR TK cá nhân". */
+  onShown?: () => void;
   /** Số tiền đã chốt — 0 thì nút mờ đi, không mở được. */
   amount: number;
   /** Nội dung chuyển khoản: MÃ BOOKING (hoặc số điện thoại khách). */
@@ -133,6 +151,19 @@ export function PaymentQrButton({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  /** null = đang hỏi máy chủ chọn tài khoản (booking chưa chốt). */
+  const [account, setAccount] = useState<PayAccountKind | null>(pay?.account ?? "personal");
+
+  function openQr() {
+    setOpen(true);
+    onShown?.();
+    if (pay?.ensure && !pay.account) {
+      setAccount(null);
+      void ensurePayAccountClient(pay).then(setAccount);
+    } else {
+      setAccount(pay?.account ?? "personal");
+    }
+  }
 
   return (
     <>
@@ -142,7 +173,7 @@ export function PaymentQrButton({
         className={className ?? "h-8 shrink-0 border-sky-300 bg-white px-2 text-xs font-bold text-sky-700"}
         disabled={disabled || amount <= 0}
         title={amount > 0 ? `Tạo mã QR thu ${formatVND(amount)}` : "Chốt số tiền rồi mới tạo được mã QR"}
-        onClick={() => setOpen(true)}
+        onClick={openQr}
       >
         {/* Chữ "QR" hẳn ra — ô vuông đen không ai đoán được là nút gì */}
         {label || "QR"}
@@ -160,7 +191,13 @@ export function PaymentQrButton({
       {open &&
         typeof document !== "undefined" &&
         createPortal(
-          <PaymentQrModal amount={amount} note={note} purpose={purpose} onClose={() => setOpen(false)} />,
+          <PaymentQrModal
+            amount={amount}
+            note={note}
+            purpose={purpose}
+            account={account}
+            onClose={() => setOpen(false)}
+          />,
           document.body,
         )}
     </>
@@ -186,13 +223,18 @@ function PaymentQrModal({
   amount,
   note,
   purpose,
+  account,
   onClose,
 }: {
   amount: number;
   note: string;
   purpose: string;
+  /** null = máy chủ đang chọn tài khoản — chưa vẽ mã. */
+  account: PayAccountKind | null;
   onClose: () => void;
 }) {
+  const PAY_ACCOUNT = flightPayAccount(account ?? "personal");
+  const isCompany = account === "company";
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -217,6 +259,11 @@ function PaymentQrModal({
 
   useEffect(() => {
     let alive = true;
+    // Chưa biết tài khoản thì CHƯA vẽ — vẽ nhầm TK cá nhân rồi đổi là khách quét nhầm
+    if (account === null) {
+      setUrl("");
+      return;
+    }
     qrDataUrl(
       buildVietQrPayload({
         bankBin: PAY_ACCOUNT.bankBin,
@@ -230,13 +277,13 @@ function PaymentQrModal({
     return () => {
       alive = false;
     };
-  }, [amount, asciiNote]);
+  }, [amount, asciiNote, account, PAY_ACCOUNT.bankBin, PAY_ACCOUNT.accountNumber]);
 
   /** Gửi khách: điện thoại mở khay chia sẻ (Zalo/Messenger), máy tính tải ảnh. */
   const share = useCallback(async () => {
     setError(null);
     try {
-      const canvas = await drawQrCard({ amount, note: asciiNote, purpose, qrUrl: url });
+      const canvas = await drawQrCard({ amount, note: asciiNote, purpose, qrUrl: url, acc: PAY_ACCOUNT });
       const blob = await new Promise<Blob | null>((r) => canvas.toBlob((b) => r(b), "image/png"));
       if (!blob) throw new Error("Không tạo được ảnh");
       const name = `thanh-toan-${asciiNote.replace(/\s+/g, "-")}-${amount}.png`;
@@ -263,15 +310,17 @@ function PaymentQrModal({
       // Khách bấm huỷ khay chia sẻ cũng rơi vào đây, không coi là lỗi nặng
       if ((err as Error)?.name !== "AbortError") setError("Không chia sẻ được ảnh — thử tải về rồi gửi tay.");
     }
-  }, [amount, asciiNote, purpose, url]);
+  }, [amount, asciiNote, purpose, url, PAY_ACCOUNT]);
 
   /** Liên kết trang /thanh-toan — mở ra là thấy đúng mã này, gửi được cho mọi app. */
   const shareLink = useMemo(() => {
     const base = typeof window === "undefined" ? "" : window.location.origin;
     const q = new URLSearchParams({ a: String(amount), n: asciiNote, p: purpose });
+    // TK công ty: trang /thanh-toan vẽ mã MB 168858888 thay cho TK cá nhân
+    if (isCompany) q.set("t", PAY_ACCOUNT_URL_CODE);
     // /thanh-toan chứ KHÔNG phải /qr — /qr là trang chào khách quét mã đi đặt bay
     return `${base}/thanh-toan?${q.toString()}`;
-  }, [amount, asciiNote, purpose]);
+  }, [amount, asciiNote, purpose, isCompany]);
 
   const shareText = `${purpose}: ${formatVND(amount)} — ${PAY_ACCOUNT.bankName} ${PAY_ACCOUNT.accountNumber} (${PAY_ACCOUNT.accountName}), nội dung ${asciiNote}. Quét mã: ${shareLink}`;
 
@@ -320,7 +369,7 @@ function PaymentQrModal({
     } catch {
       setError("Máy không cho chép tự động — đọc số bên trên gửi khách.");
     }
-  }, [amount, asciiNote]);
+  }, [amount, asciiNote, PAY_ACCOUNT]);
 
   return (
     <div
@@ -335,7 +384,11 @@ function PaymentQrModal({
       >
         <div className="flex items-start justify-between gap-2">
           <div>
-            <div className="text-sm font-bold text-slate-900">Khách quét mã để trả tiền</div>
+            <div className="text-sm font-bold text-slate-900">
+              {/* Nhãn chỉ ở màn hình nhân viên — ảnh / link gửi khách không có */}
+              <TkctBadge b={{ payAccount: account }} />
+              Khách quét mã để trả tiền
+            </div>
             <div className="text-[11px] text-slate-500">{purpose}</div>
           </div>
           {/* Vùng bấm 40px: ngón tay trên điện thoại không trượt ra ngoài dấu × */}
@@ -355,16 +408,22 @@ function PaymentQrModal({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={url} alt="Mã QR thanh toán" className="h-56 w-56" />
           ) : (
-            <div className="flex h-56 w-56 items-center justify-center text-xs text-slate-400">Đang vẽ mã…</div>
+            <div className="flex h-56 w-56 items-center justify-center text-xs text-slate-400">
+              {account === null ? "Đang chọn tài khoản nhận…" : "Đang vẽ mã…"}
+            </div>
           )}
         </div>
 
         <div className="mt-2 text-center">
           <div className="text-2xl font-extrabold tabular-nums text-slate-900">{formatVND(amount)}</div>
-          <div className="mt-0.5 text-xs text-slate-600">
-            {PAY_ACCOUNT.bankName} · <strong className="tabular-nums">{PAY_ACCOUNT.accountNumber}</strong> ·{" "}
-            {PAY_ACCOUNT.accountName}
-          </div>
+          {account === null ? (
+            <div className="mt-0.5 text-xs text-slate-400">Đang chọn tài khoản nhận…</div>
+          ) : (
+            <div className={"mt-0.5 text-xs " + (isCompany ? "font-semibold text-red-700" : "text-slate-600")}>
+              {PAY_ACCOUNT.bankName} · <strong className="tabular-nums">{PAY_ACCOUNT.accountNumber}</strong> ·{" "}
+              {PAY_ACCOUNT.accountName}
+            </div>
+          )}
           <div className="mt-0.5 text-xs font-bold text-amber-700">Nội dung: {asciiNote}</div>
         </div>
 
@@ -372,10 +431,10 @@ function PaymentQrModal({
         {msg && <p className="mt-2 text-center text-[11px] font-medium text-emerald-700">{msg}</p>}
 
         <div className="mt-3 flex gap-2">
-          <Button type="button" className="h-10 flex-1" disabled={!url} onClick={share}>
+          <Button type="button" className="h-10 flex-1" disabled={!url || account === null} onClick={share}>
             📤 Chia sẻ ảnh mã QR
           </Button>
-          <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs" onClick={copyInfo}>
+          <Button type="button" variant="ghost" className="h-10 bg-white px-3 text-xs" disabled={account === null} onClick={copyInfo}>
             Chép số TK
           </Button>
         </div>
@@ -390,6 +449,7 @@ function PaymentQrModal({
             <button
               key={app.key}
               type="button"
+              disabled={account === null}
               onClick={() => sendTo(app)}
               className="flex flex-col items-center gap-0.5 rounded-lg border border-slate-200 bg-white py-1.5 text-[11px] font-semibold text-slate-700 active:bg-slate-100"
             >
@@ -400,6 +460,7 @@ function PaymentQrModal({
         </div>
         <button
           type="button"
+          disabled={account === null}
           onClick={copyLink}
           className="mt-1.5 w-full rounded-lg border border-dashed border-slate-300 py-1.5 text-[11px] font-semibold text-slate-600 active:bg-slate-100"
         >

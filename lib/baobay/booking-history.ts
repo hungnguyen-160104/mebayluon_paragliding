@@ -217,6 +217,28 @@ export function eventsFromBooking(b: Doc): HistoryEvent[] {
       key: "agency-paid",
     });
   }
+  /** TÀI KHOẢN NHẬN TIỀN (chủ 04/10): máy chọn / đổi tay — ai, lúc nào, vì sao. */
+  const TK: Record<string, string> = { company: "TK CÔNG TY (MB 168858888 — TKCT)", personal: "TK cá nhân (BIDV Đặng Thị Thuỷ)" };
+  for (const l of (b.payAccountLog as Array<Record<string, unknown>> | undefined) ?? []) {
+    const to = TK[asStr(l.to)] ?? asStr(l.to);
+    push({
+      at: iso(l.at),
+      by: asStr(l.by),
+      text: asStr(l.source) === "manual" ? `Đổi tài khoản nhận tiền → ${to}` : `Chốt tài khoản nhận tiền: ${to}`,
+      detail: asStr(l.reason) || undefined,
+      tone: "money",
+    });
+  }
+  const vat = b.vat as Record<string, unknown> | undefined;
+  if (vat?.issuedAt) {
+    push({
+      at: iso(vat.issuedAt),
+      by: asStr(vat.issuedBy),
+      text: `Kế toán đã xuất VAT (TK công ty) ${fmtMoney(asNum(vat.amount))}`,
+      detail: asStr(vat.invoiceNo) ? `HĐ số ${asStr(vat.invoiceNo)}` : undefined,
+      tone: "audit",
+    });
+  }
   return ev;
 }
 
@@ -225,6 +247,7 @@ export function eventsFromBooking(b: Doc): HistoryEvent[] {
 /* ================================================================== */
 
 const API_TEXT: Record<string, string> = {
+  "pay-account": "Yêu cầu đổi tài khoản nhận tiền",
   create: "Lập booking",
   edit: "Sửa booking",
   flown: "Đánh dấu ĐÃ BAY",

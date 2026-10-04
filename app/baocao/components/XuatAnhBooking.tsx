@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { TkctBadge } from "./PayAccount";
 import { chiaSeAnhPhieu, chiaSeDuocFile, luuAnhPhieu, taoAnhPhieu, type AnhPhieu, type BookingImageData } from "./booking-image";
 
 /**
@@ -65,7 +66,8 @@ export function XuatAnhBooking({
   children,
   onError,
 }: {
-  data: () => BookingImageData;
+  /** Có thể chờ: booking chưa chốt tài khoản nhận tiền thì hỏi máy chủ trước khi vẽ mã QR. */
+  data: () => BookingImageData | Promise<BookingImageData>;
   className: string;
   title?: string;
   disabled?: boolean;
@@ -78,6 +80,8 @@ export function XuatAnhBooking({
   const [baoLuu, setBaoLuu] = useState<string | null>(null);
   /** SĐT của booking lúc mở khung — để nút Zalo / WhatsApp mở đúng khung chat. */
   const [sdt, setSdt] = useState("");
+  /** Tài khoản của mã QR trên ảnh — nhãn TKCT chỉ hiện ở khung NHÂN VIÊN, không vẽ vào ảnh gửi khách. */
+  const [tk, setTk] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!mo) return;
@@ -94,8 +98,9 @@ export function XuatAnhBooking({
     setAnh(null);
     setMo(true);
     try {
-      const d = data();
+      const d = await data();
       setSdt(d.phone || "");
+      setTk(d.payAccount);
       setAnh(await taoAnhPhieu(d));
     } catch (e) {
       const m = e instanceof Error ? e.message : "Không xuất được ảnh phiếu";
@@ -123,7 +128,9 @@ export function XuatAnhBooking({
               className="flex shrink-0 items-center justify-between gap-2 px-3 py-2 text-white"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="min-w-0 text-sm font-bold">🖼 Ảnh phiếu booking</div>
+              <div className="min-w-0 text-sm font-bold">
+                🖼 Ảnh phiếu booking <TkctBadge b={{ payAccount: tk }} className="ml-1" />
+              </div>
               <button
                 type="button"
                 onClick={() => setMo(false)}

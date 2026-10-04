@@ -282,6 +282,12 @@ export interface IBaobayBooking {
     at: Date;
     kind: string;
     code?: string;
+    /**
+     * CHUYỂN KHOẢN vào tài khoản nào (chủ 04/10): "company" = MB 168858888,
+     * "personal" = BIDV Đặng Thị Thuỷ. Trống = bản ghi cũ (TK cá nhân).
+     * Xem lib/baobay/pay-account.ts.
+     */
+    toAccount?: "personal" | "company";
   }>;
   refundMethod?: "cash" | "transfer";
   cancelledAt?: Date;
@@ -366,6 +372,24 @@ export interface IBaobayBooking {
    * nhận tiền" và tổng cột không bao giờ bằng tổng đã thu.
    */
   depositDest?: string;
+  /**
+   * TÀI KHOẢN NHẬN TIỀN BAY của booking (chủ 04/10/2026, Khau Phạ):
+   * "company" = TK công ty MB 168858888 (nhãn đỏ TKCT, kế toán xuất VAT),
+   * "personal"/trống = TK cá nhân BIDV Đặng Thị Thuỷ như trước.
+   * Máy chọn MỘT LẦN (lúc lập booking, hoặc lần đầu đưa mã QR) rồi không tự
+   * lật nữa; đổi tay thì ghi vào `payAccountLog`. Luật ở lib/baobay/pay-account.ts.
+   */
+  payAccount?: "personal" | "company";
+  payAccountSource?: "auto" | "deposit" | "qr" | "manual";
+  payAccountAt?: Date;
+  payAccountBy?: string;
+  payAccountLog?: Array<{ at: Date; by: string; from: string; to: string; source: string; reason?: string }>;
+  /**
+   * KẾ TOÁN ĐÃ XUẤT HOÁ ĐƠN VAT cho phần tiền về TK công ty của booking này.
+   * Trống = chưa xuất. "Cần xuất" không lưu — máy tính từ tiền đã về TK công
+   * ty (một nguồn sự thật, khỏi hai chỗ lệch nhau).
+   */
+  vat?: { issuedAt?: Date; issuedBy?: string; invoiceNo?: string; amount?: number };
   note: string;
   /**
    * EMAIL KHÁCH — nơi app gửi thư báo mỗi khi booking có thay đổi.
@@ -660,6 +684,7 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
           code: String,
           at: Date,
           kind: { type: String, default: "" },
+          toAccount: { type: String, enum: ["personal", "company"] },
           _id: false,
         },
       ],
@@ -686,6 +711,23 @@ const BaobayBookingSchema = new Schema<IBaobayBooking>(
     depositToCompany: { type: Boolean, default: false },
     depositMethod: { type: String, enum: ["cash", "transfer", ""], default: "" },
     depositDest: { type: String, default: "" },
+    payAccount: { type: String, enum: ["personal", "company"] },
+    payAccountSource: { type: String, enum: ["auto", "deposit", "qr", "manual"] },
+    payAccountAt: Date,
+    payAccountBy: String,
+    payAccountLog: {
+      type: [
+        new Schema(
+          { at: Date, by: String, from: String, to: String, source: String, reason: String },
+          { _id: false },
+        ),
+      ],
+      default: undefined,
+    },
+    vat: {
+      type: new Schema({ issuedAt: Date, issuedBy: String, invoiceNo: String, amount: Number }, { _id: false }),
+      default: undefined,
+    },
     email: { type: String, default: "", trim: true, lowercase: true },
     notifyPendingBase: { type: Schema.Types.Mixed, default: null },
     notifyLog: [

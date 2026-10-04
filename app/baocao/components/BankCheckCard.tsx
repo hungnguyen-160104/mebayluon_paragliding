@@ -42,7 +42,31 @@ type LineDTO = {
   candidates?: string[];
   resolvedNote?: string;
   resolvedBy?: string;
+  /** Tài khoản của dòng sao kê (chủ 04/10): BIDV cá nhân / MB công ty. */
+  account?: "personal" | "company" | "";
+  bookingId?: string;
+  /** Lệch tài khoản giữa sao kê và booking (TKCT ↔ TK cá nhân). */
+  accountWarn?: string;
 };
+
+/** Chip nhỏ "MB · TK cty" / "BIDV" cạnh số tiền — tiền về tài khoản nào. */
+function AccountChip({ account }: { account?: string }) {
+  if (account === "company") {
+    return (
+      <span className="shrink-0 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white" title="Về TK công ty MB 168858888">
+        MB · TKCT
+      </span>
+    );
+  }
+  if (account === "personal") {
+    return (
+      <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700" title="Về TK cá nhân BIDV Đặng Thị Thuỷ">
+        BIDV
+      </span>
+    );
+  }
+  return null;
+}
 
 type AppTransferDTO = {
   refId: string;
@@ -80,6 +104,8 @@ type GroupDTO = {
 
 type BookingRowDTO = {
   bookingId: string;
+  /** Booking TKCT — tiền phải về MB 168858888. */
+  payAccount?: "company";
   daySeq: number;
   spot: string;
   label: string;
@@ -367,6 +393,12 @@ export function BankCheckCard({ date }: { date: string }) {
   const [text, setText] = useState("");
   /** Soát theo điểm nào: chọn 1, 2 hay cả 3 — rỗng là cả ba (mặc định, tiền chung một TK). */
   const [spots, setSpots] = useState<string[]>([]);
+  /**
+   * Sao kê đang dán là của TÀI KHOẢN NÀO (chủ 04/10): "" = máy tự đọc từ từng
+   * dòng ("TK 887xxx9685 tai BIDV" / "TK 168858888"); bản xuất của app ngân
+   * hàng không ghi số TK thì chọn tay ở đây.
+   */
+  const [account, setAccount] = useState<"" | "personal" | "company">("");
   const [report, setReport] = useState<Report | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -413,7 +445,7 @@ export function BankCheckCard({ date }: { date: string }) {
     setBusy(true);
     setError(null);
     try {
-      setReport(await apiPost<Report>(`/api/baocao/bank-check`, { date, text, spots }));
+      setReport(await apiPost<Report>(`/api/baocao/bank-check`, { date, text, spots, account }));
       setText("");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không soát được sao kê");
@@ -669,6 +701,33 @@ export function BankCheckCard({ date }: { date: string }) {
             </button>
           );
         })}
+      </div>
+      {/* Sao kê của tài khoản nào — BIDV cá nhân hay MB công ty (TKCT) */}
+      <div className="mb-2 flex flex-wrap items-center gap-1.5 text-xs">
+        <span className="font-semibold text-slate-600">Sao kê của:</span>
+        {(
+          [
+            ["", "Tự đọc"],
+            ["personal", "BIDV cá nhân"],
+            ["company", "MB công ty (TKCT)"],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v || "auto"}
+            type="button"
+            onClick={() => setAccount(v)}
+            className={
+              "h-8 rounded-lg border px-2.5 font-semibold " +
+              (account === v
+                ? v === "company"
+                  ? "border-red-600 bg-red-600 text-white"
+                  : "border-sky-600 bg-sky-600 text-white"
+                : "border-slate-300 bg-white text-slate-600")
+            }
+          >
+            {label}
+          </button>
+        ))}
       </div>
       <TextArea
         value={text}
@@ -1230,7 +1289,9 @@ export function BankCheckCard({ date }: { date: string }) {
               >
                 {/* dòng tóm tắt: #6 · tên · ngày bay — dịch vụ — tiền */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="min-w-0 font-bold text-slate-900">{row.label}</span>
+                  <span className="min-w-0 font-bold text-slate-900">
+                    {row.payAccount === "company" && <AccountChip account="company" />} {row.label}
+                  </span>
                   {/* SĐT + mã booking đứng ngay đầu thẻ — hai thứ kế toán dò trong SMS */}
                   {row.phone && (
                     <strong className="rounded bg-amber-100 px-1 text-xs font-bold tabular-nums text-amber-900">
@@ -1528,7 +1589,8 @@ export function BankCheckCard({ date }: { date: string }) {
                     {row.lines.map((l) => (
                       <li key={l.id} className="rounded bg-emerald-50/70 px-2 py-1.5">
                         <div className="text-xs font-semibold text-emerald-800">
-                          🧾 +{l.amount.toLocaleString("vi-VN")}đ · {l.bankTime || l.bankDate} · khớp: {l.matchWhy || "đã kiểm tay"}
+                          🧾 +{l.amount.toLocaleString("vi-VN")}đ <AccountChip account={l.account} /> · {l.bankTime || l.bankDate} · khớp: {l.matchWhy || "đã kiểm tay"}
+                          {l.accountWarn && <span className="block font-bold text-red-700">{l.accountWarn}</span>}
                           {/* Máy khớp nhầm (một mã hút nhiều sao kê): gỡ từng dòng
                               về khay treo rồi chỉ định lại — dòng tiền là thật,
                               KHÔNG xoá. */}
@@ -1803,6 +1865,7 @@ function BankLineRow({
         {badge && (
           <span className={"shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold " + badge.cls}>{badge.label}</span>
         )}
+        <AccountChip account={line.account} />
         {ok ? (
           <span className="min-w-0 flex-1 text-xs font-semibold text-slate-800">
             {line.status === "manual"
@@ -1859,6 +1922,8 @@ function BankLineRow({
           </span>
         )}
       </div>
+      {/* Lệch tài khoản (chủ 04/10): booking TKCT mà tiền về BIDV, hoặc ngược lại */}
+      {line.accountWarn && <div className="mt-0.5 text-[11px] font-bold text-red-700">{line.accountWarn}</div>}
       {/* Khớp rồi vẫn phải nhắc nếu app CHƯA ghi thu — tiền về mà sổ chưa ghi */}
       {ok && line.status === "matched" && line.recorded === false && (
         <div className="mt-0.5 text-[11px] font-bold text-amber-700">

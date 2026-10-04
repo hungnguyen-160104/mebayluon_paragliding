@@ -16,6 +16,7 @@ import {
   type RescheduleGuestRow,
 } from "./rows";
 import { PaymentQrButton } from "./PaymentQr";
+import { qrPayRef } from "./PayAccount";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { Banner, Button, CountInput, DoneTag, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
@@ -454,6 +455,7 @@ export function CancelMoveCard({
                   {/* Khách chưa trả đủ mà còn nợ phí đã dùng: đưa QR cho khách trả nốt */}
                   {usedFee > picked.deposit && (
                     <PaymentQrButton
+                      pay={qrPayRef(picked, spot)}
                       amount={usedFee - picked.deposit}
                       note={buildTransferNote({
                         spot: spot,
@@ -636,6 +638,7 @@ export function CancelMoveCard({
                     )}
                     {/* Khách trả phí dời lịch từ xa: gửi mã QR qua Zalo cho tiện */}
                     <PaymentQrButton
+                      pay={qrPayRef(picked, spot)}
                       amount={feeCash + feeTransfer}
                       note={buildTransferNote({
                         spot: spot,

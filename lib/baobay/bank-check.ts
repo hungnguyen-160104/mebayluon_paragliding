@@ -434,7 +434,11 @@ function ascii(s: string): string {
  *
  * Số này in công khai trên phiếu QR gửi khách nên không phải bí mật.
  */
-export const COMPANY_BANK_ACCOUNTS = ["8875639685"];
+export const COMPANY_BANK_ACCOUNTS = [
+  "8875639685",
+  /** TK CÔNG TY MB (chủ 04/10/2026) — khách TKCT gõ số này vào nội dung là chuyện thường. */
+  "168858888",
+];
 
 /**
  * Che các số TK công ty trong chuỗi sao kê TRƯỚC KHI bóc dãy chữ-số để dò mã

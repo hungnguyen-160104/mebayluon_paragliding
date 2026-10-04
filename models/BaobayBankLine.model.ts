@@ -31,6 +31,12 @@ export interface IBaobayBankLine {
   bankDate: string;
   bankTime: string;
 
+  /**
+   * Dòng sao kê của TÀI KHOẢN NÀO (chủ 04/10): "personal" = BIDV Đặng Thị Thuỷ,
+   * "company" = MB 168858888. Đọc từ chính dòng SMS, hoặc kế toán chọn lúc dán.
+   * Trống = không rõ (bản ghi cũ đều là BIDV).
+   */
+  account?: "personal" | "company" | "";
   /** matched = máy khớp được · pending = treo chờ · manual = kế toán tự kết luận. */
   status: BankLineStatus;
   /** Khớp bằng gì: mã GD > nội dung > số tiền > AI đề xuất > kế toán tự ghi. */
@@ -73,6 +79,7 @@ const BaobayBankLineSchema = new Schema<IBaobayBankLine>(
     amount: { type: Number, default: 0 },
     bankDate: { type: String, default: "" },
     bankTime: { type: String, default: "" },
+    account: { type: String, enum: ["personal", "company", ""], default: "" },
 
     status: { type: String, enum: ["matched", "pending", "manual"], default: "pending", index: true },
     matchLevel: { type: String, enum: ["code", "note", "amount", "ai", "manual"] },

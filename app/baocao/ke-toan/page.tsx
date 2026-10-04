@@ -52,6 +52,8 @@ export default function KeToanPage() {
   const [refunds, setRefunds] = useState<RefundDTO[]>([]);
   const [flycam, setFlycam] = useState<FlycamCancelDTO[]>([]);
   const [incoming, setIncoming] = useState<HandoverDTO[]>([]);
+  /** Booking có tiền về TK công ty (TKCT) mà chưa xuất VAT — mọi ngày (chủ 04/10). */
+  const [vat, setVat] = useState<{ count: number; amount: number }>({ count: 0, amount: 0 });
 
   const load = useCallback(async () => {
     if (!spot) return;
@@ -77,6 +79,10 @@ export default function KeToanPage() {
       setRefunds(r.refunds ?? []);
       setFlycam(f.items ?? []);
       setIncoming(h.incoming ?? []);
+      // Đếm VAT chưa xuất — hỏng thì thôi, không làm đổ cả trang
+      apiGet<{ count: number; amount: number }>(`/api/baocao/vat?spot=${spot}&count=1`)
+        .then((v) => setVat({ count: v.count || 0, amount: v.amount || 0 }))
+        .catch(() => setVat({ count: 0, amount: 0 }));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không tải được số của ngày");
     } finally {
@@ -119,6 +125,13 @@ export default function KeToanPage() {
       money: pendingHandover.reduce((t, x) => t + x.amount, 0),
       href: "/baocao/chot-ngay",
       tone: "amber",
+    },
+    {
+      label: "Booking TKCT chưa xuất VAT (tiền về TK công ty MB)",
+      count: vat.count,
+      money: vat.amount,
+      href: `/baocao/chot-ngay`,
+      tone: "rose",
     },
     {
       label: `Lỗi đỏ phải xử trước khi chốt ngày ${formatDateKeyVN(date)}`,

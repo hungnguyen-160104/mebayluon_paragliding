@@ -42,6 +42,11 @@ export interface IBaobayCollect {
   dest?: string;
   /** CK: tiền vào thẳng TK CÔNG TY. */
   toCompanyAccount: boolean;
+  /**
+   * CK vào TÀI KHOẢN NÀO (chủ 04/10): "company" = MB 168858888 (TKCT),
+   * "personal" = BIDV Đặng Thị Thuỷ. Trống = bản ghi cũ / tiền mặt.
+   */
+  toAccount?: "personal" | "company";
   /** Mã giao dịch chuyển khoản. */
   transferCode: string;
   note: string;
@@ -95,6 +100,7 @@ const BaobayCollectSchema = new Schema<IBaobayCollect>(
     method: { type: String, enum: ["cash", "transfer"], default: "cash" },
     dest: { type: String, default: "" },
     toCompanyAccount: { type: Boolean, default: false },
+    toAccount: { type: String, enum: ["personal", "company"] },
     transferCode: { type: String, default: "" },
     note: { type: String, default: "" },
 

@@ -79,7 +79,11 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const spots = Array.isArray(body?.spots) ? body.spots.map(String) : [];
   try {
-    return NextResponse.json(await runBankCheck(auth, String(body?.date ?? ""), String(body?.text ?? ""), spots));
+    // account: sao kê của TK nào — "personal" (BIDV) / "company" (MB 168858888) / "" tự đọc từ dòng
+    const account = body?.account === "company" ? "company" : body?.account === "personal" ? "personal" : "";
+    return NextResponse.json(
+      await runBankCheck(auth, String(body?.date ?? ""), String(body?.text ?? ""), spots, account),
+    );
   } catch (err) {
     return fail(err, "Không soát được sao kê");
   }

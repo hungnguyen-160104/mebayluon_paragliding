@@ -8,6 +8,7 @@ import { SPOT_IDS, spotName } from "@/lib/baobay/spots";
 import type { TaxCandidateDTO, TaxRecordDTO } from "@/services/baobay-tax.service";
 
 import { apiDelete, apiGet, apiPost } from "../components/client-api";
+import { TkctBadge } from "../components/PayAccount";
 import { useBaobaySession } from "../components/session";
 import { Banner, Button, Field, MoneyInput, PageLoading, TextInput } from "../components/ui";
 import { Shell } from "../components/Shell";
@@ -334,6 +335,8 @@ function TaxRow({
         <span className="font-mono text-xs text-slate-500">
           {formatDateKeyVN(row.flightDate)} · {row.spotLabel} · #{row.daySeq || "?"}
         </span>
+        {/* TKCT: khách CK vào TK công ty MB — phải xuất VAT (chủ 04/10) */}
+        <TkctBadge b={row} className="mr-0" />
         <strong>{row.contactName || "—"}</strong>
         <span className="text-slate-500">{row.bookingCode}</span>
         <span className="text-slate-500">{row.guestCount} khách</span>

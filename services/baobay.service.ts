@@ -124,6 +124,7 @@ import { CameramanDailyReport } from "@/models/CameramanDailyReport.model";
 import { DispatcherDailyReport } from "@/models/DispatcherDailyReport.model";
 import { PilotDailyReport } from "@/models/PilotDailyReport.model";
 import { sendPartnerFlightMail } from "@/services/baobay-partner.service";
+import { ensurePayAccountDoc, pickEligible, pickFields, pickPayAccount } from "@/services/pay-account-pick";
 import { toSlug } from "@/utils/slug";
 
 const BCRYPT_ROUNDS = 10;
@@ -4298,6 +4299,8 @@ export type BookingSaveInput = {
   /** Còn lại > 0: người được chỉ định thu — tự lập LỆNH THU TIỀN kèm booking. */
   collectorUsername?: string;
   collectorNote?: string;
+  /** Form chưa lưu đã đưa QR TK cá nhân — chốt TK cá nhân (xem lib/baobay/pay-account.ts). */
+  payQrShown?: boolean;
 };
 
 /**
@@ -4687,8 +4690,31 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     ppgUnitPrice: ppgPriceOf({ ppgUnitPrice: input.ppgUnitPrice, flightDate: input.flightDate }, spot),
   });
 
+  /**
+   * TÀI KHOẢN NHẬN TIỀN (chủ 04/10, Khau Phạ): chọn NGAY LÚC LẬP để nhãn TKCT và
+   * mã QR đúng tài khoản ngay từ lần đầu — xem lib/baobay/pay-account.ts. Không
+   * thuộc diện (Hà Nội, OTA…) thì `pay` = null, booking giữ TK cá nhân như cũ.
+   */
+  const pay = await pickPayAccount({
+    spot,
+    flightDate: input.flightDate,
+    createdAt: new Date(),
+    source: input.source,
+    otaRef: (input as { otaRef?: string }).otaRef,
+    agencyPaidAmount: input.agencyPaidAmount ?? 0,
+    deposit: input.deposit,
+    depositMethod: input.depositMethod ?? "",
+    qrShown: Boolean(input.payQrShown),
+  });
+
   const saved = (
     await BaobayBooking.create({
+      ...(pay
+        ? {
+            ...pickFields(pay),
+            payAccountLog: [{ at: new Date(), by: "máy", from: "", to: pay.account, source: pay.source, reason: pay.why }],
+          }
+        : {}),
       spot,
       flightDate: input.flightDate,
       daySeq: await nextDaySeq(spot, input.flightDate),
@@ -5724,6 +5750,20 @@ export type BookingAction = "flown" | "cancel" | "move";
  *
  * Cả hai đều trừ ngay phần "còn phải thu" của booking để quầy không thu hai lần.
  */
+/**
+ * Tài khoản nhận một khoản CHUYỂN KHOẢN của booking — xem lib/baobay/pay-account.ts.
+ * Trả `undefined` cho booking ngoài diện (Hà Nội, OTA, lập trước mốc) để bản
+ * ghi y như trước.
+ */
+async function transferAccountOf(booking: any, amount: number): Promise<"personal" | "company" | undefined> {
+  if (booking?.payAccount === "company" || booking?.payAccount === "personal") return booking.payAccount;
+  if (!payAccountPendingOf(booking)) return undefined;
+  return ensurePayAccountDoc({
+    ...booking,
+    collectedLog: [...(booking.collectedLog ?? []), { method: "transfer", amount }],
+  });
+}
+
 export async function collectForBooking(
   session: BaobaySession,
   spotRaw: string,
@@ -5861,6 +5901,13 @@ export async function collectForBooking(
   const cashDest = hasMoneyDests(spot) ? normalizeMoneyDest(spot, input.cashDest, "cash") : "";
   const transferDest = hasMoneyDests(spot) ? normalizeMoneyDest(spot, input.transferDest, "transfer") : "";
 
+  /**
+   * CK VÀO TÀI KHOẢN NÀO (chủ 04/10): theo tài khoản đã chốt của booking. Booking
+   * thuộc diện mà chưa chốt (chưa ai đưa QR) thì khách đã CK theo số TK cá nhân
+   * quen thuộc — chốt luôn TK cá nhân (`deposit`). Hà Nội / booking cũ: trống.
+   */
+  const toAccount = transferPart > 0 ? await transferAccountOf(booking, transferPart) : undefined;
+
   const label = isFull ? "Thu đủ" : "Cọc";
   const makeCollect = async (part: number, method: "cash" | "transfer", code = "") =>
     (
@@ -5876,6 +5923,7 @@ export async function collectForBooking(
         method,
         dest: method === "cash" ? cashDest : transferDest,
         toCompanyAccount: method === "transfer",
+        ...(method === "transfer" && toAccount ? { toAccount } : {}),
         transferCode: method === "transfer" ? code : "",
         note:
           `${label} cho booking bay ${formatDateKeyVN(booking.flightDate)}` +
@@ -5945,6 +5993,7 @@ export async function collectForBooking(
               kind: isFull ? "full" : "deposit",
               // MÃ GD đi theo từng bill — dòng booking hiện "GD #1234" cho kế toán đối soát
               code: b.code,
+              ...(toAccount ? { toAccount } : {}),
             })),
           ],
         },
@@ -6179,6 +6228,8 @@ export async function addBookingServices(
 
 export type RefundDTO = {
   id: string;
+  /** "company" = booking TKCT (khách trả vào TK công ty MB) — chỉ để hiện nhãn. */
+  payAccount?: "company";
   date: string;
   /** Số thứ tự booking trong ngày — lệnh hoàn phải hiện "#6 Tên khách" (chủ 14/09). */
   daySeq?: number;
@@ -6353,11 +6404,20 @@ export async function listRefunds(spotRaw: string, date: string): Promise<Refund
   /** Gắn số thứ tự booking (#N) cho từng lệnh — một truy vấn cho cả danh sách. */
   const ids = [...new Set(docs.map((d) => (d.bookingId ? String(d.bookingId) : "")).filter(Boolean))];
   const seq = new Map<string, number>();
+  /** Booking TKCT (chủ 04/10): khách đã trả vào TK công ty MB — lệnh hoàn hiện nhãn đỏ cho kế toán. */
+  const tkct = new Set<string>();
   if (ids.length) {
-    const bs = await BaobayBooking.find({ _id: { $in: ids } }).select("daySeq").lean<any[]>();
-    for (const b of bs) if (Number(b.daySeq)) seq.set(String(b._id), Number(b.daySeq));
+    const bs = await BaobayBooking.find({ _id: { $in: ids } }).select("daySeq payAccount").lean<any[]>();
+    for (const b of bs) {
+      if (Number(b.daySeq)) seq.set(String(b._id), Number(b.daySeq));
+      if (b.payAccount === "company") tkct.add(String(b._id));
+    }
   }
-  return docs.map((d) => ({ ...toRefundDTO(d), daySeq: d.bookingId ? seq.get(String(d.bookingId)) : undefined }));
+  return docs.map((d) => ({
+    ...toRefundDTO(d),
+    daySeq: d.bookingId ? seq.get(String(d.bookingId)) : undefined,
+    payAccount: d.bookingId && tkct.has(String(d.bookingId)) ? ("company" as const) : undefined,
+  }));
 }
 
 /**
@@ -9227,6 +9287,18 @@ export async function splitBooking(
   const partDate = input.mode === "move" ? String(input.toDate) : current.flightDate;
 
   const part = await BaobayBooking.create({
+    /**
+     * Phần tách MANG THEO tài khoản nhận tiền của đoàn gốc (chủ 04/10): khách đã
+     * thấy mã QR TK nào thì phần còn lại vẫn trả vào TK đó.
+     */
+    ...(current.payAccount === "company" || current.payAccount === "personal"
+      ? {
+          payAccount: current.payAccount,
+          payAccountSource: current.payAccountSource || "deposit",
+          payAccountAt: current.payAccountAt,
+          payAccountBy: current.payAccountBy,
+        }
+      : {}),
     spot,
     flightDate: partDate,
     daySeq: await nextDaySeq(spot, partDate),
@@ -10079,6 +10151,11 @@ export function maskForCrew(doc: any, money: "none" | "remaining" | "full" = "re
     email: "",
     lastNotify: "",
     pendingNotify: [],
+    // Hoá đơn VAT là việc kế toán; phi công chỉ cần TÀI KHOẢN đúng để đưa QR (giữ payAccount)
+    vatIssuedAt: undefined,
+    vatIssuedBy: undefined,
+    vatInvoiceNo: undefined,
+    payAccountBy: undefined,
     // Khau Phạ mặc định: đến cả "còn phải thu" cũng không phải việc của phi công
     ...(money === "none" ? { remaining: 0 } : {}),
     // Kế toán đã tích "hiện cho phi công": trả lại phần tiền của ĐÚNG booking này
@@ -10148,6 +10225,15 @@ function veQrToDTO(v: any): BookingDTO["veQr"] {
   };
 }
 
+/**
+ * Booking THUỘC DIỆN máy chọn tài khoản nhận tiền (Khau Phạ, lập sau mốc, không
+ * phải OTA) mà CHƯA chốt — giao diện phải hỏi máy chủ trước khi vẽ mã QR.
+ */
+function payAccountPendingOf(doc: any): boolean {
+  if (doc?.payAccount === "company" || doc?.payAccount === "personal") return false;
+  return pickEligible({ ...doc, spot: doc?.spot ?? "", flightDate: doc?.flightDate ?? "" });
+}
+
 export function toBookingDTO(doc: any): BookingDTO {
   return {
     yeuCauHuyWeb: doc.yeuCauHuyWeb?.at
@@ -10192,6 +10278,7 @@ export function toBookingDTO(doc: any): BookingDTO {
           code: c.code ? String(c.code) : undefined,
           at: c.at ? new Date(c.at).toISOString() : undefined,
           kind: c.kind ? String(c.kind) : undefined,
+          toAccount: c.toAccount === "company" || c.toAccount === "personal" ? c.toAccount : undefined,
         }))
       : [],
     id: String(doc._id),
@@ -10302,6 +10389,13 @@ export function toBookingDTO(doc: any): BookingDTO {
     depositToCompany: Boolean(doc.depositToCompany),
     depositMethod: doc.depositMethod === "cash" || doc.depositMethod === "transfer" ? doc.depositMethod : "",
     depositDest: doc.depositDest || "",
+    payAccount: doc.payAccount === "company" || doc.payAccount === "personal" ? doc.payAccount : undefined,
+    payAccountSource: doc.payAccountSource || undefined,
+    payAccountBy: doc.payAccountBy || undefined,
+    payAccountPending: payAccountPendingOf(doc) || undefined,
+    vatIssuedAt: doc.vat?.issuedAt ? new Date(doc.vat.issuedAt).toISOString() : undefined,
+    vatIssuedBy: doc.vat?.issuedBy || undefined,
+    vatInvoiceNo: doc.vat?.invoiceNo || undefined,
     depositDate: doc.depositDate || "",
     depositDateBy: doc.depositDateBy || "",
     depositVerified: Boolean(doc.depositVerifiedAt),

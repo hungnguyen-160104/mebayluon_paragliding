@@ -438,6 +438,12 @@ export const bookingSchema = z.object({
    */
   chapNhanTrung: z.boolean().optional(),
   lyDoTrung: z.string().max(300).optional(),
+  /**
+   * Form CHƯA LƯU đã đưa mã QR (TK cá nhân) cho khách — máy chủ chốt TK cá
+   * nhân cho booking này, không bốc thăm TK công ty nữa (khách đã thấy số TK
+   * cá nhân). Xem lib/baobay/pay-account.ts.
+   */
+  payQrShown: z.boolean().optional(),
   note: text(1_000),
   /**
    * EMAIL KHÁCH — nơi app gửi thư báo khi booking thay đổi.

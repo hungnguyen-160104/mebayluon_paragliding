@@ -66,6 +66,8 @@ export type TaxCandidateDTO = {
   totalAmount: number;
   deposit: number;
   status: string;
+  /** "company" = khách CK vào TK công ty MB (nhãn TKCT, chủ 04/10). */
+  payAccount?: "personal" | "company";
   /** Đã có hồ sơ thuế chưa — có là "đã nhặt". */
   picked: boolean;
   record: TaxRecordDTO | null;
@@ -200,7 +202,7 @@ export async function listTaxCandidates(
     .sort({ flightDate: 1, spot: 1, daySeq: 1 })
     .limit(2_000)
     .select(
-      "spot flightDate daySeq contactName phone bookingCode source guestCount cancelledGuests totalAmount deposit depositDate depositMethod collectedLog status cancelledAt agencyName insured createdAt",
+      "spot flightDate daySeq contactName phone bookingCode source guestCount cancelledGuests totalAmount deposit depositDate depositMethod collectedLog status cancelledAt agencyName insured createdAt payAccount",
     )
     .lean<any[]>();
 
@@ -224,6 +226,7 @@ export async function listTaxCandidates(
         totalAmount: b.totalAmount ?? 0,
         deposit: b.deposit ?? 0,
         status: b.status || "open",
+        payAccount: b.payAccount === "company" ? "company" : undefined,
         picked: Boolean(r),
         record: r ? toRecordDTO(r) : null,
         suggest: suggestOf(b),

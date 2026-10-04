@@ -504,6 +504,8 @@ export type BookingDTO = {
     collectId?: string;
     /** Người đang giữ tiền (lệnh TM) — kế toán đổi được khi chia bill nhầm. */
     collectorUsername?: string;
+    /** CK vào tài khoản nào — "company" = MB 168858888 (TKCT). Trống = bản ghi cũ. */
+    toAccount?: "personal" | "company";
   }>;
   /**
    * Lệnh THÊM/BỚT dịch vụ tại bãi (chưa hoàn tác) — số flycam/360… trên booking
@@ -587,6 +589,21 @@ export type BookingDTO = {
   depositMethod?: "cash" | "transfer" | "";
   /** Quỹ nhận khoản cọc gõ tay — xem lib/baobay/money-dest.ts. */
   depositDest?: string;
+  /**
+   * TÀI KHOẢN NHẬN TIỀN BAY (chủ 04/10, Khau Phạ): "company" = MB 168858888
+   * (nhãn đỏ TKCT), "personal" = BIDV Đặng Thị Thuỷ, trống = chưa chốt (dùng
+   * TK cá nhân; Khau Phạ lập sau mốc thì lần đầu đưa QR máy sẽ chọn).
+   * Xem lib/baobay/pay-account.ts.
+   */
+  payAccount?: "personal" | "company";
+  payAccountSource?: "auto" | "deposit" | "qr" | "manual";
+  payAccountBy?: string;
+  /** Booking ĐƯỢC máy chọn tài khoản (Khau Phạ, lập sau mốc, không phải OTA) mà chưa chốt — mở QR phải hỏi máy chủ trước. */
+  payAccountPending?: boolean;
+  /** Kế toán đã xuất hoá đơn VAT cho phần tiền về TK công ty. */
+  vatIssuedAt?: string;
+  vatIssuedBy?: string;
+  vatInvoiceNo?: string;
   /**
    * NGÀY KHÁCH TRẢ CỌC ("YYYY-MM-DD") khi nó KHÁC ngày lập booking. Trống =
    * trả đúng hôm lập booking. Đối soát sao kê xếp khoản cọc theo ngày này.

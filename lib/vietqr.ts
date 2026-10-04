@@ -13,6 +13,8 @@ export const BANK_BIN = {
   techcombank: "970407",
   bidv: "970418",
   vietcombank: "970436",
+  /** MB Bank (Ngân hàng TMCP Quân đội) — NAPAS 970422. */
+  mbbank: "970422",
 } as const;
 
 /**
@@ -33,6 +35,35 @@ export const PAY_ACCOUNT_FLIGHT = {
   accountNumber: "8875639685",
   accountName: "Đặng Thị Thuỷ",
 } as const;
+
+/**
+ * TÀI KHOẢN CÔNG TY nhận TIỀN BAY Khau Phạ (chủ 04/10/2026) — khoảng 30% booking
+ * máy tự chọn chuyển vào đây để xuất hoá đơn VAT cho sạch. Luật chọn nằm ở
+ * lib/baobay/pay-account.ts.
+ *
+ * Tên chủ tài khoản viết KHÔNG DẤU, CHỮ HOA: đúng như app ngân hàng hiện ra
+ * khi khách quét (VietQR không mang tên trong chuỗi mã — tên chỉ để khách đối
+ * chiếu bằng mắt; dịch vụ ảnh img.vietqr.io đòi ASCII, tối đa 50 ký tự).
+ * Số này được phép công khai (tài khoản công ty), khác tài khoản cá nhân.
+ */
+export const PAY_ACCOUNT_COMPANY = {
+  bankBin: BANK_BIN.mbbank,
+  bankName: "MB Bank",
+  accountNumber: "168858888",
+  accountName: "CN TAY BAC - CTCP DL VA TT VIEN NAM",
+} as const;
+
+export type PayAccountInfo = {
+  readonly bankBin: string;
+  readonly bankName: string;
+  readonly accountNumber: string;
+  readonly accountName: string;
+};
+
+/** Tài khoản nhận tiền bay theo loại đã chốt trên booking — trống/lạ = tài khoản cá nhân như cũ. */
+export function flightPayAccount(kind?: string | null): PayAccountInfo {
+  return kind === "company" ? PAY_ACCOUNT_COMPANY : PAY_ACCOUNT_FLIGHT;
+}
 
 /** Quầy cafe + homestay — bảng QR đặt tại quầy (chủ gửi ảnh 06/09). */
 export const PAY_ACCOUNT_CAFE_HOMESTAY = {

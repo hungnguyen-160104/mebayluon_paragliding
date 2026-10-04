@@ -19,6 +19,7 @@ import { formatVND } from "@/lib/pricing";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "./client-api";
 import { PaymentQrButton } from "./PaymentQr";
+import { qrPayRef } from "./PayAccount";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { Banner, Button, CollapseCard, DoneTag, Field, MoneyInput, TextInput, useDoneFlag } from "./ui";
 
@@ -805,6 +806,7 @@ export function AddServicesCard({
               Cần thu <strong className="tabular-nums text-rose-700">{formatVND(charge)}</strong>
               {/* Khách mua thêm tại bãi mà không mang tiền mặt: quét mã trả luôn */}
               <PaymentQrButton
+                pay={qrPayRef(picked, spot)}
                 amount={charge}
                 note={buildTransferNote({
                   spot: spot,
@@ -903,6 +905,7 @@ export function AddServicesCard({
                       {/* Mỗi bill một mã QR riêng — nội dung có đuôi .1 .2 để kế
                           toán dò được từng dòng sao kê của cùng một booking. */}
                       <PaymentQrButton
+                        pay={qrPayRef(picked, spot)}
                         amount={b.amount}
                         note={buildTransferNote({
                           spot: spot,

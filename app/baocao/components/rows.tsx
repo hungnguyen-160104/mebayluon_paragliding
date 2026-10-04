@@ -818,6 +818,10 @@ export type CancelGuestRow = {
 /** Booking trong ngày để chọn — nơi gọi truyền vào, rỗng thì ô chọn tự ẩn. */
 export type BookingPick = {
   id: string;
+  /** Tài khoản nhận tiền (chủ 04/10) — mã QR huỷ/dời phải đúng TK của booking. */
+  spot?: string;
+  payAccount?: "personal" | "company";
+  payAccountPending?: boolean;
   daySeq: number;
   contactName: string;
   phone: string;

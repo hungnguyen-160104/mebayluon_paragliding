@@ -6,9 +6,7 @@ import { spotName } from "@/lib/baobay/spots";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { CLUBHOUSE_MAP_URL, KHAU_PHA_TAKEOFF_MAP_URL } from "@/lib/spot-partner-links";
 import { shouldShowQueueNo } from "@/lib/booking/queue-display";
-import { buildVietQrPayload } from "@/lib/vietqr";
-
-import { PAY_ACCOUNT } from "./PaymentQr";
+import { buildVietQrPayload, flightPayAccount, type PayAccountInfo } from "@/lib/vietqr";
 import type { BookingDTO } from "@/lib/baobay/types";
 import { FLIGHT_KIND_SHORT, MOUNTAIN_CAR_PRICE, longFlightFree, servicesAmount } from "@/lib/baobay/flight-price";
 import { DIEM_BAY_VE, laTuDen, pickupVe } from "@/lib/baobay/pickup";
@@ -76,6 +74,11 @@ export type BookingImageData = {
   queueNo?: number | null;
   /** Số khách PPG trong đoàn PG lẫn — quyết định phiếu in chỉ đường nào (Khau Phạ). */
   ppgGuests?: number;
+  /**
+   * Tài khoản của mã QR "còn thu" (chủ 04/10): "company" = MB 168858888, còn lại
+   * TK cá nhân. Ảnh gửi KHÁCH nên không in nhãn TKCT — chỉ đổi đúng tài khoản.
+   */
+  payAccount?: "personal" | "company";
 };
 
 const money = (n: number) => `${(n || 0).toLocaleString("vi-VN")} đ`;
@@ -213,7 +216,7 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
  * Ảnh dạng data URL nên vẽ vào canvas KHÔNG làm "nhiễm bẩn" canvas — vẫn xuất
  * được PNG. Ảnh tải từ miền khác thì trình duyệt chặn luôn canvas.toBlob().
  */
-async function loadPayQr(amount: number, note: string): Promise<HTMLImageElement | null> {
+async function loadPayQr(amount: number, note: string, PAY_ACCOUNT: PayAccountInfo): Promise<HTMLImageElement | null> {
   try {
     const QRCode = (await import("qrcode")).default;
     const payload = buildVietQrPayload({
@@ -440,6 +443,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
    * và biết mà đừng sửa.
    */
   const payAmount = Math.max(0, Math.round(d.remaining || 0));
+  const PAY_ACCOUNT = flightPayAccount(d.payAccount);
   const payNote = buildTransferNote({
     spot: d.spot,
     flightDate: d.flightDate,
@@ -453,7 +457,7 @@ export async function drawBookingImage(d: BookingImageData): Promise<HTMLCanvasE
   const th = thuongHieu(d.spot);
   const [logo, payQr, ...dirQrs] = await Promise.all([
     loadLogo(th.logo),
-    payAmount > 0 ? loadPayQr(payAmount, payNote) : Promise.resolve(null),
+    payAmount > 0 ? loadPayQr(payAmount, payNote, PAY_ACCOUNT) : Promise.resolve(null),
     ...dirPoints.map((p) => loadMapQr(p.url)),
   ]);
 

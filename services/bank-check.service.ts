@@ -32,6 +32,7 @@ import {
 } from "@/lib/baobay/bank-check";
 import { askAiBankMatch, type AiBankCandidate, type AiBankLine } from "@/lib/baobay/ai-bank-match";
 import { depositDayOf, formatDateKeyVN, isDateKey, toDateKeyVN } from "@/lib/baobay/date";
+import { detectStatementAccount, payAccountSpotEnabled } from "@/lib/baobay/pay-account";
 import { SPOT_IDS, normalizeSpot, spotName } from "@/lib/baobay/spots";
 import type { BaobaySession } from "@/lib/baobay/token";
 import { connectDB } from "@/lib/mongodb";
@@ -64,6 +65,14 @@ export type BankLineDTO = {
   candidates?: string[];
   resolvedNote?: string;
   resolvedBy?: string;
+  /** Dòng sao kê của tài khoản nào (chủ 04/10): BIDV cá nhân / MB công ty / "" không rõ. */
+  account?: "personal" | "company" | "";
+  bookingId?: string;
+  /**
+   * LỆCH TÀI KHOẢN: booking TKCT mà tiền về TK cá nhân, hoặc tiền về TK công ty
+   * mà booking không mang TKCT. Không tự sửa — báo để kế toán xem.
+   */
+  accountWarn?: string;
 };
 
 /** Một khoản CK app đã ghi trong ngày — đối chiếu ngược với sao kê. */
@@ -118,6 +127,8 @@ export type BankGroupDTO = {
  */
 export type BankBookingRowDTO = {
   bookingId: string;
+  /** "company" = booking TKCT — tiền phải về MB 168858888 (chủ 04/10). */
+  payAccount?: "company";
   daySeq: number;
   spot: string;
   label: string;
@@ -647,7 +658,37 @@ function toLineDTO(doc: any): BankLineDTO {
     candidates: doc.candidates ?? [],
     resolvedNote: doc.resolvedNote,
     resolvedBy: doc.resolvedBy,
+    account: doc.account === "company" || doc.account === "personal" ? doc.account : "",
+    bookingId: doc.bookingId ? String(doc.bookingId) : undefined,
   };
+}
+
+/**
+ * GẮN CẢNH BÁO LỆCH TÀI KHOẢN cho mọi dòng sao kê trong báo cáo (chủ 04/10).
+ * Đọc tài khoản của booking tại lúc xem — đổi tay booking sang TKCT là cảnh báo
+ * tự tắt, không phải soát lại.
+ */
+async function decorateAccounts(report: BankCheckReport): Promise<void> {
+  const all: BankLineDTO[] = [
+    ...report.lines,
+    ...report.pending,
+    ...report.bookingRows.flatMap((r) => [...r.lines, ...r.suggests]),
+  ];
+  const ids = [...new Set(all.filter((l) => l.bookingId && l.account).map((l) => l.bookingId!))].filter((x) =>
+    mongoose.Types.ObjectId.isValid(x),
+  );
+  if (!ids.length) return;
+  const bookings = await BaobayBooking.find({ _id: { $in: ids } }).select("payAccount").lean<any[]>();
+  const pay = new Map(bookings.map((b) => [String(b._id), b.payAccount === "company" ? "company" : "personal"]));
+  for (const l of all) {
+    if (!l.bookingId || !l.account || l.status === "pending") continue;
+    const acc = pay.get(l.bookingId);
+    if (!acc || acc === l.account) continue;
+    l.accountWarn =
+      acc === "company"
+        ? "⚠ Booking TKCT nhưng tiền về TK CÁ NHÂN (BIDV) — khoản này KHÔNG xuất VAT được; hỏi lại người đưa QR."
+        : "⚠ Tiền về TK CÔNG TY (MB 168858888) nhưng booking không mang TKCT — đổi booking sang TKCT (để xuất VAT) hoặc kiểm lại.";
+  }
 }
 
 /** Đổ kết quả dò vào các trường của bản ghi dòng sao kê. */
@@ -698,6 +739,11 @@ export async function runBankCheck(
   date: string,
   text: string,
   spotsFilter?: string[],
+  /**
+   * Sao kê dán vào là của TÀI KHOẢN NÀO (kế toán chọn khi dán bản xuất của app
+   * ngân hàng không ghi số TK). Dòng nào tự ghi rõ số TK thì dòng đó thắng.
+   */
+  accountHint?: "personal" | "company" | "",
 ): Promise<BankCheckReport> {
   await connectDB();
   if (!isDateKey(date)) throw new BaobayError("Ngày soát không hợp lệ", 400);
@@ -779,11 +825,19 @@ export async function runBankCheck(
 
     const target = isDateKey(entry.bankDate) ? entry.bankDate : date;
     const fields = matchFields(entry, await forDate(target));
+    const account = detectStatementAccount(entry.raw) || accountHint || "";
 
     await BaobayBankLine.findOneAndUpdate(
       { key },
       {
-        $set: { raw: entry.raw, amount: entry.amount, bankDate: entry.bankDate, bankTime: entry.bankTime, ...fields },
+        $set: {
+          raw: entry.raw,
+          amount: entry.amount,
+          bankDate: entry.bankDate,
+          bankTime: entry.bankTime,
+          ...(account ? { account } : {}),
+          ...fields,
+        },
         $setOnInsert: {
           key,
           checkDate: date,
@@ -793,6 +847,17 @@ export async function runBankCheck(
       },
       { upsert: true },
     );
+    /**
+     * Sao kê nói rõ tiền về TÀI KHOẢN NÀO → ghi luôn lên lệnh thu vừa khớp (nếu
+     * lệnh thu chưa ghi). Chỉ ghi cho điểm dùng TK công ty, hoặc khi tiền về
+     * hẳn TK công ty — Hà Nội vẫn y như cũ.
+     */
+    if (account && fields.status === "matched" && String(fields.refId ?? "").startsWith("collect:")) {
+      const cid = String(fields.refId).slice("collect:".length);
+      if (mongoose.Types.ObjectId.isValid(cid) && (account === "company" || payAccountSpotEnabled(fields.matchSpot))) {
+        await BaobayCollect.updateOne({ _id: cid, toAccount: { $in: [null, ""] } }, { $set: { toAccount: account } });
+      }
+    }
   }
 
   /**
@@ -1143,7 +1208,7 @@ export async function getBankCheck(
   const rowBookings = rowBookingIds.size
     ? await BaobayBooking.find({ _id: { $in: [...rowBookingIds] } })
         .select(
-          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset longFlight flagFlight totalAmount remaining discount note agencyPaidAmount agencyName deposit refundedTotal transferCode depositVerifiedAt status ticketIssuedAt noTicketFlight lockedAt",
+          "spot daySeq flightDate contactName phone bookingCode guestCount ppgGuests flightKind flycam video360 redFlag sunset longFlight flagFlight totalAmount remaining discount note agencyPaidAmount agencyName deposit refundedTotal transferCode depositVerifiedAt status ticketIssuedAt noTicketFlight lockedAt payAccount",
         )
         .lean<any[]>()
     : [];
@@ -1207,7 +1272,7 @@ export async function getBankCheck(
     : [];
   const undoneByBooking = new Map<string, number>(undoneRows.map((r: any) => [String(r._id), Number(r.n) || 0]));
 
-  const lineDTOs = lineDocs.map(toLineDTO);
+  const lineDTOs = lineDocs.map((d) => toLineDTO(d));
   const pendingToday = lineDTOs.filter((l) => l.status === "pending");
 
   /**
@@ -1239,6 +1304,7 @@ export async function getBankCheck(
         daySeq: Number(b.daySeq) || 0,
         spot: b.spot,
         label,
+        payAccount: b.payAccount === "company" ? ("company" as const) : undefined,
         summary: summaryOf(b),
         totalAmount: b.totalAmount || 0,
         remaining: Math.max(0, b.remaining || 0),
@@ -1315,7 +1381,7 @@ export async function getBankCheck(
             verified: Boolean(c.verifiedAt),
             locked: Boolean(b.lockedAt),
           })),
-        lines: (histLinesByBooking.get(id) ?? []).map(toLineDTO),
+        lines: (histLinesByBooking.get(id) ?? []).map((d) => toLineDTO(d)),
         // Dòng treo mà danh sách nghi ngờ có nhắc đúng nhãn booking này
         suggests: pendingToday.filter((l) => (l.candidates ?? []).some((c) => c.startsWith(label))),
         ...(() => {
@@ -1421,13 +1487,13 @@ export async function getBankCheck(
     })),
   ].sort((a, b) => (b.at || "").localeCompare(a.at || ""));
 
-  return {
+  const report: BankCheckReport = {
     date,
     reconcileFrom: RECONCILE_FROM,
     spots,
     skipped_items: skippedItems,
     lines: lineDTOs,
-    pending: pendingDocs.map(toLineDTO),
+    pending: pendingDocs.map((d) => toLineDTO(d)),
     appTransfers,
     appCash,
     groups,
@@ -1444,6 +1510,8 @@ export async function getBankCheck(
     skipped: [],
     skipCounts: { settled: 0, tooOld: 0, tooOldAmount: 0, outgoing: 0, duplicate: 0 },
   };
+  await decorateAccounts(report);
+  return report;
 }
 
 /** Danh sách khoản của MỘT NGÀY để kế toán chỉ định tay dòng sao kê lạc chủ. */

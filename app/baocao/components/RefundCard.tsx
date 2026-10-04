@@ -9,6 +9,7 @@ import type { RefundDTO } from "@/services/baobay.service";
 
 import { apiGet, apiPatch } from "./client-api";
 import { Banner, Button, CollapseCard, MoneyInput, TextInput } from "./ui";
+import { TkctBadge } from "./PayAccount";
 
 /**
  * LỆNH HOÀN TIỀN CHỜ KẾ TOÁN.
@@ -106,7 +107,8 @@ export function RefundCard({ spot, date, canConfirm = false }: { spot: string; d
                         : "đã trả TM"}
                 </span>
                 <span className="min-w-0 flex-1 leading-snug text-slate-700">
-                  {formatDateKeyVN(r.date)} · <strong>{r.daySeq ? `#${r.daySeq} ` : ""}{r.guestName}</strong>
+                  {formatDateKeyVN(r.date)} · <TkctBadge b={r} />
+                  <strong>{r.daySeq ? `#${r.daySeq} ` : ""}{r.guestName}</strong>
                   {r.guests ? ` · ${r.guests} khách` : ""}
                   {r.reason ? ` · ${r.reason}` : ""}
                   {r.usedServices ? ` · đã dùng: ${r.usedServices}` : ""}

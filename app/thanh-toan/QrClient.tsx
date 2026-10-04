@@ -4,7 +4,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { buildVietQrPayload, toAsciiNote, BANK_BIN } from "@/lib/vietqr";
+import { buildVietQrPayload, flightPayAccount, toAsciiNote } from "@/lib/vietqr";
+import { PAY_ACCOUNT_URL_CODE } from "@/lib/baobay/pay-account";
 import { formatVND } from "@/lib/pricing";
 
 /**
@@ -20,15 +21,14 @@ import { formatVND } from "@/lib/pricing";
  * lộ thông tin gì ngoài số tài khoản nhận tiền (thứ vốn phải đưa khách).
  */
 
-const PAY = {
-  bankBin: BANK_BIN.bidv,
-  bankName: "BIDV",
-  accountNumber: "8875639685",
-  accountName: "Đặng Thị Thuỷ",
-};
-
 export function QrClient() {
   const params = useSearchParams();
+  /**
+   * TÀI KHOẢN NHẬN (chủ 04/10): `t=ct` = TK CÔNG TY (MB 168858888) — app nội bộ
+   * gắn vào link khi booking mang nhãn TKCT. Không có / giá trị lạ = TK cá nhân
+   * như trước. Số tài khoản lấy chung một chỗ với app (lib/vietqr.ts).
+   */
+  const PAY = flightPayAccount(params.get("t") === PAY_ACCOUNT_URL_CODE ? "company" : "personal");
   const amount = Math.max(0, Math.round(Number(params.get("a")) || 0));
   const note = toAsciiNote(params.get("n") || "") || "MEBAYLUON";
   const purpose = (params.get("p") || "Thanh toán dịch vụ bay dù lượn").slice(0, 120);
@@ -59,7 +59,7 @@ export function QrClient() {
     return () => {
       alive = false;
     };
-  }, [amount, note]);
+  }, [amount, note, PAY.bankBin, PAY.accountNumber]);
 
   async function copyAccount() {
     try {
