@@ -17,7 +17,7 @@ const TXT = {
   vi: {
     title: "Nhúng camera bãi cất cánh dù lượn",
     intro:
-      `Hiện ảnh camera bãi cất Viên Nam, bãi hạ cánh Viên Nam hoặc bãi cất Khau Phạ (cập nhật mỗi 1–3 phút, ${CAM_ACTIVE.label}) ngay trên website của bạn. Miễn phí, vui lòng giữ dòng nguồn.`,
+      `Hiện ảnh camera bãi cất Viên Nam, bãi hạ cánh Viên Nam hoặc bãi cất Khau Phạ (cập nhật mỗi phút, ${CAM_ACTIVE.label}) ngay trên website của bạn. Miễn phí, vui lòng giữ dòng nguồn.`,
     preview: "Xem trước",
     options: "Tuỳ chọn",
     langLabel: "Ngôn ngữ khung (lang)",
@@ -47,7 +47,7 @@ const TXT = {
   en: {
     title: "Embed a paragliding launch camera",
     intro:
-      `Show the Vien Nam launch, Vien Nam landing field or Khau Pha launch camera (updated every 1–3 minutes, ${CAM_ACTIVE.label} Vietnam time) on your website. Free — please keep the credit line.`,
+      `Show the Vien Nam launch, Vien Nam landing field or Khau Pha launch camera (updated every minute, ${CAM_ACTIVE.label} Vietnam time) on your website. Free — please keep the credit line.`,
     preview: "Preview",
     options: "Options",
     langLabel: "Widget language (lang)",

@@ -33,8 +33,8 @@ export const TX = {
   offline: { vi: "Camera tạm mất kết nối", en: "Camera temporarily offline" },
   loading: { vi: "Đang tải ảnh…", en: "Loading…" },
   schedule: {
-    vi: `Chụp ${CAM_ACTIVE.label}: 3 ảnh/phút lúc 10–15h, 3 phút/ảnh giờ khác`,
-    en: `Shoots ${CAM_ACTIVE.label}: 3 photos/min 10–15h, every 3 min otherwise`,
+    vi: `Chụp ${CAM_ACTIVE.label}: 3 ảnh/phút lúc 10–15h, 1 ảnh/phút giờ khác`,
+    en: `Shoots ${CAM_ACTIVE.label}: 3 photos/min 10–15h, 1 photo/min otherwise`,
   },
   noShots: {
     vi: "Chưa có ảnh trong 60 phút qua",

@@ -163,7 +163,7 @@ export const CAM_WINDOW_MINUTES = 60;
 /** MongoDB giữ link ảnh bấy nhiêu phút rồi xoá (dư 30 phút cho khung 60 phút) */
 export const CAM_KEEP_MINUTES = 90;
 /** Ảnh mới nhất cũ hơn chừng này (trong giờ chụp) thì coi như camera mất kết nối —
- *  ngoài 10–15h chụp 3 phút/ảnh nên 10 phút vẫn dư ba nhịp. */
+ *  ngoài 10–15h chụp 1 ảnh/phút (chủ 04/10) nên 10 phút là dư nhiều nhịp. */
 export const CAM_STALE_MINUTES = 10;
 
 const VN_OFFSET_MS = 7 * 3600_000;
@@ -184,11 +184,12 @@ export function inCamActiveHours(t: Date | number = Date.now()): boolean {
 /**
  * NHỊP CHỤP (chủ 01/10/2026, cho đỡ tốn lượt gọi): 10:00–15:00 giờ VN chụp
  * 3 ẢNH/PHÚT (chủ 04/10, trước 1 ảnh/phút — giây 0, 20, 40; mọi camera); 05:30–10:00 và 15:00–19:30 chỉ chụp phút chia hết cho 3
- * (3 phút/lần). ≈ 1.081 ảnh/ngày/camera. Lịch gọi vẫn mỗi phút,
+ * (3 phút/lần) — từ 04/10 chủ đổi thành 1 ảnh/phút. ≈ 1.441 ảnh/ngày/camera. Lịch gọi vẫn mỗi phút,
  * route tự bỏ qua các phút không cần chụp.
  */
 export const CAM_PEAK = { fromMin: 10 * 60, toMin: 15 * 60 } as const;
-export const CAM_OFFPEAK_EVERY_MIN = 3;
+/** Ngoài cao điểm: 1 ảnh/phút (chủ 04/10; trước 3 phút/ảnh) */
+export const CAM_OFFPEAK_EVERY_MIN = 1;
 /** Số ảnh mỗi phút trong giờ cao điểm — một lượt cron chụp ở giây 0, 20, 40 */
 export const CAM_PEAK_SHOTS_PER_MIN = 3;
 

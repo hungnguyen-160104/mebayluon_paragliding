@@ -19,7 +19,7 @@
  *  - chưa khai env Imou   → "Camera chưa kết nối"
  *  - ngoài 05:30–19:30    → "Camera nghỉ (chụp 05:30–19:30)" (vẫn cho xem ảnh cuối nếu có)
  *  - trong giờ mà ảnh mới nhất cũ hơn CAM_STALE_MINUTES (10 phút; ngoài 10–15h
- *    chụp 3 phút/ảnh) → "Camera tạm mất kết nối"
+ *    chụp 1 ảnh/phút) → "Camera tạm mất kết nối"
  */
 
 import { useCallback, useMemo, useRef } from "react";

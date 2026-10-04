@@ -73,9 +73,9 @@ export async function GET(req: Request) {
   if (!force && !inCamActiveHours(now)) {
     return NextResponse.json({ ok: true, skip: "ngoài giờ chụp 05:30–19:30", vn: vnHHMM(now) });
   }
-  /** Ngoài 10:00–15:00 chỉ chụp 3 phút/lần — xem shouldSnapNow (chủ 01/10). */
+  /** Nhịp ngoài 10:00–15:00 — xem shouldSnapNow (chủ 04/10: 1 ảnh/phút). */
   if (!force && !shouldSnapNow(now)) {
-    return NextResponse.json({ ok: true, skip: "ngoài giờ cao điểm: 3 phút/lần", vn: vnHHMM(now) });
+    return NextResponse.json({ ok: true, skip: "ngoài giờ cao điểm: chưa tới phút chụp", vn: vnHHMM(now) });
   }
 
   // Một camera (?cam=): giữ nguyên dạng trả lời + mã HTTP như trước
