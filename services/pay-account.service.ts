@@ -30,7 +30,7 @@ import { connectDB } from "@/lib/mongodb";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { BaobayCollect } from "@/models/BaobayCollect.model";
 import { BaobayError, assertSpotAllowed, toBookingDTO } from "@/services/baobay.service";
-import { ensurePayAccountDoc } from "@/services/pay-account-pick";
+import { dayRevenueTally, ensurePayAccountDoc } from "@/services/pay-account-pick";
 
 /* ================================================================== */
 /* Chốt / đổi tài khoản                                                */
@@ -299,4 +299,41 @@ export async function countVatPending(session: BaobaySession, spotRaw: string): 
     }
   }
   return { count, amount };
+}
+
+/* ================================================================== */
+/* Cân 30% doanh thu — chủ xem ngày bay đang lệch tới đâu              */
+/* ================================================================== */
+
+export type RevenueShareDTO = {
+  flightDate: string;
+  /** Doanh thu CK đã chốt vào TK công ty / tổng doanh thu CK đã chốt tài khoản. */
+  companyValue: number;
+  decidedValue: number;
+  /** 0..1 — trống (null) khi ngày chưa có booking nào thuộc diện. */
+  share: number | null;
+  companyBookings: number;
+  decidedBookings: number;
+  target: number;
+  low: number;
+  high: number;
+};
+
+/** Phần doanh thu CK của NGÀY BAY đang vào TK công ty (booking lập từ mốc áp dụng). */
+export async function dayRevenueShare(session: BaobaySession, spotRaw: string, flightDate: string): Promise<RevenueShareDTO | null> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  if (!payAccountSpotEnabled(spot) || !isDateKey(flightDate)) return null;
+  const t = await dayRevenueTally(spot, flightDate);
+  return {
+    flightDate,
+    companyValue: t.companyValue,
+    decidedValue: t.decidedValue,
+    share: t.decidedValue > 0 ? t.companyValue / t.decidedValue : null,
+    companyBookings: t.company,
+    decidedBookings: t.decided,
+    target: COMPANY_ACCOUNT_RULES.targetRevenueShare,
+    low: COMPANY_ACCOUNT_RULES.band.low,
+    high: COMPANY_ACCOUNT_RULES.band.high,
+  };
 }

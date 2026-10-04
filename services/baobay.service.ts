@@ -4702,6 +4702,8 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     source: input.source,
     otaRef: (input as { otaRef?: string }).otaRef,
     agencyPaidAmount: input.agencyPaidAmount ?? 0,
+    // Doanh thu để cân 30%: tổng máy chủ vừa tính
+    totalAmount: newTotal,
     deposit: input.deposit,
     depositMethod: input.depositMethod ?? "",
     qrShown: Boolean(input.payQrShown),

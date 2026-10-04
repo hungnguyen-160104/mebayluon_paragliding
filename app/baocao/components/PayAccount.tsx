@@ -148,3 +148,52 @@ export function PayAccountControl({
     </span>
   );
 }
+
+/** Phần doanh thu TK công ty của một ngày bay — xem services/pay-account.service.ts (RevenueShareDTO). */
+export type RevenueShare = {
+  flightDate: string;
+  companyValue: number;
+  decidedValue: number;
+  share: number | null;
+  companyBookings: number;
+  decidedBookings: number;
+  target: number;
+  low: number;
+  high: number;
+};
+
+/**
+ * "TK công ty: x đ / y đ = z%" — chủ nhìn là biết máy cân 30% DOANH THU của
+ * ngày bay tới đâu. Xanh khi nằm trong dải (25–35%), đỏ khi lệch.
+ */
+export function RevenueShareLine({ s, className }: { s: RevenueShare | null | undefined; className?: string }) {
+  if (!s) return null;
+  const vnd = (n: number) => `${Math.round(n).toLocaleString("vi-VN")} đ`;
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+  const inBand = s.share !== null && s.share >= s.low && s.share <= s.high;
+  return (
+    <div
+      className={
+        "rounded-lg border px-2.5 py-1.5 text-xs leading-snug " +
+        (s.share === null ? "border-slate-200 bg-slate-50 text-slate-600" : inBand ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-red-300 bg-red-50 text-red-900") +
+        " " +
+        (className ?? "")
+      }
+      title={`Mục tiêu ${pct(s.target)} doanh thu chuyển khoản (dải ${pct(s.low)}–${pct(s.high)}) — tính trên booking Khau Phạ bay ngày này, không tính OTA`}
+    >
+      <strong>Ngày bay {s.flightDate.split("-").reverse().slice(0, 2).join("/")} — TK công ty: </strong>
+      {s.share === null ? (
+        "chưa có booking nào thuộc diện"
+      ) : (
+        <>
+          <span className="tabular-nums">
+            {vnd(s.companyValue)} / {vnd(s.decidedValue)} = <strong>{pct(s.share)}</strong>
+          </span>{" "}
+          <span className="opacity-75">
+            ({s.companyBookings}/{s.decidedBookings} booking · mục tiêu {pct(s.target)}, dải {pct(s.low)}–{pct(s.high)})
+          </span>
+        </>
+      )}
+    </div>
+  );
+}

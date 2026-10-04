@@ -17,6 +17,7 @@ import { Shell } from "../components/Shell";
 import { useSpot } from "../components/spot";
 import { useNgayLamViec } from "../components/ngay-lam-viec";
 import { Banner, Card, PageLoading } from "../components/ui";
+import { RevenueShareLine, type RevenueShare } from "../components/PayAccount";
 
 /** Hai thẻ nặng (soát sao kê ~96 KB, đại lý) nạp sau khi bảng tiền đã hiện — trang mở nhanh hơn (18/09). */
 const BankCheckCard = dynamic(() => import("../components/BankCheckCard").then((m) => m.BankCheckCard), { ssr: false });
@@ -54,6 +55,8 @@ export default function KeToanPage() {
   const [incoming, setIncoming] = useState<HandoverDTO[]>([]);
   /** Booking có tiền về TK công ty (TKCT) mà chưa xuất VAT — mọi ngày (chủ 04/10). */
   const [vat, setVat] = useState<{ count: number; amount: number }>({ count: 0, amount: 0 });
+  /** Phần doanh thu TK công ty của ngày bay đang xem — chủ cân 30% (04/10). */
+  const [revShare, setRevShare] = useState<RevenueShare | null>(null);
 
   const load = useCallback(async () => {
     if (!spot) return;
@@ -80,9 +83,15 @@ export default function KeToanPage() {
       setFlycam(f.items ?? []);
       setIncoming(h.incoming ?? []);
       // Đếm VAT chưa xuất — hỏng thì thôi, không làm đổ cả trang
-      apiGet<{ count: number; amount: number }>(`/api/baocao/vat?spot=${spot}&count=1`)
-        .then((v) => setVat({ count: v.count || 0, amount: v.amount || 0 }))
-        .catch(() => setVat({ count: 0, amount: 0 }));
+      apiGet<{ count: number; amount: number; share: RevenueShare | null }>(`/api/baocao/vat?spot=${spot}&count=1&date=${date}`)
+        .then((v) => {
+          setVat({ count: v.count || 0, amount: v.amount || 0 });
+          setRevShare(v.share ?? null);
+        })
+        .catch(() => {
+          setVat({ count: 0, amount: 0 });
+          setRevShare(null);
+        });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không tải được số của ngày");
     } finally {
@@ -200,6 +209,8 @@ export default function KeToanPage() {
           <Stat label="Tổng thu" value={revenue} tone="sky" />
           <Stat label="Tổng chi" value={spend} tone="rose" />
         </div>
+        {/* TKCT (Khau Phạ): phần doanh thu CK của ngày bay vào TK công ty — mục tiêu 30% */}
+        <RevenueShareLine s={revShare} className="mt-2" />
 
         {/* ĐẠI LÝ GIỮ TIỀN BAY — khuôn câu thống nhất với bảng của quầy/điều phối */}
         {(board?.agencyDebts ?? []).length > 0 && (

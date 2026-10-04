@@ -11,7 +11,8 @@
  *  - Cọc vào TK Đặng Thị Thuỷ thì phần còn lại cũng vào TK Thuỷ.
  *  - Cọc vào TK công ty thì phần còn lại cũng vào TK công ty.
  *  - ƯU TIÊN booking trả MỘT LẦN chuyển khoản cho TK công ty — hoá đơn sạch.
- *  - Chỉ chọn ngẫu nhiên khoảng 30%.
+ *  - Chọn ngẫu nhiên sao cho TK công ty nhận khoảng 30% DOANH THU chuyển khoản
+ *    (chủ sửa 04/10: "không phải 30% số booking mà 30% doanh thu").
  *
  * Tệp THUẦN (không "use client", không đụng DB) — máy chủ lẫn trình duyệt
  * cùng đọc. MỌI CON SỐ CHỈNH ĐƯỢC NẰM Ở `COMPANY_ACCOUNT_RULES` bên dưới.
@@ -35,8 +36,25 @@ export type PayAccountSource = "auto" | "deposit" | "qr" | "manual";
 export const COMPANY_ACCOUNT_RULES = {
   /** Điểm bay áp dụng. Hà Nội giữ TK cá nhân; Sa Pa đang ẩn khỏi app. */
   spots: ["khau-pha"] as readonly string[],
-  /** Tỉ lệ booking chuyển vào TK công ty, tính theo TỪNG NGÀY BAY. */
-  targetShare: 0.3,
+  /**
+   * Phần DOANH THU CHUYỂN KHOẢN vào TK công ty, tính theo TỪNG NGÀY BAY (chủ
+   * 04/10: 30% doanh thu, không phải 30% số booking). "Doanh thu chuyển khoản"
+   * của một booking = tổng tiền − phần trả đại lý/OTA − phần đã trả tiền mặt
+   * (xem transferValueOf).
+   */
+  targetRevenueShare: 0.3,
+  /**
+   * DẢI CHẤP NHẬN của phần doanh thu trong ngày. Gán một đoàn lớn mà đẩy ngày
+   * vượt `high` thì hạ xác suất (tránh một đoàn 6 khách làm ngày lên 60%); để
+   * TK cá nhân mà ngày tụt dưới `low` thì máy đã tự kéo lên qua phần thiếu hụt.
+   */
+  band: { low: 0.25, high: 0.35 },
+  /**
+   * "Số liệu mồi" của mỗi ngày: coi như ngày đã có sẵn ngần này doanh thu, đúng
+   * 30% ở TK công ty. Không có mồi thì booking ĐẦU TIÊN của ngày nào cũng làm
+   * ngày đó thành 0% hoặc 100% — máy sẽ hoảng mà chặn mọi đoàn đầu ngày.
+   */
+  priorRevenue: 8_000_000,
   /**
    * CHỈ booking LẬP TỪ MỐC NÀY trở đi mới được máy chọn — booking cũ giữ TK cá
    * nhân, không viết lại lịch sử (mã QR cũ đã gửi khách là TK cá nhân).
@@ -57,8 +75,11 @@ export const COMPANY_ACCOUNT_RULES = {
    */
   minChance: 0.05,
   maxChance: 0.95,
-  /** Độ "kéo" về đúng tỉ lệ khi ngày đó đang lệch (0 = bốc thăm thuần). */
-  catchUp: 0.5,
+  /**
+   * Độ "kéo" về đúng tỉ lệ khi ngày đó đang lệch (0 = bốc thăm thuần, 1 = gán
+   * đúng phần thiếu). Phần thiếu tính bằng TIỀN, chia cho tiền của booking này.
+   */
+  catchUp: 0.8,
   /**
    * Khách OTA (Klook, Viator…) trả tiền bay cho đại lý, không chuyển khoản cho
    * ta phần chính — loại khỏi rổ 30%. Nhận ra bằng mã OTA, tiền đại lý thu hộ
@@ -109,18 +130,56 @@ export function createdAfterStart(createdAt: unknown): boolean {
 }
 
 /**
- * XÁC SUẤT chọn TK công ty cho booking kế tiếp của một ngày bay.
- *
- * `decided`/`company`: số booking (không tính OTA) của NGÀY BAY đó đã chốt tài
- * khoản từ mốc áp dụng, và bao nhiêu trong số đó là TK công ty. Ngày đang
- * THIẾU so với 30% thì xác suất nhích lên, THỪA thì hạ xuống — tỉ lệ cả ngày
- * bám quanh 30% mà từng lần vẫn là bốc thăm thật.
+ * DOANH THU CHUYỂN KHOẢN của một booking — phần khách sẽ trả cho ta bằng CK:
+ * tổng tiền − phần khách đã trả đại lý/OTA − phần đã trả TIỀN MẶT (cọc gõ tay
+ * TM + mọi lệnh thu TM). Cọc CHUYỂN KHOẢN vẫn tính (nó là doanh thu CK của
+ * tài khoản booking đó). Booking chưa trả gì → cả tổng tiền (trả một lần CK).
  */
-export function companyChance(input: { decided: number; company: number; weight: number }): number {
+export function transferValueOf(b: {
+  totalAmount?: number | null;
+  agencyPaidAmount?: number | null;
+  deposit?: number | null;
+  depositMethod?: string | null;
+  refundedTotal?: number | null;
+  collectedLog?: Array<{ method?: string; amount?: number }> | null;
+}): number {
+  const log = b.collectedLog ?? [];
+  const viaLog = log.reduce((t, c) => t + (Number(c?.amount) || 0), 0);
+  const cashLog = log.filter((c) => c?.method === "cash").reduce((t, c) => t + (Number(c?.amount) || 0), 0);
+  // Cọc gõ tay (không qua lệnh thu) = số ròng − đã thu qua lệnh + đã hoàn
+  const typedDeposit = Math.max(0, (Number(b.deposit) || 0) - viaLog + (Number(b.refundedTotal) || 0));
+  const cash = cashLog + (b.depositMethod === "cash" ? typedDeposit : 0);
+  return Math.max(0, (Number(b.totalAmount) || 0) - (Number(b.agencyPaidAmount) || 0) - cash);
+}
+
+/**
+ * XÁC SUẤT chọn TK công ty cho booking kế tiếp của một ngày bay — theo TIỀN.
+ *
+ * `decidedValue`/`companyValue`: doanh thu CK của các booking (không tính OTA)
+ * cùng NGÀY BAY đã chốt tài khoản từ mốc áp dụng, và phần trong đó ở TK công
+ * ty. `amount`: doanh thu CK của booking đang bốc.
+ *
+ *  1. Phần THIẾU (bằng tiền) để ngày đạt 30% sau booking này, chia cho tiền
+ *     của booking → "booking này lấp được bao nhiêu phần". Kéo xác suất về đó.
+ *  2. Nhân trọng số ưu tiên (trả một lần CK cao, đã cọc TM thấp).
+ *  3. CHỐNG VỌT: gán TK công ty mà ngày vượt dải trên (35%) → hạ xác suất theo
+ *     đúng tỉ lệ phần vượt; đoàn càng to so với ngày càng khó vào TK công ty.
+ *  4. Kẹp trong [minChance, maxChance] — không bao giờ chắc chắn để lách.
+ */
+export function companyChance(input: { decidedValue: number; companyValue: number; amount: number; weight: number }): number {
   const R = COMPANY_ACCOUNT_RULES;
-  const deficit = R.targetShare * Math.max(0, input.decided) - Math.max(0, input.company);
-  const raw = (R.targetShare + R.catchUp * deficit) * input.weight;
-  return Math.min(R.maxChance, Math.max(R.minChance, raw));
+  const T = R.targetRevenueShare;
+  const a = Math.max(1, input.amount);
+  const V = Math.max(0, input.decidedValue) + R.priorRevenue;
+  const C = Math.max(0, input.companyValue) + R.priorRevenue * T;
+  const need = T * (V + a) - C;
+  let p = (T + R.catchUp * (need / a - T)) * input.weight;
+  const ifCompany = (C + a) / (V + a);
+  const ifPersonal = C / (V + a);
+  if (ifCompany > R.band.high) {
+    p *= Math.max(0, Math.min(1, (R.band.high - ifPersonal) / (ifCompany - ifPersonal)));
+  }
+  return Math.min(R.maxChance, Math.max(R.minChance, p));
 }
 
 /** Nhãn đọc được cho người dùng. */

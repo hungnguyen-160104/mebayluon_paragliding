@@ -9,6 +9,7 @@ import { formatVND } from "@/lib/pricing";
 import type { VatRowDTO } from "@/services/pay-account.service";
 
 import { apiGet, apiPatch } from "./client-api";
+import { RevenueShareLine, type RevenueShare } from "./PayAccount";
 import { Banner, Card } from "./ui";
 
 /**
@@ -24,6 +25,8 @@ import { Banner, Card } from "./ui";
  */
 export function VatCompanyCard({ spot, date }: { spot: string; date: string }) {
   const [rows, setRows] = useState<VatRowDTO[] | null>(null);
+  /** Phần doanh thu TK công ty của NGÀY BAY đang xem (chủ 04/10: cân 30% doanh thu). */
+  const [share, setShare] = useState<RevenueShare | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -33,8 +36,11 @@ export function VatCompanyCard({ spot, date }: { spot: string; date: string }) {
   const load = useCallback(() => {
     if (!enabled) return;
     setError(null);
-    apiGet<{ rows: VatRowDTO[] }>(`/api/baocao/vat?spot=${spot}&date=${date}`)
-      .then((r) => setRows(r.rows ?? []))
+    apiGet<{ rows: VatRowDTO[]; share: RevenueShare | null }>(`/api/baocao/vat?spot=${spot}&date=${date}`)
+      .then((r) => {
+        setRows(r.rows ?? []);
+        setShare(r.share ?? null);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Không tải được danh sách xuất VAT"));
   }, [spot, date, enabled]);
 
@@ -129,6 +135,7 @@ export function VatCompanyCard({ spot, date }: { spot: string; date: string }) {
       }
       hint={`Khách chuyển khoản vào MB 168858888 ngày ${formatDateKeyVN(date)} — tích “đã xuất VAT” sau khi lập hoá đơn.`}
     >
+      <RevenueShareLine s={share} className="mb-2" />
       {error && <Banner tone="error">{error}</Banner>}
       {msg && (
         <Banner tone="success" onClose={() => setMsg(null)}>

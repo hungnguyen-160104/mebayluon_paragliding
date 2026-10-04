@@ -13,6 +13,7 @@ import { randomInt } from "node:crypto";
 import {
   COMPANY_ACCOUNT_RULES,
   companyChance,
+  transferValueOf,
   createdAfterStart,
   isOtaPrepaid,
   payAccountSpotEnabled,
@@ -33,6 +34,9 @@ export type PickInput = {
   otaRef?: string;
   otaName?: string;
   agencyPaidAmount?: number;
+  /** Tổng tiền booking — doanh thu để cân 30% (booking đang lập: số máy chủ vừa tính). */
+  totalAmount?: number;
+  refundedTotal?: number;
   deposit?: number;
   depositMethod?: string;
   collectedLog?: Array<{ method?: string; amount?: number; toAccount?: string }>;
@@ -49,19 +53,35 @@ export function pickEligible(b: PickInput): boolean {
   return !isOtaPrepaid(b);
 }
 
-/** Số booking đã chốt tài khoản của NGÀY BAY (từ mốc áp dụng) và bao nhiêu là TK công ty. */
-async function dayTally(spot: string, flightDate: string): Promise<{ decided: number; company: number }> {
-  const base = {
+/**
+ * DOANH THU CK của NGÀY BAY (từ mốc áp dụng, không tính OTA/booking bỏ/huỷ) đã
+ * chốt tài khoản, và phần ở TK công ty. Tính theo tiền HIỆN TẠI của booking.
+ */
+export async function dayRevenueTally(
+  spot: string,
+  flightDate: string,
+): Promise<{ decidedValue: number; companyValue: number; decided: number; company: number }> {
+  const rows = await BaobayBooking.find({
     spot,
     flightDate,
-    status: { $ne: "voided" },
+    status: { $nin: ["voided", "cancelled"] },
     createdAt: { $gte: new Date(COMPANY_ACCOUNT_RULES.startAt) },
-  };
-  const [decided, company] = await Promise.all([
-    BaobayBooking.countDocuments({ ...base, payAccount: { $in: ["personal", "company"] } }),
-    BaobayBooking.countDocuments({ ...base, payAccount: "company" }),
-  ]);
-  return { decided, company };
+    payAccount: { $in: ["personal", "company"] },
+  })
+    .select("payAccount totalAmount agencyPaidAmount deposit depositMethod refundedTotal collectedLog")
+    .lean<any[]>();
+  let decidedValue = 0;
+  let companyValue = 0;
+  let company = 0;
+  for (const b of rows) {
+    const v = transferValueOf(b);
+    decidedValue += v;
+    if (b.payAccount === "company") {
+      companyValue += v;
+      company++;
+    }
+  }
+  return { decidedValue, companyValue, decided: rows.length, company };
 }
 
 /** Số ngẫu nhiên [0,1) từ nguồn mật mã — không ai đoán trước lượt bốc. */
@@ -79,7 +99,8 @@ function roll(): number {
  *     duy nhất từng đưa khách là TK cá nhân.
  *  2. Form chưa lưu đã đưa QR TK cá nhân → TK cá nhân (`qr`).
  *  3. Bốc thăm có trọng số (`auto`): chưa cọc gì (trả MỘT lần CK) ưu tiên cao,
- *     đã cọc tiền mặt ưu tiên thấp; xác suất kéo về 30% theo ngày bay.
+ *     đã cọc tiền mặt ưu tiên thấp; xác suất kéo phần DOANH THU CK của ngày bay
+ *     về 30%, đoàn lớn làm ngày vượt 35% thì hạ xác suất (companyChance).
  */
 export async function pickPayAccount(b: PickInput): Promise<PayAccountPick | null> {
   if (b.payAccount === "company" || b.payAccount === "personal") return null;
@@ -102,13 +123,14 @@ export async function pickPayAccount(b: PickInput): Promise<PayAccountPick | nul
     (b.depositMethod === "cash" && (Number(b.deposit) || 0) > 0) ||
     (b.collectedLog ?? []).some((c) => c?.method === "cash" && (Number(c.amount) || 0) > 0);
   const weight = paidCash ? R.weightCashDeposit : R.weightOneTransfer;
-  const tally = await dayTally(b.spot, b.flightDate);
-  const chance = companyChance({ ...tally, weight });
+  const tally = await dayRevenueTally(b.spot, b.flightDate);
+  const amount = transferValueOf(b);
+  const chance = companyChance({ decidedValue: tally.decidedValue, companyValue: tally.companyValue, amount, weight });
   const company = roll() < chance;
   return {
     account: company ? "company" : "personal",
     source: "auto",
-    why: `bốc thăm ${Math.round(chance * 100)}% (ngày ${b.flightDate}: ${tally.company}/${tally.decided} TKCT${paidCash ? ", đã cọc TM" : ", trả một lần CK"})`,
+    why: `bốc thăm ${Math.round(chance * 100)}% — booking ${Math.round(amount / 1000)}k CK; ngày ${b.flightDate} TK cty ${Math.round(tally.companyValue / 1000)}k/${Math.round(tally.decidedValue / 1000)}k (${tally.decidedValue ? Math.round((tally.companyValue / tally.decidedValue) * 100) : 0}%)${paidCash ? ", đã cọc TM" : ", trả một lần CK"}`,
   };
 }
 
