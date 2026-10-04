@@ -154,12 +154,18 @@ export function PaymentQrButton({
   /** null = đang hỏi máy chủ chọn tài khoản (booking chưa chốt). */
   const [account, setAccount] = useState<PayAccountKind | null>(pay?.account ?? "personal");
 
+  /** Lỗi khi hỏi máy chủ chọn tài khoản — KHÔNG tự đưa QR TK cá nhân thay. */
+  const [pickError, setPickError] = useState<string | null>(null);
+
   function openQr() {
     setOpen(true);
     onShown?.();
-    if (pay?.ensure && !pay.account) {
+    setPickError(null);
+    if (pay?.draft || pay?.lookup || (pay?.ensure && !pay.account)) {
       setAccount(null);
-      void ensurePayAccountClient(pay).then(setAccount);
+      void ensurePayAccountClient(pay)
+        .then(setAccount)
+        .catch((e) => setPickError(e instanceof Error ? e.message : "Không chọn được tài khoản nhận tiền"));
     } else {
       setAccount(pay?.account ?? "personal");
     }
@@ -196,6 +202,8 @@ export function PaymentQrButton({
             note={note}
             purpose={purpose}
             account={account}
+            pickError={pickError}
+            onRetry={openQr}
             onClose={() => setOpen(false)}
           />,
           document.body,
@@ -224,6 +232,8 @@ function PaymentQrModal({
   note,
   purpose,
   account,
+  pickError,
+  onRetry,
   onClose,
 }: {
   amount: number;
@@ -231,6 +241,8 @@ function PaymentQrModal({
   purpose: string;
   /** null = máy chủ đang chọn tài khoản — chưa vẽ mã. */
   account: PayAccountKind | null;
+  pickError?: string | null;
+  onRetry?: () => void;
   onClose: () => void;
 }) {
   const PAY_ACCOUNT = flightPayAccount(account ?? "personal");
@@ -427,6 +439,14 @@ function PaymentQrModal({
           <div className="mt-0.5 text-xs font-bold text-amber-700">Nội dung: {asciiNote}</div>
         </div>
 
+        {pickError && (
+          <p className="mt-2 text-center text-[11px] font-bold text-rose-700">
+            Chưa chọn được tài khoản nhận ({pickError}) — chưa đưa mã cho khách.{" "}
+            <button type="button" className="underline" onClick={onRetry}>
+              Thử lại
+            </button>
+          </p>
+        )}
         {error && <p className="mt-2 text-center text-[11px] font-medium text-rose-700">{error}</p>}
         {msg && <p className="mt-2 text-center text-[11px] font-medium text-emerald-700">{msg}</p>}
 

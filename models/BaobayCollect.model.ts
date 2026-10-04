@@ -47,6 +47,8 @@ export interface IBaobayCollect {
    * "personal" = BIDV Đặng Thị Thuỷ. Trống = bản ghi cũ / tiền mặt.
    */
   toAccount?: "personal" | "company";
+  /** Khoản thu để làm gì (chủ 04/10 — bảng lọc VAT): "dich-vu" = thêm dịch vụ tại bãi. Trống = cọc / còn thu (đọc từ ghi chú). */
+  purpose?: string;
   /** Mã giao dịch chuyển khoản. */
   transferCode: string;
   note: string;
@@ -101,6 +103,7 @@ const BaobayCollectSchema = new Schema<IBaobayCollect>(
     dest: { type: String, default: "" },
     toCompanyAccount: { type: Boolean, default: false },
     toAccount: { type: String, enum: ["personal", "company"] },
+    purpose: { type: String, default: "" },
     transferCode: { type: String, default: "" },
     note: { type: String, default: "" },
 

@@ -23,13 +23,15 @@ import {
   servicePriceOf,
   type FlightKind,
 } from "@/lib/baobay/flight-price";
-import { COMPANY_ACCOUNT_RULES, payAccountSpotEnabled, type PayAccountKind } from "@/lib/baobay/pay-account";
+import { COMPANY_ACCOUNT_RULES, isOtaPrepaid, payAccountSpotEnabled, type PayAccountKind } from "@/lib/baobay/pay-account";
+import { wearsRole } from "@/lib/baobay/roles";
+import { APP_SPOTS, normalizeSpot, normalizeSpotList } from "@/lib/baobay/spots";
 import type { BaobaySession } from "@/lib/baobay/token";
 import type { BookingDTO } from "@/lib/baobay/types";
 import { connectDB } from "@/lib/mongodb";
 import { BaobayBooking } from "@/models/BaobayBooking.model";
 import { BaobayCollect } from "@/models/BaobayCollect.model";
-import { BaobayError, assertSpotAllowed, toBookingDTO } from "@/services/baobay.service";
+import { BaobayError, assertSpotAllowed, findBookingByCode, toBookingDTO } from "@/services/baobay.service";
 import { dayRevenueTally, ensurePayAccountDoc } from "@/services/pay-account-pick";
 
 /* ================================================================== */
@@ -61,6 +63,26 @@ export async function ensurePayAccount(
 }
 
 /**
+ * QR của HỘP LỆNH THU tự do: ô "Mã booking" khớp một booking → dùng (và nếu
+ * cần thì chốt) tài khoản của booking đó. Không khớp → TK cá nhân như cũ.
+ */
+export async function payAccountByCode(
+  session: BaobaySession,
+  spotRaw: string,
+  code: string,
+): Promise<{ payAccount: PayAccountKind; bookingId?: string; label?: string }> {
+  await connectDB();
+  const spot = assertSpotAllowed(session, spotRaw);
+  const b = await findBookingByCode(spot, code);
+  if (!b) return { payAccount: "personal" };
+  return {
+    payAccount: await ensurePayAccountDoc(b),
+    bookingId: String(b._id),
+    label: `#${b.daySeq || "?"} ${b.contactName || b.bookingCode || ""}`.trim(),
+  };
+}
+
+/**
  * ĐỔI TAY tài khoản nhận tiền. Cho phép cả khi đã có tiền về — tiền đã về
  * tài khoản nào vẫn ghi đúng tài khoản đó trên từng khoản thu (`toAccount`),
  * chỉ các mã QR TỪ GIỜ mới theo tài khoản mới.
@@ -79,6 +101,8 @@ export async function setPayAccountManual(
     throw new BaobayError("Điểm này chưa dùng tài khoản công ty (chỉ Khau Phạ)", 400);
   }
   const b = await loadBooking(spot, id);
+  // Khách OTA trả thêm tại bãi luôn vào BIDV Thuỷ (chủ 04/10 vòng 3)
+  if (to === "company" && isOtaPrepaid(b)) throw new BaobayError("Booking OTA (Klook, Agoda, Viator…) luôn nhận tiền vào TK cá nhân BIDV", 400);
   const from = b.payAccount === "company" ? "company" : "personal";
   if (b.payAccount === to) return toBookingDTO(b);
   const who = session.name || session.username;
@@ -160,46 +184,169 @@ function startDayKey(): string {
   return toDateKeyVN(new Date(COMPANY_ACCOUNT_RULES.startAt));
 }
 
+const acctOf = (v: unknown): PayAccountKind | "" => (v === "company" || v === "personal" ? v : "");
+
 /**
- * Mọi khoản tiền về TK CÔNG TY của một nhóm booking, theo ngày.
- *
- * Nguồn: lệnh thu CK của booking (`toAccount`, trống thì theo tài khoản booking
- * đang mang) + cọc CK gõ tay của booking mang TK công ty (đổi tay sang TKCT sau
- * khi khách đã cọc vào MB). Tiền mặt không bao giờ vào đây.
+ * MỘT DÒNG TIỀN QUA NGÂN HÀNG của booking (hoặc lệnh thu tự do): tiền VÀO
+ * (lệnh thu CK, cọc CK gõ tay) là số dương, tiền HOÀN ra (lệnh hoàn CK, hoàn
+ * huỷ flycam qua công ty) là số ÂM — để tổng tiền của TK công ty trừ đúng phần
+ * đã hoàn khi xuất VAT (chủ 04/10 vòng 3).
  */
-async function companyPayments(filter: Record<string, unknown>, bookingFilter?: Record<string, unknown>) {
-  const collects = await BaobayCollect.find({
-    method: "transfer",
-    bookingId: { $ne: null },
-    status: { $ne: "rejected" },
-    ...filter,
-  })
-    .select("bookingId amount transferCode date toAccount")
-    .lean<any[]>();
-  const ids = [...new Set(collects.map((c) => String(c.bookingId)))];
-  const bookings = await BaobayBooking.find({
-    $or: [
-      { _id: { $in: ids } },
-      ...(bookingFilter ? [{ ...bookingFilter, payAccount: "company", depositMethod: "transfer", deposit: { $gt: 0 } }] : []),
-    ],
-    status: { $ne: "voided" },
-  }).lean<any[]>();
-  const byId = new Map(bookings.map((b) => [String(b._id), b]));
-  const pays: Array<{ bookingId: string; amount: number; code: string; date: string }> = [];
+export type MoneyLine = {
+  key: string;
+  bookingId?: string;
+  spot: string;
+  date: string;
+  at?: string;
+  amount: number;
+  code: string;
+  account: PayAccountKind;
+  kind: "thu" | "coc" | "hoan";
+  purpose: string;
+  guestName: string;
+  bookingCode: string;
+};
+
+function purposeOfCollect(c: any): string {
+  if (c.purpose === "dich-vu") return "thêm dịch vụ";
+  const note = String(c.note ?? "");
+  if (/^Thu đủ/i.test(note)) return "còn thu (trả đủ)";
+  if (/^Cọc/i.test(note)) return "cọc / trả trước";
+  return c.bookingId ? "thu tiền" : "lệnh thu";
+}
+
+/**
+ * Mọi dòng tiền ngân hàng trong PHẠM VI: theo điểm + khoảng ngày tiền đi, hoặc
+ * theo danh sách booking (mọi ngày). Tài khoản: khoản ghi rõ thì theo khoản,
+ * khoản cũ chưa ghi thì theo tài khoản booking, không có booking = TK cá nhân.
+ */
+async function moneyLines(
+  scope: { spots: string[]; from: string; to: string } | { bookingIds: string[] },
+): Promise<{ lines: MoneyLine[]; byId: Map<string, any> }> {
+  const { BaobayRefund } = await import("@/models/BaobayRefund.model");
+  const { BaobayFlycamCancel } = await import("@/models/BaobayFlycamCancel.model");
+  const byIds = "bookingIds" in scope;
+  const oids = byIds ? scope.bookingIds.filter((x) => mongoose.Types.ObjectId.isValid(x)).map((x) => new mongoose.Types.ObjectId(x)) : [];
+  const where = byIds ? { bookingId: { $in: oids } } : { spot: { $in: scope.spots }, date: { $gte: scope.from, $lte: scope.to } };
+
+  const [collects, refunds, flycams] = await Promise.all([
+    BaobayCollect.find({ ...where, method: "transfer", status: { $ne: "rejected" } }).lean<any[]>(),
+    BaobayRefund.find({ ...where, method: "transfer", status: { $ne: "voided" } }).lean<any[]>(),
+    BaobayFlycamCancel.find({ ...where, refundMode: "company", status: { $ne: "voided" } }).lean<any[]>(),
+  ]);
+  // Cọc CK GÕ TAY (không qua lệnh thu) — nằm trên booking, ngày = ngày cọc
+  const depositBookings = byIds
+    ? await BaobayBooking.find({ _id: { $in: oids }, depositMethod: "transfer", deposit: { $gt: 0 } }).lean<any[]>()
+    : await BaobayBooking.find({
+        spot: { $in: scope.spots },
+        depositMethod: "transfer",
+        deposit: { $gt: 0 },
+        status: { $ne: "voided" },
+        $or: [
+          { depositDate: { $gte: scope.from, $lte: scope.to } },
+          {
+            depositDate: { $in: ["", null] },
+            createdAt: { $gte: new Date(`${scope.from}T00:00:00+07:00`), $lte: new Date(`${scope.to}T23:59:59+07:00`) },
+          },
+        ],
+      }).lean<any[]>();
+
+  const ids = new Set<string>([
+    ...collects.map((c) => (c.bookingId ? String(c.bookingId) : "")),
+    ...refunds.map((r) => (r.bookingId ? String(r.bookingId) : "")),
+    ...flycams.map((f) => (f.bookingId ? String(f.bookingId) : "")),
+  ]);
+  ids.delete("");
+  const missing = [...ids].filter((x) => !depositBookings.some((b) => String(b._id) === x));
+  const more = missing.length ? await BaobayBooking.find({ _id: { $in: missing } }).lean<any[]>() : [];
+  const byId = new Map<string, any>([...depositBookings, ...more].map((b) => [String(b._id), b]));
+  const bookingAcct = (b: any): PayAccountKind => (b?.payAccount === "company" ? "company" : "personal");
+  const iso = (d: unknown) => (d ? new Date(d as string).toISOString() : undefined);
+
+  const lines: MoneyLine[] = [];
   for (const c of collects) {
-    const b = byId.get(String(c.bookingId));
-    if (!b) continue;
-    const acct = c.toAccount === "company" || c.toAccount === "personal" ? c.toAccount : b.payAccount;
-    if (acct !== "company") continue;
-    pays.push({ bookingId: String(b._id), amount: Number(c.amount) || 0, code: c.transferCode || "", date: c.date });
+    const b = c.bookingId ? byId.get(String(c.bookingId)) : null;
+    if (b?.status === "voided") continue;
+    lines.push({
+      key: `collect:${c._id}`,
+      bookingId: b ? String(b._id) : undefined,
+      spot: c.spot,
+      date: c.date,
+      at: iso(c.createdAt),
+      amount: Number(c.amount) || 0,
+      code: c.transferCode || "",
+      account: acctOf(c.toAccount) || bookingAcct(b),
+      kind: "thu",
+      purpose: purposeOfCollect(c),
+      guestName: c.guestName || b?.contactName || "",
+      bookingCode: c.bookingCode || b?.bookingCode || "",
+    });
   }
-  for (const b of bookings) {
-    if (b.payAccount !== "company" || b.depositMethod !== "transfer") continue;
-    // Cọc gõ tay = số ròng − mọi khoản đã thu qua lệnh thu + đã hoàn
-    const viaCollects = (b.collectedLog ?? []).reduce((t: number, c: any) => t + (Number(c.amount) || 0), 0);
-    const base = Math.max(0, (Number(b.deposit) || 0) - viaCollects + (Number(b.refundedTotal) || 0));
-    if (base > 0) pays.push({ bookingId: String(b._id), amount: base, code: b.transferCode || "", date: depositDayOf(b) });
+  for (const b of depositBookings) {
+    if (b.status === "voided") continue;
+    const viaLog = (b.collectedLog ?? []).reduce((t: number, c: any) => t + (Number(c.amount) || 0), 0);
+    const base = Math.max(0, (Number(b.deposit) || 0) - viaLog + (Number(b.refundedTotal) || 0));
+    if (base <= 0) continue;
+    const day = depositDayOf(b);
+    if (!byIds && "from" in scope && (day < scope.from || day > scope.to)) continue;
+    lines.push({
+      key: `deposit:${b._id}`,
+      bookingId: String(b._id),
+      spot: b.spot,
+      date: day,
+      at: iso(b.createdAt),
+      amount: base,
+      code: b.transferCode || "",
+      account: bookingAcct(b),
+      kind: "coc",
+      purpose: "cọc (gõ tay lúc đặt)",
+      guestName: b.contactName || "",
+      bookingCode: b.bookingCode || "",
+    });
   }
+  for (const r of refunds) {
+    const b = r.bookingId ? byId.get(String(r.bookingId)) : null;
+    lines.push({
+      key: `refund:${r._id}`,
+      bookingId: b ? String(b._id) : undefined,
+      spot: r.spot,
+      date: r.date,
+      at: iso(r.paidAt || r.createdAt),
+      amount: -(Number(r.amount) || 0),
+      code: r.transferCode || "",
+      account: acctOf(r.fromAccount) || bookingAcct(b),
+      kind: "hoan",
+      purpose: `hoàn tiền${r.reason ? ` — ${r.reason}` : ""}${r.status === "pending" ? " (chờ kế toán chuyển)" : ""}`,
+      guestName: r.guestName || b?.contactName || "",
+      bookingCode: r.bookingCode || b?.bookingCode || "",
+    });
+  }
+  for (const f of flycams) {
+    const b = f.bookingId ? byId.get(String(f.bookingId)) : null;
+    lines.push({
+      key: `flycam:${f._id}`,
+      bookingId: b ? String(b._id) : undefined,
+      spot: f.spot,
+      date: f.date,
+      at: iso(f.paidAt || f.createdAt),
+      amount: -(Number(f.amount) || 0),
+      code: f.transferCode || "",
+      account: acctOf(f.fromAccount) || bookingAcct(b),
+      kind: "hoan",
+      purpose: `hoàn huỷ ${f.service || "flycam"}${f.status === "pending" ? " (chờ kế toán chuyển)" : ""}`,
+      guestName: b?.contactName || f.bookingLabel || "",
+      bookingCode: b?.bookingCode || "",
+    });
+  }
+  return { lines, byId };
+}
+
+/** Dạng cũ cho thẻ VAT: chỉ dòng TK công ty có gắn booking. */
+async function companyPays(scope: Parameters<typeof moneyLines>[0]) {
+  const { lines, byId } = await moneyLines(scope);
+  const pays = lines
+    .filter((l) => l.account === "company" && l.bookingId)
+    .map((l) => ({ bookingId: l.bookingId!, amount: l.amount, code: l.code || (l.kind === "hoan" ? "hoàn" : ""), date: l.date }));
   return { pays, byId };
 }
 
@@ -226,35 +373,46 @@ function vatRow(b: any, dayPays: Array<{ amount: number; code: string; date: str
   };
 }
 
+/**
+ * Điểm được xem/tích VAT: kế toán thuế (và quản trị) nhìn cả công ty như ở
+ * /baocao/thue; vai khác chỉ điểm được phân.
+ */
+function vatSpot(session: BaobaySession & { viaAdmin?: boolean }, spotRaw: string): string {
+  if (session.viaAdmin || session.role === "admin" || wearsRole(session, "tax")) return normalizeSpot(spotRaw);
+  return assertSpotAllowed(session, spotRaw);
+}
+
+function vatSpots(session: BaobaySession & { viaAdmin?: boolean }): string[] {
+  if (session.viaAdmin || session.role === "admin" || wearsRole(session, "tax")) return APP_SPOTS.map((s) => s.id);
+  return normalizeSpotList(session.spots);
+}
+
 /** Booking có tiền về TK công ty TRONG NGÀY `date` (ngày tiền về, không phải ngày bay). */
 export async function listVatDay(session: BaobaySession, spotRaw: string, date: string): Promise<VatRowDTO[]> {
   await connectDB();
-  const spot = assertSpotAllowed(session, spotRaw);
+  const spot = vatSpot(session, spotRaw);
   if (!isDateKey(date)) throw new BaobayError("Ngày không hợp lệ", 400);
   if (!payAccountSpotEnabled(spot)) return [];
 
-  const { pays, byId } = await companyPayments({ spot, date }, { spot });
-  const dayPays = pays.filter((p) => p.date === date);
-  const bookingIds = [...new Set(dayPays.map((p) => p.bookingId))];
+  const day = await companyPays({ spots: [spot], from: date, to: date });
+  const bookingIds = [...new Set(day.pays.map((p) => p.bookingId))];
   if (!bookingIds.length) return [];
-  // Tổng mọi ngày của các booking này — số ghi lên hoá đơn
-  const all = await companyPayments({ bookingId: { $in: bookingIds.map((x) => new mongoose.Types.ObjectId(x)) } }, {
-    _id: { $in: bookingIds },
-  });
+  // Tổng mọi ngày của các booking này (đã trừ hoàn) — số ghi lên hoá đơn
+  const all = await companyPays({ bookingIds });
   return bookingIds
-    .map((id) => byId.get(id) ?? all.byId.get(id))
+    .map((id) => all.byId.get(id) ?? day.byId.get(id))
     .filter(Boolean)
     .map((b: any) =>
       vatRow(
         b,
-        dayPays.filter((p) => p.bookingId === String(b._id)),
+        day.pays.filter((p) => p.bookingId === String(b._id)),
         all.pays.filter((p) => p.bookingId === String(b._id)),
       ),
     )
     .sort((a, b) => a.flightDate.localeCompare(b.flightDate) || a.daySeq - b.daySeq);
 }
 
-/** Tích / bỏ tích "đã xuất VAT" (+ số hoá đơn). */
+/** Tích / bỏ tích "đã xuất VAT" (+ số hoá đơn). Số lưu = tiền về TK công ty sau khi trừ hoàn. */
 export async function setVatIssued(
   session: BaobaySession,
   spotRaw: string,
@@ -263,9 +421,9 @@ export async function setVatIssued(
   invoiceNo: string,
 ): Promise<VatRowDTO | null> {
   await connectDB();
-  const spot = assertSpotAllowed(session, spotRaw);
+  const spot = vatSpot(session, spotRaw);
   const b = await loadBooking(spot, id);
-  const all = await companyPayments({ bookingId: b._id }, { _id: b._id });
+  const all = await companyPays({ bookingIds: [String(b._id)] });
   const total = all.pays.reduce((t, p) => t + p.amount, 0);
   if (on && total <= 0) throw new BaobayError("Booking này chưa có tiền về TK công ty — chưa cần xuất VAT", 400);
   const who = session.name || session.username;
@@ -282,9 +440,9 @@ export async function setVatIssued(
 /** Số booking có tiền về TK công ty mà CHƯA xuất VAT (hoặc tiền về thêm sau khi xuất). */
 export async function countVatPending(session: BaobaySession, spotRaw: string): Promise<{ count: number; amount: number }> {
   await connectDB();
-  const spot = assertSpotAllowed(session, spotRaw);
+  const spot = vatSpot(session, spotRaw);
   if (!payAccountSpotEnabled(spot)) return { count: 0, amount: 0 };
-  const { pays, byId } = await companyPayments({ spot, date: { $gte: startDayKey() } }, { spot });
+  const { pays, byId } = await companyPays({ spots: [spot], from: startDayKey(), to: "9999-12-31" });
   const sum = new Map<string, number>();
   for (const p of pays) sum.set(p.bookingId, (sum.get(p.bookingId) ?? 0) + p.amount);
   let count = 0;
@@ -299,6 +457,70 @@ export async function countVatPending(session: BaobaySession, spotRaw: string): 
     }
   }
   return { count, amount };
+}
+
+/* ================================================================== */
+/* BẢNG LỌC TIỀN NGÂN HÀNG cho kế toán thuế (chủ 04/10 vòng 3)          */
+/* ================================================================== */
+
+export type PayLedgerRow = MoneyLine & {
+  daySeq: number;
+  phone: string;
+  flightDate: string;
+  /** Booking đã xuất VAT chưa (chỉ có nghĩa với dòng MB có booking). */
+  vatIssued: boolean;
+  invoiceNo?: string;
+  /** Tiền về MB cả booking (đã trừ hoàn) — so với số đã xuất để biết còn thiếu. */
+  bookingMbTotal?: number;
+  vatAmount?: number;
+};
+
+/**
+ * Mọi dòng tiền ngân hàng trong khoảng ngày, lọc theo TÀI KHOẢN NHẬN (MB /
+ * BIDV) và TÌNH TRẠNG VAT — 100% tiền vào MB phải có hoá đơn. Hoàn tiền ra từ
+ * MB là dòng ÂM để số hoá đơn trừ đúng.
+ */
+export async function listPayLedger(
+  session: BaobaySession,
+  q: { from: string; to: string; account: "all" | PayAccountKind; vat: "all" | "pending" | "issued" },
+): Promise<{ rows: PayLedgerRow[]; totals: { company: number; personal: number } }> {
+  await connectDB();
+  if (!isDateKey(q.from) || !isDateKey(q.to) || q.to < q.from) throw new BaobayError("Khoảng ngày không hợp lệ", 400);
+  const spots = vatSpots(session);
+  const { lines, byId } = await moneyLines({ spots, from: q.from, to: q.to });
+  // Tổng MB mọi ngày của các booking có mặt — để biết số đã xuất còn đủ không
+  const mbIds = [...new Set(lines.filter((l) => l.account === "company" && l.bookingId).map((l) => l.bookingId!))];
+  const mbAll = mbIds.length ? await companyPays({ bookingIds: mbIds }) : { pays: [], byId: new Map() };
+  const mbTotal = new Map<string, number>();
+  for (const p of mbAll.pays) mbTotal.set(p.bookingId, (mbTotal.get(p.bookingId) ?? 0) + p.amount);
+
+  const rows: PayLedgerRow[] = lines.map((l) => {
+    const b = l.bookingId ? byId.get(l.bookingId) ?? mbAll.byId.get(l.bookingId) : null;
+    return {
+      ...l,
+      daySeq: Number(b?.daySeq) || 0,
+      phone: b?.phone || "",
+      flightDate: b?.flightDate || "",
+      guestName: l.guestName || b?.contactName || "",
+      vatIssued: Boolean(b?.vat?.issuedAt),
+      invoiceNo: b?.vat?.invoiceNo || undefined,
+      bookingMbTotal: l.account === "company" && l.bookingId ? mbTotal.get(l.bookingId) : undefined,
+      vatAmount: b?.vat?.issuedAt ? Number(b.vat.amount) || 0 : undefined,
+    };
+  });
+  const totals = { company: 0, personal: 0 };
+  for (const r of rows) totals[r.account] += r.amount;
+  const filtered = rows
+    .filter((r) => q.account === "all" || r.account === q.account)
+    .filter((r) => {
+      if (q.vat === "all") return true;
+      if (r.account !== "company") return false;
+      const done = r.vatIssued && (r.vatAmount ?? 0) >= (r.bookingMbTotal ?? 0);
+      return q.vat === "issued" ? done : !done;
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.at ?? "").localeCompare(b.at ?? ""))
+    .slice(0, 3000);
+  return { rows: filtered, totals };
 }
 
 /* ================================================================== */
@@ -322,7 +544,7 @@ export type RevenueShareDTO = {
 /** Phần doanh thu CK của NGÀY BAY đang vào TK công ty (booking lập từ mốc áp dụng). */
 export async function dayRevenueShare(session: BaobaySession, spotRaw: string, flightDate: string): Promise<RevenueShareDTO | null> {
   await connectDB();
-  const spot = assertSpotAllowed(session, spotRaw);
+  const spot = vatSpot(session, spotRaw);
   if (!payAccountSpotEnabled(spot) || !isDateKey(flightDate)) return null;
   const t = await dayRevenueTally(spot, flightDate);
   return {

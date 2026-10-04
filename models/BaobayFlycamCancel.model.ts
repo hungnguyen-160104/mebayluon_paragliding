@@ -36,6 +36,8 @@ export interface IBaobayFlycamCancel {
   /** "self" tự hoàn tại bãi · "company" nhờ công ty chuyển khoản. */
   refundMode: "self" | "company";
   amount: number;
+  /** Hoàn từ TÀI KHOẢN NÀO (chủ 04/10): "company" = MB 168858888 (booking TKCT), "personal" = BIDV Thuỷ. */
+  fromAccount?: "personal" | "company";
   /** Số tài khoản khách nhận tiền — chỉ dùng cho đường "company". */
   bankAccount?: string;
   /** "done" xong ngay (tự hoàn) · "pending" chờ kế toán · "paid" kế toán đã chuyển. */
@@ -65,6 +67,7 @@ const FlycamCancelSchema = new Schema<IBaobayFlycamCancel>(
     reason: { type: String, default: "" },
     refundMode: { type: String, enum: ["self", "company"], required: true },
     amount: { type: Number, default: 0, min: 0 },
+    fromAccount: { type: String, enum: ["personal", "company"] },
     bankAccount: String,
     status: { type: String, enum: ["done", "pending", "paid"], default: "pending", index: true },
     createdByUsername: { type: String, default: "" },

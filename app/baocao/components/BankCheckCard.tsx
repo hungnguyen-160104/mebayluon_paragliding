@@ -54,7 +54,7 @@ function AccountChip({ account }: { account?: string }) {
   if (account === "company") {
     return (
       <span className="shrink-0 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white" title="Về TK công ty MB 168858888">
-        MB · TKCT
+        MB · cần xuất VAT
       </span>
     );
   }

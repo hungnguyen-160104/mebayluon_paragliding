@@ -396,6 +396,8 @@ export function CollectCreate({ spot }: { spot: string }) {
         </Button>
         {/* Lệnh thu CK: gửi luôn mã QR cho khách qua Zalo, khỏi đọc số tài khoản */}
         <PaymentQrButton
+          // Mã booking khớp booking nào thì QR theo TK của booking đó (chủ 04/10 vòng 3)
+          pay={form.bookingCode.trim().length >= 3 ? { lookup: { spot, code: form.bookingCode.trim() } } : undefined}
           amount={form.amount}
           note={form.bookingCode || form.guestName}
           purpose={`Tiền bay — ${form.guestName || "khách"}`}

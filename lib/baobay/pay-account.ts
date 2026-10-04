@@ -24,7 +24,8 @@ export type PayAccountKind = "personal" | "company";
  * Vì sao booking mang tài khoản đó — để sau còn hỏi lại:
  *  auto    máy bốc thăm (rổ 30%)
  *  deposit đi theo khoản ĐÃ TRẢ (cọc/chuyển khoản đã về tài khoản nào)
- *  qr      đã đưa mã QR của tài khoản cá nhân trước khi máy kịp chọn (form chưa lưu)
+ *  qr      (CŨ, bỏ từ 04/10 vòng 3) đã đưa QR TK cá nhân trước khi máy chọn —
+ *          nay bấm QR trên form chưa lưu là máy chọn luôn (pickProvisional)
  *  manual  nhân viên/kế toán đổi tay (có ghi người + lý do)
  */
 export type PayAccountSource = "auto" | "deposit" | "qr" | "manual";
@@ -191,7 +192,7 @@ export const PAY_ACCOUNT_LABEL: Record<PayAccountKind, string> = {
 export const PAY_ACCOUNT_SOURCE_LABEL: Record<PayAccountSource, string> = {
   auto: "máy chọn",
   deposit: "theo khoản đã trả",
-  qr: "đã đưa QR TK cá nhân",
+  qr: "đã đưa QR TK cá nhân (luật cũ)",
   manual: "đổi tay",
 };
 

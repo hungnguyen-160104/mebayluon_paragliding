@@ -124,7 +124,8 @@ import { CameramanDailyReport } from "@/models/CameramanDailyReport.model";
 import { DispatcherDailyReport } from "@/models/DispatcherDailyReport.model";
 import { PilotDailyReport } from "@/models/PilotDailyReport.model";
 import { sendPartnerFlightMail } from "@/services/baobay-partner.service";
-import { ensurePayAccountDoc, pickEligible, pickFields, pickPayAccount } from "@/services/pay-account-pick";
+import { payAccountSpotEnabled } from "@/lib/baobay/pay-account";
+import { claimPick, ensurePayAccountDoc, pickEligible, pickFields, pickPayAccount, readPick } from "@/services/pay-account-pick";
 import { toSlug } from "@/utils/slug";
 
 const BCRYPT_ROUNDS = 10;
@@ -3399,6 +3400,8 @@ export type MoneyBoardItem = {
   byUsername?: string;
   /** Số thứ tự của booking trong ngày bay — 0 khi khoản không gắn với booking nào. */
   daySeq: number;
+  /** Khoản CK vào / hoàn từ TÀI KHOẢN NÀO (chủ 04/10): "company" = MB 168858888 → phải xuất VAT. */
+  account?: "personal" | "company";
 };
 
 export type MoneyBoardPerson = {
@@ -3572,6 +3575,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
       amount: c.amount || 0,
       transferCode: c.transferCode || "",
       from: "lệnh thu",
+      account: c.method === "transfer" && (c.toAccount === "company" || c.toAccount === "personal") ? c.toAccount : undefined,
       daySeq: seqOfCollect(c),
       byUsername: normalizeUsername(c.collectorUsername || c.createdByUsername || ""),
     };
@@ -3797,6 +3801,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
       amount: Number(f.amount) || 0,
       transferCode: f.transferCode || "",
       from: "huỷ flycam",
+      account: f.fromAccount === "company" || f.fromAccount === "personal" ? f.fromAccount : undefined,
       daySeq: 0,
       by: f.pilotName || f.createdByName || "",
     };
@@ -3821,6 +3826,7 @@ export async function getMoneyBoardOfDay(spotRaw: string, date: string): Promise
       amount: Number(r.amount) || 0,
       transferCode: r.transferCode || "",
       from: "hoàn tiền",
+      account: r.fromAccount === "company" || r.fromAccount === "personal" ? r.fromAccount : undefined,
       daySeq: 0,
       by: r.createdByName || "",
     };
@@ -4299,8 +4305,8 @@ export type BookingSaveInput = {
   /** Còn lại > 0: người được chỉ định thu — tự lập LỆNH THU TIỀN kèm booking. */
   collectorUsername?: string;
   collectorNote?: string;
-  /** Form chưa lưu đã đưa QR TK cá nhân — chốt TK cá nhân (xem lib/baobay/pay-account.ts). */
-  payQrShown?: boolean;
+  /** Lượt chọn tài khoản lúc bấm QR trên form chưa lưu — xem services/pay-account-pick.ts. */
+  payPickToken?: string;
 };
 
 /**
@@ -4695,7 +4701,7 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
    * mã QR đúng tài khoản ngay từ lần đầu — xem lib/baobay/pay-account.ts. Không
    * thuộc diện (Hà Nội, OTA…) thì `pay` = null, booking giữ TK cá nhân như cũ.
    */
-  const pay = await pickPayAccount({
+  const pickIn = {
     spot,
     flightDate: input.flightDate,
     createdAt: new Date(),
@@ -4706,8 +4712,18 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
     totalAmount: newTotal,
     deposit: input.deposit,
     depositMethod: input.depositMethod ?? "",
-    qrShown: Boolean(input.payQrShown),
-  });
+  };
+  /**
+   * Form đã bấm QR trước khi lưu (chủ 04/10 vòng 3): máy ĐÃ chọn lúc bấm và
+   * khách đã thấy mã QR của tài khoản đó → booking nhận ĐÚNG lượt chọn ấy (kể
+   * cả khi khách đã chuyển cọc bằng mã đó). Token hết hạn / khác ngày bay thì
+   * chọn lại như thường.
+   */
+  const token = String(input.payPickToken ?? "").trim();
+  const held = token && pickEligible(pickIn) ? await readPick(token, spot, input.flightDate) : null;
+  const pay = held
+    ? { account: held.account, source: "auto" as const, why: `chọn lúc bấm QR trên form chưa lưu — ${held.why}` }
+    : await pickPayAccount(pickIn);
 
   const saved = (
     await BaobayBooking.create({
@@ -4801,6 +4817,8 @@ export async function createBooking(session: BaobaySession, input: BookingSaveIn
   if (input.depositMethod === "cash" && input.deposit > 0) {
     await cashDepositToCollect(session, spot, saved, input.deposit);
   }
+
+  if (held) await claimPick(token, saved._id);
 
   pushSheetInBackground(() => pushBookingRow(saved), BaobayBooking, saved._id);
 
@@ -5808,6 +5826,8 @@ export async function collectForBooking(
      */
     cashDest?: string;
     transferDest?: string;
+    /** Khoản thu để làm gì — "dich-vu" khi thu kèm lệnh thêm dịch vụ (bảng lọc VAT). */
+    purpose?: string;
   },
 ): Promise<{ booking: BookingDTO; collect: CollectDTO }> {
   await connectDB();
@@ -5926,6 +5946,7 @@ export async function collectForBooking(
         dest: method === "cash" ? cashDest : transferDest,
         toCompanyAccount: method === "transfer",
         ...(method === "transfer" && toAccount ? { toAccount } : {}),
+        ...(input.purpose ? { purpose: input.purpose } : {}),
         transferCode: method === "transfer" ? code : "",
         note:
           `${label} cho booking bay ${formatDateKeyVN(booking.flightDate)}` +
@@ -6193,6 +6214,7 @@ export async function addBookingServices(
       cash: pay?.cash ?? 0,
       transfers: pay?.transfers ?? [],
       kind: "deposit",
+      purpose: "dich-vu",
     });
     result = res.booking;
     // collectForBooking không trả về id, nên nhặt lại các lệnh vừa sinh ra
@@ -6232,6 +6254,8 @@ export type RefundDTO = {
   id: string;
   /** "company" = booking TKCT (khách trả vào TK công ty MB) — chỉ để hiện nhãn. */
   payAccount?: "company";
+  /** Hoàn từ tài khoản nào (chủ 04/10 vòng 3) — "company" = MB 168858888. */
+  fromAccount?: "personal" | "company";
   date: string;
   /** Số thứ tự booking trong ngày — lệnh hoàn phải hiện "#6 Tên khách" (chủ 14/09). */
   daySeq?: number;
@@ -6280,6 +6304,15 @@ function toRefundDTO(d: any): RefundDTO {
  * Lập LỆNH HOÀN TIỀN. Tiền mặt xong ngay tại bãi; chuyển khoản thì nằm chờ kế
  * toán — xem chú thích ở models/BaobayRefund.
  */
+/** Tài khoản hoàn tiền của một booking: TK đã chốt; Khau Phạ chưa chốt = TK cá nhân; ngoài diện = trống. */
+async function refundAccountOf(bookingId?: string): Promise<"personal" | "company" | undefined> {
+  if (!bookingId || !mongoose.Types.ObjectId.isValid(bookingId)) return undefined;
+  const b = await BaobayBooking.findById(bookingId).select("spot payAccount").lean<any>();
+  if (!b) return undefined;
+  if (b.payAccount === "company" || b.payAccount === "personal") return b.payAccount;
+  return payAccountSpotEnabled(b.spot) ? "personal" : undefined;
+}
+
 export async function createRefund(
   session: BaobaySession,
   spotRaw: string,
@@ -6302,9 +6335,16 @@ export async function createRefund(
   const spot = assertSpotAllowed(session, spotRaw);
   const amount = Math.max(0, Math.round(input.amount || 0));
   if (amount <= 0) throw new BaobayError("Số tiền hoàn phải lớn hơn 0", 400);
+  /**
+   * HOÀN TỪ TÀI KHOẢN NÀO (chủ 04/10 vòng 3: một booking một tài khoản) — đúng
+   * tài khoản booking đã nhận tiền, để kế toán chuyển trả từ đúng ngân hàng và
+   * bảng VAT trừ đúng phần đã hoàn khỏi MB. Hà Nội / booking cũ: để trống.
+   */
+  const fromAccount = await refundAccountOf(input.bookingId);
 
   const doc = (
     await BaobayRefund.create({
+      ...(fromAccount ? { fromAccount } : {}),
       spot,
       date: isDateKey(input.date) ? input.date : todayInVN(),
       bookingId: input.bookingId && mongoose.Types.ObjectId.isValid(input.bookingId) ? input.bookingId : undefined,
@@ -6418,7 +6458,8 @@ export async function listRefunds(spotRaw: string, date: string): Promise<Refund
   return docs.map((d) => ({
     ...toRefundDTO(d),
     daySeq: d.bookingId ? seq.get(String(d.bookingId)) : undefined,
-    payAccount: d.bookingId && tkct.has(String(d.bookingId)) ? ("company" as const) : undefined,
+    payAccount: d.fromAccount === "company" || (!d.fromAccount && d.bookingId && tkct.has(String(d.bookingId))) ? ("company" as const) : undefined,
+    fromAccount: d.fromAccount === "company" || d.fromAccount === "personal" ? d.fromAccount : undefined,
   }));
 }
 
@@ -8783,6 +8824,9 @@ async function recomputeBookingMoney(spot: string, bookingId: string, manualBase
           byName: c.collectorName || c.createdByName || "",
           at: c.createdAt ?? new Date(),
           kind: "deposit",
+          // Giữ MÃ GD và TÀI KHOẢN NHẬN của từng khoản khi dựng lại vệt thu (chủ 04/10: một booking một TK)
+          ...(c.method === "transfer" && c.transferCode ? { code: c.transferCode } : {}),
+          ...(c.method === "transfer" && (c.toAccount === "company" || c.toAccount === "personal") ? { toAccount: c.toAccount } : {}),
         })),
       },
     },
@@ -8954,6 +8998,10 @@ export async function editBookingCollect(
           method,
           transferCode: method === "transfer" ? code : "",
           toCompanyAccount: method === "transfer",
+          /** CK vào TK của booking (chủ 04/10: một booking một tài khoản); khoản đã ghi TK thì giữ nguyên. */
+          ...(method === "transfer" && !collect.toAccount && (booking.payAccount === "company" || booking.payAccount === "personal")
+            ? { toAccount: booking.payAccount }
+            : {}),
           /** Đổi sang tiền mặt thì người thu là người đang cầm tiền — chính người vừa sửa. */
           collectorUsername: method === "cash" ? collect.collectorUsername || session.username : undefined,
           collectorName: method === "cash" ? collect.collectorName || session.name : undefined,
@@ -8981,6 +9029,9 @@ export async function editBookingCollect(
           byName: c.collectorName || c.createdByName || "",
           at: c.createdAt ?? new Date(),
           kind: "deposit",
+          // Giữ MÃ GD và TÀI KHOẢN NHẬN của từng khoản khi dựng lại vệt thu (chủ 04/10: một booking một TK)
+          ...(c.method === "transfer" && c.transferCode ? { code: c.transferCode } : {}),
+          ...(c.method === "transfer" && (c.toAccount === "company" || c.toAccount === "personal") ? { toAccount: c.toAccount } : {}),
         })),
       },
     },
@@ -10454,6 +10505,24 @@ export type CollectSaveInput = {
  * "Đã thu tiền"); CK tích TK công ty là ghi nhận xong ngay — tiền về thẳng
  * tài khoản công ty, không ai cầm.
  */
+/**
+ * BOOKING ĐỨNG SAU MỘT LỆNH THU TỰ DO (ô "Mã booking" của hộp lệnh thu): khớp
+ * đúng mã booking, hoặc SĐT khách, trong các booking còn sống của điểm — lấy
+ * booking bay gần nhất. Không thấy thì null (lệnh thu không gắn booking).
+ */
+export async function findBookingByCode(spot: string, codeRaw: string): Promise<any | null> {
+  const code = String(codeRaw ?? "").trim();
+  if (code.length < 3) return null;
+  const esc = code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return BaobayBooking.findOne({
+    spot,
+    status: { $in: ["open", "done"] },
+    $or: [{ bookingCode: new RegExp(`^${esc}$`, "i") }, { phone: code }],
+  })
+    .sort({ flightDate: -1 })
+    .lean<any>();
+}
+
 export async function createCollect(session: BaobaySession, input: CollectSaveInput): Promise<CollectDTO> {
   await connectDB();
   const spot = assertSpotAllowed(session, input.spot);
@@ -10476,6 +10545,8 @@ export async function createCollect(session: BaobaySession, input: CollectSaveIn
   } else if (!input.toCompanyAccount) {
     throw new BaobayError("Chuyển khoản phải tích 'TK công ty'", 400);
   }
+  const linkedBooking = input.method === "transfer" ? await findBookingByCode(spot, input.bookingCode) : null;
+  const linked = linkedBooking ? await transferAccountOf(linkedBooking, input.amount) : undefined;
 
   const saved = (
     await BaobayCollect.create({
@@ -10489,6 +10560,11 @@ export async function createCollect(session: BaobaySession, input: CollectSaveIn
       method: input.method,
       dest: hasMoneyDests(spot) ? normalizeMoneyDest(spot, input.dest, input.method) : "",
       toCompanyAccount: input.method === "transfer" && input.toCompanyAccount,
+      /**
+       * Mã booking khớp một booking của điểm → CK vào đúng TK của booking đó
+       * (chủ 04/10: một booking một tài khoản). Không khớp → để trống như cũ.
+       */
+      ...(input.method === "transfer" && linked ? { toAccount: linked } : {}),
       transferCode: input.transferCode.trim(),
       note: input.note.trim(),
       collectorUsername: collector?.username,
@@ -12803,6 +12879,8 @@ export async function lookupTicketCode(spotRaw: string, codeRaw: string): Promis
 
 export type FlycamCancelDTO = {
   id: string;
+  /** Hoàn từ tài khoản nào (chủ 04/10) — "company" = MB 168858888. */
+  fromAccount?: "personal" | "company";
   service: string;
   date: string;
   ticketCode: string;
@@ -12822,6 +12900,7 @@ export type FlycamCancelDTO = {
 function toFlycamCancelDTO(d: any): FlycamCancelDTO {
   return {
     id: String(d._id),
+    fromAccount: d.fromAccount === "company" || d.fromAccount === "personal" ? d.fromAccount : undefined,
     service: d.service || "flycam",
     date: d.date,
     ticketCode: d.ticketCode || "",
@@ -12903,8 +12982,10 @@ export async function createFlycamCancel(
     if (b) bookingLabel = `${b.daySeq ? `#${b.daySeq} ` : ""}${b.contactName || b.bookingCode || ""}`.trim();
   }
 
+  const fromAccount = bookingLabel ? await refundAccountOf(input.bookingId) : undefined;
   const doc = (
     await BaobayFlycamCancel.create({
+      ...(fromAccount ? { fromAccount } : {}),
       spot,
       service: ["flycam", "video360", "redFlag", "sunset", "longFlight", "flagFlight"].includes(String(input.service))
         ? input.service

@@ -439,11 +439,11 @@ export const bookingSchema = z.object({
   chapNhanTrung: z.boolean().optional(),
   lyDoTrung: z.string().max(300).optional(),
   /**
-   * Form CHƯA LƯU đã đưa mã QR (TK cá nhân) cho khách — máy chủ chốt TK cá
-   * nhân cho booking này, không bốc thăm TK công ty nữa (khách đã thấy số TK
-   * cá nhân). Xem lib/baobay/pay-account.ts.
+   * LƯỢT CHỌN TÀI KHOẢN lúc bấm QR trên form CHƯA LƯU (chủ 04/10 vòng 3) — lưu
+   * booking thì booking nhận đúng tài khoản khách đã thấy trên mã QR.
+   * Xem services/pay-account-pick.ts (pickProvisional).
    */
-  payQrShown: z.boolean().optional(),
+  payPickToken: z.string().max(64).optional(),
   note: text(1_000),
   /**
    * EMAIL KHÁCH — nơi app gửi thư báo khi booking thay đổi.

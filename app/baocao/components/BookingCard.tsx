@@ -12,6 +12,7 @@ import { parseQuickBooking } from "@/lib/baobay/booking-quick-parse";
 import { buildTransferNote } from "@/lib/baobay/transfer-note";
 import { normalizeSpot, spotName } from "@/lib/baobay/spots";
 import { DateBar } from "./DateBar";
+import { docToanManHinhUrl, ghiToanManHinhUrl } from "./ngay-lam-viec";
 import type { BookingDTO } from "@/lib/baobay/types";
 import { DIEM_BAY_VE, laTuDen, pickupVe, shortPickupSo, TU_DEN } from "@/lib/baobay/pickup";
 
@@ -50,7 +51,7 @@ import {
 import { MOI_NHAP_PHUT, docKieuXep, luuKieuXep, moiNhap, phutTruoc, soBooking, xepBooking, type BookingSort } from "@/lib/baobay/booking-order";
 import { formatVND } from "@/lib/pricing";
 import { PaymentQrButton } from "./PaymentQr";
-import { ensurePayAccountClient, PayAccountControl, qrPayRef, TkctBadge, type QrPayRef } from "./PayAccount";
+import { ensurePayAccountClient, isMbMoney, MbVatTag, PayAccountControl, qrPayRef, TkctBadge, type QrPayRef } from "./PayAccount";
 import { IN_VE_TU_DO } from "@/lib/baobay/in-ve-cau-hinh";
 
 import { baoLoiVaoTab, buildTicketsHtml, coInVe, dungAnhVe, inAnhQuaKenh, mayInThangDaGhep, nenMoTabIn, printBookingTickets, moTabIn, tenKhachBaoHiem, vietTatTen } from "./TicketPrint";
@@ -591,6 +592,8 @@ function BookingSummary({
                         {c.method === "cash"
                           ? `${k(c.amount)} TM`
                           : `${k(c.amount)} CK ${c.code ? `#${c.code}` : "(chưa có mã)"}`}
+                        {/* Tiền về TK công ty MB → phải xuất VAT (chủ 04/10) */}
+                        {isMbMoney(b, c) && <MbVatTag issued={Boolean(b.vatIssuedAt)} />}
                         {/*
                           TÍCH XANH NGAY SAU TỪNG KHOẢN: kế toán bấm "Đã nhận"
                           cho mã nào thì mã đó có tích — nhìn dòng là biết mã CK
@@ -1506,7 +1509,10 @@ function PaymentBreakdown({
               <td className="py-0.5 pr-1 text-right font-bold">{vnd(cocGoc)}</td>
               <td className="py-0.5 pr-1">
                 {cocWay ? (
-                  <span className={cocWay === "TM" ? "font-bold text-emerald-700" : "font-bold text-sky-700"}>{cocWay}</span>
+                  <span className={cocWay === "TM" ? "font-bold text-emerald-700" : "font-bold text-sky-700"}>
+                    {cocWay}
+                    {cocWay === "CK" && booking.payAccount === "company" && <MbVatTag issued={Boolean(booking.vatIssuedAt)} />}
+                  </span>
                 ) : (
                   <span className="font-bold text-amber-700" title="Bản ghi cũ chưa ai bấm TM hay CK — khoản này không nằm trong sổ tiền của ai">
                     chưa rõ
@@ -1547,6 +1553,7 @@ function PaymentBreakdown({
                 <span className={c.method === "cash" ? "font-bold text-emerald-700" : "font-bold text-sky-700"}>
                   {c.method === "cash" ? "TM" : "CK"}
                 </span>
+                {isMbMoney(booking, c) && <MbVatTag issued={Boolean(booking.vatIssuedAt)} />}
                 {c.method === "cash" ? (
                   <span className="text-emerald-700" title="Tiền mặt trao tay — đã cộng vào tiền người thu đang giữ, không phải soát sao kê">
                     {" "}
@@ -4133,6 +4140,7 @@ function BookingDetailControl({
                         {c.code ? ` #${c.code}` : ""} · {c.byName}
                         {c.at ? ` · ${stampVN(c.at)}` : ""}
                         {c.verified ? " ✓" : ""}
+                        {isMbMoney(b, c) && <MbVatTag issued={Boolean(b.vatIssuedAt)} />}
                       </span>
                       <span className="text-right font-semibold tabular-nums text-emerald-700">−{moneyK(c.amount)}</span>
                     </div>
@@ -5068,6 +5076,26 @@ export function BookingTodayBanner({
    */
   const [fsDate, setFsDate] = useState<string | null>(null);
   const [fsSpot, setFsSpot] = useState<string | null>(null);
+  /**
+   * F5 GIỮ NGUYÊN sổ toàn màn hình + ngày/điểm chọn trong sổ (chủ 04/10: "F5 hay
+   * bị nhảy ngày") — trạng thái nằm trong địa chỉ trang, xem ngay-lam-viec.ts.
+   * Lượt ghi đầu bỏ qua để không xoá ?fs= trước khi kịp đọc lại.
+   */
+  const fsBoQuaLanDau = useRef(true);
+  useEffect(() => {
+    const tuUrl = docToanManHinhUrl();
+    if (!tuUrl) return;
+    setFullScreen(true);
+    setFsDate(tuUrl.date);
+    setFsSpot(tuUrl.spot);
+  }, []);
+  useEffect(() => {
+    if (fsBoQuaLanDau.current) {
+      fsBoQuaLanDau.current = false;
+      return;
+    }
+    ghiToanManHinhUrl(fullScreen ? { date: fsDate, spot: fsSpot } : null);
+  }, [fullScreen, fsDate, fsSpot]);
   const date = fullScreen && fsDate ? fsDate : dateProp;
   const spot = fullScreen && fsSpot ? fsSpot : spotProp;
   const spotOptions = (user?.spots ?? []).map(normalizeSpot);
@@ -7656,10 +7684,13 @@ export function BookingCard({
    */
   const [editingPay, setEditingPay] = useState<QrPayRef>({});
   /**
-   * Form CHƯA LƯU đã đưa mã QR (TK cá nhân) cho khách: lúc lưu báo máy chủ chốt
-   * TK cá nhân — khách đã thấy số TK cá nhân rồi, đừng bốc sang TK công ty.
+   * Form CHƯA LƯU bấm QR (chủ 04/10 vòng 3): máy chủ chọn tài khoản NGAY lúc
+   * bấm và trả token — giữ ở đây, lưu booking thì gửi kèm (`payPickToken`) để
+   * booking nhận đúng tài khoản khách đã thấy trên mã QR.
    */
-  const qrShownRef = useRef(false);
+  const pickTokenRef = useRef("");
+  /** Tài khoản máy vừa chọn cho form chưa lưu — hiện nhãn TKCT ngay trên form. */
+  const [draftAccount, setDraftAccount] = useState<"personal" | "company" | null>(null);
   /** Người nhập đã tự gõ "còn phải thu" thì máy thôi tự điền số đó. */
   /** Đã gõ đè đơn giá thì máy thôi áp bảng giá theo ngày. */
   const [priceTouched, setPriceTouched] = useState(false);
@@ -7826,6 +7857,22 @@ export function BookingCard({
   /** Mốc bảng giá của form: booking đang sửa giữ giá lúc nó lập, form mới ăn giá hiện hành. */
   const formPriceAt = editingCreatedAt || new Date().toISOString();
   const bookingTotal = totalOf(form, bookSpot, formPriceAt);
+  /** QR trên form CHƯA LƯU: máy chủ chọn tài khoản theo số liệu đang gõ (chủ 04/10 vòng 3). */
+  const draftPay: QrPayRef = {
+    draft: {
+      get: () => ({
+        spot: bookSpot,
+        flightDate: form.flightDate,
+        totalAmount: bookingTotal,
+        deposit: form.deposit,
+        depositMethod: form.depositMethod ?? "",
+        agencyPaidAmount: form.agencyPaidAmount ?? 0,
+        source: form.source,
+      }),
+      token: pickTokenRef,
+      onPicked: setDraftAccount,
+    },
+  };
   /**
    * NỀN ĐỂ TÍNH GIẢM % (chủ 23/09) — tổng TRƯỚC khi trừ chiết khấu: tiền bay +
    * dịch vụ + đưa đón + xe núi − giảm combo. Giảm 10% là 10% của số này.
@@ -8150,7 +8197,7 @@ export function BookingCard({
         try {
           created = await apiPost<{ booking: BookingDTO }>(`/api/baocao/booking?spot=${bookSpot}`, {
             ...payload,
-            ...(qrShownRef.current ? { payQrShown: true } : {}),
+            ...(pickTokenRef.current ? { payPickToken: pickTokenRef.current } : {}),
             ...(boQuaTrung ? { chapNhanTrung: true, lyDoTrung: lyDoTrung.trim() || undefined } : {}),
           });
         } catch (e) {
@@ -8174,7 +8221,8 @@ export function BookingCard({
           setEditingSpot(bookSpot);
           setEditingSeq(created.booking.daySeq || 0);
           setEditingPay(qrPayRef(created.booking, bookSpot));
-          qrShownRef.current = false;
+          pickTokenRef.current = "";
+          setDraftAccount(null);
         }
         const collectorName = staff.find((a) => a.username === form.collectorUsername)?.name;
         setDone(
@@ -8921,8 +8969,7 @@ export function BookingCard({
                 phone: form.phone,
               })}
               purpose={`Tiền cọc — ${form.contactName || form.phone || "khách"}`}
-              pay={editingId ? editingPay : undefined}
-              onShown={editingId ? undefined : () => (qrShownRef.current = true)}
+              pay={editingId ? editingPay : draftPay}
               className="h-9 flex-1 border-sky-400 bg-sky-50 px-2 text-xs font-bold text-sky-700"
             />
             </div>
@@ -9020,7 +9067,13 @@ export function BookingCard({
             bật luôn bảng QR, nên dùng bản `group` (xem Field trong ui.tsx). */}
         <Field
           group
-          label={<span className="text-rose-700">Còn lại (thu trước khi bay) ★</span>}
+          label={
+            <span className="text-rose-700">
+              Còn lại (thu trước khi bay) ★
+              {/* Tài khoản đã chốt cho booking này (form chưa lưu: máy chọn lúc bấm QR) — nằm ở nhãn cho ô số khỏi bị bóp */}
+              <TkctBadge b={{ payAccount: editingId ? editingPay.account : draftAccount }} className="ml-1" />
+            </span>
+          }
           hint="Máy tự tính = tổng tiền − đã cọc"
         >
           <div className="flex items-center gap-1">
@@ -9037,8 +9090,7 @@ export function BookingCard({
                 phone: form.phone,
               })}
               purpose={`Tiền còn thu — ${form.contactName || form.phone || "khách"}`}
-              pay={editingId ? editingPay : undefined}
-              onShown={editingId ? undefined : () => (qrShownRef.current = true)}
+              pay={editingId ? editingPay : draftPay}
               className="h-10 shrink-0 border-rose-400 bg-rose-50 px-2 text-xs font-bold text-rose-700"
             />
           </div>
@@ -9278,7 +9330,8 @@ export function BookingCard({
               setEditingCreatedAt("");
               setEditingSeq(0);
               setEditingPay({});
-              qrShownRef.current = false;
+              pickTokenRef.current = "";
+              setDraftAccount(null);
               setEditingSpot(bookSpot);
               setForm(emptyBooking(today, bookSpot));
               setError(null);
@@ -9371,9 +9424,8 @@ export function BookingCard({
           title="Xem ảnh phiếu booking full màn hình — khách chụp lại, hoặc Lưu ảnh / Chia sẻ"
           onError={setError}
           data={async () => {
-            // Ảnh có mã QR "còn thu": booking đã lưu theo TK của booking; form chưa lưu là TK cá nhân (và chốt luôn TK cá nhân)
-            if (!editingId && form.remaining > 0) qrShownRef.current = true;
-            const payAccount = editingId ? await ensurePayAccountClient(editingPay) : ("personal" as const);
+            // Ảnh có mã QR "còn thu": booking đã lưu theo TK của booking; form chưa lưu thì máy chọn ngay (giữ token)
+            const payAccount = await ensurePayAccountClient(editingId ? editingPay : draftPay);
             return {
                 payAccount,
                 spot: bookSpot,

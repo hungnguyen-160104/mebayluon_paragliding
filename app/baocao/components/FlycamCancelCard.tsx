@@ -11,6 +11,7 @@ import type { FlycamCancelDTO, TicketLookup } from "@/services/baobay.service";
 
 import { apiGet, apiPatch, apiPost } from "./client-api";
 import { Banner, Button, CollapseCard, Field, MoneyInput, TextInput } from "./ui";
+import { RefundFromTag } from "./PayAccount";
 
 type Pilot = { username: string; name: string };
 
@@ -327,7 +328,8 @@ export function FlycamCancelCard({
                   {it.status === "pending" ? "chờ kế toán chuyển" : it.status === "paid" ? "đã chuyển ✓" : "đã hoàn tại bãi"}
                 </span>
                 <span className="min-w-0 flex-1 leading-snug text-slate-700">
-                  {formatDateKeyVN(it.date)} · <strong>{serviceLabel(it.service)}</strong> ·{" "}
+                  {formatDateKeyVN(it.date)} · <RefundFromTag fromAccount={it.fromAccount} transfer={it.refundMode === "company"} />
+                  <strong>{serviceLabel(it.service)}</strong> ·{" "}
                   <strong>{it.ticketCode || "không mã"}</strong>
                   {it.bookingLabel ? ` · ${it.bookingLabel}` : ""} · PC {it.pilotName} · {it.reason}
                   {it.bankAccount ? ` · TK ${it.bankAccount}` : ""}

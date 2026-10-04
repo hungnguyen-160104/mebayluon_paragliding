@@ -29,6 +29,8 @@ export interface IBaobayRefund {
   usedFee: number;
   amount: number;
   method: "cash" | "transfer";
+  /** Hoàn từ TÀI KHOẢN NÀO (chủ 04/10): "company" = MB 168858888 (booking TKCT), "personal" = BIDV Thuỷ. */
+  fromAccount?: "personal" | "company";
   /** Số tài khoản khách nhận — chỉ cần khi hoàn chuyển khoản. */
   bankAccount?: string;
   /** "done" tự trả tiền mặt xong · "pending" chờ kế toán chuyển · "paid" đã chuyển. */
@@ -59,6 +61,7 @@ const RefundSchema = new Schema<IBaobayRefund>(
     usedFee: { type: Number, default: 0 },
     amount: { type: Number, default: 0, min: 0 },
     method: { type: String, enum: ["cash", "transfer"], required: true },
+    fromAccount: { type: String, enum: ["personal", "company"] },
     bankAccount: String,
     // "voided" = lệnh bị vô hiệu vì booking được "bay lại" trước khi kế toán chuyển
     status: { type: String, enum: ["done", "pending", "paid", "voided"], default: "pending", index: true },

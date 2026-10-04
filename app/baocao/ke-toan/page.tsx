@@ -21,6 +21,8 @@ import { RevenueShareLine, type RevenueShare } from "../components/PayAccount";
 
 /** Hai thẻ nặng (soát sao kê ~96 KB, đại lý) nạp sau khi bảng tiền đã hiện — trang mở nhanh hơn (18/09). */
 const BankCheckCard = dynamic(() => import("../components/BankCheckCard").then((m) => m.BankCheckCard), { ssr: false });
+/** Bảng phân loại tiền MB/BIDV (chủ 04/10) — nạp sau như hai thẻ trên. */
+const MbPaymentsCard = dynamic(() => import("../components/MbPaymentsCard").then((m) => m.MbPaymentsCard), { ssr: false });
 const AgencySummaryCard = dynamic(() => import("../components/AgencySummaryCard").then((m) => m.AgencySummaryCard), { ssr: false });
 
 /**
@@ -267,6 +269,9 @@ export default function KeToanPage() {
 
       {/* KHÁCH THEO ĐẠI LÝ — lọc theo tháng, quyết toán Klook/Agoda/BlueHome… */}
       <AgencySummaryCard />
+
+      {/* PHÂN LOẠI TIỀN NGÂN HÀNG — MB công ty (phải xuất VAT) / BIDV (chủ 04/10) */}
+      <MbPaymentsCard />
 
       {/* VIỆC CẦN LÀM — mỗi dòng bấm được, dẫn tới đúng chỗ xử lý */}
       <Card title="Việc cần làm">

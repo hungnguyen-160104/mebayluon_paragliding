@@ -9,6 +9,7 @@ import { formatVND } from "@/lib/pricing";
 import type { MoneyBoard, MoneyBoardPerson } from "@/services/baobay.service";
 
 import { apiGet } from "./client-api";
+import { MbVatTag } from "./PayAccount";
 import { CollapseCard } from "./ui";
 
 /** Một người + các khoản của họ, bấm tên là xổ ra từng khoản. */
@@ -135,6 +136,8 @@ export function MoneyBoardCard({
                   {it.daySeq > 0 && (
                     <strong className="mr-1 rounded bg-red-600 px-1 font-bold text-white">{it.daySeq}</strong>
                   )}
+                  {/* Tiền vào / hoàn từ TK công ty MB — phải tính vào hoá đơn VAT (chủ 04/10); đứng TRƯỚC tên để dòng cắt cụt vẫn thấy */}
+                  {it.account === "company" && <MbVatTag className="ml-0 mr-1" />}
                   {it.label}
                   {it.transferCode ? ` · #${it.transferCode}` : ""}
                 </span>

@@ -9,6 +9,7 @@ import type { TaxCandidateDTO, TaxRecordDTO } from "@/services/baobay-tax.servic
 
 import { apiDelete, apiGet, apiPost } from "../components/client-api";
 import { TkctBadge } from "../components/PayAccount";
+import { MbPaymentsCard } from "../components/MbPaymentsCard";
 import { useBaobaySession } from "../components/session";
 import { Banner, Button, Field, MoneyInput, PageLoading, TextInput } from "../components/ui";
 import { Shell } from "../components/Shell";
@@ -111,6 +112,9 @@ export default function TaxPage() {
       title="Kế toán thuế"
       subtitle="Nhặt booking cần xuất hoá đơn VAT, soát hồ sơ từng khách, tải file Excel đưa vào phần mềm thuế."
     >
+      {/* PHÂN LOẠI TIỀN NGÂN HÀNG (chủ 04/10): mọi khoản vào MB công ty phải xuất VAT — lọc, tích, chép bảng */}
+      <MbPaymentsCard />
+
       {/* ---- Khoảng ngày + nút xuất ---- */}
       <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
         <Field label="Từ ngày (ngày bay)">
