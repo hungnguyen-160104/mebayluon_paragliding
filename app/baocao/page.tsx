@@ -11,6 +11,18 @@ import { ApiError, apiGet, apiPost } from "./components/client-api";
 import { Banner, Button, Field, TextInput } from "./components/ui";
 
 /**
+ * ĐƯỜNG QUAY VỀ sau khi đăng nhập (?next=/baocao/dieu-phoi?date=…&spot=…) —
+ * do trang bị đá ra (hết phiên) hoặc middleware gắn vào. Chỉ nhận đường NỘI BỘ
+ * trong /baocao/, chặn "//host" và "\\" để không thành lối chuyển hướng ra web lạ.
+ */
+function duongQuayVe(): string | null {
+  if (typeof window === "undefined") return null;
+  const v = new URLSearchParams(window.location.search).get("next") ?? "";
+  if (!v.startsWith("/baocao/") || v.startsWith("//") || v.includes("\\") || v.includes("..") || /[\r\n]/.test(v)) return null;
+  return v;
+}
+
+/**
  * Đăng nhập trang báo bay.
  *
  * Mỗi phi công và mỗi nhân viên quầy vé một tài khoản riêng (quản trị cấp ở
@@ -43,8 +55,14 @@ export default function BaobayLoginPage() {
         if (!alive) return;
         clearTimeout(backstop);
         const home = ROLE_HOME[user.role];
+        /**
+         * Có đường quay về thì về ĐÚNG trang đó, giữ nguyên ngày/điểm đang xem
+         * (chủ 04/10: "F5 hay bị nhảy ngày" — trước đây luôn về trang mặc định
+         * của vai trò, mất ?date=). Trang đích tự đẩy đi nếu sai vai.
+         */
+        const ve = duongQuayVe();
         // Vai trò lạ (dữ liệu cũ) thì thà hiện form còn hơn đứng mãi ở màn chờ
-        if (home) router.replace(home);
+        if (home) router.replace(ve ?? home);
         else setChecking(false);
       })
       .catch((err: unknown) => {
@@ -71,7 +89,7 @@ export default function BaobayLoginPage() {
         username,
         password,
       });
-      router.replace(res.redirectTo || ROLE_HOME[res.user.role]);
+      router.replace(duongQuayVe() ?? (res.redirectTo || ROLE_HOME[res.user.role]));
     } catch (err: any) {
       setError(err?.message || "Đăng nhập thất bại");
       setLoading(false);

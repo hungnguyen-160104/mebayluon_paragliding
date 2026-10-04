@@ -3,14 +3,19 @@ import { NextResponse } from "next/server";
 
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import { approveOtaEmail, listOtaEmails, resolveOtaEmail } from "@/services/baobay-ota.service";
+import { approveOtaEmail, getOtaEmailExcerpt, listOtaEmails, resolveOtaEmail } from "@/services/baobay-ota.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ROLES = ["dispatcher", "counter", "accountant", "admin"] as const;
 
-/** GET ?spot= — thư OTA gần đây (để theo dõi và soát thư máy chưa hiểu). */
+/**
+ * GET ?spot=          — thư OTA gần đây (để theo dõi và soát thư máy chưa hiểu).
+ * GET ?spot=&gon=1    — như trên nhưng KHÔNG kèm nguyên văn thư (khay trên trang,
+ *                       hỏi lại mỗi phút: ~158 KB → vài KB, đo 04/10).
+ * GET ?spot=&id=…     — nguyên văn MỘT thư, khi người dùng bấm xổ thư đó ra.
+ */
 export async function GET(req: Request) {
   const auth = requireBaobay(req, { roles: [...ROLES], allowAdmin: true });
   if (auth instanceof NextResponse) return auth;
@@ -18,7 +23,15 @@ export async function GET(req: Request) {
   const spot = resolveSpot(req, auth);
   if (spot instanceof NextResponse) return spot;
 
-  return NextResponse.json({ emails: await listOtaEmails(spot) });
+  const q = new URL(req.url).searchParams;
+  const id = q.get("id");
+  if (id !== null) {
+    const bodyExcerpt = await getOtaEmailExcerpt(id, spot);
+    if (bodyExcerpt === null) return NextResponse.json({ message: "Không thấy thư" }, { status: 404 });
+    return NextResponse.json({ bodyExcerpt });
+  }
+
+  return NextResponse.json({ emails: await listOtaEmails(spot, 60, { withBody: q.get("gon") !== "1" }) });
 }
 
 /**

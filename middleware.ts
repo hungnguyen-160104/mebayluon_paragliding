@@ -141,6 +141,12 @@ export function middleware(request: NextRequest) {
     if (!isLoginPage && !isPublicGuide && !hasSession) {
       const url = request.nextUrl.clone();
       url.pathname = "/baocao";
+      /**
+       * Mang theo ĐƯỜNG QUAY VỀ (?next=trang + ?date=&spot=): đăng nhập xong là
+       * về đúng trang, đúng ngày đang xem — không rơi về trang mặc định hôm nay.
+       */
+      url.search = "";
+      url.searchParams.set("next", pathname + request.nextUrl.search);
       return internalHeaders(NextResponse.redirect(url));
     }
 

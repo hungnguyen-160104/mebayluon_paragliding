@@ -20,7 +20,11 @@
  * Cùng scope "/baocao/" nên không đụng worker của máy bán /cafe (scope "/").
  * Đổi PHIEN_BAN là lần kích hoạt sau xoá sạch bản cất cũ.
  */
-const PHIEN_BAN = "baocao-offline-v1";
+/**
+ * v2 (04/10): đổi luật cất tệp tĩnh (chỉ tệp mang mã băm mới cache trước) —
+ * lên số để lần kích hoạt đầu XOÁ SẠCH kho v1, phòng kho cũ còn mã không băm.
+ */
+const PHIEN_BAN = "baocao-offline-v2";
 const KHO_TINH = `${PHIEN_BAN}-static`;
 const KHO_TRANG = `${PHIEN_BAN}-pages`;
 const KHO_API = `${PHIEN_BAN}-api`;
@@ -36,14 +40,46 @@ self.addEventListener("install", (e) => {
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches
-      .keys()
+    /**
+     * NAVIGATION PRELOAD (đo tốc độ 04/10): bật lên thì trình duyệt gửi yêu cầu
+     * trang NGAY lúc bấm mở/F5, song song với việc đánh thức worker này. Không
+     * bật thì yêu cầu trang phải đợi worker khởi động xong (điện thoại yếu mất
+     * 100–500 ms) mới đi — worker làm CHẬM lần mở trang thay vì giúp.
+     */
+    (self.registration.navigationPreload ? self.registration.navigationPreload.enable().catch(() => {}) : Promise.resolve())
+      .then(() => caches.keys())
       .then((keys) =>
         Promise.all(keys.filter((k) => k.startsWith("baocao-offline") && !KHO_TAT_CA.includes(k)).map((k) => caches.delete(k))),
       )
+      .then(() => tiaKhoTinh())
       .then(() => self.clients.claim()),
   );
 });
+
+/**
+ * Tệp tĩnh mang tên băm: MỖI LẦN DEPLOY là một loạt tên mới, bản cũ không bao
+ * giờ được hỏi lại nhưng vẫn nằm trong kho. Deploy nhiều lần mỗi ngày thì kho
+ * phình mãi tới lúc trình duyệt hết hạn mức và XOÁ SẠCH dữ liệu của cả trang
+ * (kể cả phiên nhớ, lựa chọn đã lưu). Giữ 400 tệp mới nhất là thừa cho một bản.
+ */
+const TINH_TOI_DA = 400;
+let demCatTinh = 0;
+async function tiaKhoTinh() {
+  try {
+    const c = await caches.open(KHO_TINH);
+    const keys = await c.keys();
+    const thua = keys.length - TINH_TOI_DA;
+    // keys() trả theo thứ tự cất vào: cũ trước, mới sau
+    for (let i = 0; i < thua; i++) await c.delete(keys[i]);
+  } catch {
+    /* không tỉa được thì để lần kích hoạt sau */
+  }
+}
+
+/** Tên tệp có mã băm nội dung (8+ ký tự hex trước phần đuôi) hoặc nằm trong media/ của bản build. */
+function laTenBam(pathname) {
+  return /[./-][0-9a-f]{8,}\.[a-z0-9]+$/i.test(pathname) || pathname.startsWith("/_next/static/media/");
+}
 
 /** Ghi thêm giờ cất vào header để trang biết bản sao cũ bao lâu. */
 async function catKemGio(kho, req, res) {
@@ -74,14 +110,36 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // 1. Tệp tĩnh đã băm tên: cache trước
+  /**
+   * 1. Tệp tĩnh MANG MÃ BĂM trong tên (page-0a1b2c3d4e5f6789.js, css/9f8e….css,
+   *    media/…): nội dung không bao giờ đổi dưới cùng một tên → cache trước.
+   *
+   * Tệp tĩnh KHÔNG mang mã băm (bản dev: chunks/app/…/page.js, hot-update;
+   * _buildManifest theo buildId) thì MẠNG TRƯỚC, mất mạng mới dùng bản cất.
+   * Trước 04/10 mọi /_next/static/ đều cache trước: máy nào từng mở bản dev
+   * dưới worker này là ăn mã cũ mãi — agent thử TK công ty dính đúng cảnh đó.
+   */
+  if (url.pathname.startsWith("/_next/static/") && !laTenBam(url.pathname)) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.ok) e.waitUntil(caches.open(KHO_TINH).then((c) => c.put(req, res.clone())).catch(() => {}));
+          return res;
+        })
+        .catch(async () => (await caches.match(req, { cacheName: KHO_TINH })) || Response.error()),
+    );
+    return;
+  }
   if (url.pathname.startsWith("/_next/static/")) {
     e.respondWith(
       caches.open(KHO_TINH).then(async (c) => {
         const hit = await c.match(req);
         if (hit) return hit;
         const res = await fetch(req);
-        if (res.ok) c.put(req, res.clone());
+        if (res.ok) {
+          // Cất tệp mới (thường là sau một lần deploy) thì thỉnh thoảng tỉa kho
+          e.waitUntil(c.put(req, res.clone()).then(() => (++demCatTinh % 40 === 0 ? tiaKhoTinh() : undefined)).catch(() => {}));
+        }
         return res;
       }),
     );
@@ -91,9 +149,11 @@ self.addEventListener("fetch", (e) => {
   // 2. Trang /baocao/*: mạng trước, offline thì bản đã cất
   if (req.mode === "navigate" && (url.pathname === "/baocao" || url.pathname.startsWith("/baocao/"))) {
     e.respondWith(
-      fetch(req)
+      Promise.resolve(e.preloadResponse)
+        .catch(() => undefined)
+        .then((preload) => preload || fetch(req))
         .then((res) => {
-          if (res.ok) void catKemGio(KHO_TRANG, new Request(url.pathname), res);
+          if (res.ok) e.waitUntil(catKemGio(KHO_TRANG, new Request(url.pathname), res));
           return res;
         })
         .catch(async () => {

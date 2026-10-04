@@ -55,7 +55,11 @@ function useOtaMails(spot: string) {
   const [mails, setMails] = useState<OtaMail[]>([]);
 
   const load = useCallback(() => {
-    apiGet<{ emails: OtaMail[] }>(`/api/baocao/ota/log?spot=${spot}`)
+    /**
+     * `gon=1`: KHÔNG kèm nguyên văn thư — khay hỏi lại mỗi phút, 60 thư kèm thân
+     * thư là ~158 KB mỗi lượt (đo 04/10). Nguyên văn hỏi riêng khi bấm xổ thư.
+     */
+    apiGet<{ emails: OtaMail[] }>(`/api/baocao/ota/log?spot=${spot}&gon=1`)
       .then((r) => setMails(r.emails))
       .catch(() => {
         /* chưa có thư nào thì thôi */
@@ -90,7 +94,21 @@ function whenVN(iso: string): string {
  * (thư ghi nhãn kiểu lạ), mà bắt mở Gmail đối chiếu từng thư thì không ai duyệt
  * nữa. Nguyên văn thư là nguồn sự thật cuối cùng.
  */
-function MailDetail({ m }: { m: OtaMail }) {
+function MailDetail({ m, spot }: { m: OtaMail; spot: string }) {
+  /** Nguyên văn thư: danh sách không kèm (xem useOtaMails) — hỏi khi xổ ra. */
+  const [than, setThan] = useState<{ id: string; text: string } | null>(null);
+  const [loiThan, setLoiThan] = useState(false);
+  useEffect(() => {
+    if (m.bodyExcerpt !== undefined) return;
+    let song = true;
+    apiGet<{ bodyExcerpt: string }>(`/api/baocao/ota/log?spot=${spot}&id=${m.id}`)
+      .then((r) => song && setThan({ id: m.id, text: r.bodyExcerpt }))
+      .catch(() => song && setLoiThan(true));
+    return () => {
+      song = false;
+    };
+  }, [m.id, m.bodyExcerpt, spot]);
+  const bodyExcerpt = m.bodyExcerpt ?? (than?.id === m.id ? than.text : undefined);
   const facts = [
     m.draftDate ? `ngày bay ${m.draftDate.split("-").reverse().join("/")}` : "",
     m.draftTime ? `giờ ${m.draftTime}` : "",
@@ -116,9 +134,11 @@ function MailDetail({ m }: { m: OtaMail }) {
           ))}
         </div>
       )}
-      {m.bodyExcerpt ? (
+      {bodyExcerpt === undefined ? (
+        <div className="mt-1.5 text-slate-400">{loiThan ? "Không tải được nguyên văn thư — thử bấm lại." : "Đang tải nguyên văn thư…"}</div>
+      ) : bodyExcerpt ? (
         <pre className="mt-1.5 max-h-56 overflow-y-auto whitespace-pre-wrap break-words rounded border border-slate-200 bg-white p-2 font-sans text-[11px] text-slate-700">
-          {m.bodyExcerpt}
+          {bodyExcerpt}
         </pre>
       ) : (
         <div className="mt-1.5 text-slate-400">Thư không có phần chữ để hiện.</div>
@@ -318,7 +338,7 @@ export function OtaReviewFlag({ spot, onApplied }: { spot: string; onApplied?: (
                 </div>
               )}
               {error[m.id] && <div className="mt-1 text-xs font-semibold text-red-700">{error[m.id]}</div>}
-              {openMail === m.id && <MailDetail m={m} />}
+              {openMail === m.id && <MailDetail m={m} spot={spot} />}
             </li>
           );
         })}
@@ -377,7 +397,7 @@ export function OtaMailCard({ spot }: { spot: string }) {
                 {openMail === m.id ? "▴" : "▾"}
               </span>
             </button>
-            {openMail === m.id && <MailDetail m={m} />}
+            {openMail === m.id && <MailDetail m={m} spot={spot} />}
           </li>
         ))}
       </ul>

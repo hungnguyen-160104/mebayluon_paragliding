@@ -31,8 +31,12 @@ export function useHoSo(spot: string, date: string, username: string) {
   const [loi, setLoi] = useState<{ khoa: string; cau: string } | null>(null);
   useEffect(() => {
     let song = true;
-    /** Chưa biết người (phiên đang nạp) thì chưa hỏi — hỏi với tên rỗng chỉ ăn 400. */
-    if (!username) return;
+    /**
+     * Chưa biết người (phiên đang nạp) hoặc chưa biết ĐIỂM thì chưa hỏi — hỏi
+     * với tên rỗng chỉ ăn 400, với điểm rỗng là máy chủ tính cả hồ sơ (10 truy
+     * vấn) cho điểm mặc định rồi vứt đi khi điểm thật tới (đo 04/10).
+     */
+    if (!username || !spot) return;
     apiGet<HoSo>(`/api/baocao/reports/nhan-su?spot=${spot}&date=${date}&username=${encodeURIComponent(username)}`)
       .then((r) => song && setDu({ khoa, hoSo: r }))
       .catch((e) => song && setLoi({ khoa, cau: e instanceof Error ? e.message : "Không lấy được hồ sơ" }));

@@ -1030,8 +1030,8 @@ export async function approveOtaEmail(
  *    Pa ("Sapa Paragliding", "dù lượn Sa Pa", Lào Cai…). Khay Sa Pa KHÔNG lấy
  *    thư chưa rõ điểm: đó là thư của hộp chung, để hai điểm kia soát.
  */
-export async function listOtaEmails(spot?: string, limit = 60) {
-  await connectDB();
+/** Điều kiện khay thư OTA của một điểm — dùng chung cho danh sách và cho lệnh đọc một thư. */
+function otaKhayWhere(spot?: string): Record<string, unknown> {
   /**
    * Thư rác (OTP, quảng cáo…) vẫn được LƯU để lần vết, nhưng không chiếm chỗ
    * trong khay: cả hai lời phân loại của máy đều chứa cụm "không phải thư đơn
@@ -1045,18 +1045,43 @@ export async function listOtaEmails(spot?: string, limit = 60) {
     where.spot = { $ne: "sapa" };
     where.mailboxSpot = { $ne: "sapa" };
   }
-  const docs = await OtaEmail.find(where).sort({ createdAt: -1 }).limit(limit).lean<any[]>();
+  return where;
+}
+
+/**
+ * NGUYÊN VĂN thư (rút gọn) để người duyệt đọc ngay trên app — bắt họ mở
+ * Gmail đối chiếu từng thư thì chẳng ai duyệt nữa. Thư chỉ có HTML thì vứt
+ * thẻ lấy chữ; cắt 2.500 ký tự đầu là đủ phần thân đơn hàng.
+ */
+function otaBodyExcerpt(body: unknown): string {
+  let bodyText = String(body ?? "");
+  if (/<(html|body|table|div|p|br)[\s>]/i.test(bodyText)) bodyText = htmlToText(bodyText);
+  return bodyText.replace(/\n{3,}/g, "\n\n").trim().slice(0, 2500);
+}
+
+/** Nguyên văn MỘT thư trong khay của điểm — trang chỉ hỏi khi người dùng bấm xổ thư ra. */
+export async function getOtaEmailExcerpt(id: string, spot?: string): Promise<string | null> {
+  if (!/^[0-9a-f]{24}$/i.test(id)) return null;
+  await connectDB();
+  const d = await OtaEmail.findOne({ ...otaKhayWhere(spot), _id: id }).select("body").lean<any>();
+  return d ? otaBodyExcerpt(d.body) : null;
+}
+
+/**
+ * `withBody: false` (khay trên trang điều phối / chốt ngày, hỏi lại mỗi phút):
+ * KHÔNG đọc thân thư. Đo 04/10: 60 thư kèm nguyên văn là ~158 KB mỗi lượt và
+ * 60 lần bóc HTML ở máy chủ — trong khi người xem chỉ đọc nguyên văn của thư
+ * mình bấm xổ ra (trang hỏi riêng bằng ?id=).
+ */
+export async function listOtaEmails(spot?: string, limit = 60, opts: { withBody?: boolean } = {}) {
+  await connectDB();
+  const withBody = opts.withBody !== false;
+  const q = OtaEmail.find(otaKhayWhere(spot)).sort({ createdAt: -1 }).limit(limit);
+  if (!withBody) q.select("-body");
+  const docs = await q.lean<any[]>();
   return docs.map((d) => {
     const draft = (d.draft ?? {}) as Record<string, any>;
-
-    /**
-     * NGUYÊN VĂN thư (rút gọn) để người duyệt đọc ngay trên app — bắt họ mở
-     * Gmail đối chiếu từng thư thì chẳng ai duyệt nữa. Thư chỉ có HTML thì vứt
-     * thẻ lấy chữ; cắt 2.500 ký tự đầu là đủ phần thân đơn hàng.
-     */
-    let bodyText = String(d.body ?? "");
-    if (/<(html|body|table|div|p|br)[\s>]/i.test(bodyText)) bodyText = htmlToText(bodyText);
-    const bodyExcerpt = bodyText.replace(/\n{3,}/g, "\n\n").trim().slice(0, 2500);
+    const bodyExcerpt = withBody ? otaBodyExcerpt(d.body) : undefined;
 
     return {
       id: String(d._id),

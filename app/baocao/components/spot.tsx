@@ -46,7 +46,14 @@ export function useSpot(spots: string[] | undefined): {
           ? normalizeSpot(saved)
           : options[0];
 
-    setSpotState((current) => (current && options.includes(current) ? current : next));
+    const chon = spot && options.includes(spot) ? spot : next;
+    setSpotState(chon);
+    /**
+     * Ghi luôn điểm vừa chọn vào địa chỉ: địa chỉ là nguồn sự thật cho F5. Không
+     * ghi thì F5 lại đọc bộ nhớ máy — mà tab khác vừa đổi điểm là bộ nhớ đã khác
+     * điểm đang hiện ở tab này.
+     */
+    ghiSpotUrl(chon);
     // options là mảng mới mỗi lần render nên so theo nội dung, không so tham chiếu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.join(",")]);
