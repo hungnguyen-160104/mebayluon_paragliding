@@ -106,6 +106,23 @@ import type {
   RescheduledDTO,
 } from "@/lib/baobay/types";
 import { AccountantDailyClose } from "@/models/AccountantDailyClose.model";
+import {
+  addInto,
+  closeNumbersOf,
+  compareRows,
+  emptyClose,
+  emptyLedger,
+  emptyStaff,
+  kindGuestsOf,
+  kindsAt,
+  servicesAt,
+  tallyLedger,
+  ticketHeldWhenMoved,
+  veQrTallyOf,
+  type PeriodRollupDTO,
+  type RollupDay,
+  type StaffRollup,
+} from "@/lib/baobay/rollup";
 import { BaobayAccount, type IBaobayAccount } from "@/models/BaobayAccount.model";
 import { BaobayBooking, type BookingStatus } from "@/models/BaobayBooking.model";
 import { sauKhiHuy, tuChoiYeuCauHuy } from "@/services/yeu-cau-huy.service";
@@ -11867,18 +11884,14 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
       .select("veQr.khach")
       .lean<any[]>(),
   ]);
+  /** Luật đếm nằm ở lib/baobay/rollup.ts — bảng tổng hợp theo kỳ dùng CHUNG, hai màn hình không lệch nhau. */
   const veQrTally = { veQrXuat: 0, veQrBay: 0, veQrThuHoi: 0, veQrXungDot: 0 };
   for (const b of veQrDocs) {
-    for (const k of b.veQr?.khach ?? []) {
-      if (k.veGiay) continue;
-      if (k.huy?.luc) {
-        veQrTally.veQrThuHoi++;
-        if (k.huy.daBayXong && !k.huy.xacMinh?.luc) veQrTally.veQrXungDot++;
-        continue;
-      }
-      veQrTally.veQrXuat++;
-      if (k.bayXong?.luc) veQrTally.veQrBay++;
-    }
+    const t = veQrTallyOf(b.veQr?.khach);
+    veQrTally.veQrXuat += t.veQrXuat;
+    veQrTally.veQrBay += t.veQrBay;
+    veQrTally.veQrThuHoi += t.veQrThuHoi;
+    veQrTally.veQrXungDot += t.veQrXungDot;
   }
 
   /**
@@ -12123,7 +12136,7 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
     flightDate: { $ne: date },
     status: { $nin: ["voided"] },
   })
-    .select("daySeq contactName phone bookingCode guestCount flightDate ticketIssuedAt flightKind ppgGuests movedTicketCodes")
+    .select("daySeq contactName phone bookingCode guestCount flightDate ticketIssuedAt flightKind ppgGuests movedTicketCodes rescheduledFrom movedAt")
     .lean<any[]>();
 
   /**
@@ -12222,7 +12235,13 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
          * "Vé dời lịch" đứng im ở 0 là ĐÚNG; màn hình phải nói ra điều đó kẻo
          * kế toán tưởng máy bỏ sót.
          */
-        ticketIssued: Boolean(b.ticketIssuedAt),
+        /**
+         * 07/10/2026: phải là ĐÃ CẦM VÉ LÚC DỜI. Cờ 🎫 chỉ có một mốc giờ, mà
+         * phần lớn đoàn dời được xuất vé ở NGÀY MỚI — coi mọi đoàn có cờ là
+         * "dời mang vé đi" thì ngày cũ bị đòi thu hồi vé chưa từng tồn tại
+         * (18/09 Khau Phạ: báo 18/18 khách dời đã cầm vé). Luật ở ticketHeldWhenMoved.
+         */
+        ticketIssued: ticketHeldWhenMoved(b, date),
       }));
     return [...declared.map((e) => ({ ...e, daySeq: (e as { daySeq?: number }).daySeq ?? seqTheoTen(e.name) })), ...fromBook];
   })();
@@ -12236,9 +12255,10 @@ export async function getCloseSuggestion(spotRaw: string, date: string): Promise
    * `bookings` là open+done (guestCount đã trừ huỷ bớt), huỷ và dời đi nằm
    * hai danh sách riêng; khách/dịch vụ dời TỚI đã ở trong sổ hôm nay.
    */
+  /** Cùng luật tách PG/PPG với bảng tổng hợp theo kỳ (lib/baobay/rollup.ts · kindGuestsOf). */
   const kindGuests = (b: any) => {
-    const ppg = b.flightKind === "ppg" ? b.guestCount || 0 : Math.min(b.guestCount || 0, b.ppgGuests || 0);
-    return { ppg, pg: (b.guestCount || 0) - ppg };
+    const k = kindGuestsOf(b);
+    return { ppg: k.ppg, pg: (b.guestCount || 0) - k.ppg };
   };
   const tallyKind = (list: any[]) =>
     list.reduce(
@@ -14008,6 +14028,189 @@ const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked" | "closed
   cameramanCount: 0,
 };
 
+/* ================================================================== */
+/* Bảng cộng ĐẦY ĐỦ theo sổ (chủ 07/10/2026)                           */
+/* ================================================================== */
+
+/** Trường booking mà bảng cộng theo sổ cần — chỉ lấy đủ dùng, kỳ 30 ngày có ~700 booking. */
+const ROLLUP_BOOKING_FIELDS =
+  "flightDate status createdByUsername createdByName webBookingId otaRef otaName guestCount flightKind ppgGuests " +
+  "flycam video360 redFlag sunset longFlight flagFlight cancelledGuests comboDiscount commission.amount commission.method " +
+  "pickupFee mountainCar cancelTicketCodes ticketIssuedAt noTicketFlight refundAmount refundedTotal " +
+  "collectedLog.amount collectedLog.method collectedLog.toAccount discount totalAmount deposit agencyPaidAmount remaining " +
+  "rescheduledFrom movedAt movedTicketCodes " +
+  "veQr.khach.veGiay veQr.khach.huy.luc veQr.khach.huy.daBayXong veQr.khach.huy.xacMinh.luc veQr.khach.bayXong.luc";
+
+/**
+ * Nạp sổ gốc của cả kỳ rồi cộng bằng `tallyLedger` (lib/baobay/rollup.ts).
+ *
+ * SỐ LƯỢT HỎI CỐ ĐỊNH, không theo số ngày: 10 lượt song song + tối đa 3 lượt
+ * bổ sung (lệnh dịch vụ của đoàn dời tới từ ngoài kỳ, booking ngoài kỳ mà lệnh
+ * hoàn trỏ tới, tên tài khoản người bán). `fullStaff` = lấy nguyên báo cáo nhân
+ * viên (bảng tổng hợp cần để bày từng tab); báo cáo tháng chỉ cần vài cột.
+ */
+async function loadPeriodRollup(spot: string, from: string, to: string, fullStaff: boolean) {
+  const range = { $gte: from, $lte: to };
+  const filter = { spot, date: range };
+  const pick = <T,>(q: T & { select: (f: string) => T }, fields: string): T => (fullStaff ? q : q.select(fields));
+  const [pilotDocs, dispatcherDocs, cameramanDocs, closeDocs, flightBookings, movedBookings, refunds, flycamCancels, changesInRange, collects] =
+    await Promise.all([
+      pick(
+        PilotDailyReport.find(filter).sort({ date: -1, pilotName: 1 }),
+        "date flightCount ppgFlights ticketCodes video360 redFlag sunset longFlight flagFlight diplomaticGuests waterCost guestCarCost expenses",
+      ).lean<any[]>(),
+      pick(
+        DispatcherDailyReport.find(filter).sort({ date: -1, staffName: 1 }),
+        "date ticketsIssued ticketsReturned issuedRanges diplomaticCodes diplomaticGuests diplomaticAmount guestWaterCost mountainCarCost shuttleCarCost expenses",
+      ).lean<any[]>(),
+      pick(CameramanDailyReport.find(filter).sort({ date: -1 }), "date flycamFlights expenses").lean<any[]>(),
+      AccountantDailyClose.find(filter).sort({ date: -1 }).lean<any[]>(),
+      BaobayBooking.find({ spot, flightDate: range }).select(ROLLUP_BOOKING_FIELDS).lean<any[]>(),
+      /** Đoàn từng DỜI KHỎI một ngày trong kỳ mà nay bay ngoài kỳ — ngày cũ vẫn phải đếm "dời đi". */
+      BaobayBooking.find({ spot, rescheduledFrom: { $elemMatch: range }, $or: [{ flightDate: { $lt: from } }, { flightDate: { $gt: to } }] })
+        .select(ROLLUP_BOOKING_FIELDS)
+        .lean<any[]>(),
+      BaobayRefund.find(filter).select("date bookingId amount method fromAccount status reason").lean<any[]>(),
+      BaobayFlycamCancel.find(filter).select("date bookingId service amount status refundMode fromAccount").lean<any[]>(),
+      BaobayServiceChange.find(filter)
+        .select("date bookingId kind items charge back refunded mode refundId createdByUsername createdByName undoneAt createdAt")
+        .lean<any[]>(),
+      BaobayCollect.find({ spot, date: range, status: { $in: ["collected", "company"] } })
+        .select("date method amount status")
+        .lean<any[]>(),
+    ]);
+
+  const bookings = [...flightBookings, ...movedBookings];
+  const loaded = new Set(bookings.map((b) => String(b._id)));
+  const outside = (d: string) => d < from || d > to;
+  /** Đoàn đang bay trong kỳ mà từng ở ngày ngoài kỳ: lệnh thêm/bớt cũ của họ mang ngày cũ. */
+  const movedInIds = flightBookings
+    .filter((b) => (b.status === "open" || b.status === "done") && ((b.rescheduledFrom ?? []) as string[]).some(outside))
+    .map((b) => b._id);
+  const missingIds = [
+    ...new Set(
+      [...refunds, ...flycamCancels]
+        .map((x) => (x.bookingId ? String(x.bookingId) : ""))
+        .filter((id) => id && !loaded.has(id) && mongoose.Types.ObjectId.isValid(id)),
+    ),
+  ];
+  const [changesMovedIn, extraBookings] = await Promise.all([
+    movedInIds.length
+      ? BaobayServiceChange.find({ spot, bookingId: { $in: movedInIds }, $or: [{ date: { $lt: from } }, { date: { $gt: to } }] })
+          .select("date bookingId kind items charge back refunded mode refundId createdByUsername createdByName undoneAt createdAt")
+          .lean<any[]>()
+      : Promise.resolve([] as any[]),
+    missingIds.length
+      ? BaobayBooking.find({ _id: { $in: missingIds } })
+          .select("status createdByUsername createdByName webBookingId otaRef otaName")
+          .lean<any[]>()
+      : Promise.resolve([] as any[]),
+  ]);
+  const serviceChanges = [...changesInRange, ...changesMovedIn];
+  const usernames = [
+    ...new Set(
+      [...bookings, ...extraBookings, ...serviceChanges]
+        .map((x) => String(x.createdByUsername || "").trim().toLowerCase())
+        .filter((u) => u && u !== "web" && !u.startsWith("ota:")),
+    ),
+  ];
+  const accounts = usernames.length
+    ? await BaobayAccount.find({ username: { $in: usernames } }).select("username displayName").lean<any[]>()
+    : [];
+  const names = new Map<string, string>(accounts.map((a) => [String(a.username), String(a.displayName || a.username)]));
+
+  const { byDate, bySeller } = tallyLedger({ spot, from, to, bookings, serviceChanges, refunds, flycamCancels, extraBookings, names });
+
+  /* ---- Số nhân viên tự khai, theo ngày ---- */
+  const staff = new Map<string, StaffRollup>();
+  const bc = (d: string) => staff.get(d) ?? staff.set(d, emptyStaff()).get(d)!;
+  for (const p of pilotDocs) {
+    const r = bc(p.date);
+    r.pilotPg += p.flightCount || 0;
+    r.pilotPpg += p.ppgFlights || 0;
+    r.pilotCodes += (p.ticketCodes ?? []).length;
+    r.svc.video360 += p.video360 || 0;
+    r.svc.redFlag += p.redFlag || 0;
+    r.svc.sunset += p.sunset || 0;
+    r.svc.longFlight += p.longFlight || 0;
+    r.svc.flagFlight += p.flagFlight || 0;
+    r.diplomaticGuests += p.diplomaticGuests || 0;
+    r.expenseTotal += pilotExpenseTotal(p);
+  }
+  const rangesByDate = new Map<string, any[]>();
+  for (const d of dispatcherDocs) {
+    const r = bc(d.date);
+    const ranges = ((d.issuedRanges ?? []) as any[]).filter((x) => String(x?.from ?? "").trim() || String(x?.to ?? "").trim());
+    // Có dải mã thì đếm theo mã (gom cả ngày rồi bỏ trùng bên dưới); không có dải mới lấy ô số
+    if (ranges.length) (rangesByDate.get(d.date) ?? rangesByDate.set(d.date, []).get(d.date)!).push(...ranges);
+    else r.counterIssued += d.ticketsIssued || 0;
+    r.counterReturned += d.ticketsReturned || 0;
+    r.diplomaticTickets += (d.diplomaticCodes ?? []).length || d.diplomaticGuests || 0;
+    r.diplomaticAmount += d.diplomaticAmount || 0;
+    r.expenseTotal += dispatcherExpenseTotal(d);
+  }
+  for (const [d, ranges] of rangesByDate) bc(d).counterIssued += expandTicketRanges(ranges).codes.length;
+  for (const c of cameramanDocs) {
+    const r = bc(c.date);
+    r.svc.flycam += c.flycamFlights || 0;
+    r.expenseTotal += expenseTotal(c.expenses);
+  }
+  for (const c of collects) {
+    const r = bc(c.date);
+    if (c.method === "cash" && c.status === "collected") r.collectCash += c.amount || 0;
+    else if (c.method === "transfer" && c.status === "company") r.collectTransfer += c.amount || 0;
+  }
+
+  /* ---- Ghép theo ngày + cộng hai khối (đã chốt / cả kỳ) ---- */
+  const closeByDate = new Map<string, any>(closeDocs.map((c) => [String(c.date), c]));
+  const dates = [...new Set([...byDate.keys(), ...staff.keys(), ...closeByDate.keys()])].sort().reverse();
+  const closed = { so: emptyLedger(), bc: emptyStaff(), chot: emptyClose(), lech: [] as PeriodRollupDTO["closed"]["lech"] };
+  const all = { so: emptyLedger(), bc: emptyStaff() };
+  const lechDays = new Map<string, number>();
+  const days: RollupDay[] = dates.map((date) => {
+    const close = closeByDate.get(date);
+    const status: RollupDay["status"] = close ? (close.status === "closed" ? "closed" : "draft") : "none";
+    const so = byDate.get(date) ?? emptyLedger();
+    const staffRow = staff.get(date) ?? emptyStaff();
+    const chot = close ? closeNumbersOf(close) : undefined;
+    const lech = status === "closed" && chot ? compareRows(spot, chot, so).filter((r) => r.chot !== r.so) : [];
+    addInto(all.so, so);
+    addInto(all.bc, staffRow);
+    if (status === "closed" && chot) {
+      addInto(closed.so, so);
+      addInto(closed.bc, staffRow);
+      addInto(closed.chot, chot);
+      for (const l of lech) lechDays.set(l.key, (lechDays.get(l.key) ?? 0) + 1);
+    }
+    return { date, status, so, bc: staffRow, chot, lech };
+  });
+  closed.lech = compareRows(spot, closed.chot, closed.so)
+    .filter((r) => (lechDays.get(r.key) ?? 0) > 0)
+    .map((r) => ({ ...r, days: lechDays.get(r.key) ?? 0 }));
+
+  const rollup: PeriodRollupDTO = {
+    spot,
+    from,
+    to,
+    services: servicesAt(spot),
+    kinds: kindsAt(spot),
+    dayCount: days.length,
+    closedCount: days.filter((d) => d.status === "closed").length,
+    openDates: days.filter((d) => d.status !== "closed").map((d) => d.date),
+    days,
+    closed,
+    all,
+    bySeller,
+  };
+  return { rollup, pilotDocs, dispatcherDocs, cameramanDocs, closeDocs };
+}
+
+/** Bảng cộng đầy đủ theo sổ cho một khoảng ngày bất kỳ — báo cáo tháng và script kiểm chứng dùng. */
+export async function getPeriodRollup(spotRaw: string, from: string, to: string): Promise<PeriodRollupDTO> {
+  await connectDB();
+  return (await loadPeriodRollup(normalizeSpot(spotRaw), from, to, false)).rollup;
+}
+
 /**
  * Dữ liệu cho bảng tổng hợp: báo cáo thô + số cộng theo ngày + tổng kỳ.
  *
@@ -14015,18 +14218,22 @@ const EMPTY_ROLLUP: Omit<DailyRollupDTO, "date" | "status" | "blocked" | "closed
  * `pendingDays` để kế toán biết tổng đang thiếu những ngày nào — đúng quy tắc
  * "chưa chốt thì chưa tính vào tổng".
  */
-export async function getSummary(spotRaw: string, from: string, to: string): Promise<BaobaySummaryDTO> {
+export async function getSummary(
+  spotRaw: string,
+  from: string,
+  to: string,
+  /**
+   * `issues: false` = KHÔNG chạy bộ đối chiếu từng ngày chưa chốt (cột "treo /
+   * n lỗi"). Phần đó hỏi sổ ~15 lượt MỖI NGÀY — kỳ 30 ngày chưa chốt 18 ngày là
+   * 12–30 giây chờ trên điện thoại. Trang tải bảng trước, hỏi cột lỗi sau bằng
+   * `getSummaryIssues`. Xuất Excel / CSV vẫn chạy đủ như cũ.
+   */
+  opts: { issues?: boolean } = {},
+): Promise<BaobaySummaryDTO> {
   await connectDB();
 
   const spot = normalizeSpot(spotRaw);
-  const range = { $gte: from, $lte: to };
-  const filter = { spot, date: range };
-  const [pilotDocs, dispatcherDocs, cameramanDocs, closeDocs] = await Promise.all([
-    PilotDailyReport.find(filter).sort({ date: -1, pilotName: 1 }).lean<any[]>(),
-    DispatcherDailyReport.find(filter).sort({ date: -1, staffName: 1 }).lean<any[]>(),
-    CameramanDailyReport.find(filter).sort({ date: -1 }).lean<any[]>(),
-    AccountantDailyClose.find(filter).sort({ date: -1 }).lean<any[]>(),
-  ]);
+  const { rollup, pilotDocs, dispatcherDocs, cameramanDocs, closeDocs } = await loadPeriodRollup(spot, from, to, true);
 
   const pilotReports = pilotDocs.map(toPilotDTO);
   const dispatcherReports = dispatcherDocs.map(toDispatcherDTO);
@@ -14043,78 +14250,31 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
   };
 
   /**
-   * HOÀN TIỀN + HUỶ FLYCAM + CHIẾT KHẤU ĐẠI LÝ — trước đây chỉ money board của
-   * MỘT ngày thấy, tổng kỳ mù tịt (16-18/08 hoàn 14,8tr mà kỳ báo chi 0đ).
-   */
-  const [periodRefunds, periodFlycamCancels, periodCommissions] = await Promise.all([
-    BaobayRefund.find({ spot, date: { $gte: from, $lte: to }, status: { $in: ["done", "paid"] } })
-      .select("date amount")
-      .lean<any[]>(),
-    BaobayFlycamCancel.find({ spot, date: { $gte: from, $lte: to }, status: { $in: ["done", "paid"] } })
-      .select("date amount")
-      .lean<any[]>(),
-    BaobayBooking.find({ spot, flightDate: { $gte: from, $lte: to }, "commission.amount": { $gt: 0 } })
-      .select("flightDate commission.amount")
-      .lean<any[]>(),
-  ]);
-  for (const r of periodRefunds) rowFor(r.date).refundTotal += r.amount || 0;
-  for (const f of periodFlycamCancels) rowFor(f.date).refundTotal += f.amount || 0;
-  for (const b of periodCommissions) rowFor(b.flightDate).agencySpendTotal += b.commission?.amount || 0;
-
-  /**
-   * TIỀN THEO SỔ BOOKING (chủ 21/09) — nguồn CHÍNH cho mọi con số tiền của kỳ.
+   * TIỀN + HOÀN + CHIẾT KHẤU + LỆNH THU lấy từ BẢNG CỘNG THEO SỔ (`rollup`) —
+   * cùng một lượt nạp sổ với mọi chỉ tiêu khác, khỏi hỏi sổ booking hai lần.
    *
-   * Vì sao đổi: trước đây ngày ĐÃ CHỐT lấy tiền từ hai ô `cashTotal` /
-   * `transferTotal` của bản chốt, mà hai ô ấy tự cộng từ sổ "Tiền trong ngày"
-   * của kế toán — từ 13/08 tiền đi qua LỆNH THU trên booking nên không ai kê
-   * lại vào sổ ấy, 26/30 ngày lưu 0 đ. Kết quả: kỳ 23/08–21/09 Khau Phạ hiện
-   * 225tr trong khi sổ booking ghi 2.240tr đã thu (chủ bắt lỗi 21/09).
+   * Cách tính tiền KHÔNG ĐỔI (chủ 21/09: "tất cả dựa vào sổ booking"): đoàn BAY
+   * ngày nào tính vào ngày đó, đoàn HUỶ / bỏ sổ không tính; "đã thu" =
+   * `totalAmount − remaining`; TM/CK tách theo sổ thu của từng booking, phần
+   * không ghi rõ hình thức (cọc gõ tay) vào `bookingOther`; sổ thu ghi nhiều
+   * hơn số đã thu thì co lại theo tỉ lệ. Công thức nằm ở `tallyLedger`.
    *
-   * Nay: đoàn BAY ngày nào tính vào ngày đó, đoàn HUỶ / bỏ sổ không tính.
-   * "Đã thu" lấy `totalAmount − remaining` (số chốt của sổ booking); TM/CK
-   * tách theo sổ thu của từng booking, phần không ghi rõ hình thức (cọc gõ
-   * tay) vào `bookingOther` để ba phần luôn cộng đúng bằng "đã thu".
+   * Hoàn khách = lệnh hoàn đã chi + huỷ dịch vụ phi công báo đã chi (trước đây
+   * tổng kỳ mù khoản này: 16-18/08 hoàn 14,8tr mà kỳ báo chi 0đ).
    */
-  const bookingMoney = await BaobayBooking.find({
-    spot,
-    flightDate: { $gte: from, $lte: to },
-    status: { $in: ["open", "done"] },
-  })
-    .select("flightDate totalAmount remaining collectedLog")
-    .lean<any[]>();
-  for (const b of bookingMoney) {
-    const row = rowFor(String(b.flightDate));
-    const value = Number(b.totalAmount) || 0;
-    const con = Math.max(0, Number(b.remaining) || 0);
-    const daThu = Math.max(0, value - con);
-    const log = (b.collectedLog ?? []) as Array<{ amount?: number; method?: string }>;
-    const tm = log.filter((x) => x.method !== "transfer").reduce((t, x) => t + (Number(x.amount) || 0), 0);
-    const ck = log.filter((x) => x.method === "transfer").reduce((t, x) => t + (Number(x.amount) || 0), 0);
-    row.bookingValue += value;
-    row.bookingRemaining += con;
-    row.bookingCollected += daThu;
-    /** Sổ thu ghi nhiều hơn số đã thu (hoàn tiền sau khi thu…) thì co lại theo tỉ lệ, không để âm. */
-    const ghi = tm + ck;
-    const heSo = ghi > daThu && ghi > 0 ? daThu / ghi : 1;
-    const tmThuc = Math.round(tm * heSo);
-    const ckThuc = Math.round(ck * heSo);
-    row.bookingCash += tmThuc;
-    row.bookingTransfer += ckThuc;
-    row.bookingOther += Math.max(0, daThu - tmThuc - ckThuc);
-  }
-
-  /** LỆNH THU theo ngày — giữ lại để đối chiếu với sổ booking trong bảng ngày. */
-  const periodCollects = await BaobayCollect.find({
-    spot,
-    date: { $gte: from, $lte: to },
-    status: { $in: ["collected", "company"] },
-  })
-    .select("date method amount status")
-    .lean<any[]>();
-  for (const c of periodCollects) {
-    const row = rowFor(c.date);
-    if (c.method === "cash" && c.status === "collected") row.collectCash += c.amount || 0;
-    else if (c.method === "transfer" && c.status === "company") row.collectTransfer += c.amount || 0;
+  for (const d of rollup.days) {
+    const row = rowFor(d.date);
+    row.refundTotal = d.so.refundPaid + d.so.opCancelPaid;
+    row.agencySpendTotal = d.so.commissionCash + d.so.commissionTransfer + d.so.commissionAgency;
+    row.bookingValue = d.so.bookingValue;
+    row.bookingRemaining = d.so.remaining;
+    row.bookingCollected = d.so.collected;
+    row.bookingCash = d.so.cash;
+    row.bookingTransfer = d.so.transfer;
+    row.bookingOther = d.so.other;
+    /** LỆNH THU theo ngày lập lệnh — giữ lại để đối chiếu với sổ booking trong bảng ngày. */
+    row.collectCash = d.bc.collectCash;
+    row.collectTransfer = d.bc.collectTransfer;
   }
 
   for (const r of pilotReports) {
@@ -14188,15 +14348,17 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
    * Ngày đã chốt thì khỏi chạy: đã chốt nghĩa là lúc chốt không còn lỗi đỏ, và
    * số liệu bị khoá nên không thể lệch trở lại.
    */
-  await Promise.all(
-    days
-      .filter((d) => d.status !== "closed")
-      .map(async (d) => {
-        const rec = await getReconcile(spot, d.date);
-        d.blocked = !rec.canClose;
-        d.issueCount = rec.issues.filter((i) => i.severity === "red").length;
-      }),
-  );
+  if (opts.issues !== false) {
+    await Promise.all(
+      days
+        .filter((d) => d.status !== "closed")
+        .map(async (d) => {
+          const rec = await getReconcile(spot, d.date);
+          d.blocked = !rec.canClose;
+          d.issueCount = rec.issues.filter((i) => i.severity === "red").length;
+        }),
+    );
+  }
 
   const closedDays = days.filter((d) => d.status === "closed");
   /** Chỉ cộng các khoá SỐ trong EMPTY_ROLLUP — closedBy là chuỗi, không nằm trong đây. */
@@ -14341,7 +14503,36 @@ export async function getSummary(spotRaw: string, from: string, to: string): Pro
     allTotals,
     pendingDays: days.filter((d) => d.status !== "closed").map((d) => d.date),
     byPilot: [...pilotMap.values()].sort((a, b) => b.flights - a.flights),
+    rollup,
+    issuesPending: opts.issues === false,
   };
+}
+
+/**
+ * Cột "treo / n lỗi đỏ" của các ngày CHƯA CHỐT trong kỳ — trang tổng hợp hỏi
+ * riêng sau khi bảng đã hiện (xem `getSummary` · `issues: false`).
+ */
+export async function getSummaryIssues(
+  spotRaw: string,
+  dates: string[],
+): Promise<Record<string, { blocked: boolean; issueCount: number }>> {
+  await connectDB();
+  const spot = normalizeSpot(spotRaw);
+  const wanted = [...new Set(dates.filter(isDateKey))].slice(0, 62);
+  if (!wanted.length) return {};
+  /** Ngày đã chốt thì khỏi soát: lúc chốt không còn lỗi đỏ và số đã khoá. */
+  const closedDocs = await AccountantDailyClose.find({ spot, date: { $in: wanted }, status: "closed" }).select("date").lean<any[]>();
+  const closed = new Set(closedDocs.map((c) => String(c.date)));
+  const out: Record<string, { blocked: boolean; issueCount: number }> = {};
+  await Promise.all(
+    wanted
+      .filter((d) => !closed.has(d))
+      .map(async (date) => {
+        const rec = await getReconcile(spot, date);
+        out[date] = { blocked: !rec.canClose, issueCount: rec.issues.filter((i) => i.severity === "red").length };
+      }),
+  );
+  return out;
 }
 
 /* ================================================================== */
@@ -14650,7 +14841,7 @@ export async function getMonthlyReport(
   const filter: Record<string, unknown> = { spot, date: { $gte: from, $lte: to } };
   if (onlyUsername) filter.username = onlyUsername;
 
-  const [pilotDocs, closeDocs, advancesMonth, advancesToDate, advancesDay, huyDocs] = await Promise.all([
+  const [pilotDocs, closeDocs, advancesMonth, advancesToDate, advancesDay, huyDocs, rollup] = await Promise.all([
     PilotDailyReport.find(filter).sort({ date: 1, pilotName: 1 }).lean<any[]>(),
     AccountantDailyClose.find({ spot, date: { $gte: from, $lte: to } })
       .select("date status")
@@ -14662,6 +14853,15 @@ export async function getMonthlyReport(
     BaobayBooking.find({ spot, flightDate: { $gte: from, $lte: to }, $or: [{ status: "cancelled" }, { cancelledGuests: { $gt: 0 } }] })
       .select("flightDate status guestCount cancelledGuests")
       .lean<any[]>(),
+    /**
+     * BẢNG CỘNG ĐẦY ĐỦ THEO SỔ của tháng (chủ 07/10: "báo cáo tháng cũng tổng
+     * hợp chi tiết hết") — đúng bộ chỉ tiêu của Bảng tổng hợp. Tháng đang chạy
+     * thì cộng tới HÔM NAY: booking đặt trước cho những ngày chưa tới chưa phải
+     * số của tháng. Phi công xem bản của riêng mình thì KHÔNG nạp khối này.
+     */
+    onlyUsername
+      ? Promise.resolve(undefined)
+      : loadPeriodRollup(spot, from, isCurrentMonth && today < to ? today : to, false).then((r) => r.rollup),
   ]);
 
   const closedDates = new Set(closeDocs.filter((c) => c.status === "closed").map((c) => c.date));
@@ -14754,6 +14954,7 @@ export async function getMonthlyReport(
     grandToDate,
     grandMonth,
     cancelledGuests,
+    ...(rollup ? { rollup } : {}),
   };
 }
 

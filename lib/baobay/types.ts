@@ -11,6 +11,7 @@ import type { VeQrDTO } from "./ve-qr";
 
 import type { InsuredGuest } from "@/lib/baobay/insurance";
 import type { BaobayRole } from "@/lib/baobay/roles";
+import type { PeriodRollupDTO } from "@/lib/baobay/rollup";
 import type { Issue, ReconcileTotals } from "@/lib/baobay/reconcile";
 
 /** Một dải mã vé đã xuất: A1234 → A1256 (23 vé). */
@@ -844,6 +845,14 @@ export type BaobaySummaryDTO = {
   /** Số ngày chưa chốt trong kỳ — nêu rõ để kế toán biết tổng còn thiếu gì. */
   pendingDays: string[];
   byPilot: PilotPeriodTotalDTO[];
+  /**
+   * BẢNG CỘNG ĐẦY ĐỦ THEO SỔ (chủ 07/10/2026): khách, vé, dịch vụ, huỷ/dời/hoàn,
+   * tiền — đếm thẳng từ sổ booking và các sổ lệnh, cho từng ngày, khối đã chốt,
+   * khối cả kỳ và từng người bán. Xem lib/baobay/rollup.ts.
+   */
+  rollup: PeriodRollupDTO;
+  /** true = cột "treo / n lỗi" chưa được soát trong lượt tải này (trang hỏi riêng sau). */
+  issuesPending?: boolean;
 };
 
 /* ------------------------------------------------------------------ */
@@ -909,6 +918,12 @@ export type MonthlyPilotDTO = {
 };
 
 export type MonthlyReportDTO = {
+  /**
+   * Bảng cộng đầy đủ theo sổ của tháng (tới hôm nay nếu là tháng đang chạy) —
+   * CHỈ có khi người xem là kế toán / quản trị; phi công xem báo cáo của riêng
+   * mình thì không nhận khối này (có tiền và số của người khác).
+   */
+  rollup?: PeriodRollupDTO;
   spot: string;
   /** "YYYY-MM". */
   month: string;

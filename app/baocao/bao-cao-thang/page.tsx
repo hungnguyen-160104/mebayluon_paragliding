@@ -11,8 +11,9 @@ import { formatVND } from "@/lib/pricing";
 import { apiGet } from "../components/client-api";
 import { useBaobaySession } from "../components/session";
 import { SpotSwitcher, useSpot } from "../components/spot";
+import { MismatchList, RollupSections, SellerTable } from "../components/RollupView";
 import { Shell } from "../components/Shell";
-import { Banner, Button, Card, Field, InlineLoading, PageLoading, TextInput } from "../components/ui";
+import { Banner, Button, Card, CollapseCard, Field, InlineLoading, PageLoading, TextInput } from "../components/ui";
 
 /**
  * Báo cáo tháng: mỗi tháng một bản, mỗi phi công một khối.
@@ -201,6 +202,58 @@ export default function MonthlyReportPage() {
               </p>
             )}
           </Card>
+
+          {/**
+           * TỔNG HỢP ĐẦY ĐỦ THEO SỔ (chủ 07/10: "báo cáo tháng cũng tổng hợp chi
+           * tiết hết") — đúng bộ chỉ tiêu và đúng phép đếm của Bảng tổng hợp, cho
+           * trọn tháng dương lịch (tháng đang chạy: tới hôm nay). Chỉ kế toán /
+           * quản trị nhận khối này; phi công xem bản của riêng mình thì không có.
+           */}
+          {data.rollup && (
+            <>
+              <Card
+                title={`Tổng hợp đầy đủ theo sổ · ${formatDateKeyVN(data.rollup.from)} – ${formatDateKeyVN(data.rollup.to)}`}
+                hint="Khách, vé, dịch vụ, huỷ / dời / hoàn, tiền — đếm thẳng từ sổ booking và các sổ lệnh, gồm cả ngày chưa chốt."
+              >
+                <div
+                  className={
+                    "mb-3 rounded-xl border px-3 py-2 text-sm " +
+                    (data.rollup.openDates.length ? "border-amber-300 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900")
+                  }
+                >
+                  <strong>
+                    {data.rollup.dayCount} ngày có số liệu: đã chốt {data.rollup.closedCount} · chưa chốt {data.rollup.openDates.length}
+                  </strong>
+                  {data.isCurrentMonth && <span className="text-xs"> — tháng đang chạy, tính tới {formatDateKeyVN(data.rollup.to)}</span>}
+                </div>
+                <RollupSections rollup={data.rollup} so={data.rollup.all.so} bc={data.rollup.all.bc} />
+              </Card>
+
+              <CollapseCard
+                title={`Chỉ ngày đã chốt · ${data.rollup.closedCount}/${data.rollup.dayCount} ngày`}
+                hint="so với số kế toán gõ lúc chốt"
+              >
+                {data.rollup.closedCount === 0 ? (
+                  <p className="text-sm text-slate-500">Tháng này chưa có ngày nào được chốt.</p>
+                ) : (
+                  <>
+                    <MismatchList lech={data.rollup.closed.lech} />
+                    <RollupSections
+                      rollup={data.rollup}
+                      so={data.rollup.closed.so}
+                      bc={data.rollup.closed.bc}
+                      chot={data.rollup.closed.chot}
+                      lech={data.rollup.closed.lech}
+                    />
+                  </>
+                )}
+              </CollapseCard>
+
+              <CollapseCard title="Theo người bán" hint={`${data.rollup.bySeller.length} người / kênh`}>
+                <SellerTable rollup={data.rollup} />
+              </CollapseCard>
+            </>
+          )}
 
           {data.pilots.length === 0 ? (
             <Card>

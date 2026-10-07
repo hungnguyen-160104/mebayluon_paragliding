@@ -508,11 +508,21 @@ const BODY = `<div class="wrap">
     <ol class="steps">
       <li>
         <h4>Tổng hợp</h4>
-        <p><strong>Tổng đã chốt</strong> chỉ cộng những ngày kế toán đã chốt. Bên dưới là khối vàng <strong>Tạm tính cả kỳ</strong> — gồm cả ngày chưa chốt, lấy theo báo cáo nhân viên và lệnh thu, để biết thực tế kỳ này thu bao nhiêu.</p>
+        <p>Khối <strong>CẢ KỲ</strong> đứng đầu là số của <em>mọi ngày</em> trong khoảng đã chọn, kể cả ngày chưa chốt; dòng đầu khối ghi rõ bao nhiêu ngày đã chốt, bao nhiêu ngày chưa. Mọi con số đếm thẳng từ sổ (booking, lệnh thêm/bớt dịch vụ, lệnh hoàn), chia năm phần:</p>
+        <ul>
+          <li><strong>Khách &amp; chuyến bay</strong> — khách đã bay (booking đã tích “đã bay”), tách PG / PPG, chuyến phi công báo, bay không vé, khách còn chờ bay.</li>
+          <li><strong>Vé</strong> — vé đã xuất (theo cờ đã xuất vé trên booking, kèm số quầy khai theo dải mã), vé đã bay, vé thu hồi (booking huỷ sau khi xuất vé), vé khách dời mang đi / mang tới, vé QR.</li>
+          <li><strong>Dịch vụ</strong> — flycam, 360, cờ đỏ, kéo cờ, gói đặc biệt, bay lâu (tính tiền / miễn phí kèm gói), combo flycam + 360, dịch vụ thêm tại bãi. Dòng nhỏ là số nhân viên báo để so.</li>
+          <li><strong>Huỷ / dời / hoàn</strong> — khách huỷ, dời đi / dời tới, huỷ dịch vụ theo từng loại, hoàn dịch vụ, hoàn huỷ bay, hoàn tiền mặt / chuyển khoản, lệnh hoàn còn chờ chi.</li>
+          <li><strong>Tiền</strong> — giá trị sổ, đã thu (tiền mặt, chuyển khoản tách MB công ty / BIDV), còn thu, giảm trừ, chiết khấu đại lý, tiền còn giữ của booking huỷ, chi nhân viên.</li>
+        </ul>
+        <p>Khối <strong>Tổng đã chốt</strong> bày đúng bộ số ấy nhưng chỉ của những ngày kế toán đã chốt. Ô <span class="chip amber">vàng ⚠</span> là chỗ số kế toán gõ lúc chốt khác số sổ (ví dụ “kế toán chốt: 29 · sổ 41”) — mở lại ngày đó để sửa cho khớp.</p>
+        <p>Tab <strong>Theo ngày</strong>: bấm ▸ đầu dòng để mở đủ năm phần của riêng ngày đó. Tab <strong>Theo người bán</strong>: mỗi người lập booking một dòng (web và OTA là dòng riêng), bấm tên để xem số khách, tiền, từng loại dịch vụ, huỷ / dời / hoàn; nút <strong>⧉ Chép bảng</strong> để dán sang Excel. Dịch vụ thêm tại bãi tính cho người lập lệnh thêm.</p>
+        <p>Cột “treo / n lỗi” của ngày chưa chốt hiện sau vài giây (đang soát) — bảng số thì có ngay.</p>
       </li>
       <li>
         <h4>Báo cáo tháng và phạt nộp muộn</h4>
-        <p>Bảng lương từng phi công (chuyến PG + PPG, dịch vụ, chi tiêu, tiền ứng, phạt) và trang phạt nộp muộn.</p>
+        <p>Đầu trang là <strong>Tổng hợp đầy đủ theo sổ</strong> của trọn tháng (cùng năm phần như Bảng tổng hợp; tháng đang chạy tính tới hôm nay), kèm khối chỉ ngày đã chốt và bảng <strong>Theo người bán</strong>. Bên dưới là bảng lương từng phi công (chuyến PG + PPG, dịch vụ, chi tiêu, tiền ứng, phạt) và trang phạt nộp muộn. Phi công mở trang này chỉ thấy bảng của riêng mình.</p>
       </li>
       <li>
         <h4>Homestay</h4>

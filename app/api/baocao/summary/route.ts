@@ -6,8 +6,9 @@ import { firstZodMessage, summaryQuerySchema } from "@/lib/baobay/validation";
 import type { BaobaySummaryDTO, IssuedRangeDTO, RescheduledDTO } from "@/lib/baobay/types";
 import { resolveSpot } from "@/lib/baobay/request-spot";
 import { boCotKhongBan } from "@/lib/baobay/flight-price";
+import type { LedgerRollup } from "@/lib/baobay/rollup";
 import { requireBaobay } from "@/middlewares/requireBaobay";
-import { voidStats, getSummary } from "@/services/baobay.service";
+import { voidStats, getSummary, getSummaryIssues } from "@/services/baobay.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,10 @@ export const dynamic = "force-dynamic";
  * được số của người khác, điều phối không xem được tổng doanh thu cả kỳ.
  *
  * ?format=csv&type=days|pilot|dispatcher|cameraman|bypilot -> tải về CSV.
+ *
+ * ?issues=0 -> bỏ bước soát lỗi từng ngày chưa chốt (bảng về trong vài giây);
+ * ?issues=only&dates=a,b,c -> chỉ trả cột "treo / n lỗi" của các ngày ấy. Trang
+ * tổng hợp gọi hai nhịp như vậy; CSV và Excel vẫn chạy đủ một lượt.
  */
 export async function GET(req: Request) {
   const auth = requireBaobay(req, { roles: ["accountant", "admin"], allowAdmin: true });
@@ -40,7 +45,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: firstZodMessage(parsed.error) }, { status: 400 });
   }
 
-  const summary = await getSummary(spot, parsed.data.from, parsed.data.to);
+  if (params.get("issues") === "only") {
+    /** Chỉ nhận ngày nằm trong khoảng đang xem — không cho dùng đường này để quét bừa. */
+    const dates = (params.get("dates") || "")
+      .split(",")
+      .map((d) => d.trim())
+      .filter((d) => d >= parsed.data.from && d <= parsed.data.to);
+    return NextResponse.json(await getSummaryIssues(spot, dates));
+  }
+
+  const csv = params.get("format") === "csv";
+  const summary = await getSummary(spot, parsed.data.from, parsed.data.to, { issues: csv || params.get("issues") !== "0" });
 
   if (params.get("format") === "csv") {
     const type = params.get("type") || "days";
@@ -59,6 +74,43 @@ export async function GET(req: Request) {
   const voided = await voidStats(spot, parsed.data.from, parsed.data.to);
   return NextResponse.json({ ...summary, voidedByPerson: voided });
 }
+
+/**
+ * Cột THEO SỔ nối vào cuối bảng ngày (chủ 07/10: tổng hợp đủ khách, vé, dịch vụ,
+ * huỷ/dời/hoàn). Các cột phía trước giữ nguyên thứ tự cũ để file Excel kế toán
+ * đang dùng không lệch cột.
+ */
+const LEDGER_COLS: Array<[string, (s: LedgerRollup) => number]> = [
+  ["Sổ: khách đã bay", (s) => s.guestsFlown],
+  ["Sổ: bay PG", (s) => s.flownByKind.pg + s.flownByKind.m650 + s.flownByKind.m850],
+  ["Sổ: bay PPG", (s) => s.flownByKind.ppg],
+  ["Sổ: khách chờ bay", (s) => s.guestsOpen],
+  ["Sổ: vé đã xuất", (s) => s.ticketsIssued],
+  ["Sổ: vé đã bay", (s) => s.ticketsFlown],
+  ["Sổ: vé thu hồi", (s) => s.ticketsRecalled],
+  ["Sổ: vé dời mang đi", (s) => s.ticketsMovedOut],
+  ["Sổ: vé mang tới", (s) => s.ticketsCarriedIn],
+  ["Sổ: booking huỷ", (s) => s.cancelledBookings],
+  ["Sổ: khách huỷ", (s) => s.cancelledGuests + s.partialCancelledGuests],
+  ["Sổ: khách dời đi", (s) => s.movedOutGuests],
+  ["Sổ: khách dời tới", (s) => s.movedInGuests],
+  ["Sổ: flycam", (s) => s.svcFlown.flycam],
+  ["Sổ: 360", (s) => s.svcFlown.video360],
+  ["Sổ: cờ đỏ", (s) => s.svcFlown.redFlag],
+  ["Sổ: kéo cờ", (s) => s.svcFlown.flagFlight],
+  ["Sổ: gói đặc biệt", (s) => s.svcFlown.sunset],
+  ["Sổ: bay lâu tính tiền", (s) => s.longFlightCharged],
+  ["Sổ: combo flycam+360", (s) => s.combos],
+  ["Sổ: lệnh thêm dịch vụ", (s) => s.svcAddOrders],
+  ["Sổ: thu thêm dịch vụ", (s) => s.svcAddedCharge],
+  ["Sổ: lệnh huỷ dịch vụ", (s) => s.svcRemoveOrders + s.opCancelCount],
+  ["Sổ: hoàn dịch vụ", (s) => s.refundSvcAmount + s.opCancelPaid],
+  ["Sổ: hoàn huỷ bay", (s) => s.refundFullAmount + s.refundPartialAmount],
+  ["Sổ: hoàn chờ chi", (s) => s.refundPending + s.opCancelPending],
+  ["Sổ: CK về MB công ty", (s) => s.transferCompany],
+  ["Sổ: chiết khấu đại lý", (s) => s.commissionCash + s.commissionTransfer + s.commissionAgency],
+  ["Sổ: giảm trừ", (s) => s.discount],
+];
 
 const STATUS_LABEL = {
   none: "chưa nhập số chốt",
@@ -160,8 +212,11 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
       "Flycam", "Camera 360", "Bay kéo cờ đỏ/cờ sinh nhật",
       "Điều phối khai vé", "PC khai chuyến", "Số mã PC khai", "PC khai 360", "Camera man khai flycam",
       "Khách ngoại giao", "Cờ đỏ", "H.hôn / S.mây / B.minh", "Bay lâu", "Tổng chi", "PC đã chốt",
+      ...LEDGER_COLS.map((c) => c[0]),
     ]);
+    const soTheoNgay = new Map(summary.rollup.days.map((x) => [x.date, x.so]));
     for (const d of summary.days) {
+      const so = soTheoNgay.get(d.date);
       rows.push([
         d.date, STATUS_LABEL[d.status], d.issueCount,
         d.guestCount, d.ticketsIssued, d.ticketsReturned, d.cancelledCount, d.rescheduledCount,
@@ -169,6 +224,7 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
         d.flycam, d.video360, d.flagFlight,
         d.dispatcherIssued, d.pilotFlights, d.pilotCodes, d.pilot360, d.cameramanFlycam,
         d.diplomaticGuests, d.redFlag, d.sunset, d.longFlight ?? 0, d.expenseTotal, `${d.pilotSubmitted}/${d.pilotCount}`,
+        ...LEDGER_COLS.map((c) => (so ? c[1](so) : 0)),
       ]);
     }
     const t = summary.totals;
@@ -179,6 +235,12 @@ function buildCsv(summary: BaobaySummaryDTO, type: string): string {
       t.flycam, t.video360, t.flagFlight,
       t.dispatcherIssued, t.pilotFlights, t.pilotCodes, t.pilot360, t.cameramanFlycam,
       t.diplomaticGuests, t.redFlag, t.sunset, t.longFlight ?? 0, t.expenseTotal, "",
+      ...LEDGER_COLS.map((c) => c[1](summary.rollup.closed.so)),
+    ]);
+    rows.push([
+      "CẢ KỲ theo sổ (mọi ngày, kể cả chưa chốt)",
+      ...Array(25).fill(""),
+      ...LEDGER_COLS.map((c) => c[1](summary.rollup.all.so)),
     ]);
     if (summary.pendingDays.length) {
       rows.push([]);
