@@ -3634,7 +3634,16 @@ export function SpotDetailClient({
               >
                 {/* Khoảng trắng để Google đọc "Cao Nguyên Đá Cổng Trời", không dính "ĐáCổng". */}
                 {i > 0 ? " " : null}
-                {part}
+                {/* Quản Bạ, tiếng Việt: "Bay Trên" thành dòng dẫn nhỏ phía trên "Cao Nguyên Đá",
+                    giống tiêu đề ở hagiangparamotor.com (chủ 07/10/2026). */}
+                {spotSlug === "ha-giang" && i === 0 && /^bay trên\s+/i.test(part) ? (
+                  <>
+                    <span className="text-stone-3d__lead">{part.slice(0, 8)}</span>{" "}
+                    {part.slice(8).trim()}
+                  </>
+                ) : (
+                  part
+                )}
               </span>
             ))}
           </h2>
@@ -3654,6 +3663,21 @@ export function SpotDetailClient({
           <div className="mt-5 flex justify-center">
             <ShareButtons lang={lang} variant="spot" title={copy.name} />
           </div>
+          {/* Ghi nguồn ảnh vân đá trong chữ tiêu đề (CC BY-SA 4.0 buộc ghi tác giả + giấy phép). */}
+          {spotSlug === "ha-giang" ? (
+            <p className="mt-3 text-center text-[11px] leading-snug text-white/55">
+              {lang === "vi" ? "Vân đá trong chữ: ảnh" : "Rock texture in the title: photo"}{" "}
+              <a
+                href="https://commons.wikimedia.org/wiki/File:B%C3%A3i_%C4%91%C3%A1_m%E1%BA%B7t_tr%C4%83ng_%C4%90%E1%BB%93ng_V%C4%83n_-_NKS.jpg"
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="underline"
+              >
+                “Bãi đá mặt trăng Đồng Văn”
+              </a>
+              , NKSTTSSHNVN, CC BY-SA 4.0
+            </p>
+          ) : null}
         </motion.div>
       </section>
 

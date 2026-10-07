@@ -191,37 +191,49 @@
 }
 
 /*
- * .text-stone-3d — chữ VÂN ĐÁ nổi khối 3D cho tiêu đề Quản Bạ "Bay trên cao
- * nguyên đá" (chủ 27/09/2026).
- *  - Mặt chữ: vân đá vôi xám (nhiễu feTurbulence) trên nền chuyển xám sáng→tối,
- *    tô vào lòng chữ bằng background-clip:text.
- *  - Khối 3D + đổ bóng: chuỗi drop-shadow (không dùng text-shadow vì nó vẽ ĐÈ
- *    lên nền đã clip, che mất vân đá). Tắt text-shadow thừa hưởng từ hero.
+ * .text-stone-3d — chữ VÂN ĐÁ cho tiêu đề Quản Bạ "Bay trên / cao nguyên đá".
+ * Chủ 07/10/2026: làm GIỐNG chữ ở hagiangparamotor.com (.stone-title bên đó) —
+ *  - phông Alfa Slab One (--font-stone, khai ở app/layout.tsx);
+ *  - lòng chữ là ảnh đá tai mèo thật phủ soft-light lên nền đá vôi sáng→xám
+ *    (background-clip:text). Ảnh: "Bãi đá mặt trăng Đồng Văn", NKSTTSSHNVN,
+ *    CC BY-SA 4.0, Wikimedia Commons — ghi nguồn ngay dưới khối tiêu đề;
+ *  - khối nổi + đổ bóng bằng chuỗi drop-shadow (text-shadow sẽ vẽ ĐÈ lên nền đã
+ *    clip, che mất vân đá) — tắt text-shadow thừa hưởng từ hero.
+ * Bản trước (27/09) dùng nhiễu feTurbulence + Merriweather 900, trông không
+ * giống đá thật.
  */
 .text-stone-3d {
-  font-weight: 900;
+  font-family: var(--font-stone), Georgia, serif;
+  font-weight: 400;
+  /* 10vw: "Cao Nguyên Đá" rộng ~8,3em → 311px trên màn 375px, không rớt dòng */
+  font-size: clamp(2rem, 10vw, 3.4rem);
+  line-height: 1.04;
+  color: #ece6d8;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.06' numOctaves='3' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.17 0 0 0 0 0.16 0 0 0 1.3 -0.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.19 0 0 0 0 0.18 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-    linear-gradient(180deg, #ffffff 0%, #eeeae3 28%, #c9c1b4 52%, #e8e3da 70%, #a39a8c 100%);
-  background-size: 260px 260px, 180px 180px, 100% 100%;
+    url("/textures/da-tai-meo-840.jpg"),
+    linear-gradient(180deg, #fbf8f0 0%, #e4dccb 55%, #bdb3a0 100%);
+  background-size: 420px auto, cover;
+  background-position: 35% 60%, center;
+  background-blend-mode: soft-light, normal;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  color: transparent;
   text-shadow: none;
-  /* Viền tối mảnh quanh chữ để tách khỏi ảnh nền sáng (chủ 27/09: chữ mờ nhạt). */
   filter:
-    drop-shadow(1px 0 0 #2a2621)
-    drop-shadow(-1px 0 0 #2a2621)
-    drop-shadow(0 -1px 0 #2a2621)
-    drop-shadow(0 1px 0 #7a7266)
-    drop-shadow(0 1px 0 #6a635a)
-    drop-shadow(0 1px 0 #5b554d)
-    drop-shadow(0 1px 0 #4d4841)
-    drop-shadow(0 1px 0 #403b35)
-    drop-shadow(0 1px 0 #34302b)
-    drop-shadow(0 8px 14px rgba(0, 0, 0, 0.85));
+    drop-shadow(0 1px 0 #fffaf0)
+    drop-shadow(0 3px 0 #5f5646)
+    drop-shadow(0 6px 0 #2e2a22)
+    drop-shadow(0 10px 6px rgb(0 0 0 / 0.55))
+    drop-shadow(0 20px 28px rgb(0 0 0 / 0.75));
+}
+@media (min-width: 768px) {
+  .text-stone-3d { font-size: clamp(2.6rem, 6.4vw, 5.4rem); }
+}
+/* "Bay trên": dòng dẫn nhỏ hơn, nằm trên "cao nguyên đá". */
+.text-stone-3d__lead {
+  display: block;
+  font-size: 0.7em;
+  line-height: 1.1;
 }
 
 /*

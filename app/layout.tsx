@@ -1,6 +1,6 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { Roboto, Merriweather } from "next/font/google";
+import { Roboto, Merriweather, Alfa_Slab_One } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import Script from "next/script";
@@ -51,6 +51,19 @@ const merriweather = Merriweather({
   weight: ["700"],
   subsets: ["latin", "vietnamese"],
   variable: "--font-merriweather",
+  display: "swap",
+  preload: false,
+});
+
+/**
+ * Alfa Slab One — chữ khối dày cho tiêu đề VÂN ĐÁ "Bay trên cao nguyên đá" ở
+ * trang /spots/ha-giang, cùng phông với hagiangparamotor.com (chủ 07/10/2026).
+ * Chỉ một trang dùng nên KHÔNG preload.
+ */
+const stoneFont = Alfa_Slab_One({
+  weight: "400",
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-stone",
   display: "swap",
   preload: false,
 });
@@ -216,7 +229,7 @@ export default async function RootLayout({
       </head>
 
       <body
-        className={`${roboto.className} ${merriweather.variable}`}
+        className={`${roboto.className} ${merriweather.variable} ${stoneFont.variable}`}
         suppressHydrationWarning
       >
         <LanguageProvider initialLang={lang}>
