@@ -11,6 +11,8 @@ import { motion } from "framer-motion";
 
 import { BRAND_BUTTON_CLASS } from "@/lib/partner-links";
 import { getSpotLinks, SPOT_LINK_I18N } from "@/lib/spot-partner-links";
+// Bản đồ đường đi (chủ 08/10/2026) — gắn ở đây để nằm ngay dưới khối vị trí.
+import SpotRouteMap from "./SpotRouteMap";
 
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
@@ -30,12 +32,14 @@ export default function SpotPartnerLinks({
       group.partners.length === 0 &&
       courses.length === 0)
   ) {
-    return null;
+    // Chưa khai link nào thì vẫn hiện bản đồ đường đi (nếu điểm bay có).
+    return <SpotRouteMap slug={slug} lang={lang} />;
   }
 
   const L = SPOT_LINK_I18N[lang] ?? SPOT_LINK_I18N.vi;
 
   return (
+    <>
     <section className="relative z-10 pb-4 pt-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -138,5 +142,8 @@ export default function SpotPartnerLinks({
         )}
       </motion.div>
     </section>
+    {/* Bản đồ đường đi (#route-map) — ngay dưới vị trí Google Maps. */}
+    <SpotRouteMap slug={slug} lang={lang} />
+    </>
   );
 }
