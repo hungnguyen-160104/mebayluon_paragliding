@@ -42,6 +42,8 @@ import { PLACE_MAP_URL } from "@/lib/site-config";
 import { HOMESTAY_PARTNERS, BRAND_BUTTON_CLASS } from "@/lib/partner-links";
 import { bookingContactChannels } from "@/lib/contact-channels";
 import HomestayGallery from "@/components/homestay/HomestayGallery";
+import SpotRouteMap from "@/components/spots/SpotRouteMap";
+import type { RouteMapLang } from "@/lib/spot-route-maps";
 
 /* ================= Helpers ================= */
 const getAmenityIcon = (amenity: AmenityKey) => {
@@ -732,6 +734,15 @@ export default function HomestayPage({
             </div>
           </div>
         </section>
+
+        {/* ===== Đường vào Clubhouse =====
+             Bản đồ 3D QL32 Tú Lệ → ngã ba bản Lìm → Clubhouse (chủ duyệt 09/10).
+             Dùng lại khối "Bản đồ đường đi" của trang điểm bay; ảnh và chữ ở
+             lib/spot-route-maps.ts (khoá "homestay-clubhouse"). */}
+        <SpotRouteMap
+          slug="homestay-clubhouse"
+          lang={String(language ?? "vi").slice(0, 2).toLowerCase() as RouteMapLang}
+        />
 
         {/* ===== CTA ===== */}
         <section className="py-16">
