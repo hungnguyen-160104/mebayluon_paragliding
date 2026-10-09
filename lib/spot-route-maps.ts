@@ -135,7 +135,7 @@ const KHAU_PHA: SpotRouteMap = {
   },
 };
 
-const HA_NOI_MU_CANG_CHAI: SpotRouteMap = {
+export const HA_NOI_MU_CANG_CHAI: SpotRouteMap = {
   id: "ha-noi-mu-cang-chai",
   src: `${CLD}/v1791454752/uploads/posts/ban-do-ha-noi-mu-cang-chai.jpg`,
   width: 1600,
@@ -349,7 +349,8 @@ const SA_PA: SpotRouteMap = {
  * về đây) nên hiện cả hai hình, mỗi hình một tiêu đề riêng.
  */
 export const SPOT_ROUTE_MAPS: Record<string, SpotRouteMap[]> = {
-  "khau-pha": [KHAU_PHA, HA_NOI_MU_CANG_CHAI],
+  // Chủ 09/10: trang Khau Phạ chỉ hiện bản đồ đường đến điểm bay; bản đồ Hà Nội → Mù Cang Chải nằm ở các bài đường đi.
+  "khau-pha": [KHAU_PHA],
   "doi-bu": [DOI_BU, VIEN_NAM],
   "muong-hoa-sapa": [SA_PA],
 };
