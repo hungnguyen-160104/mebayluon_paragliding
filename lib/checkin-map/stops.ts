@@ -451,7 +451,7 @@ export const CK_STOPS = [
   "vi": {
    "name": "Rừng trúc Púng Luông",
    "type": "Rừng trúc",
-   "why": "Lối mòn nhỏ luồn giữa những thân trúc thẳng tắp, nắng xiên qua tán lá — khung hình hợp nhất khi nắng chếch.",
+   "why": "Rừng trúc hơn 60 năm tuổi: lối mòn nhỏ luồn giữa những thân trúc thẳng tắp, nắng xiên qua tán lá — khung hình hợp nhất khi nắng chếch.",
    "duongDi": [
     "Từ Clubhouse Mebayluon: 1,3 km đường bê tông ra QL32 ở ngã ba bản Lìm, theo QL32 26 km, rồi rẽ vào đường nhánh 4,3 km (đường nhỏ 3,4 km, đường tỉnh 1,0 km). Tổng 32 km, khoảng 55 phút lái xe.",
     "Từ chợ Tú Lệ: theo QL32 29 km, rồi rẽ vào đường nhánh 4,3 km (đường nhỏ 3,4 km, đường tỉnh 1,0 km). Tổng 34 km, khoảng 55 phút."
@@ -471,7 +471,7 @@ export const CK_STOPS = [
    "name": "Rừng trúc Púng Luông",
    "type": "Púng Luông bamboo forest",
    "what": "A bamboo forest more than 60 years old in Nả Háng Tủa Chử village, on the mountain south of Ngã Ba Kim; it opened to visitors in 2020.",
-   "why": "A narrow footpath threads between ruler-straight bamboo stems with sunlight slanting through the canopy — at its most photogenic when the sun is low.",
+   "why": "A bamboo forest more than 60 years old: a narrow path threads between ruler-straight stems, with sunlight slanting through the canopy.",
    "when": "The bamboo is green all year, so any season works.",
    "tip": "The side road from the highway is over 4 km long, steep and narrow, and hard for cars: hire a local motorbike taxi and avoid rainy days. There is an entrance fee."
   },
@@ -700,7 +700,7 @@ export const CK_STOPS = [
   "vi": {
    "name": "Rừng trúc Mù Cang Chải",
    "type": "Rừng trúc",
-   "why": "Rừng trúc gần thị trấn nhất: lối đi nhỏ giữa những thân trúc cao, yên tĩnh và mát quanh năm.",
+   "why": "Rừng trúc Mồ Dề, gần thị trấn nhất (khoảng 3,5 km): lối đi nhỏ giữa những thân trúc cao, yên tĩnh và mát quanh năm.",
    "duongDi": [
     "Từ Clubhouse Mebayluon: 1,3 km đường bê tông ra QL32 ở ngã ba bản Lìm, theo QL32 41 km, rồi rẽ vào đường nhánh 1,8 km (đường bản 1,8 km). Tổng 44 km, khoảng 75 phút lái xe.",
     "Từ chợ Tú Lệ: theo QL32 44 km, rồi rẽ vào đường nhánh 1,8 km (đường bản 1,8 km). Tổng 46 km, khoảng 75 phút."
@@ -719,7 +719,7 @@ export const CK_STOPS = [
    "name": "Rừng trúc Mù Cang Chải",
    "type": "bamboo forest, Háng Sung village",
    "what": "A bamboo forest in Háng Sung village (Mồ Dề), on the mountainside east of Mù Cang Chải town.",
-   "why": "The bamboo forest closest to town: a small path between tall stems, quiet and cool all year.",
+   "why": "The Mồ Dề bamboo forest, the closest to town (about 3.5 km): a small path between tall stems, quiet and cool all year.",
    "when": "Green all year; fewest people early in the morning.",
    "tip": "Only a few kilometres from the centre, but the road is rough — take a local motorbike taxi or taxi and allow at least an hour."
   },
