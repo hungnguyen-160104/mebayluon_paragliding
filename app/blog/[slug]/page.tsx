@@ -1,6 +1,6 @@
 import { HaGiangLoopMap } from "@/components/spots/HaGiangLoopMap";
 import CheckinMap3D from "@/components/spots/checkin-map/CheckinMap3D";
-import { CK_EMBED_TYPE, ckUi, isCheckinMapUrl } from "@/lib/checkin-map/embed";
+import { CK_EMBED_TYPE, CK_HUB_SLUG, ckUi, isCheckinMapUrl } from "@/lib/checkin-map/embed";
 import { getPublishedCheckinArticles } from "@/lib/checkin-map-published";
 import { HA_GIANG_SITE_URL } from "@/lib/ha-giang-site";
 import { chonKhoi, chonNoiDung, chonTieuDe, chonTomTat } from "@/lib/post-translation";
@@ -27,7 +27,8 @@ import {
   type RelatedPostItem,
 } from "./RelatedPosts";
 import { ViewCounter } from "@/components/ViewCounter";
-import { buildMetadata, generateArticleSchema, generateBreadcrumbSchema } from "@/lib/metadata-builder";
+import { buildMetadata, generateArticleSchema, generateBreadcrumbSchema, generateFAQSchema } from "@/lib/metadata-builder";
+import { CK_STOPS } from "@/lib/checkin-map";
 import { collectPostVideos, generateVideoSchema } from "@/lib/video-schema";
 import { cloudinaryOptimize, optimizeContentImages } from "@/lib/cloudinary-url";
 import { getProductPathMap, rewriteProductLinks } from "@/lib/product-links";
@@ -833,6 +834,48 @@ export async function generateMetadata({
   return meta;
 }
 
+/** Chữ trơn cho JSON-LD: bỏ cú pháp markdown của khối (link, đậm, nghiêng). */
+function plainInline(text: unknown): string {
+  return String(text ?? "")
+    .replace(/\[([^\]\n]+)\]\([^)\s]+\)/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Tiêu đề mục hỏi đáp (bỏ emoji/ký hiệu đầu dòng trước khi so). */
+const FAQ_HEADING = /^(?:câu hỏi thường gặp|hỏi đáp|hỏi – đáp|faq\b|frequently asked questions|questions fréquentes|foire aux questions)/i;
+
+/**
+ * FAQPage JSON-LD (SEO 10/2026): bài có mục "Câu hỏi thường gặp" (H2) mà mỗi câu
+ * hỏi là một H3/H4, câu trả lời là các đoạn/danh sách ngay dưới — lấy đúng chữ
+ * đang hiện trên trang. Dừng ở H2 kế tiếp. Dưới 2 câu thì không khai.
+ */
+function extractFaqs(blocks: ContentBlock[]): { question: string; answer: string }[] {
+  const lvl = (b: ContentBlock) => Number(b.data?.level || 2);
+  const start = blocks.findIndex(
+    (b) => b.type === "heading" && lvl(b) <= 2 && FAQ_HEADING.test(plainInline(b.data?.text).replace(/^[^\p{L}]+/u, "")),
+  );
+  if (start < 0) return [];
+  const out: { question: string; parts: string[] }[] = [];
+  for (const b of blocks.slice(start + 1)) {
+    if (b.type === "heading") {
+      if (lvl(b) <= 2) break;
+      out.push({ question: plainInline(b.data?.text), parts: [] });
+      continue;
+    }
+    const cur = out[out.length - 1];
+    if (!cur) continue;
+    if (b.type === "paragraph" || b.type === "quote") cur.parts.push(plainInline(b.data?.text));
+    else if (b.type === "bulletList") cur.parts.push(...(b.data?.items ?? []).map(plainInline));
+  }
+  const faqs = out
+    .map((q) => ({ question: q.question, answer: q.parts.filter(Boolean).join(" ") }))
+    .filter((q) => q.question && q.answer);
+  return faqs.length >= 2 ? faqs : [];
+}
+
 /**
  * Ngày đăng / cập nhật cho JSON-LD Article. Bài luôn có createdAt
  * (Mongoose timestamps), nhánh dự phòng chỉ phòng dữ liệu cũ thiếu ngày.
@@ -1129,12 +1172,48 @@ export default async function BlogPostPage({
     }),
   );
 
+  /** FAQPage từ mục "Câu hỏi thường gặp" của bài (extractFaqs). */
+  const faqs = canRenderBlocks ? extractFaqs(blocks) : [];
+  const faqSchema = faqs.length ? generateFAQSchema(faqs) : null;
+
+  /**
+   * ItemList cho BÀI TRỤ bản đồ check-in (SEO 10/2026): các điểm theo thứ tự trên
+   * tuyến, mỗi điểm trỏ tới bài riêng ĐÃ ĐĂNG (ckArticles). Hai điểm chung một bài
+   * (Le Champ + suối khoáng) chỉ khai một lần.
+   */
+  const ckItems: { name: string; url: string }[] = [];
+  if (post.slug === CK_HUB_SLUG && ckArticles) {
+    const seen = new Set<string>();
+    for (const s of CK_STOPS) {
+      const target = ckArticles[s.id];
+      if (!target || seen.has(target)) continue;
+      seen.add(target);
+      ckItems.push({ name: contentLocale === "vi" ? s.vi.name : s.en.name, url: localizedUrl(`/blog/${target}`, contentLocale) });
+    }
+  }
+  const itemListSchema =
+    ckItems.length >= 2
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: title,
+          numberOfItems: ckItems.length,
+          itemListElement: ckItems.map((it, i) => ({ "@type": "ListItem", position: i + 1, name: it.name, url: it.url })),
+        }
+      : null;
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
+      {faqSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      )}
+      {itemListSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }} />
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
