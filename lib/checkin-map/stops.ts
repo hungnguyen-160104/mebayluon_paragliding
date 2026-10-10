@@ -318,7 +318,7 @@ export const CK_STOPS = [
   "vi": {
    "name": "Trại cá Huy Thanh",
    "type": "Trại cá tầm – cá hồi · nhà hàng",
-   "why": "Xem những bể cá nước lạnh lấy nước suối rừng rồi ăn cá ngay tại chỗ. Khau Phạ là nơi nghề nuôi cá hồi của vùng này bắt đầu, từ năm 2007.",
+   "why": "Trại cá tầm, cá hồi bên suối giữa lưng đèo, yên tĩnh, có nhà hàng chế biến cá ngay tại chỗ cùng các món dân tộc và xôi nếp Tú Lệ. Khau Phạ là nơi nghề nuôi cá hồi của vùng này bắt đầu, từ năm 2007.",
    "duongDi": [
     "Từ Clubhouse Mebayluon: 1,3 km đường bê tông ra QL32 ở ngã ba bản Lìm, theo QL32 7,1 km. Tổng 8,5 km, khoảng 15 phút lái xe.",
     "Từ chợ Tú Lệ: theo QL32 10 km. Tổng 10 km, khoảng 15 phút."
@@ -336,7 +336,7 @@ export const CK_STOPS = [
    "name": "Trại cá Huy Thanh",
    "type": "sturgeon and salmon farm",
    "what": "The Huy Thanh cold-water sturgeon and salmon farm, with its own restaurant and guesthouse, right beside Highway QL32 halfway up Khau Phạ pass (Tà Chơ village).",
-   "why": "See the cold-water tanks fed by forest streams, then eat the fish on the spot. Khau Phạ is where salmon farming in this area began, back in 2007.",
+   "why": "A quiet sturgeon and salmon farm beside a stream halfway up the pass, with its own restaurant cooking the fish on site alongside ethnic dishes and Tú Lệ sticky rice.",
    "when": "All year; a natural lunch stop on the long climb to the pass.",
    "tip": "It is right on the highway, so pulling in is easy. Larger groups should phone ahead for a table."
   },
