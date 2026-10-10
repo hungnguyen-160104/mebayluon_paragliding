@@ -384,6 +384,9 @@ function inlineHtml(text: string): string {
 }
 
 function blocksToHtml(blocks: ContentBlock[]): string {
+  // coTha: đã có ảnh thả trôi (layout left/right) → heading sau đó clear để ảnh không tràn sang mục khác.
+  // Bài không có ảnh thả trôi thì HTML y hệt trước (không thêm style).
+  let coTha = false;
   return blocks
     .map((block) => {
       const data = block.data || {};
@@ -392,7 +395,7 @@ function blocksToHtml(blocks: ContentBlock[]): string {
         case "heading": {
           const level = data.level || 2;
           const tag = `h${Math.min(4, Math.max(1, Number(level)))}`;
-          return `<${tag}>${escapeHtml(data.text || "")}</${tag}>`;
+          return `<${tag}${coTha ? ' style="clear:both"' : ""}>${escapeHtml(data.text || "")}</${tag}>`;
         }
 
         case "paragraph": {
@@ -408,13 +411,21 @@ function blocksToHtml(blocks: ContentBlock[]): string {
           return `<p${styleAttr}>${inline}</p>`;
         }
 
-        case "image":
+        case "image": {
+          // Ảnh cạnh chữ (layout left/right): thả trôi 240 px; heading phía sau tự clear (xem coTha).
+          if (data.layout === "left" || data.layout === "right") {
+            coTha = true;
+            const le = data.layout === "left" ? "float:left;margin:0.25rem 1.5rem 1rem 0" : "float:right;margin:0.25rem 0 1rem 1.5rem";
+            const img = `<img src="${data.url || ""}" alt="${escapeHtml(data.alt || data.caption || "")}" width="240" height="180" loading="lazy" style="display:block;width:240px;height:180px;object-fit:cover;border-radius:8px" />`;
+            return `<figure style="${le};width:240px;max-width:100%">${data.link ? `<a href="${escapeHtml(data.link)}">${img}</a>` : img}${data.caption ? `<figcaption>${escapeHtml(data.caption)}</figcaption>` : ""}</figure>`;
+          }
           return `
             <figure>
               <img src="${data.url || ""}" alt="${escapeHtml(data.alt || data.caption || "")}" />
               ${data.caption ? `<figcaption>${escapeHtml(data.caption)}</figcaption>` : ""}
             </figure>
           `;
+        }
 
         case "quote":
           return `
@@ -1821,6 +1832,39 @@ export default function PostEditor({
                                   updateLangBlockField("en", block.id, "caption", e.target.value)
                                 }
                                 placeholder="English caption..."
+                              />
+                            </div>
+                          </div>
+
+                          {/* Ảnh cạnh chữ: nhỏ, nằm cùng hàng với các đoạn văn sau nó (dùng chung 2 ngôn ngữ). */}
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                              <label className={labelClass}>Bố cục</label>
+                              <select
+                                className={inputClass}
+                                value={block.data.layout || blockEn.data.layout || "full"}
+                                onChange={(e) =>
+                                  updateSharedEmbedAwareField(
+                                    block.id,
+                                    "layout",
+                                    e.target.value === "full" ? undefined : e.target.value
+                                  )
+                                }
+                              >
+                                <option value="full">Ảnh lớn giữa bài</option>
+                                <option value="left">Ảnh nhỏ bên trái chữ</option>
+                                <option value="right">Ảnh nhỏ bên phải chữ</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className={labelClass}>Link khi bấm ảnh (tuỳ chọn)</label>
+                              <input
+                                className={inputClass}
+                                value={sharedLink}
+                                onChange={(e) =>
+                                  updateSharedEmbedAwareField(block.id, "link", e.target.value || undefined)
+                                }
+                                placeholder="/blog/..."
                               />
                             </div>
                           </div>

@@ -324,7 +324,7 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
 
       if (level === 1) {
         return (
-          <h1 key={key} id={anchorId} className="scroll-mt-24 mt-10! md:mt-12! text-3xl font-bold leading-tight tracking-tight text-white md:text-4xl">
+          <h1 key={key} id={anchorId} className="scroll-mt-24 clear-both mt-10! md:mt-12! text-3xl font-bold leading-tight tracking-tight text-white md:text-4xl">
             {text}
           </h1>
         );
@@ -332,7 +332,7 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
 
       if (level === 2) {
         return (
-          <h2 key={key} id={anchorId} className="scroll-mt-24 mt-10! md:mt-12! text-2xl font-bold leading-tight tracking-tight text-white md:text-3xl">
+          <h2 key={key} id={anchorId} className="scroll-mt-24 clear-both mt-10! md:mt-12! text-2xl font-bold leading-tight tracking-tight text-white md:text-3xl">
             {text}
           </h2>
         );
@@ -340,14 +340,14 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
 
       if (level === 3) {
         return (
-          <h3 key={key} id={anchorId} className="scroll-mt-24 mt-7! text-xl font-semibold leading-snug text-white md:text-2xl">
+          <h3 key={key} id={anchorId} className="scroll-mt-24 clear-both mt-7! text-xl font-semibold leading-snug text-white md:text-2xl">
             {text}
           </h3>
         );
       }
 
       return (
-        <h4 key={key} id={anchorId} className="scroll-mt-24 mt-6! text-lg font-semibold leading-snug text-white/95 md:text-xl">
+        <h4 key={key} id={anchorId} className="scroll-mt-24 clear-both mt-6! text-lg font-semibold leading-snug text-white/95 md:text-xl">
           {text}
         </h4>
       );
@@ -364,6 +364,44 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
     }
 
     case "image":
+      /**
+       * ẢNH CẠNH CHỮ (chủ 10/10/2026: "ảnh và khổ text nằm cùng hàng"): layout "left"/"right" → ảnh nhỏ thả trôi
+       * bên cạnh các đoạn văn tiếp theo (máy tính), xếp trên chữ ở điện thoại. Có data.link thì bấm ảnh mở bài đó.
+       * Khung cố định 240×180 (điện thoại: rộng hết, cao 180) nên không xô bố cục; heading có clear-both để
+       * ảnh không tràn sang mục sau.
+       */
+      if (data.url && (data.layout === "left" || data.layout === "right")) {
+        const trai = data.layout === "left";
+        const anh = (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cloudinaryOptimize(data.url, 520)}
+            alt={data.alt || data.caption || fallbackAlt}
+            width={520}
+            height={390}
+            loading="lazy"
+            decoding="async"
+            className="m-0! block h-[180px] w-full rounded-lg object-cover"
+          />
+        );
+        return (
+          <figure
+            key={key}
+            className={`mb-4 w-full md:mb-3 md:mt-1.5! md:w-[240px] ${trai ? "md:float-left md:mr-6" : "md:float-right md:ml-6"}`}
+          >
+            {data.link ? (
+              <Link href={data.link} aria-label={data.alt || data.caption || fallbackAlt} className="block transition-opacity hover:opacity-90">
+                {anh}
+              </Link>
+            ) : (
+              anh
+            )}
+            {data.caption ? (
+              <figcaption className="mt-1.5 text-xs italic text-white/70">{data.caption}</figcaption>
+            ) : null}
+          </figure>
+        );
+      }
       return data.url ? (
         <figure key={key} className="space-y-3">
           {/* Bấm vào ảnh là phóng to (components/blog/PostGallery.tsx). */}
@@ -1328,7 +1366,7 @@ export default async function BlogPostPage({
                   prose-blockquote:border-sky-400 prose-blockquote:text-white/75"
               >
                 {canRenderBlocks ? (
-                  <div className="space-y-5">
+                  <div className="flow-root space-y-5">
                     {blocks.map((block, index) => renderContentBlock(block, index, title, { lang, slug: post.slug, ckArticles }))}
                   </div>
                 ) : content ? (

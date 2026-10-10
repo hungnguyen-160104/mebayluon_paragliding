@@ -66,6 +66,11 @@ export type ContentBlock = {
     embedType?: EmbedType;
     /** Khối embed "checkinMap": mã điểm mở sẵn (bỏ trống = toàn cảnh). */
     focus?: string;
+    /**
+     * Khối ảnh: "left"/"right" = ảnh nhỏ nằm cạnh các đoạn văn tiếp theo (điện thoại xếp trên chữ);
+     * bỏ trống/"full" = ảnh lớn giữa bài như cũ. Đi kèm data.link (bấm ảnh mở link).
+     */
+    layout?: "full" | "left" | "right";
     /** Block thư viện ảnh: danh sách ảnh + số cột hiển thị. */
     images?: { url: string; caption?: string }[];
     columns?: number;
