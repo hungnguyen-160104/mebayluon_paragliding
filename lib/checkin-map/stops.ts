@@ -436,7 +436,13 @@ export const CK_STOPS = [
    "when": "Any time of day; fill up and eat here before taking the side roads.",
    "tip": "Guesthouses and restaurants line both sides of the highway; La Pán Tẩn is a little over 5 km further on."
   },
-  "photo": null,
+  "photo": {
+   "src": "/checkin-map/anh/nga-ba-kim.webp",
+   "credit": {
+    "vi": "Ảnh: sưu tầm",
+    "en": "Photo: collected"
+   }
+  },
   "photoPending": null
  },
  {
