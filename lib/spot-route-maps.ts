@@ -34,6 +34,11 @@ export type SpotRouteMap = {
   height: number;
   /** Bài "đường đi" liên quan (link nội bộ, đi qua components/locale-link). */
   href: string;
+  /**
+   * Ảnh đã có thanh tiêu đề vẽ sẵn (mọi bản đồ 3D của mình) → tiêu đề chữ phía trên ảnh chỉ để trình đọc màn hình
+   * (sr-only), không lặp lại câu "Đường đến điểm bay …" ngay trên hình (chủ 10/10/2026).
+   */
+  imageHasTitle?: boolean;
   text: Record<RouteMapLang, { title: string; alt: string; caption: string; link: string }>;
 };
 
@@ -85,6 +90,7 @@ export const ROUTE_MAP_I18N: Record<
 /** Không trang nào đang dùng (chủ 10/10 bỏ khỏi /spots/khau-pha) — giữ lại để bật lại khi cần. */
 export const KHAU_PHA: SpotRouteMap = {
   id: "khau-pha",
+  imageHasTitle: true,
   src: `${CLD}/v1791454720/uploads/posts/ban-do-duong-den-khau-pha-en.jpg`,
   srcVi: `${CLD}/v1791454718/uploads/posts/ban-do-duong-den-khau-pha-vi.jpg`,
   width: 1600,
@@ -138,6 +144,7 @@ export const KHAU_PHA: SpotRouteMap = {
 
 export const HA_NOI_MU_CANG_CHAI: SpotRouteMap = {
   id: "ha-noi-mu-cang-chai",
+  imageHasTitle: true,
   src: `${CLD}/v1791454752/uploads/posts/ban-do-ha-noi-mu-cang-chai.jpg`,
   width: 1600,
   height: 2800,
@@ -190,6 +197,7 @@ export const HA_NOI_MU_CANG_CHAI: SpotRouteMap = {
 
 const DOI_BU: SpotRouteMap = {
   id: "doi-bu",
+  imageHasTitle: true,
   src: `${CLD}/v1791517611/uploads/posts/ban-do-duong-den-doi-bu.jpg`,
   width: 1600,
   height: 2565,
@@ -242,6 +250,7 @@ const DOI_BU: SpotRouteMap = {
 
 const VIEN_NAM: SpotRouteMap = {
   id: "vien-nam",
+  imageHasTitle: true,
   src: `${CLD}/v1791517604/uploads/posts/ban-do-duong-den-vien-nam.jpg`,
   width: 1600,
   height: 2780,
@@ -294,6 +303,7 @@ const VIEN_NAM: SpotRouteMap = {
 
 const SA_PA: SpotRouteMap = {
   id: "sa-pa",
+  imageHasTitle: true,
   src: `${CLD}/v1791517617/uploads/posts/ban-do-duong-den-sa-pa.jpg`,
   width: 1600,
   height: 1921,
@@ -350,6 +360,7 @@ const SA_PA: SpotRouteMap = {
  */
 const CLUBHOUSE: SpotRouteMap = {
   id: "clubhouse",
+  imageHasTitle: true,
   src: `${CLD}/v1791606080/uploads/posts/duong-vao-mebayluon-clubhouse.jpg`,
   width: 1600,
   height: 1666,
@@ -406,6 +417,7 @@ const CLUBHOUSE: SpotRouteMap = {
  */
 const QUAN_BA: SpotRouteMap = {
   id: "quan-ba",
+  imageHasTitle: true,
   src: `${CLD}/v1791606082/uploads/posts/ban-do-duong-den-quan-ba.jpg`,
   width: 1600,
   height: 1776,

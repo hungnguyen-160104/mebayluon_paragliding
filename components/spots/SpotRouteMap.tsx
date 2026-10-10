@@ -78,7 +78,8 @@ export default function SpotRouteMap({
                 id={`route-map-${map.id}`}
                 className="mx-auto flex w-full max-w-lg flex-col"
               >
-                <h3 className="mb-3 font-serif text-lg font-bold text-white sm:text-xl">
+                {/* Ảnh đã có thanh tiêu đề vẽ sẵn → tiêu đề chữ chỉ cho trình đọc màn hình, không lặp trên hình. */}
+                <h3 className={map.imageHasTitle ? "sr-only" : "mb-3 font-serif text-lg font-bold text-white sm:text-xl"}>
                   {T.title}
                 </h3>
 
