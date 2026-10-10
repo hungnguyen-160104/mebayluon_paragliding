@@ -213,7 +213,8 @@ export function mountCheckinMap(root: ShadowRoot, D: any, opts: CkMapOpts): () =
   }
   function pad() { const r = el.getBoundingClientRect(); return innerWidth < 760 ? { top: 40, bottom: Math.round(r.height * 0.42), left: 20, right: 20 } : { top: 60, bottom: Math.round(r.height * 0.12), left: 30, right: Math.min(360, Math.round(r.width * 0.45)) }; }
   function fly(id, done) {
-    const f = ST.features.find((x) => x.properties.id === id), c = CAM[id]; if (!map || !f || !c) return;
+    // điểm mới chưa có góc nhìn tính sẵn (cam.json): dùng góc mặc định nhìn theo hướng toàn cảnh
+    const f = ST.features.find((x) => x.properties.id === id), c = CAM[id] || { zoom: 15, pitch: 58, bearing: -40 }; if (!map || !f) return;
     const sel = ["==", ["get", "id"], id];
     map.setPaintProperty("stop-dot", "circle-radius", RAD(id));
     map.setPaintProperty("stop-dot", "circle-stroke-color", ["case", sel, "#f2963e", PAPER]);
@@ -231,7 +232,7 @@ export function mountCheckinMap(root: ShadowRoot, D: any, opts: CkMapOpts): () =
     for (const ly of ["plaque", "plaque-pin", "stop-dot", "stop-num", "icons", "gliders", "flight"]) if (map.getLayer(ly)) map.setLayoutProperty(ly, "visibility", v(!out));
     for (const ly of ["clu", "clu-lb", "clu-dot", "clu-name"]) map.setLayoutProperty(ly, "visibility", v(out));
   }
-  const ok3d = (id) => ready && !failed && !!CAM[id];
+  const ok3d = (id) => ready && !failed && !!CARDS[id] && ST.features.some((x) => x.properties.id === id);
   function selLabel(id) { const k = id || "-"; map.setFilter("plaque", ["all", ["has", "id"], ["!=", ["get", "id"], k]]); map.setFilter("plaque-sel", ["==", ["get", "id"], k]); }
   const open3d = (id, done) => { selLabel(id); fly(id, done); };
   function close3d() {

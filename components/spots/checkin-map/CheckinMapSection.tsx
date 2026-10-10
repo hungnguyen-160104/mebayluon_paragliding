@@ -15,16 +15,19 @@ import { SPOT_SECTION_HEADING } from "@/components/spots/section-heading";
 import CheckinMap3D from "./CheckinMap3D";
 import { CK_HUB_PATH, ckUi } from "@/lib/checkin-map/embed";
 
+/** Số điểm lấy từ dữ liệu — thêm điểm (vd. điểm thứ 19) thì chữ tự đổi. */
+const N = CK_STOPS.length;
+
 const UI = {
   vi: {
     heading: "Bản đồ check-in Tú Lệ – Khau Phạ – Mù Cang Chải",
-    lead: "18 điểm dừng dọc quốc lộ 32, gần 50 km từ thung lũng Tú Lệ qua đèo Khau Phạ tới thị trấn Mù Cang Chải. Chạm một điểm để bay tới gần; kéo, xoay, thu phóng tuỳ ý.",
-    alt: "Bản đồ 3D đường đến điểm bay Khau Phạ và 18 điểm check-in từ Tú Lệ tới Mù Cang Chải",
+    lead: `${N} điểm dừng dọc quốc lộ 32, gần 50 km từ thung lũng Tú Lệ qua đèo Khau Phạ tới thị trấn Mù Cang Chải. Chạm một điểm để bay tới gần; kéo, xoay, thu phóng tuỳ ý.`,
+    alt: `Bản đồ 3D đường đến điểm bay Khau Phạ và ${N} điểm check-in từ Tú Lệ tới Mù Cang Chải`,
     legend: ["Quốc lộ 32", "đường nhánh", "đường bay dù lượn"],
     attrib: "Dữ liệu bản đồ",
     elev: "Độ cao: AWS Terrain Tiles",
     photos: "Ảnh: ghi nguồn dưới từng ảnh.",
-    listHeading: "18 điểm trên bản đồ",
+    listHeading: `${N} điểm trên bản đồ`,
     ele: "độ cao",
     fromTuLe: "từ chợ Tú Lệ",
     fromClub: "từ Clubhouse",
@@ -40,13 +43,13 @@ const UI = {
   },
   en: {
     heading: "Check-in map: Tú Lệ – Khau Phạ – Mù Cang Chải",
-    lead: "18 stops along Highway QL32, about 50 km from the Tú Lệ valley over Khau Phạ pass to Mù Cang Chải town. Tap a stop to fly in; drag, rotate and zoom freely.",
+    lead: `${N} stops along Highway QL32, about 50 km from the Tú Lệ valley over Khau Phạ pass to Mù Cang Chải town. Tap a stop to fly in; drag, rotate and zoom freely.`,
     alt: "3D map of the road to the Khau Phạ paragliding site and 18 check-in stops from Tú Lệ to Mù Cang Chải",
     legend: ["Highway QL32", "side road", "paragliding flight line"],
     attrib: "Map data",
     elev: "Elevation: AWS Terrain Tiles",
     photos: "Photos: credited under each photo.",
-    listHeading: "18 stops on the map",
+    listHeading: `${N} stops on the map`,
     ele: "elevation",
     fromTuLe: "from Tú Lệ market",
     fromClub: "from the Clubhouse",
