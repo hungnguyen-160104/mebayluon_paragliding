@@ -44,7 +44,7 @@ const DU_LICH = [
   "di-chuyen-den-tram-tau",
   "duong-ha-noi-di-mu-cang-chai-qua-ic14",
   "xe-di-mu-cang-chai",
-  "cam-nang-du-lich-mu-cang-chai-lao-cai",
+  "ban-do-du-lich-tu-le-khau-pha-mu-cang-chai",
   "combo-du-luon-homestay-mu-cang-chai",
   "mua-lua-xanh-mu-cang-chai",
   "bay-du-luon-mua-nuoc-do-mu-cang-chai",

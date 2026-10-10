@@ -77,6 +77,10 @@ export const LEGACY_SLUG_REDIRECTS: Record<string, string> = {
   /* Gộp bài Tú Lệ 10-10-2026 (chủ: "viết chung 1 bài"): bài suối khoáng gộp vào bài Le Champ,
    * bài cũ gỡ đăng (giữ trong DB, sao lưu ~/backups/gop-bai/). */
   "suoi-khoang-nong-tu-le": "le-champ-tu-le-resort-suoi-khoang-nong",
+
+  /* Gộp cẩm nang Mù Cang Chải cũ 10-10-2026: ảnh, thông tin chuyển sang bài trụ bản đồ check-in và các bài nhánh;
+   * bài cũ gỡ đăng (giữ trong DB, sao lưu ~/backups/gop-bai/). */
+  "cam-nang-du-lich-mu-cang-chai-lao-cai": "ban-do-du-lich-tu-le-khau-pha-mu-cang-chai",
 };
 
 /**

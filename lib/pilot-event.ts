@@ -464,8 +464,8 @@ export const GUIDE_LINKS = [
     icon: "🪂",
   },
   {
-    href: "/blog/cam-nang-du-lich-mu-cang-chai-lao-cai",
-    title: "Cẩm nang du lịch Mù Cang Chải",
+    href: "/blog/ban-do-du-lich-tu-le-khau-pha-mu-cang-chai",
+    title: "Bản đồ du lịch Tú Lệ – Khau Phạ – Mù Cang Chải",
     desc: "Cho người nhà đi cùng: ăn gì, chơi đâu",
     icon: "🗺️",
   },
