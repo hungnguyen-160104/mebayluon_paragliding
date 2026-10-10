@@ -13,6 +13,7 @@ import Link from "@/components/locale-link";
 import { CK_STOPS, ckArticleHref, ckTextLang, type CkStopId } from "@/lib/checkin-map";
 import { SPOT_SECTION_HEADING } from "@/components/spots/section-heading";
 import CheckinMap3D from "./CheckinMap3D";
+import { CK_HUB_PATH, ckUi } from "@/lib/checkin-map/embed";
 
 const UI = {
   vi: {
@@ -69,10 +70,13 @@ function fmt(v: number, lang: "vi" | "en") {
 export default function CheckinMapSection({
   lang,
   articles,
+  hubPublished = false,
 }: {
   lang: string;
   /** Mã điểm → slug bài ĐÃ ĐĂNG. */
   articles?: Partial<Record<CkStopId, string>>;
+  /** Bài trụ đã đăng → hiện link sang bài dưới bản đồ. */
+  hubPublished?: boolean;
 }) {
   const L = ckTextLang(lang);
   const t = UI[L];
@@ -85,7 +89,7 @@ export default function CheckinMapSection({
         <p className="mx-auto mt-2 max-w-3xl text-center text-sm text-slate-200">{t.lead}</p>
 
         <div className="mt-6">
-          <CheckinMap3D lang={L} articles={links} alt={t.alt} />
+          <CheckinMap3D lang={L} pageLang={lang} articles={links} alt={ckUi(lang).alt} withDetails />
         </div>
 
         <p className="mt-3 text-center text-[13px] leading-relaxed text-slate-200">
@@ -97,6 +101,17 @@ export default function CheckinMapSection({
         <p className="mt-1 text-center text-[11.5px] leading-relaxed text-slate-300/90">
           {t.attrib}: © OpenStreetMap contributors · OpenFreeMap · {t.elev} · {t.photos}
         </p>
+
+        {hubPublished && (
+          <p className="mt-4 text-center">
+            <Link
+              href={CK_HUB_PATH}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200"
+            >
+              {ckUi(lang).hubLink} →
+            </Link>
+          </p>
+        )}
 
         <h3 className="mt-8 font-serif text-lg font-bold text-white sm:text-xl">{t.listHeading}</h3>
         <ol className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">

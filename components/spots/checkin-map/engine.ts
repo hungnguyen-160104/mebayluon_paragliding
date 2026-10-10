@@ -16,8 +16,12 @@
 export type CkMapOpts = {
   /** Link bài viết đã đăng, đã gắn tiền tố ngôn ngữ: mã điểm → href. */
   links: Record<string, string>;
-  /** Bấm "Chi tiết ↓" trên thẻ: cuộn tới mục của điểm trong danh sách dưới bản đồ. */
-  onDetails: (id: string) => void;
+  /** Bấm "Chi tiết ↓" trên thẻ: cuộn tới mục của điểm trong danh sách dưới bản đồ. Không có → ẩn nút. */
+  onDetails?: (id: string) => void;
+  /** Mở sẵn ở một điểm (khối bản đồ trong bài viết của điểm đó): bản đồ hiện ra đã ở điểm, kèm thẻ. */
+  focus?: string;
+  /** Chữ giao diện theo ngôn ngữ trang (lib/checkin-map/embed.ts CK_UI) — đè lên chữ trong tệp dữ liệu. */
+  ui?: Record<string, string>;
   /** Bấm link bài viết (điều hướng phía client). */
   onNavigate: (href: string) => void;
 };
@@ -25,7 +29,7 @@ export type CkMapOpts = {
 const V = "6.13.0", CDN = `https://cdn.jsdelivr.net/npm/maplibre-gl@${V}/dist/`;
 
 export function mountCheckinMap(root: ShadowRoot, D: any, opts: CkMapOpts): () => void {
-  const T = D.T, CARDS = D.cards, POS = D.pos, LBL = D.lbl, NEN = D.nen;
+  const T = { ...D.T, ...(opts.ui || {}) }, CARDS = D.cards, POS = D.pos, LBL = D.lbl, NEN = D.nen;
   const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let dead = false, vis = true, cur = null, hiAsked = false;
   const cleanups = [];
@@ -42,7 +46,7 @@ export function mountCheckinMap(root: ShadowRoot, D: any, opts: CkMapOpts): () =
   <div id="ov"><svg id="ovs"></svg></div>
   <div class="sm3" id="sm3"><div class="m" id="sm3m"></div></div>
   <button id="home3" type="button">${esc(T.home)}</button>
-  <div class="card" id="card" role="dialog" aria-live="polite"><button class="x" type="button" aria-label="${esc(T.close)}">×</button><img alt="" decoding="async"><span class="cr"></span><div class="b"><small></small><strong></strong><p></p><div class="acts"><a class="go" hidden>${esc(T.read)}</a><button class="det" type="button">${esc(T.details)}</button></div></div></div>
+  <div class="card" id="card" role="dialog" aria-live="polite"><button class="x" type="button" aria-label="${esc(T.close)}">×</button><img alt="" decoding="async"><span class="cr"></span><div class="b"><small></small><strong></strong><p></p><div class="acts"><a class="go" hidden>${esc(T.read)}</a>${opts.onDetails ? `<button class="det" type="button">${esc(T.details)}</button>` : ""}</div></div></div>
   <div id="hint">${esc(T.hint)}</div>
 </div>`;
   const $ = (s) => root.querySelector(s);
@@ -127,10 +131,11 @@ export function mountCheckinMap(root: ShadowRoot, D: any, opts: CkMapOpts): () =
   }
   const showCard = (id) => { if (cur !== id) return; fillCard(id); card.classList.add("on"); };
   on(go, "click", (e) => { const h = go.getAttribute("href"); if (h && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) { e.preventDefault(); opts.onNavigate(h); } });
-  on(card.querySelector("button.det"), "click", () => cur && opts.onDetails(cur));
+  const det = card.querySelector("button.det");
+  if (det) on(det, "click", () => cur && opts.onDetails && opts.onDetails(cur));
   function tap(id) {
     if (!CARDS[id] || cur === id) return;
-    if (!POS[id] && !ok3d(id)) { closeZoom(); opts.onDetails(id); return; }       // ngoài khung sơ đồ tĩnh (Lùng Cúng) khi không có 3D
+    if (!POS[id] && !ok3d(id)) { closeZoom(); if (opts.onDetails) opts.onDetails(id); return; }       // ngoài khung sơ đồ tĩnh (Lùng Cúng) khi không có 3D
     cur = id; card.classList.remove("on");
     if (ok3d(id)) { $("#home3").style.display = "block"; open3d(id, () => showCard(id)); return; }   // MỘT chuyển cảnh: bay 3D
     // dự phòng: phóng tĩnh
@@ -158,7 +163,7 @@ export function mountCheckinMap(root: ShadowRoot, D: any, opts: CkMapOpts): () =
   const NM = ["coalesce", ["get", "name:vi"], ["get", "name"], ""];
   const DUP = ["!", ["any", ...["le champ", "garrya", "mebayluon", "khau phạ", "khau pha", "mâm xôi", "móng ngựa", "kim nọi", "lũng cúng", "púng luông", "huy thanh", "dù lượn", "aragl", "tú lệ", "mù cang chải", "lìm thái", "lìm mông"].map((t) => ["in", t, ["downcase", NM]])]];
   const RAD = (id) => { const sel = ["==", ["get", "id"], id || "-"]; return ["interpolate", ["linear"], ["zoom"], 10, ["case", sel, 9, 6], 13, ["case", sel, 12, 8.5], 16, ["case", sel, 13, 10]]; };
-  let map = null, auto = false, failed = false, ready = false, OVCAM = null, OUT = false, glRaf = 0;
+  let map = null, auto = false, failed = false, ready = false, OVCAM = null, OUT = false, glRaf = 0, instantNext = false;
   function style() {
     const w = (a, b) => ["interpolate", ["exponential", 1.6], ["zoom"], 12, a, 17, b];
     const lc = { "line-cap": "round", "line-join": "round" };
@@ -215,7 +220,8 @@ export function mountCheckinMap(root: ShadowRoot, D: any, opts: CkMapOpts): () =
     map.setPaintProperty("stop-dot", "circle-stroke-width", ["case", sel, 4, 2.5]);
     map.setFilter("route", ["==", ["get", "id"], id]);
     auto = true; map.once("moveend", () => { auto = false; lod(); if (done) done(); });
-    map.flyTo({ center: f.geometry.coordinates, zoom: c.zoom, pitch: c.pitch, bearing: c.bearing, padding: pad(), duration: RM ? 0 : 2600, curve: 1.3, essential: true });
+    const instant = RM || instantNext; instantNext = false;
+    map.flyTo({ center: f.geometry.coordinates, zoom: c.zoom, pitch: c.pitch, bearing: c.bearing, padding: pad(), duration: instant ? 0 : 2600, curve: 1.3, essential: true });
   }
   const img = (src, w, h) => new Promise((ok, no) => { const i = w ? new Image(w, h) : new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
   const svgUri = (s) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
@@ -313,10 +319,22 @@ export function mountCheckinMap(root: ShadowRoot, D: any, opts: CkMapOpts): () =
         map.addLayer({ id: "plaque-sel", type: "symbol", source: "lb", filter: ["==", ["get", "id"], "-"], layout: { ...VA, "icon-image": ["match", ["get", "kind"], "fly", "p-fly", "land", "p-land", "p-on"], "text-allow-overlap": true, "icon-allow-overlap": true }, paint: { "text-color": TCOL } });
         map.on("click", (e) => { const f = map.queryRenderedFeatures(e.point, { layers: ["plaque-sel", "plaque", "stop-dot", "clu-dot", "clu-name"].filter((l) => map.getLayer(l)) }).find((x) => x.properties.id); if (f) tap(f.properties.id); });   // một lần bấm = một lệnh
         for (const ly of ["plaque", "plaque-sel", "stop-dot"]) { map.on("mouseenter", ly, () => { map.getCanvas().style.cursor = "pointer"; }); map.on("mouseleave", ly, () => { map.getCanvas().style.cursor = ""; }); }
-        const goLive = () => { if (ready || dead) return; ready = true; el.classList.add("on"); stage.classList.add("live"); };
-        map.once("idle", goLive); setTimeout(goLive, 5000);        // ô bản đồ toàn cảnh đã tải xong → mờ chéo MỘT lần
+        let shown = false;
+        const reveal = () => { if (shown || dead) return; shown = true; el.classList.add("on"); stage.classList.add("live"); };
+        const goLive = () => {
+          if (ready || dead) return; ready = true;
+          const f = opts.focus && CARDS[opts.focus] ? opts.focus : null;
+          if (!f) { reveal(); return; }
+          // mở sẵn ở điểm: nhảy thẳng (không bay) rồi mới hiện bản đồ khi ô ở đó đã tải — không thấy toàn cảnh chớp qua
+          instantNext = true; tap(f);
+          map.once("idle", reveal); setTimeout(reveal, 4000);
+        };
+        map.once("idle", goLive); setTimeout(goLive, 5000);        // ô bản đồ đã tải xong → mờ chéo MỘT lần
       });
-    } catch (err) { console.warn("[check-in 3D] không dựng được — giữ sơ đồ tĩnh", err); failed = true; }
+    } catch (err) {
+      console.warn("[check-in 3D] không dựng được — giữ sơ đồ tĩnh", err); failed = true;
+      if (opts.focus && CARDS[opts.focus] && !dead) tap(opts.focus);      // dự phòng: phóng tĩnh tới điểm
+    }
   }
   let startGliders = () => {};
   boot();

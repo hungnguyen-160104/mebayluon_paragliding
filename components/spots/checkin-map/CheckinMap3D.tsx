@@ -11,6 +11,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ganTienTo, useUrlLocale } from "@/components/locale-link";
+import { ckUi } from "@/lib/checkin-map/embed";
 
 /** Cỡ khung = cỡ #stage trong engine.css — giữ chỗ đúng bằng bản đồ để trang không xô. */
 const STAGE_STYLE: React.CSSProperties = {
@@ -21,13 +22,26 @@ const STAGE_STYLE: React.CSSProperties = {
 
 export default function CheckinMap3D({
   lang,
+  pageLang,
   articles,
   alt,
+  focus,
+  withDetails = false,
+  currentSlug,
 }: {
+  /** Ngôn ngữ dữ liệu thẻ điểm: vi, hoặc en cho mọi ngôn ngữ khác. */
   lang: "vi" | "en";
+  /** Ngôn ngữ trang (6 ngôn ngữ) — chữ giao diện của bản đồ (CK_UI). */
+  pageLang?: string;
   /** Mã điểm → slug bài ĐÃ ĐĂNG (máy chủ kiểm DB). */
   articles: Partial<Record<string, string>>;
   alt: string;
+  /** Mở sẵn ở điểm này (khối bản đồ trong bài viết của điểm). */
+  focus?: string;
+  /** Có danh sách điểm (#ck-stop-<mã>) dưới bản đồ → hiện nút "Chi tiết ↓" (trang /spots/khau-pha). */
+  withDetails?: boolean;
+  /** Bài đang đọc: bỏ link "Đọc bài" trỏ về chính nó. */
+  currentSlug?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -41,8 +55,9 @@ export default function CheckinMap3D({
     let cancelled = false;
     const links: Record<string, string> = {};
     for (const [id, slug] of Object.entries(JSON.parse(articlesKey) as Record<string, string>)) {
-      links[id] = ganTienTo(`/blog/${slug}`, urlLocale);
+      if (slug !== currentSlug) links[id] = ganTienTo(`/blog/${slug}`, urlLocale);
     }
+    const ui = ckUi(pageLang ?? lang);
 
     const start = async () => {
       const [{ mountCheckinMap }, data] = await Promise.all([
@@ -56,13 +71,17 @@ export default function CheckinMap3D({
       const root = el.shadowRoot ?? el.attachShadow({ mode: "open" });
       destroy = mountCheckinMap(root, data, {
         links,
+        focus,
+        ui: { alt, home: ui.home, hint: ui.hint, close: ui.close, read: ui.read, details: ui.details, stops: ui.stops, dem: ui.dem },
         onNavigate: (href) => router.push(href),
-        onDetails: (id) => {
-          const item = document.getElementById(`ck-stop-${id}`);
-          if (!item) return;
-          if (item instanceof HTMLDetailsElement) item.open = true;
-          item.scrollIntoView({ behavior: "smooth", block: "start" });
-        },
+        onDetails: withDetails
+          ? (id) => {
+              const item = document.getElementById(`ck-stop-${id}`);
+              if (!item) return;
+              if (item instanceof HTMLDetailsElement) item.open = true;
+              item.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          : undefined,
       });
     };
 
@@ -94,7 +113,7 @@ export default function CheckinMap3D({
       document.removeEventListener("click", onListClick);
       destroy?.();
     };
-  }, [lang, articlesKey, urlLocale, router]);
+  }, [lang, pageLang, articlesKey, urlLocale, router, focus, withDetails, currentSlug, alt]);
 
   return (
     <div ref={host} className="overflow-hidden rounded-xl" style={STAGE_STYLE}>

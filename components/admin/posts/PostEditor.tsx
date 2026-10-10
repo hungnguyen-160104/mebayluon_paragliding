@@ -38,6 +38,7 @@ import type {
   StoreCategory,
   BlogCategoryKey,
 } from "@/types/frontend/post";
+import { CK_EMBED_TYPE, checkinMapFallbackHtml, isCheckinMapUrl } from "@/lib/checkin-map/embed";
 
 type EditorForm = {
   title: string;
@@ -146,6 +147,7 @@ function stripHtml(html: string) {
 function detectEmbedType(url: string): EmbedType {
   const value = String(url || "").trim();
   if (!value) return "unknown";
+  if (isCheckinMapUrl(value)) return CK_EMBED_TYPE;
 
   try {
     const parsed = new URL(value);
@@ -511,6 +513,11 @@ function blocksToHtml(blocks: ContentBlock[]): string {
                   data.caption || "Mở Google Maps"
                 )}</a></p>`
               : "";
+          }
+
+          // Bản đồ check-in 3D: HTML chỉ là ảnh sơ đồ + link bài trụ (trang bài viết vẽ bản đồ thật từ khối).
+          if (embedType === CK_EMBED_TYPE) {
+            return checkinMapFallbackHtml(data);
           }
 
           return rawUrl
@@ -1837,6 +1844,12 @@ export default function PostEditor({
                                   ? "YouTube"
                                   : sharedEmbedType === "googleMaps"
                                   ? "Google Maps"
+                                  : sharedEmbedType === CK_EMBED_TYPE
+                                  ? `Bản đồ check-in 3D Tú Lệ – Mù Cang Chải${
+                                      block.data.focus || blockEn.data.focus
+                                        ? ` · mở sẵn ở điểm "${block.data.focus || blockEn.data.focus}"`
+                                        : " · toàn cảnh"
+                                    } (giữ nguyên link để không mất bản đồ)`
                                   : "Chưa nhận diện"}
                               </span>
                             </p>

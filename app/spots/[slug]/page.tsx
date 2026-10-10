@@ -33,7 +33,7 @@ import { ArrowRight, BookOpen, Star } from "lucide-react";
 import { SPOT_SECTION_HEADING } from "@/components/spots/section-heading";
 import { CHECKIN_MAP_SPOT_SLUG } from "@/lib/checkin-map";
 import CheckinMapSection from "@/components/spots/checkin-map/CheckinMapSection";
-import { getPublishedCheckinArticles } from "@/lib/checkin-map-published";
+import { getCheckinLinks } from "@/lib/checkin-map-published";
 
 /* ========= Types ========= */
 type SpotPackage = {
@@ -664,9 +664,9 @@ export default async function SpotDetailPage({
   // Không có bài / DB lỗi thì rơi về danh sách tĩnh SPOT_ARTICLES như trước.
   // Bản đồ check-in 3D (chỉ trang Khau Phạ, chủ duyệt bản 11 ngày 10/10/2026): thẻ điểm và danh
   // sách chỉ link tới bài ĐÃ ĐĂNG — một truy vấn nhẹ theo chỉ mục slug, chạy song song với mục bài viết.
-  const [hub, checkinArticles] = await Promise.all([
+  const [hub, checkinLinks] = await Promise.all([
     getSpotHub(canonicalSpotSlug(slug), spotLocale),
-    canonicalSpotSlug(slug) === CHECKIN_MAP_SPOT_SLUG ? getPublishedCheckinArticles() : Promise.resolve(undefined),
+    canonicalSpotSlug(slug) === CHECKIN_MAP_SPOT_SLUG ? getCheckinLinks() : Promise.resolve(undefined),
   ]);
   const groupLabels = SPOT_HUB_GROUP_LABELS[spotLocale] ?? SPOT_HUB_GROUP_LABELS.vi;
   const moreLabel = SPOT_HUB_MORE_LABEL[spotLocale] ?? SPOT_HUB_MORE_LABEL.vi;
@@ -902,7 +902,9 @@ export default async function SpotDetailPage({
         spotSlug={canonicalSpotSlug(slug)}
         articlesSlot={articlesSection}
         checkinSlot={
-          checkinArticles !== undefined ? <CheckinMapSection lang={spotLocale} articles={checkinArticles} /> : undefined
+          checkinLinks !== undefined ? (
+            <CheckinMapSection lang={spotLocale} articles={checkinLinks.stops} hubPublished={checkinLinks.hub} />
+          ) : undefined
         }
       />
 

@@ -19,23 +19,32 @@ import { cache } from "react";
 import { connectDB } from "@/lib/mongodb";
 import { Post as PostModel } from "@/models/Post.model";
 import { CK_ARTICLES, CK_ARTICLES_FALLBACK, type CkStopId } from "@/lib/checkin-map";
+import { CK_HUB_SLUG } from "@/lib/checkin-map/embed";
 
-export const getPublishedCheckinArticles = cache(async function getPublishedCheckinArticles(): Promise<
-  Partial<Record<CkStopId, string>>
-> {
+/** Một truy vấn theo chỉ mục slug cho 18 bài điểm + bài trụ; cache() gộp các lời gọi trong cùng một request. */
+export const getCheckinLinks = cache(async function getCheckinLinks(): Promise<{
+  stops: Partial<Record<CkStopId, string>>;
+  /** Bài trụ "Bản đồ du lịch … 18 điểm check-in" đã đăng. */
+  hub: boolean;
+}> {
   try {
     await connectDB();
-    const rows = await PostModel.find({ slug: { $in: Object.values(CK_ARTICLES) }, isPublished: true })
+    const rows = await PostModel.find({ slug: { $in: [...Object.values(CK_ARTICLES), CK_HUB_SLUG] }, isPublished: true })
       .select({ slug: 1, _id: 0 })
       .lean();
     const daDang = new Set(rows.map((r) => String((r as { slug?: unknown }).slug)));
-    const out: Partial<Record<CkStopId, string>> = {};
+    const stops: Partial<Record<CkStopId, string>> = {};
     for (const [id, slug] of Object.entries(CK_ARTICLES) as [CkStopId, string][]) {
-      if (daDang.has(slug)) out[id] = slug;
+      if (daDang.has(slug)) stops[id] = slug;
     }
-    return out;
+    return { stops, hub: daDang.has(CK_HUB_SLUG) };
   } catch (error) {
-    console.error("Error in getPublishedCheckinArticles:", error);
-    return CK_ARTICLES_FALLBACK;
+    console.error("Error in getCheckinLinks:", error);
+    return { stops: CK_ARTICLES_FALLBACK, hub: false };
   }
 });
+
+/** Mã điểm → slug bài ĐÃ ĐĂNG. */
+export async function getPublishedCheckinArticles(): Promise<Partial<Record<CkStopId, string>>> {
+  return (await getCheckinLinks()).stops;
+}

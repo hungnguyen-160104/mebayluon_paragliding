@@ -1,4 +1,7 @@
 import { HaGiangLoopMap } from "@/components/spots/HaGiangLoopMap";
+import CheckinMap3D from "@/components/spots/checkin-map/CheckinMap3D";
+import { CK_EMBED_TYPE, ckUi, isCheckinMapUrl } from "@/lib/checkin-map/embed";
+import { getPublishedCheckinArticles } from "@/lib/checkin-map-published";
 import { HA_GIANG_SITE_URL } from "@/lib/ha-giang-site";
 import { chonKhoi, chonNoiDung, chonTieuDe, chonTomTat } from "@/lib/post-translation";
 import { PageBackground } from "@/components/page-background";
@@ -58,6 +61,7 @@ function isPreviewRequested(searchParams?: SearchParams) {
 function detectEmbedType(url: string): EmbedType {
   const value = String(url || "").trim();
   if (!value) return "unknown";
+  if (isCheckinMapUrl(value)) return CK_EMBED_TYPE;
 
   try {
     const parsed = new URL(value);
@@ -304,7 +308,10 @@ function fillMissingImgAlt(html: string, fallback: string): string {
   });
 }
 
-function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = "") {
+/** Dữ liệu dùng chung khi vẽ khối (khối bản đồ check-in cần ngôn ngữ trang + link bài đã đăng). */
+type BlockCtx = { lang: string; slug: string; ckArticles?: Record<string, string> };
+
+function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = "", ctx?: BlockCtx) {
   const key = block.id || `block-${index}`;
   const data = block.data || {};
 
@@ -577,6 +584,28 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
             {data.caption ? (
               <figcaption className="text-sm text-white/70">{data.caption}</figcaption>
             ) : null}
+          </figure>
+        );
+      }
+
+      if (embedType === CK_EMBED_TYPE) {
+        // Bản đồ check-in 3D (lib/checkin-map/embed.ts): sơ đồ tĩnh trước, khung 3D tải lười khi tới gần.
+        const pageLang = ctx?.lang ?? "vi";
+        const ui = ckUi(pageLang);
+        return (
+          <figure key={key} className="not-prose space-y-2">
+            <CheckinMap3D
+              lang={pageLang === "vi" ? "vi" : "en"}
+              pageLang={pageLang}
+              articles={ctx?.ckArticles ?? {}}
+              alt={ui.alt}
+              focus={typeof data.focus === "string" && data.focus ? data.focus : undefined}
+              currentSlug={ctx?.slug}
+            />
+            <figcaption className="text-sm text-white/75">
+              {data.caption || ui.caption}{" "}
+              <span className="text-xs text-white/55">{ui.attrib}</span>
+            </figcaption>
           </figure>
         );
       }
@@ -1011,6 +1040,9 @@ export default async function BlogPostPage({
     ? (JSON.parse(rewriteProductLinks(JSON.stringify(rawBlocks), productPaths)) as ContentBlock[])
     : rawBlocks;
   const canRenderBlocks = blocks.length > 0 && hasVisibleBlockData(blocks);
+  /** Bài có khối bản đồ check-in: hỏi DB một lần xem bài điểm nào đã đăng (link "Đọc bài" trên thẻ điểm). */
+  const hasCheckinMap = canRenderBlocks && blocks.some((b) => b.type === "embed" && (b.data?.embedType === CK_EMBED_TYPE || isCheckinMapUrl(String(b.data?.url || ""))));
+  const ckArticles = hasCheckinMap ? ((await getPublishedCheckinArticles()) as Record<string, string>) : undefined;
   const cover = post.coverImage || post.thumbnail || "/images/mebayluon.jpg";
   /** Ảnh bìa hiển thị: bản Cloudinary đã nén/đổi định dạng (URL gốc giữ cho JSON-LD). */
   const coverDisplay = cloudinaryOptimize(cover);
@@ -1218,7 +1250,7 @@ export default async function BlogPostPage({
               >
                 {canRenderBlocks ? (
                   <div className="space-y-5">
-                    {blocks.map((block, index) => renderContentBlock(block, index, title))}
+                    {blocks.map((block, index) => renderContentBlock(block, index, title, { lang, slug: post.slug, ckArticles }))}
                   </div>
                 ) : content ? (
                   hasHtmlTag(content) ? (

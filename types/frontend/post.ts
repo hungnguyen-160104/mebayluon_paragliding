@@ -27,7 +27,11 @@ export type SupportedLocale = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
  * HaGiangLoopMap) — 9 điểm dừng là backlink sang web đó. Khối embed để `url`
  * trỏ về HA_GIANG_SITE_URL, `caption` là dòng chữ dưới bản đồ.
  */
-export type EmbedType = "youtube" | "googleMaps" | "haGiangLoop" | "unknown";
+/**
+ * "checkinMap": bản đồ check-in 3D Tú Lệ – Khau Phạ – Mù Cang Chải (components/spots/checkin-map) —
+ * `focus` = mã điểm mở sẵn, `url` = bài trụ (cho bản HTML dự phòng). Đặc tả: lib/checkin-map/embed.ts.
+ */
+export type EmbedType = "youtube" | "googleMaps" | "haGiangLoop" | "checkinMap" | "unknown";
 
 export type ContentBlockType =
   | "heading"
@@ -60,6 +64,8 @@ export type ContentBlock = {
     items?: string[];
     link?: string;
     embedType?: EmbedType;
+    /** Khối embed "checkinMap": mã điểm mở sẵn (bỏ trống = toàn cảnh). */
+    focus?: string;
     /** Block thư viện ảnh: danh sách ảnh + số cột hiển thị. */
     images?: { url: string; caption?: string }[];
     columns?: number;
