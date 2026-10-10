@@ -349,7 +349,7 @@ const SA_PA: SpotRouteMap = {
  */
 const CLUBHOUSE: SpotRouteMap = {
   id: "clubhouse",
-  src: `${CLD}/v1791601385/uploads/posts/duong-vao-mebayluon-clubhouse.jpg`,
+  src: `${CLD}/v1791606080/uploads/posts/duong-vao-mebayluon-clubhouse.jpg`,
   width: 1600,
   height: 1666,
   href: "/homestay/dat-phong",
@@ -405,7 +405,7 @@ const CLUBHOUSE: SpotRouteMap = {
  */
 const QUAN_BA: SpotRouteMap = {
   id: "quan-ba",
-  src: `${CLD}/v1791601387/uploads/posts/ban-do-duong-den-quan-ba.jpg`,
+  src: `${CLD}/v1791606082/uploads/posts/ban-do-duong-den-quan-ba.jpg`,
   width: 1600,
   height: 1776,
   href: "/ppg",
