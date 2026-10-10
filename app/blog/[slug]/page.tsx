@@ -320,7 +320,12 @@ function renderContentBlock(block: ContentBlock, index: number, fallbackAlt = ""
     case "heading": {
       const level = Math.min(4, Math.max(1, Number(data.level || 2)));
       const text = data.text || "";
-      const anchorId = slugifyHeading(text);
+      /**
+       * Neo cố định (data.anchor): bản dịch giữ id của tiêu đề tiếng Việt cho các mục
+       * được link từ bài khác / thẻ bản đồ (CK_ANCHORS) — chữ tiêu đề đổi theo ngôn ngữ mà neo không đổi.
+       */
+      const anchorId =
+        typeof data.anchor === "string" && /^[a-z0-9-]+$/.test(data.anchor) ? data.anchor : slugifyHeading(text);
 
       if (level === 1) {
         return (

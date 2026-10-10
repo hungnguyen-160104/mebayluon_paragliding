@@ -56,6 +56,8 @@ export type ContentBlock = {
   type: ContentBlockType;
   data: {
     level?: 1 | 2 | 3 | 4;
+    /** Tiêu đề: id neo cố định (bản dịch giữ neo tiếng Việt để link #… từ bài khác không gãy). */
+    anchor?: string;
     text?: string;
     url?: string;
     caption?: string;
