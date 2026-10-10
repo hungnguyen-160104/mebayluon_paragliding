@@ -130,16 +130,17 @@ export const CK_STOPS = [
     "Đi cùng người bản dẫn đường và porter. Đoàn thường thuê từ một đến ba người tuỳ số khách; họ lo lán, bếp và nước.",
     "Đường vào bản xấu ở nửa sau: xe máy số, tay lái quen đường núi; ô tô thấp gầm không nên vào.",
     "Giày leo núi bám tốt, áo mưa, đèn đội đầu, áo ấm cho đêm ở lán.",
-    "Mang rác xuống núi. Rừng trên này còn nguyên vẹn chính vì ít người lên."
+    "Mang rác xuống núi. Rừng trên này còn nguyên vẹn chính vì ít người lên.",
+    "Có thể nghỉ trước và sau khi leo ở Mebayluon Clubhouse bên suối dưới thung lũng dù lượn: porter qua đón tận nơi, đường xe chỉ xa hơn từ chợ Tú Lệ khoảng 4 km."
    ]
   },
   "en": {
    "name": "Đỉnh Lùng Cúng",
    "type": "summit · 2-day trek",
    "what": "Lùng Cúng peak, 2,913 m, one of the highest summits in Vietnam, reached on foot from the villages north of Tú Lệ.",
-   "why": "Not a roadside stop but a trek: mossy old forest, bamboo, grass hills and finally an open summit above the clouds, good for both sunset and sunrise.",
+   "why": "Not a roadside stop but a trek: mossy old forest, bamboo, grass hills and finally an open summit above the clouds, good for both sunset and sunrise; stay at the Mebayluon Clubhouse, where porters pick you up.",
    "when": "Dry season, roughly October to April. Avoid May–August: heavy rain, slippery trails and landslides.",
-   "tip": "The usual trek takes 2 days and 1 night with a night in a forest hut; go with a local guide and porters."
+   "tip": "The usual trek takes 2 days and 1 night with a night in a forest hut; go with a local guide and porters. You can stay before and after the trek at the Mebayluon Clubhouse by the stream at the paragliding landing: porters pick you up there, and it is only about 4 km more driving than from Tú Lệ market."
   },
   "photo": {
    "src": "/checkin-map/anh/lung-cung.webp"
