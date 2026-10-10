@@ -123,6 +123,9 @@ export type ThoiTietCopy = {
   seeSpot: string;
   /** Dòng nhắc trên dải ngày: bấm vào ngày để mở chi tiết + phân tích (chủ 16/09). */
   tapDayHint: string;
+  /** Khối dự báo trên trang điểm bay mặc định gọn (chỉ dải 10 ngày) — dòng mời mở chi tiết / thu gọn (chủ 10/10). */
+  expandDetails: string;
+  collapseDetails: string;
   /** Nhãn hàng "mặt đất" trong airgram. */
   ground: string;
   /** Chú thích dưới biểu đồ nhiều ngày. */
@@ -291,6 +294,8 @@ const vi: ThoiTietCopy = {
   retry: "Thử lại",
   seeSpot: "Chi tiết điểm bay",
   tapDayHint: "👆 Bấm vào ngày bay để xem chi tiết và phân tích dự báo",
+  expandDetails: "Nhấn để xem chi tiết hơn ▾",
+  collapseDetails: "Thu gọn ▴",
   ground: "mặt đất",
   swipeDays: "Vuốt ngang để xem các ngày tiếp theo · bấm ngày ở dải trên để nhảy tới · cột mưa: xanh = mưa, cam = mưa dông",
   sunrise: "Mặt trời mọc",
@@ -446,6 +451,8 @@ const en: ThoiTietCopy = {
   retry: "Try again",
   seeSpot: "Site details",
   tapDayHint: "👆 Tap a flying day to see the detailed forecast and analysis",
+  expandDetails: "Tap to see more details ▾",
+  collapseDetails: "Show less ▴",
   ground: "ground",
   swipeDays: "Swipe sideways for the next days · tap a day above to jump there · rain bars: blue = rain, orange = thundery showers",
   sunrise: "Sunrise",
@@ -602,6 +609,8 @@ const fr: ThoiTietCopy = {
   retry: "Réessayer",
   seeSpot: "Détails du site",
   tapDayHint: "👆 Touchez un jour de vol pour voir le détail et l'analyse de la prévision",
+  expandDetails: "Touchez pour plus de détails ▾",
+  collapseDetails: "Réduire ▴",
   ground: "sol",
   swipeDays: "Faites glisser pour voir les jours suivants · touchez un jour ci-dessus · barres de pluie : bleu = pluie, orange = averses orageuses",
   sunrise: "Lever du soleil",
@@ -757,6 +766,8 @@ const ru: ThoiTietCopy = {
   retry: "Повторить",
   seeSpot: "Подробнее о площадке",
   tapDayHint: "👆 Нажмите на день полёта, чтобы увидеть подробный прогноз и анализ",
+  expandDetails: "Нажмите, чтобы увидеть подробнее ▾",
+  collapseDetails: "Свернуть ▴",
   ground: "земля",
   swipeDays: "Проведите вбок, чтобы увидеть следующие дни · нажмите день выше · столбики осадков: синий — дождь, оранжевый — ливни с грозой",
   sunrise: "Восход",
@@ -912,6 +923,8 @@ const zh: ThoiTietCopy = {
   retry: "重试",
   seeSpot: "飞行点详情",
   tapDayHint: "👆 点击飞行日期查看详细预报与分析",
+  expandDetails: "点击查看更多详情 ▾",
+  collapseDetails: "收起 ▴",
   ground: "地面",
   swipeDays: "横向滑动查看后续几天 · 点击上方日期可跳转 · 降雨柱：蓝色为降雨，橙色为雷阵雨",
   sunrise: "日出",
@@ -1066,6 +1079,8 @@ const hi: ThoiTietCopy = {
   retry: "फिर कोशिश करें",
   seeSpot: "स्थल विवरण",
   tapDayHint: "👆 विस्तृत पूर्वानुमान और विश्लेषण देखने के लिए उड़ान के दिन पर टैप करें",
+  expandDetails: "अधिक विवरण देखने के लिए टैप करें ▾",
+  collapseDetails: "कम दिखाएँ ▴",
   ground: "ज़मीन",
   swipeDays: "अगले दिनों के लिए बग़ल में स्वाइप करें · ऊपर किसी दिन पर टैप करें · वर्षा स्तंभ: नीला = वर्षा, नारंगी = गरज के साथ बौछार",
   sunrise: "सूर्योदय",

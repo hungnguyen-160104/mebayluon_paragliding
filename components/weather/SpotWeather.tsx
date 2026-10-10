@@ -1014,7 +1014,19 @@ function BanDoWindy({ lat, lon, ten }: { lat: number; lon: number; ten: string }
 /* Widget cho trang một điểm bay                                       */
 /* ------------------------------------------------------------------ */
 
-export function SpotWeatherWidget({ slug }: { slug: string }) {
+export function SpotWeatherWidget({
+  slug,
+  gon = false,
+}: {
+  slug: string;
+  /**
+   * GỌN (chủ 10/10, trang điểm bay): mặc định chỉ hiện dải 10 ngày + dòng
+   * "Nhấn để xem chi tiết hơn ▾"; bấm dòng ấy hoặc bấm một ngày thì phần chi
+   * tiết (nhận định, bảng giờ, biểu đồ, mô hình…) mới trượt xổ ra. Sổ nội bộ
+   * /baobay không truyền cờ này — vẫn bày đủ như cũ.
+   */
+  gon?: boolean;
+}) {
   const { language } = useLanguage() as { language?: string };
   const lang = language ?? "vi";
   const t = useMemo(() => getThoiTietCopy(lang), [lang]);
@@ -1027,6 +1039,13 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
   const [soSanh, setSoSanh] = useState(false);
   /** Basic (bảng số) hay Meteogram (biểu đồ) — như hai tab của Windy, mặc định Basic. */
   const [kieuXem, setKieuXem] = useState<"basic" | "meteogram" | "airgram" | "skewt">("basic");
+  /** Chế độ gọn: phần chi tiết đang mở hay không; `daMo` giữ phần ấy đã dựng sau lần mở đầu (khỏi dựng biểu đồ khi khách chưa cần). */
+  const [mo, setMo] = useState(!gon);
+  const [daMo, setDaMo] = useState(!gon);
+  const moChiTiet = (x: boolean) => {
+    setMo(x);
+    if (x) setDaMo(true);
+  };
 
   const tai = useCallback(async () => {
     setLoi(false);
@@ -1073,153 +1092,348 @@ export function SpotWeatherWidget({ slug }: { slug: string }) {
         <span className="text-xs text-slate-500">{t.widgetNote}</span>
       </div>
 
-      {/**
-       * Nhận định ngày bay — mới có bản TIẾNG VIỆT. Câu chữ sinh động theo số
-       * liệu (hàng chục mẫu câu), dịch sáu thứ tiếng là việc riêng; khách nước
-       * ngoài vẫn đọc được màu và bảng giờ phía dưới, không mất gì.
-       */}
-      {/**
-       * Tiếng Việt: khối nhận định đầy đủ (câu chữ chuyên môn theo hàng chục
-       * mẫu). Thứ tiếng khác: bản TÓM TẮT rút từ cùng những con số ấy — trước
-       * đây khách nước ngoài mở ra không có lấy một câu kết luận (chủ 10/09).
-       */}
-      {ngayChon &&
-        (lang === "vi" ? (
-          <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
-        ) : (
-          <TomTatNgay
-            ngay={ngayChon}
-            ngayTruoc={du.ngay[du.ngay.findIndex((n) => n.ngay === ngayChon.ngay) - 1] ?? null}
-            toaDo={du.toaDo as never}
+      {gon ? (
+        <>
+          <DaiNgay
+            ngay={du.ngay}
+            chon={mo ? chon : null}
+            onChon={(d) => {
+              setChon(d);
+              moChiTiet(true);
+            }}
             t={t}
             lang={lang}
-          />
-        ))}
-
-      <DaiNgay ngay={du.ngay} chon={chon} onChon={setChon} t={t} lang={lang} nguong={du.nguong} />
-
-      <KhoiViTri toaDo={du.toaDo} ngay={ngayChon} t={t} />
-
-      {ngayChon && (
-        <div className="mt-2 text-xs font-semibold text-slate-700">
-          {ngayChon.khungDep ? (
-            <>
-              {t.bestWindow}: <span className="text-emerald-700">{ngayChon.khungDep}</span>
-            </>
-          ) : (
-            /** Không có khung đẹp thì IM — câu "không có khung giờ đẹp" làm khách hoang mang, trong khi ngày còn có thể ngớt. */
-            null
-          )}
-        </div>
-      )}
-
-      {/** Chọn mô hình đứng NGAY TRÊN bảng/biểu đồ — xem ghi chú ở sổ nội bộ. */}
-      <div className="mt-2">
-        <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} nhan={t.modelLabel} />
-      </div>
-
-      {ngayChon && (
-        <div className="mt-1.5 flex gap-1">
-          {(
-            [
-              ["basic", "▦ Basic"],
-              ["meteogram", "📊 Meteogram"],
-              ["airgram", "🪂 Airgram"],
-              /** Giản đồ thám không — phải có đủ như trang thời tiết (chủ 11/09). */
-              ["skewt", "🌡 Skew-T"],
-            ] as Array<["basic" | "meteogram" | "airgram" | "skewt", string]>
-          ).map(([v, nhan]) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setKieuXem(v)}
-              className={
-                "rounded-lg border px-2 py-0.5 text-xs font-bold " +
-                (kieuXem === v ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
-              }
-            >
-              {nhan}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/**
-       * Meteogram / Airgram vẽ CẢ DÃY NGÀY nối liền: khách gạt ngang là chạy
-       * tiếp sang ngày sau, không phải bấm ngày ở dải trên (luật chủ 10/09).
-       */}
-      {ngayChon &&
-        (kieuXem === "skewt" ? (
-          <SkewT
-            spot={slug}
-            ngay={ngayChon.ngay}
-            moHinh={moHinh}
-            altBai={(du.toaDo as { alt?: number }).alt ?? 0}
-            altHa={(du.toaDo as { altHa?: number }).altHa}
-            altCat2={(du.toaDo as { altCat2?: number }).altCat2}
-            gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
-            chu={{
-              chartType: t.chartType,
-              hourLabel: t.hourLabel,
-              skewTemp: t.skewTemp,
-              skewDew: t.skewDew,
-              skewParcel: t.skewParcel,
-              skewDry: t.skewDry,
-              skewTiltNote: t.skewTiltNote,
-              takeoff: t.takeoff,
-              landing: t.landing,
-              cloudBase: t.cloudBase,
-              thermalTop: t.thermalTop,
-              caption: t.skewCaption,
-            }}
-            lang={lang}
-          />
-        ) : kieuXem === "meteogram" ? (
-          <Meteogram nguong={du.nguong} ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
-        ) : kieuXem === "airgram" ? (
-          <Airgram
             nguong={du.nguong}
-            ngay={du.ngay as never}
-            altBai={(du.toaDo as { alt?: number }).alt ?? 0}
-            altHa={(du.toaDo as { altHa?: number }).altHa}
-            altCat2={(du.toaDo as { altCat2?: number }).altCat2}
-            ngayChon={chon}
-            onNgayHien={setChon}
-            nhan={nhanBieuDo(t)}
-            lang={lang}
           />
-        ) : (
-          <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} nguong={du.nguong} />
-        ))}
+          <button
+            type="button"
+            onClick={() => moChiTiet(!mo)}
+            aria-expanded={mo}
+            className="mx-auto mt-2 block rounded-lg px-3 py-1 text-center text-xs font-semibold text-sky-700 hover:bg-sky-50 hover:text-sky-900"
+          >
+            {mo ? t.collapseDetails : t.expandDetails}
+          </button>
+          {/* Trượt mở bằng grid-template-rows 0fr → 1fr: chiều cao chạy mượt mà không cần đo nội dung. */}
+          <div
+            className="grid transition-[grid-template-rows] duration-500 ease-in-out"
+            style={{ gridTemplateRows: mo ? "1fr" : "0fr" }}
+            inert={!mo}
+          >
+            <div className="min-h-0 overflow-hidden">
+              {daMo && (
+                <div className="pt-2">
+                  {/**
+                   * Nhận định ngày bay — mới có bản TIẾNG VIỆT. Câu chữ sinh động theo số
+                   * liệu (hàng chục mẫu câu), dịch sáu thứ tiếng là việc riêng; khách nước
+                   * ngoài vẫn đọc được màu và bảng giờ phía dưới, không mất gì.
+                   */}
+                  {/**
+                   * Tiếng Việt: khối nhận định đầy đủ (câu chữ chuyên môn theo hàng chục
+                   * mẫu). Thứ tiếng khác: bản TÓM TẮT rút từ cùng những con số ấy — trước
+                   * đây khách nước ngoài mở ra không có lấy một câu kết luận (chủ 10/09).
+                   */}
+                  {ngayChon &&
+                    (lang === "vi" ? (
+                      <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
+                    ) : (
+                      <TomTatNgay
+                        ngay={ngayChon}
+                        ngayTruoc={du.ngay[du.ngay.findIndex((n) => n.ngay === ngayChon.ngay) - 1] ?? null}
+                        toaDo={du.toaDo as never}
+                        t={t}
+                        lang={lang}
+                      />
+                    ))}
 
-      {soSanh && (
-        <SoSanhMoHinh
-          ngayChon={chon}
-          onChonNgay={setChon}
-          homNay={homNayVN()}
-          fetcher={async (ma) => {
-            const res = await fetch(`/api/thoi-tiet?spot=${encodeURIComponent(slug)}&model=${ma}`);
-            if (!res.ok) throw new Error();
-            const j = (await res.json()) as DiemDuBao;
-            return { ngay: j.ngay as never, moHinh: j.moHinh };
-          }}
-        />
+                  <KhoiViTri toaDo={du.toaDo} ngay={ngayChon} t={t} />
+
+                  {ngayChon && (
+                    <div className="mt-2 text-xs font-semibold text-slate-700">
+                      {ngayChon.khungDep ? (
+                        <>
+                          {t.bestWindow}: <span className="text-emerald-700">{ngayChon.khungDep}</span>
+                        </>
+                      ) : (
+                        /** Không có khung đẹp thì IM — câu "không có khung giờ đẹp" làm khách hoang mang, trong khi ngày còn có thể ngớt. */
+                        null
+                      )}
+                    </div>
+                  )}
+
+                  {/** Chọn mô hình đứng NGAY TRÊN bảng/biểu đồ — xem ghi chú ở sổ nội bộ. */}
+                  <div className="mt-2">
+                    <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} nhan={t.modelLabel} />
+                  </div>
+
+                  {ngayChon && (
+                    <div className="mt-1.5 flex gap-1">
+                      {(
+                        [
+                          ["basic", "▦ Basic"],
+                          ["meteogram", "📊 Meteogram"],
+                          ["airgram", "🪂 Airgram"],
+                          /** Giản đồ thám không — phải có đủ như trang thời tiết (chủ 11/09). */
+                          ["skewt", "🌡 Skew-T"],
+                        ] as Array<["basic" | "meteogram" | "airgram" | "skewt", string]>
+                      ).map(([v, nhan]) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setKieuXem(v)}
+                          className={
+                            "rounded-lg border px-2 py-0.5 text-xs font-bold " +
+                            (kieuXem === v ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
+                          }
+                        >
+                          {nhan}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/**
+                   * Meteogram / Airgram vẽ CẢ DÃY NGÀY nối liền: khách gạt ngang là chạy
+                   * tiếp sang ngày sau, không phải bấm ngày ở dải trên (luật chủ 10/09).
+                   */}
+                  {ngayChon &&
+                    (kieuXem === "skewt" ? (
+                      <SkewT
+                        spot={slug}
+                        ngay={ngayChon.ngay}
+                        moHinh={moHinh}
+                        altBai={(du.toaDo as { alt?: number }).alt ?? 0}
+                        altHa={(du.toaDo as { altHa?: number }).altHa}
+                        altCat2={(du.toaDo as { altCat2?: number }).altCat2}
+                        gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
+                        chu={{
+                          chartType: t.chartType,
+                          hourLabel: t.hourLabel,
+                          skewTemp: t.skewTemp,
+                          skewDew: t.skewDew,
+                          skewParcel: t.skewParcel,
+                          skewDry: t.skewDry,
+                          skewTiltNote: t.skewTiltNote,
+                          takeoff: t.takeoff,
+                          landing: t.landing,
+                          cloudBase: t.cloudBase,
+                          thermalTop: t.thermalTop,
+                          caption: t.skewCaption,
+                        }}
+                        lang={lang}
+                      />
+                    ) : kieuXem === "meteogram" ? (
+                      <Meteogram nguong={du.nguong} ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
+                    ) : kieuXem === "airgram" ? (
+                      <Airgram
+                        nguong={du.nguong}
+                        ngay={du.ngay as never}
+                        altBai={(du.toaDo as { alt?: number }).alt ?? 0}
+                        altHa={(du.toaDo as { altHa?: number }).altHa}
+                        altCat2={(du.toaDo as { altCat2?: number }).altCat2}
+                        ngayChon={chon}
+                        onNgayHien={setChon}
+                        nhan={nhanBieuDo(t)}
+                        lang={lang}
+                      />
+                    ) : (
+                      <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} nguong={du.nguong} />
+                    ))}
+
+                  {soSanh && (
+                    <SoSanhMoHinh
+                      ngayChon={chon}
+                      onChonNgay={setChon}
+                      homNay={homNayVN()}
+                      fetcher={async (ma) => {
+                        const res = await fetch(`/api/thoi-tiet?spot=${encodeURIComponent(slug)}&model=${ma}`);
+                        if (!res.ok) throw new Error();
+                        const j = (await res.json()) as DiemDuBao;
+                        return { ngay: j.ngay as never, moHinh: j.moHinh };
+                      }}
+                    />
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setMoBanDo((x) => !x)}
+                    className="mt-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 hover:bg-sky-100"
+                  >
+                    {moBanDo ? t.mapToggleClose : t.mapToggleOpen}
+                  </button>
+                  {moBanDo && <BanDoWindy lat={du.toaDo.lat} lon={du.toaDo.lon} ten={du.toaDo.ten} />}
+
+                  {/** Nguồn xuống DÒNG RIÊNG: nó là chú thích kỹ thuật, không phải phần tiếp của câu miễn trừ. */}
+                  <p className="mt-2 text-xs leading-relaxed text-slate-500">{t.disclaimer}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-400">
+                    {t.source}: {du.moHinh}
+                  </p>
+                  {/* Thu gọn ngay ở đáy — phần chi tiết dài, khỏi phải cuộn ngược lên tìm nút. */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      moChiTiet(false);
+                      e.currentTarget.closest("section")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    }}
+                    className="mx-auto mt-2 block rounded-lg px-3 py-1 text-center text-xs font-semibold text-sky-700 hover:bg-sky-50 hover:text-sky-900"
+                  >
+                    {t.collapseDetails}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/**
+           * Nhận định ngày bay — mới có bản TIẾNG VIỆT. Câu chữ sinh động theo số
+           * liệu (hàng chục mẫu câu), dịch sáu thứ tiếng là việc riêng; khách nước
+           * ngoài vẫn đọc được màu và bảng giờ phía dưới, không mất gì.
+           */}
+          {/**
+           * Tiếng Việt: khối nhận định đầy đủ (câu chữ chuyên môn theo hàng chục
+           * mẫu). Thứ tiếng khác: bản TÓM TẮT rút từ cùng những con số ấy — trước
+           * đây khách nước ngoài mở ra không có lấy một câu kết luận (chủ 10/09).
+           */}
+          {ngayChon &&
+            (lang === "vi" ? (
+              <NhanDinhNgayBay ngay={ngayChon as unknown as import("@/lib/baobay/thoi-tiet").NgayThoiTiet} />
+            ) : (
+              <TomTatNgay
+                ngay={ngayChon}
+                ngayTruoc={du.ngay[du.ngay.findIndex((n) => n.ngay === ngayChon.ngay) - 1] ?? null}
+                toaDo={du.toaDo as never}
+                t={t}
+                lang={lang}
+              />
+            ))}
+
+          <DaiNgay ngay={du.ngay} chon={chon} onChon={setChon} t={t} lang={lang} nguong={du.nguong} />
+
+          <KhoiViTri toaDo={du.toaDo} ngay={ngayChon} t={t} />
+
+          {ngayChon && (
+            <div className="mt-2 text-xs font-semibold text-slate-700">
+              {ngayChon.khungDep ? (
+                <>
+                  {t.bestWindow}: <span className="text-emerald-700">{ngayChon.khungDep}</span>
+                </>
+              ) : (
+                /** Không có khung đẹp thì IM — câu "không có khung giờ đẹp" làm khách hoang mang, trong khi ngày còn có thể ngớt. */
+                null
+              )}
+            </div>
+          )}
+
+          {/** Chọn mô hình đứng NGAY TRÊN bảng/biểu đồ — xem ghi chú ở sổ nội bộ. */}
+          <div className="mt-2">
+            <ChonMoHinh dangChon={moHinh} onChon={setMoHinh} soSanh={soSanh} onSoSanh={setSoSanh} nhan={t.modelLabel} />
+          </div>
+
+          {ngayChon && (
+            <div className="mt-1.5 flex gap-1">
+              {(
+                [
+                  ["basic", "▦ Basic"],
+                  ["meteogram", "📊 Meteogram"],
+                  ["airgram", "🪂 Airgram"],
+                  /** Giản đồ thám không — phải có đủ như trang thời tiết (chủ 11/09). */
+                  ["skewt", "🌡 Skew-T"],
+                ] as Array<["basic" | "meteogram" | "airgram" | "skewt", string]>
+              ).map(([v, nhan]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setKieuXem(v)}
+                  className={
+                    "rounded-lg border px-2 py-0.5 text-xs font-bold " +
+                    (kieuXem === v ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 bg-white text-slate-700")
+                  }
+                >
+                  {nhan}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/**
+           * Meteogram / Airgram vẽ CẢ DÃY NGÀY nối liền: khách gạt ngang là chạy
+           * tiếp sang ngày sau, không phải bấm ngày ở dải trên (luật chủ 10/09).
+           */}
+          {ngayChon &&
+            (kieuXem === "skewt" ? (
+              <SkewT
+                spot={slug}
+                ngay={ngayChon.ngay}
+                moHinh={moHinh}
+                altBai={(du.toaDo as { alt?: number }).alt ?? 0}
+                altHa={(du.toaDo as { altHa?: number }).altHa}
+                altCat2={(du.toaDo as { altCat2?: number }).altCat2}
+                gioBay={(du.toaDo as { gioBay?: [number, number] }).gioBay}
+                chu={{
+                  chartType: t.chartType,
+                  hourLabel: t.hourLabel,
+                  skewTemp: t.skewTemp,
+                  skewDew: t.skewDew,
+                  skewParcel: t.skewParcel,
+                  skewDry: t.skewDry,
+                  skewTiltNote: t.skewTiltNote,
+                  takeoff: t.takeoff,
+                  landing: t.landing,
+                  cloudBase: t.cloudBase,
+                  thermalTop: t.thermalTop,
+                  caption: t.skewCaption,
+                }}
+                lang={lang}
+              />
+            ) : kieuXem === "meteogram" ? (
+              <Meteogram nguong={du.nguong} ngay={du.ngay as never} altBai={(du.toaDo as { alt?: number }).alt ?? 0} ngayChon={chon} onNgayHien={setChon} nhan={nhanBieuDo(t)} lang={lang} />
+            ) : kieuXem === "airgram" ? (
+              <Airgram
+                nguong={du.nguong}
+                ngay={du.ngay as never}
+                altBai={(du.toaDo as { alt?: number }).alt ?? 0}
+                altHa={(du.toaDo as { altHa?: number }).altHa}
+                altCat2={(du.toaDo as { altCat2?: number }).altCat2}
+                ngayChon={chon}
+                onNgayHien={setChon}
+                nhan={nhanBieuDo(t)}
+                lang={lang}
+              />
+            ) : (
+              <BangGio ngay={du.ngay} ngayChon={chon} onNgayHien={setChon} t={t} lang={lang} luat={du.toaDo.luatHuong} nguong={du.nguong} />
+            ))}
+
+          {soSanh && (
+            <SoSanhMoHinh
+              ngayChon={chon}
+              onChonNgay={setChon}
+              homNay={homNayVN()}
+              fetcher={async (ma) => {
+                const res = await fetch(`/api/thoi-tiet?spot=${encodeURIComponent(slug)}&model=${ma}`);
+                if (!res.ok) throw new Error();
+                const j = (await res.json()) as DiemDuBao;
+                return { ngay: j.ngay as never, moHinh: j.moHinh };
+              }}
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={() => setMoBanDo((x) => !x)}
+            className="mt-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 hover:bg-sky-100"
+          >
+            {moBanDo ? t.mapToggleClose : t.mapToggleOpen}
+          </button>
+          {moBanDo && <BanDoWindy lat={du.toaDo.lat} lon={du.toaDo.lon} ten={du.toaDo.ten} />}
+
+          {/** Nguồn xuống DÒNG RIÊNG: nó là chú thích kỹ thuật, không phải phần tiếp của câu miễn trừ. */}
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">{t.disclaimer}</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-slate-400">
+            {t.source}: {du.moHinh}
+          </p>
+        </>
       )}
-
-      <button
-        type="button"
-        onClick={() => setMoBanDo((x) => !x)}
-        className="mt-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 hover:bg-sky-100"
-      >
-        {moBanDo ? t.mapToggleClose : t.mapToggleOpen}
-      </button>
-      {moBanDo && <BanDoWindy lat={du.toaDo.lat} lon={du.toaDo.lon} ten={du.toaDo.ten} />}
-
-      {/** Nguồn xuống DÒNG RIÊNG: nó là chú thích kỹ thuật, không phải phần tiếp của câu miễn trừ. */}
-      <p className="mt-2 text-xs leading-relaxed text-slate-500">{t.disclaimer}</p>
-      <p className="mt-0.5 text-xs leading-relaxed text-slate-400">
-        {t.source}: {du.moHinh}
-      </p>
     </section>
   );
 }

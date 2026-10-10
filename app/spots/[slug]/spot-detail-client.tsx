@@ -3666,19 +3666,19 @@ export function SpotDetailClient({
           <div className="mt-5 flex justify-center">
             <ShareButtons lang={lang} variant="spot" title={copy.name} />
           </div>
-          {/* Ghi nguồn ảnh vân đá trong chữ tiêu đề (CC BY-SA 4.0 buộc ghi tác giả + giấy phép). */}
+          {/* Ghi nguồn ảnh vân đá trong chữ tiêu đề (CC BY-SA 4.0 buộc ghi tác giả + giấy phép).
+              Chủ 10/10: chỉ ghi TÊN, không đặt link sang web khác. */}
           {spotSlug === "ha-giang" ? (
             <p className="mt-3 text-center text-[11px] leading-snug text-white/55">
-              {lang === "vi" ? "Vân đá trong chữ: ảnh" : "Rock texture in the title: photo"}{" "}
-              <a
-                href="https://commons.wikimedia.org/wiki/File:B%C3%A3i_%C4%91%C3%A1_m%E1%BA%B7t_tr%C4%83ng_%C4%90%E1%BB%93ng_V%C4%83n_-_NKS.jpg"
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="underline"
-              >
-                “Bãi đá mặt trăng Đồng Văn”
-              </a>
-              , NKSTTSSHNVN, CC BY-SA 4.0
+              {({
+                vi: "Vân đá trong chữ: ảnh “Bãi đá mặt trăng Đồng Văn”",
+                en: "Rock texture in the title: photo “Bãi đá mặt trăng Đồng Văn”",
+                fr: "Texture de roche du titre : photo « Bãi đá mặt trăng Đồng Văn »",
+                ru: "Текстура камня в заголовке: фото «Bãi đá mặt trăng Đồng Văn»",
+                zh: "标题中的岩石纹理：照片“Bãi đá mặt trăng Đồng Văn”",
+                hi: "शीर्षक में चट्टान की बनावट: फ़ोटो “Bãi đá mặt trăng Đồng Văn”",
+              } as Record<string, string>)[lang] ?? "Rock texture in the title: photo “Bãi đá mặt trăng Đồng Văn”"}
+              , NKSTTSSHNVN / Wikimedia Commons, CC BY-SA 4.0
             </p>
           ) : null}
         </motion.div>
@@ -3966,7 +3966,7 @@ export function SpotDetailClient({
           {/* Rộng bằng thẻ giới thiệu điểm bay phía trên (max-w-5xl) — chủ chốt
               10/09: hai thẻ nằm chồng nhau mà lệch bề ngang thì trang gãy nhịp. */}
           <div className="container mx-auto max-w-5xl space-y-4 px-4">
-            <SpotWeatherWidget slug={spotSlug} />
+            <SpotWeatherWidget slug={spotSlug} gon />
             {/**
              * Trang "Hà Nội" thực ra là HAI BÃI: Đồi Bù và Viên Nam, cách nhau
              * hàng chục cây số và quay về hai phía — gió tốt cho bãi này là gió
@@ -3974,7 +3974,7 @@ export function SpotDetailClient({
              * hai bảng, mỗi bảng một luật hướng riêng.
              */}
             {(diemThoiTietTheoSlug(spotSlug)?.kem ?? []).map((k) => (
-              <SpotWeatherWidget key={k} slug={k} />
+              <SpotWeatherWidget key={k} slug={k} gon />
             ))}
           </div>
         </section>
@@ -4047,7 +4047,7 @@ export function SpotDetailClient({
       <SpotPartnerLinks slug={spotSlug} lang={lang} />
 
       {/* Bản đồ check-in 3D Tú Lệ – Khau Phạ – Mù Cang Chải (#check-in-map) — chỉ trang
-          Khau Phạ, ngay dưới "Bản đồ đường đi": xem đường tới bãi bay xong thì xem quanh
+          Khau Phạ, ngay dưới khối Google Maps (trang này không còn "Bản đồ đường đi", chủ 10/10) — xem quanh
           đó còn dừng được những đâu. Khối render từ server (page.tsx truyền vào). */}
       {checkinSlot}
 

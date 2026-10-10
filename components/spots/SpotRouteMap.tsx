@@ -108,8 +108,9 @@ export default function SpotRouteMap({
                 </a>
 
                 <figcaption className="mt-3 text-left text-[13px] leading-relaxed text-slate-200 sm:text-sm">
-                  {T.caption}{" "}
-                  <span className="text-slate-300/90">{L.note}</span>
+                  {T.caption}
+                  {/* Ghi công OpenStreetMap (giấy phép ODbL) — chữ nhỏ, dòng riêng. */}
+                  <span className="mt-1 block text-[11px] text-slate-300/80">{L.note}</span>
                 </figcaption>
 
                 {map.href !== currentPath && (

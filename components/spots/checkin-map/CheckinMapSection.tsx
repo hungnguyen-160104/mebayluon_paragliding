@@ -20,7 +20,6 @@ const UI = {
     lead: "18 điểm dừng dọc quốc lộ 32, gần 50 km từ thung lũng Tú Lệ qua đèo Khau Phạ tới thị trấn Mù Cang Chải. Chạm một điểm để bay tới gần; kéo, xoay, thu phóng tuỳ ý.",
     alt: "Bản đồ 3D đường đến điểm bay Khau Phạ và 18 điểm check-in từ Tú Lệ tới Mù Cang Chải",
     legend: ["Quốc lộ 32", "đường nhánh", "đường bay dù lượn"],
-    note: "Số km tính theo đường thật từ cổng Le Champ (Tú Lệ); thời gian lái là ước tính.",
     attrib: "Dữ liệu bản đồ",
     elev: "Độ cao: AWS Terrain Tiles",
     photos: "Ảnh: ghi nguồn dưới từng ảnh.",
@@ -43,7 +42,6 @@ const UI = {
     lead: "18 stops along Highway QL32, about 50 km from the Tú Lệ valley over Khau Phạ pass to Mù Cang Chải town. Tap a stop to fly in; drag, rotate and zoom freely.",
     alt: "3D map of the road to the Khau Phạ paragliding site and 18 check-in stops from Tú Lệ to Mù Cang Chải",
     legend: ["Highway QL32", "side road", "paragliding flight line"],
-    note: "Kilometres follow the real road from the Le Champ gate (Tú Lệ); driving times are estimates.",
     attrib: "Map data",
     elev: "Elevation: AWS Terrain Tiles",
     photos: "Photos: credited under each photo.",
@@ -94,19 +92,10 @@ export default function CheckinMapSection({
           <span className="mr-3 whitespace-nowrap"><b className="text-[#e24a28]">━━</b> {t.legend[0]}</span>
           <span className="mr-3 whitespace-nowrap"><b className="text-[#e8743c]">━</b> {t.legend[1]}</span>
           <span className="whitespace-nowrap"><b className="text-[#c46ab8]">╌╌</b> {t.legend[2]}</span>
-          <br />
-          <span className="text-slate-300/90">{t.note}</span>
         </p>
+        {/* Ghi công bắt buộc — chữ thường, không link sang web khác (chủ 10/10). */}
         <p className="mt-1 text-center text-[11.5px] leading-relaxed text-slate-300/90">
-          {t.attrib}: ©{" "}
-          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-            OpenStreetMap contributors
-          </a>{" "}
-          ·{" "}
-          <a href="https://openfreemap.org" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-            OpenFreeMap
-          </a>{" "}
-          · {t.elev} · {t.photos}
+          {t.attrib}: © OpenStreetMap contributors · OpenFreeMap · {t.elev} · {t.photos}
         </p>
 
         <h3 className="mt-8 font-serif text-lg font-bold text-white sm:text-xl">{t.listHeading}</h3>

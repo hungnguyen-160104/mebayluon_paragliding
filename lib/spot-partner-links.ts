@@ -117,13 +117,13 @@ export const SPOT_LINKS: Record<string, SpotLinkGroup> = {
       {
         // Dù lượn gắn động cơ cất cánh ngay tại sân Clubhouse Mebayluon,
         // cũng chính là bãi hạ cánh của dù lượn thường.
-        platform: "Clubhouse Mebayluon",
+        platform: "Mebayluon Clubhouse",
         url: CLUBHOUSE_MAP_URL,
         kind: "paramotorTakeoff",
         brand: "google",
       },
       {
-        platform: "Clubhouse Mebayluon",
+        platform: "Mebayluon Clubhouse",
         url: CLUBHOUSE_MAP_URL,
         kind: "landing",
         brand: "google",

@@ -10,9 +10,9 @@
  * Ảnh đã nằm sẵn trên Cloudinary (cùng tệp với các bài viết đang dùng) — KHÔNG
  * tải lại. Đổi ảnh thì tải đè cùng public id rồi sửa số phiên bản (v…) ở đây.
  *
- * BẮT BUỘC trong chú thích (giấy phép ODbL của OpenStreetMap + yêu cầu của chủ):
- *  - hình KHÔNG theo tỉ lệ, số km là quãng đường thật  → ROUTE_MAP_I18N[lang].note
- *  - "Dữ liệu bản đồ © OpenStreetMap contributors"      → cũng nằm trong note
+ * BẮT BUỘC (giấy phép ODbL của OpenStreetMap): "Dữ liệu bản đồ © OpenStreetMap
+ * contributors" → ROUTE_MAP_I18N[lang].note, chữ nhỏ dưới chú thích. Chủ 10/10:
+ * bỏ các câu giải thích kiểu "hình không theo tỉ lệ…" cho gọn — chỉ giữ ghi công OSM.
  *
  * Sự thật đã chốt, đừng viết khác: bãi cất cánh Khau Phạ ở GẦN đỉnh đèo (không
  * phải "trên đỉnh đèo"), cao 1.268 m; bãi hạ cánh ở bản Lìm Thái.
@@ -47,42 +47,43 @@ export const ROUTE_MAP_I18N: Record<
   vi: {
     heading: "Bản đồ đường đi",
     lead: "Chạm vào hình để mở bản đầy đủ.",
-    note: "Hình không theo tỉ lệ; số km ghi trên hình là quãng đường thật. Dữ liệu bản đồ © OpenStreetMap contributors.",
+    note: "Dữ liệu bản đồ © OpenStreetMap contributors",
     open: "Mở hình cỡ đầy đủ",
   },
   en: {
     heading: "Route map",
     lead: "Tap a map to open it full size.",
-    note: "Not to scale; the km shown are real road distances. Map data © OpenStreetMap contributors.",
+    note: "Map data © OpenStreetMap contributors",
     open: "Open the full-size picture",
   },
   fr: {
     heading: "Carte d'accès",
     lead: "Touchez une carte pour l'ouvrir en grand.",
-    note: "Image non à l'échelle ; les km indiqués sont des distances routières réelles. Données cartographiques © OpenStreetMap contributors.",
+    note: "Données cartographiques © OpenStreetMap contributors",
     open: "Ouvrir l'image en grand",
   },
   ru: {
     heading: "Схема проезда",
     lead: "Нажмите на схему, чтобы открыть её в полном размере.",
-    note: "Схема не в масштабе; километры на ней — реальные расстояния по дороге. Картографические данные © OpenStreetMap contributors.",
+    note: "Картографические данные © OpenStreetMap contributors",
     open: "Открыть изображение в полном размере",
   },
   zh: {
     heading: "路线图",
     lead: "点击图片可查看大图。",
-    note: "图片未按比例绘制；图上的公里数为实际道路里程。地图数据 © OpenStreetMap contributors。",
+    note: "地图数据 © OpenStreetMap contributors",
     open: "查看大图",
   },
   hi: {
     heading: "रास्ते का नक्शा",
     lead: "नक्शे को पूरे आकार में खोलने के लिए उस पर टैप करें।",
-    note: "चित्र पैमाने के अनुसार नहीं है; दिखाए गए किमी सड़क की वास्तविक दूरी हैं। मानचित्र डेटा © OpenStreetMap contributors.",
+    note: "मानचित्र डेटा © OpenStreetMap contributors",
     open: "पूरे आकार का चित्र खोलें",
   },
 };
 
-const KHAU_PHA: SpotRouteMap = {
+/** Không trang nào đang dùng (chủ 10/10 bỏ khỏi /spots/khau-pha) — giữ lại để bật lại khi cần. */
+export const KHAU_PHA: SpotRouteMap = {
   id: "khau-pha",
   src: `${CLD}/v1791454720/uploads/posts/ban-do-duong-den-khau-pha-en.jpg`,
   srcVi: `${CLD}/v1791454718/uploads/posts/ban-do-duong-den-khau-pha-vi.jpg`,
@@ -461,8 +462,8 @@ const QUAN_BA: SpotRouteMap = {
  * về đây) nên hiện cả hai hình, mỗi hình một tiêu đề riêng.
  */
 export const SPOT_ROUTE_MAPS: Record<string, SpotRouteMap[]> = {
-  // Chủ 09/10: trang Khau Phạ không hiện bản đồ Hà Nội → Mù Cang Chải (nằm ở các bài đường đi). Chủ 10/10: thêm đường vào Clubhouse (bãi PPG).
-  "khau-pha": [KHAU_PHA, CLUBHOUSE],
+  // "khau-pha" CỐ Ý KHÔNG KHAI (chủ 10/10): trang Khau Phạ chỉ để bản đồ check-in 3D
+  // (#check-in-map); bản đồ vào Clubhouse nằm ở /homestay và /ppg.
   "doi-bu": [DOI_BU, VIEN_NAM],
   "muong-hoa-sapa": [SA_PA],
   // Không phải điểm bay: khối "Bản đồ đường đi" trên trang /homestay (app/homestay/HomestayClient.tsx).

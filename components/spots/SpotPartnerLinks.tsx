@@ -16,6 +16,9 @@ import SpotRouteMap from "./SpotRouteMap";
 
 type Lang = "vi" | "en" | "fr" | "ru" | "zh" | "hi";
 
+/** Nút bản đồ trỏ về Clubhouse thì xuống dòng tên nơi (xem ghi chú ở nút). */
+const hai = (platform: string) => platform.includes("Clubhouse");
+
 export default function SpotPartnerLinks({
   slug,
   lang,
@@ -72,13 +75,22 @@ export default function SpotPartnerLinks({
                        lượn gắn động cơ – Clubhouse Mebayluon") rộng 412px, ép một
                        dòng trên máy 390px là tràn cả trang ra 11px và trôi ngang
                        (chủ báo 10/09). Điện thoại cứ để nó xuống dòng. */
-                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg lg:whitespace-nowrap lg:px-2.5 lg:text-[13px] ${BRAND_BUTTON_CLASS[link.brand]}`}
+                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold shadow-md ring-1 ring-black/10 transition-all hover:-translate-y-0.5 hover:shadow-lg lg:whitespace-nowrap lg:px-2.5 lg:text-[13px] ${hai(link.platform) ? "text-center" : "text-left"} ${BRAND_BUTTON_CLASS[link.brand]}`}
                   >
-                    <MapPin size={15} />
-                    <span>
-                      {L[link.kind]}
-                      {link.platform === "Google Maps" ? "" : ` – ${link.platform}`}
-                    </span>
+                    <MapPin size={15} className="shrink-0" />
+                    {/* Nút ở Clubhouse: HAI DÒNG CĂN GIỮA (chủ 10/10) — dòng 1 là loại bãi,
+                        dòng 2 "Mebayluon Clubhouse". Các nút khác giữ một dòng "nhãn – nơi". */}
+                    {hai(link.platform) ? (
+                      <span className="flex flex-col items-center leading-tight">
+                        <span>{L[link.kind]}</span>
+                        <span>{link.platform}</span>
+                      </span>
+                    ) : (
+                      <span>
+                        {L[link.kind]}
+                        {link.platform === "Google Maps" ? "" : ` – ${link.platform}`}
+                      </span>
+                    )}
                   </a>
                 </li>
               ))}
