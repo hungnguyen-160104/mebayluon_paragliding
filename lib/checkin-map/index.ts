@@ -49,7 +49,7 @@ export const CK_ARTICLES: Record<CkStopId, string> = {
   "rung-truc-pung-luong": "rung-truc-pung-luong-mu-cang-chai",
   "mam-xoi": "doi-mam-xoi-la-pan-tan-mu-cang-chai",
   garrya: "garrya-mu-cang-chai",
-  "mam-xoi-be": "doi-mam-xoi-be-mu-cang-chai",
+  "mam-xoi-be": "doi-mam-xoi-la-pan-tan-mu-cang-chai", // gộp bài 10/10/2026 — neo tới mục Mâm Xôi bé (CK_ANCHORS)
   "song-lung-khung-long": "song-lung-khung-long-mu-cang-chai",
   "rung-truc-mcc": "rung-truc-hang-sung-mu-cang-chai",
   "mu-cang-chai": "xa-mu-cang-chai-ban-thai-khim-noi", // chủ 10/10/2026: bài riêng xã Mù Cang Chải + bản Thái Khim Nọi (cẩm nang chung cũ đã gộp vào bài trụ, 301)

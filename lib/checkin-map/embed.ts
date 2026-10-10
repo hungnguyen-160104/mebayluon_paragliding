@@ -24,7 +24,7 @@ export const CK_HUB_URL = `${CK_SITE}${CK_HUB_PATH}`;
  * Điểm có bài chung với điểm khác (chủ 10/10/2026: gộp bài Tú Lệ) → link tới đúng mục trong bài
  * (id neo = slugifyHeading của tiêu đề mục ở app/blog/[slug]/page.tsx).
  */
-export const CK_ANCHORS: Record<string, string> = { "suoi-khoang": "tam-khoang-nong-o-tu-le" };
+export const CK_ANCHORS: Record<string, string> = { "suoi-khoang": "tam-khoang-nong-o-tu-le", "mam-xoi-be": "doi-mam-xoi-be" };
 
 /** Ảnh sơ đồ tĩnh — khung đầu của bản đồ và ảnh của bản HTML dự phòng. */
 export const CK_POSTER_PATH = "/checkin-map/nen-1600.webp";

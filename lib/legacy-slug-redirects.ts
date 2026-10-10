@@ -81,6 +81,10 @@ export const LEGACY_SLUG_REDIRECTS: Record<string, string> = {
   /* Gộp cẩm nang Mù Cang Chải cũ 10-10-2026: ảnh, thông tin chuyển sang bài trụ bản đồ check-in và các bài nhánh;
    * bài cũ gỡ đăng (giữ trong DB, sao lưu ~/backups/gop-bai/). */
   "cam-nang-du-lich-mu-cang-chai-lao-cai": "ban-do-du-lich-tu-le-khau-pha-mu-cang-chai",
+
+  /* Gộp hai bài Mâm Xôi 10-10-2026 (chủ: "đưa vào cùng 1 bài viết"): Mâm Xôi bé thành mục #doi-mam-xoi-be của bài Mâm Xôi lớn;
+   * bài cũ gỡ đăng (giữ trong DB, sao lưu ~/backups/gop-bai/). */
+  "doi-mam-xoi-be-mu-cang-chai": "doi-mam-xoi-la-pan-tan-mu-cang-chai",
 };
 
 /**
