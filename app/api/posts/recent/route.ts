@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Post } from "@/models/Post.model";
+import { postListFilterForLocale } from "@/lib/post-locales";
 
 /** Lấy base URL tuyệt đối từ env hoặc từ header (ưu tiên cổng bạn đang chạy) */
 function getBaseFromReq(req: Request) {
@@ -34,7 +35,7 @@ function buildExcerpt(excerpt?: string | null, content?: string | null) {
 }
 
 /**
- * GET /api/posts/recent?limit=3&lang=vi
+ * GET /api/posts/recent?limit=3&lang=vi&locale=en
  * Trả về mảng các bài viết mới nhất (đã publish) kèm thumbnail là URL tuyệt đối.
  */
 export async function GET(req: Request) {
@@ -47,6 +48,10 @@ export async function GET(req: Request) {
 
     const q: any = { isPublished: { $ne: false } };
     if (lang) q.language = lang;
+    // ?locale=<ngôn ngữ trang>: trang tiếng nước ngoài bỏ bài chỉ có tiếng Việt
+    // (khác ?lang — lọc theo trường `language` của bài, giữ nguyên như cũ).
+    const langFilter = postListFilterForLocale(searchParams.get("locale"));
+    if (langFilter) Object.assign(q, langFilter);
 
     const items = await Post.find(q)
       .sort({ publishedAt: -1, createdAt: -1 })

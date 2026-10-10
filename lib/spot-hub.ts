@@ -110,6 +110,8 @@ export async function getSpotHub(page: string, lang: string): Promise<SpotHubDat
       forList: true,
       type: "all",
       isPublished: true,
+      // Trang tiếng nước ngoài không liệt kê bài chỉ có tiếng Việt (lib/post-locales.ts)
+      lang,
       spots: tags,
       limit: 200,
       sort: "-publishedAt,-createdAt",
@@ -120,6 +122,7 @@ export async function getSpotHub(page: string, lang: string): Promise<SpotHubDat
           type: "blog",
           category: "knowledge",
           isPublished: true,
+          lang,
           slugs: PILOT_PICKS[page],
           limit: PILOT_PICKS[page].length,
         })

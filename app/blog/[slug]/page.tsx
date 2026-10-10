@@ -924,6 +924,8 @@ export default async function BlogPostPage({
     limit: 100,
     sort: "-publishedAt,-createdAt",
     excludeSlug: post.slug,
+    // Trang tiếng nước ngoài không gợi ý bài chỉ có tiếng Việt (lib/post-locales.ts)
+    lang,
   });
 
   /**
@@ -955,6 +957,7 @@ export default async function BlogPostPage({
         isPublished: true,
         spots: mySpots,
         excludeSlug: post.slug,
+        lang,
         limit: 24,
         sort: "-publishedAt,-createdAt",
       })

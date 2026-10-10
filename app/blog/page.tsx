@@ -150,12 +150,14 @@ const INITIAL_COUNT = 25;
  * thị theo thời điểm tick: tick trước đứng trước. Các bài không ghim xếp
  * sau, theo ngày đăng mới nhất.
  */
-async function loadLatestPosts() {
+async function loadLatestPosts(lang: string) {
+  // `lang`: trang tiếng nước ngoài bỏ các bài chỉ có tiếng Việt (lib/post-locales.ts).
   const pinnedData = await getPosts({
     forList: true,
     category: "news",
     type: "blog",
     isPublished: true,
+    lang,
     fixed: true,
     limit: 6,
     sort: "featuredAt",
@@ -168,6 +170,7 @@ async function loadLatestPosts() {
     category: "news",
     type: "blog",
     isPublished: true,
+    lang,
     excludeSlug: pinnedSlugs.length ? pinnedSlugs : undefined,
     limit: Math.max(1, INITIAL_COUNT - pinnedPosts.length),
     sort: "-publishedAt,-createdAt",
@@ -188,12 +191,13 @@ async function loadLatestPosts() {
  * số lượng còn nhỏ; nếu sau này vượt vài trăm bài thì chuyển sang lọc ở tầng
  * truy vấn.
  */
-async function loadAllBlogPosts() {
+async function loadAllBlogPosts(lang: string) {
   const data = await getPosts({
     forList: true,
     category: "news",
     type: "blog",
     isPublished: true,
+    lang,
     limit: 500,
     sort: "-publishedAt,-createdAt",
   });
@@ -216,10 +220,10 @@ export default async function BlogPage({
     : "all";
 
   const { latestItems, lazyInitialCount, lazyTotal, pinnedSlugs } =
-    await loadLatestPosts();
+    await loadLatestPosts(lang);
 
   // Đếm bài từng chuyên mục để hiện số trên thanh lọc.
-  const allPosts = await loadAllBlogPosts();
+  const allPosts = await loadAllBlogPosts(lang);
   const counts: Record<string, number> = { all: allPosts.length };
   for (const key of BLOG_CATEGORIES) counts[key] = 0;
   for (const post of allPosts) counts[categoryOfPost(post)] += 1;

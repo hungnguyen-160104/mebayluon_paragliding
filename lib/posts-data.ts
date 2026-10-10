@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { Post as PostModel } from "@/models/Post.model";
 import type { Post, ContentBlock } from "@/types/frontend/post";
 import type { SortOrder } from "mongoose";
-import { postLocales } from "@/lib/post-locales";
+import { postLocales, postListFilterForLocale } from "@/lib/post-locales";
 import type { Locale } from "@/lib/site-config";
 
 export interface GetPostsOptions {
@@ -38,6 +38,12 @@ export interface GetPostsOptions {
    * bài đã xuất bản đều có sẵn excerpt (đã kiểm tra 2026-08-05).
    */
   forList?: boolean;
+  /**
+   * Ngôn ngữ của trang đang dựng danh sách. Khác "vi" thì bỏ các bài CHỈ CÓ
+   * TIẾNG VIỆT (xem postListFilterForLocale) — để /en/blog không lẫn thẻ bài
+   * tiêu đề tiếng Việt. Bỏ trống = không lọc (như trước).
+   */
+  lang?: string;
 }
 
 /** Trường bị loại khi forList = true. */
@@ -215,6 +221,7 @@ export async function getPosts(options: GetPostsOptions = {}) {
     fixed,
     spots,
     slugs,
+    lang,
   } = options;
 
   try {
@@ -249,6 +256,9 @@ export async function getPosts(options: GetPostsOptions = {}) {
     if (isPublished === true) {
       andFilters.push({ isPublished: true });
     }
+
+    const langFilter = postListFilterForLocale(lang);
+    if (langFilter) andFilters.push(langFilter);
 
     if (excludeSlug) {
       const list = (Array.isArray(excludeSlug) ? excludeSlug : [excludeSlug]).filter(Boolean);

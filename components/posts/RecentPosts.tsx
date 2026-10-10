@@ -59,7 +59,8 @@ export default function RecentPosts({
       try {
         setLoading(true);
 
-        const res = await fetch(`/api/posts/recent?limit=${POST_LIMIT}`);
+        // locale: trang tiếng nước ngoài không nhận bài chỉ có tiếng Việt
+        const res = await fetch(`/api/posts/recent?limit=${POST_LIMIT}&locale=${encodeURIComponent(String(language || "vi"))}`);
 
         if (!res.ok) {
           throw new Error("Failed to load recent posts");
@@ -88,7 +89,7 @@ export default function RecentPosts({
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [language]);
 
   /** Ẩn/hiện mũi tên theo vị trí cuộn hiện tại. */
   const syncArrows = useCallback(() => {

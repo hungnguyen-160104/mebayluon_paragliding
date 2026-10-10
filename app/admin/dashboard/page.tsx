@@ -611,7 +611,8 @@ function PostTableRow({
       {/* Tiêu đề */}
       <td className="p-4 align-top">
         <div className="font-medium text-gray-900 line-clamp-2">
-          {post.title}
+          {/* Bài chỉ có tiếng Việt (title tiếng Anh trống) vẫn phải có tên trong bảng */}
+          {post.title || post.titleVi}
         </div>
         <div className="text-xs text-gray-600 truncate mt-1">/{post.slug}</div>
       </td>

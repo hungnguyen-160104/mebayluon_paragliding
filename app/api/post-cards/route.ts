@@ -82,6 +82,8 @@ export async function GET(req: Request) {
       category,
       subCategory: sub,
       isPublished: true,
+      // Ngôn ngữ khác tiếng Việt: bỏ bài chỉ có tiếng Việt (lib/post-locales.ts)
+      lang,
       excludeSlug: exclude.length ? exclude : undefined,
       skip,
       limit,

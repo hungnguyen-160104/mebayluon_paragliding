@@ -59,3 +59,29 @@ export function postLocales(post: PostLike | null | undefined): Locale[] {
 
   return out.length > 0 ? out : ["vi"];
 }
+
+/**
+ * ĐIỀU KIỆN MONGO cho DANH SÁCH bài ở một ngôn ngữ (07/10/2026).
+ *
+ * Bài CHỈ CÓ TIẾNG VIỆT (cột tiếng Anh để trống, chưa có bản dịch đã duyệt)
+ * không được hiện ở danh sách /en/blog, /fr/blog…, bài liên quan hay "bài mới
+ * nhất" của các ngôn ngữ đó — nếu không, thẻ bài rơi về tiêu đề tiếng Việt
+ * giữa một trang tiếng nước ngoài. Cùng một luật với postLocales():
+ *   - vi: không lọc (mọi bài đều có bản gốc tiếng Việt);
+ *   - en: phải có `title` hoặc `content` tiếng Anh;
+ *   - fr/zh/ru/hi: có bản tiếng Anh (trang các ngôn ngữ này hiện bản Anh khi
+ *     chưa dịch) HOẶC có bản dịch đã duyệt của chính ngôn ngữ đó.
+ * Trả null khi không cần lọc.
+ */
+export function postListFilterForLocale(lang?: string | null): Record<string, unknown> | null {
+  if (!lang || lang === "vi") return null;
+  const coChu = /\S/;
+  const coTiengAnh = [{ title: coChu }, { content: coChu }];
+  if (lang === "en") return { $or: coTiengAnh };
+  return {
+    $or: [
+      ...coTiengAnh,
+      { [`translations.${lang}.published`]: true, [`translations.${lang}.title`]: coChu },
+    ],
+  };
+}
