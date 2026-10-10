@@ -73,6 +73,10 @@ export const LEGACY_SLUG_REDIRECTS: Record<string, string> = {
   /* Slug WordPress cũ của bài Khau Phạ: trước đây chỉ chuyển trong trang
    * (previousSlugs) — HTTP 200, Google không tính là 301. */
   deokhaupha: "du-luon-deo-khau-pha",
+
+  /* Gộp bài Tú Lệ 10-10-2026 (chủ: "viết chung 1 bài"): bài suối khoáng gộp vào bài Le Champ,
+   * bài cũ gỡ đăng (giữ trong DB, sao lưu ~/backups/gop-bai/). */
+  "suoi-khoang-nong-tu-le": "le-champ-tu-le-resort-suoi-khoang-nong",
 };
 
 /**

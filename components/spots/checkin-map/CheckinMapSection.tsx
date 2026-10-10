@@ -26,7 +26,6 @@ const UI = {
     legend: ["Quốc lộ 32", "đường nhánh", "đường bay dù lượn"],
     attrib: "Dữ liệu bản đồ",
     elev: "Độ cao: AWS Terrain Tiles",
-    photos: "Ảnh: ghi nguồn dưới từng ảnh.",
     listHeading: `${N} điểm trên bản đồ`,
     ele: "độ cao",
     fromTuLe: "từ chợ Tú Lệ",
@@ -48,7 +47,6 @@ const UI = {
     legend: ["Highway QL32", "side road", "paragliding flight line"],
     attrib: "Map data",
     elev: "Elevation: AWS Terrain Tiles",
-    photos: "Photos: credited under each photo.",
     listHeading: `${N} stops on the map`,
     ele: "elevation",
     fromTuLe: "from Tú Lệ market",
@@ -102,7 +100,7 @@ export default function CheckinMapSection({
         </p>
         {/* Ghi công bắt buộc — chữ thường, không link sang web khác (chủ 10/10). */}
         <p className="mt-1 text-center text-[11.5px] leading-relaxed text-slate-300/90">
-          {t.attrib}: © OpenStreetMap contributors · OpenFreeMap · {t.elev} · {t.photos}
+          {t.attrib}: © OpenStreetMap contributors · OpenFreeMap · {t.elev}
         </p>
 
         {hubPublished && (
@@ -194,7 +192,7 @@ export default function CheckinMapSection({
                     <div className="flex flex-wrap gap-2 pt-1">
                       {slug && (
                         <Link
-                          href={ckArticleHref(slug)}
+                          href={ckArticleHref(slug, s.id)}
                           className="rounded-full bg-[#0f2e21] px-3.5 py-1.5 text-[13px] font-semibold text-[#fbf6ea] ring-1 ring-[#f2963e]/70 hover:bg-[#164030]"
                         >
                           {t.read} →

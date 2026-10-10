@@ -48,11 +48,7 @@ export const CK_STOPS = [
    "tip": "It is a private resort: if you are not staying, call ahead to ask about day use of the hot spring."
   },
   "photo": {
-   "src": "/checkin-map/anh/le-champ.webp",
-   "credit": {
-    "vi": "Ảnh: Le Champ Tú Lệ Resort",
-    "en": "Photo: Le Champ Tú Lệ Resort"
-   }
+   "src": "/checkin-map/anh/le-champ.webp"
   },
   "photoPending": null
  },
@@ -99,11 +95,7 @@ export const CK_STOPS = [
    "tip": "This is where villagers wash: dress modestly, ask before you take photos and never photograph people bathing. Nearby bathing spots are run by local households, so ask the price first."
   },
   "photo": {
-   "src": "/checkin-map/anh/suoi-khoang.webp",
-   "credit": {
-    "vi": "Ảnh: Le Champ Tú Lệ Resort (bể khoáng của Le Champ)",
-    "en": "Photo: Le Champ Tú Lệ Resort (the resort's hot-spring pool)"
-   }
+   "src": "/checkin-map/anh/suoi-khoang.webp"
   },
   "photoPending": null
  },
@@ -150,11 +142,7 @@ export const CK_STOPS = [
    "tip": "The usual trek takes 2 days and 1 night with a night in a forest hut; go with a local guide and porters."
   },
   "photo": {
-   "src": "/checkin-map/anh/lung-cung.webp",
-   "credit": {
-    "vi": "Ảnh: NKSTTSSHNVN, CC BY-SA 4.0, Wikimedia Commons",
-    "en": "Photo: NKSTTSSHNVN, CC BY-SA 4.0, Wikimedia Commons"
-   }
+   "src": "/checkin-map/anh/lung-cung.webp"
   },
   "photoPending": null
  },
@@ -200,11 +188,7 @@ export const CK_STOPS = [
    "tip": "The lane into the village is narrow but easy. There are Thái stilt-house homestays; arrange ahead if you want to stay the night."
   },
   "photo": {
-   "src": "/checkin-map/anh/lim-thai.webp",
-   "credit": {
-    "vi": "Ảnh: luhanhvietnam.com.vn / @na_na_0801",
-    "en": "Photo: luhanhvietnam.com.vn / @na_na_0801"
-   }
+   "src": "/checkin-map/anh/lim-thai.webp"
   },
   "photoPending": null
  },
@@ -242,11 +226,7 @@ export const CK_STOPS = [
    "tip": "From the take-off it is about 2.4 km in a straight line and more than 500 m lower. You can stay overnight at the clubhouse."
   },
   "photo": {
-   "src": "/checkin-map/anh/clubhouse.webp",
-   "credit": {
-    "vi": "Ảnh flycam: Mebayluon",
-    "en": "Drone photo: Mebayluon"
-   }
+   "src": "/checkin-map/anh/clubhouse.webp"
   },
   "photoPending": null
  },
@@ -292,11 +272,7 @@ export const CK_STOPS = [
    "tip": "You pass through Lìm Thái first. The road is steep and narrow, and slippery in rain — think twice if you are new to mountain riding."
   },
   "photo": {
-   "src": "/checkin-map/anh/lim-mong.webp",
-   "credit": {
-    "vi": "Ảnh: travel.com.vn",
-    "en": "Photo: travel.com.vn"
-   }
+   "src": "/checkin-map/anh/lim-mong.webp"
   },
   "photoPending": null
  },
@@ -341,11 +317,7 @@ export const CK_STOPS = [
    "tip": "It is right on the highway, so pulling in is easy. Larger groups should phone ahead for a table."
   },
   "photo": {
-   "src": "/checkin-map/anh/huy-thanh.webp",
-   "credit": {
-    "vi": "Ảnh: Fanpage Fan Yên Bái",
-    "en": "Photo: Fanpage Fan Yên Bái"
-   }
+   "src": "/checkin-map/anh/huy-thanh.webp"
   },
   "photoPending": null
  },
@@ -387,11 +359,7 @@ export const CK_STOPS = [
    "tip": "Check the live take-off webcam before you drive up, and book ahead to get a slot. The highest point of the road itself (about 1,580 m) is nearly 5 km further on towards Mù Cang Chải."
   },
   "photo": {
-   "src": "/checkin-map/anh/khau-pha.webp",
-   "credit": {
-    "vi": "Ảnh: Mebayluon (bay đôi từ bãi Khau Phạ)",
-    "en": "Photo: Mebayluon (tandem flight from Khau Phạ)"
-   }
+   "src": "/checkin-map/anh/khau-pha.webp"
   },
   "photoPending": null
  },
@@ -437,11 +405,7 @@ export const CK_STOPS = [
    "tip": "Guesthouses and restaurants line both sides of the highway; La Pán Tẩn is a little over 5 km further on."
   },
   "photo": {
-   "src": "/checkin-map/anh/nga-ba-kim.webp",
-   "credit": {
-    "vi": "Ảnh: sưu tầm",
-    "en": "Photo: collected"
-   }
+   "src": "/checkin-map/anh/nga-ba-kim.webp"
   },
   "photoPending": null
  },
@@ -488,11 +452,7 @@ export const CK_STOPS = [
    "tip": "The side road from the highway is over 4 km long, steep and narrow, and hard for cars: hire a local motorbike taxi and avoid rainy days. There is an entrance fee."
   },
   "photo": {
-   "src": "/checkin-map/anh/rung-truc-pung-luong.webp",
-   "credit": {
-    "vi": "Ảnh: MIA.vn",
-    "en": "Photo: MIA.vn"
-   }
+   "src": "/checkin-map/anh/rung-truc-pung-luong.webp"
   },
   "photoPending": null
  },
@@ -539,11 +499,7 @@ export const CK_STOPS = [
    "tip": "Less than 1 km off Highway QL32. The last stretch is steep: in high season leave your vehicle at the bottom and walk, or take a Hmông motorbike taxi. There is an entrance fee, which changes from year to year."
   },
   "photo": {
-   "src": "/checkin-map/anh/mam-xoi.webp",
-   "credit": {
-    "vi": "Ảnh: Báo Thanh Niên / Nguyễn Trình",
-    "en": "Photo: Báo Thanh Niên / Nguyễn Trình"
-   }
+   "src": "/checkin-map/anh/mam-xoi.webp"
   },
   "photoPending": null
  },
@@ -588,11 +544,7 @@ export const CK_STOPS = [
    "tip": "It is a private resort: contact them first if you only want to use the restaurant or café."
   },
   "photo": {
-   "src": "/checkin-map/anh/garrya.webp",
-   "credit": {
-    "vi": "Ảnh: Báo Lào Cai",
-    "en": "Photo: Báo Lào Cai"
-   }
+   "src": "/checkin-map/anh/garrya.webp"
   },
   "photoPending": null
  },
@@ -640,11 +592,7 @@ export const CK_STOPS = [
    "tip": "The track up is steep, rough and very slippery in rain — go with a local or hire a motorbike taxi, and do not ride it yourself on a wet day."
   },
   "photo": {
-   "src": "/checkin-map/anh/mam-xoi-be.webp",
-   "credit": {
-    "vi": "Ảnh: VnExpress / Khang Phủ",
-    "en": "Photo: VnExpress / Khang Phủ"
-   }
+   "src": "/checkin-map/anh/mam-xoi-be.webp"
   },
   "photoPending": null
  },
@@ -690,11 +638,7 @@ export const CK_STOPS = [
    "tip": "Do not go up after rain or close to dark: the last stretch is rough and unlit."
   },
   "photo": {
-   "src": "/checkin-map/anh/song-lung-khung-long.webp",
-   "credit": {
-    "vi": "Ảnh: VnExpress / Mùa A Giàng",
-    "en": "Photo: VnExpress / Mùa A Giàng"
-   }
+   "src": "/checkin-map/anh/song-lung-khung-long.webp"
   },
   "photoPending": null
  },
@@ -740,11 +684,7 @@ export const CK_STOPS = [
    "tip": "Only a few kilometres from the centre, but the road is rough — take a local motorbike taxi or taxi and allow at least an hour."
   },
   "photo": {
-   "src": "/checkin-map/anh/rung-truc-mcc.webp",
-   "credit": {
-    "vi": "Ảnh: Znews / Mùa A Giàng",
-    "en": "Photo: Znews / Mùa A Giàng"
-   }
+   "src": "/checkin-map/anh/rung-truc-mcc.webp"
   },
   "photoPending": null
  },
@@ -786,11 +726,7 @@ export const CK_STOPS = [
    "tip": "Book ahead in high season. Móng Ngựa is about 2 km from the centre and the Háng Sung bamboo forest a few kilometres."
   },
   "photo": {
-   "src": "/checkin-map/anh/mu-cang-chai.webp",
-   "credit": {
-    "vi": "Ảnh: Việt Nam News / Lê Trung Kiên",
-    "en": "Photo: Việt Nam News / Lê Trung Kiên"
-   }
+   "src": "/checkin-map/anh/mu-cang-chai.webp"
   },
   "photoPending": null
  },
@@ -836,11 +772,7 @@ export const CK_STOPS = [
    "tip": "About 2 km from the town centre; the road is concreted but steep in places. There is an entrance fee."
   },
   "photo": {
-   "src": "/checkin-map/anh/mong-ngua.webp",
-   "credit": {
-    "vi": "Ảnh: Báo Thanh Niên / Nguyễn Trình",
-    "en": "Photo: Báo Thanh Niên / Nguyễn Trình"
-   }
+   "src": "/checkin-map/anh/mong-ngua.webp"
   },
   "photoPending": null
  },
@@ -886,11 +818,7 @@ export const CK_STOPS = [
    "tip": "The road up is concreted and fine for motorbikes, and small cars can make it; the last 300 m or so is on foot."
   },
   "photo": {
-   "src": "/checkin-map/anh/kim-noi.webp",
-   "credit": {
-    "vi": "Ảnh: VnExpress / Giàng A Chay",
-    "en": "Photo: VnExpress / Giàng A Chay"
-   }
+   "src": "/checkin-map/anh/kim-noi.webp"
   },
   "photoPending": null
  }

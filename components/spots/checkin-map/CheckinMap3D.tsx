@@ -11,7 +11,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ganTienTo, useUrlLocale } from "@/components/locale-link";
-import { ckUi } from "@/lib/checkin-map/embed";
+import { CK_ANCHORS, ckUi } from "@/lib/checkin-map/embed";
 
 /** Cỡ khung = cỡ #stage trong engine.css — giữ chỗ đúng bằng bản đồ để trang không xô. */
 const STAGE_STYLE: React.CSSProperties = {
@@ -55,7 +55,7 @@ export default function CheckinMap3D({
     let cancelled = false;
     const links: Record<string, string> = {};
     for (const [id, slug] of Object.entries(JSON.parse(articlesKey) as Record<string, string>)) {
-      if (slug !== currentSlug) links[id] = ganTienTo(`/blog/${slug}`, urlLocale);
+      if (slug !== currentSlug) links[id] = ganTienTo(`/blog/${slug}`, urlLocale) + (CK_ANCHORS[id] ? `#${CK_ANCHORS[id]}` : "");
     }
     const ui = ckUi(pageLang ?? lang);
 

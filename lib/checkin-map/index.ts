@@ -12,6 +12,8 @@ import type { CkStopId } from "./types";
 export { CK_STOP_IDS } from "./types";
 export type { CkLang, CkStopId } from "./types";
 export { CK_STOPS, type CkStopRow } from "./stops";
+import { CK_ANCHORS } from "./embed";
+export { CK_ANCHORS };
 
 /** Trang có bản đồ này. */
 export const CHECKIN_MAP_SPOT_SLUG = "khau-pha";
@@ -36,7 +38,7 @@ export const ckTextLang = (lang: string): "vi" | "en" => (lang === "vi" ? "vi" :
  */
 export const CK_ARTICLES: Record<CkStopId, string> = {
   "le-champ": "le-champ-tu-le-resort-suoi-khoang-nong",
-  "suoi-khoang": "suoi-khoang-nong-tu-le",
+  "suoi-khoang": "le-champ-tu-le-resort-suoi-khoang-nong", // gộp bài 10/10/2026 — neo tới mục tắm khoáng (CK_ANCHORS)
   "lung-cung": "dinh-lung-cung-mu-cang-chai",
   "lim-thai": "ban-lim-thai-mu-cang-chai",
   clubhouse: "diem-cat-canh-ha-canh-du-luon-khau-pha", // bài có sẵn
@@ -67,4 +69,5 @@ export const CK_ARTICLES_FALLBACK: Partial<Record<CkStopId, string>> = {
 
 
 /** Link bài: slug → đường dẫn (chưa gắn tiền tố ngôn ngữ). */
-export const ckArticleHref = (slug: string) => `/blog/${slug}`;
+export const ckArticleHref = (slug: string, stopId?: string) =>
+  `/blog/${slug}${stopId && CK_ANCHORS[stopId] ? `#${CK_ANCHORS[stopId]}` : ""}`;
