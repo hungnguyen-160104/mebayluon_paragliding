@@ -12,5 +12,10 @@
       "path": "/api/cron/camera-snap",
       "schedule": "* 0-12,22-23 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "dev": false
+    }
+  }
 }
