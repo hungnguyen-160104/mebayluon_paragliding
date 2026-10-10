@@ -418,7 +418,7 @@ const CLUBHOUSE: SpotRouteMap = {
 const QUAN_BA: SpotRouteMap = {
   id: "quan-ba",
   imageHasTitle: true,
-  src: `${CLD}/v1791606082/uploads/posts/ban-do-duong-den-quan-ba.jpg`,
+  src: `${CLD}/v1791650188/uploads/posts/ban-do-duong-den-quan-ba.jpg`,
   width: 1600,
   height: 1776,
   href: "/ppg",
