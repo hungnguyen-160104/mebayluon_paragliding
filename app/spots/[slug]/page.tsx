@@ -31,6 +31,9 @@ import {
 import { getSpotHub } from "@/lib/spot-hub";
 import { ArrowRight, BookOpen, Star } from "lucide-react";
 import { SPOT_SECTION_HEADING } from "@/components/spots/section-heading";
+import { CHECKIN_MAP_SPOT_SLUG } from "@/lib/checkin-map";
+import CheckinMapSection from "@/components/spots/checkin-map/CheckinMapSection";
+import { getPublishedCheckinArticles } from "@/lib/checkin-map-published";
 
 /* ========= Types ========= */
 type SpotPackage = {
@@ -659,7 +662,12 @@ export default async function SpotDetailPage({
 
   // Mục "Cẩm nang & bài viết": gom từ DB theo trường `spots` (lib/spot-hub.ts).
   // Không có bài / DB lỗi thì rơi về danh sách tĩnh SPOT_ARTICLES như trước.
-  const hub = await getSpotHub(canonicalSpotSlug(slug), spotLocale);
+  // Bản đồ check-in 3D (chỉ trang Khau Phạ, chủ duyệt bản 11 ngày 10/10/2026): thẻ điểm và danh
+  // sách chỉ link tới bài ĐÃ ĐĂNG — một truy vấn nhẹ theo chỉ mục slug, chạy song song với mục bài viết.
+  const [hub, checkinArticles] = await Promise.all([
+    getSpotHub(canonicalSpotSlug(slug), spotLocale),
+    canonicalSpotSlug(slug) === CHECKIN_MAP_SPOT_SLUG ? getPublishedCheckinArticles() : Promise.resolve(undefined),
+  ]);
   const groupLabels = SPOT_HUB_GROUP_LABELS[spotLocale] ?? SPOT_HUB_GROUP_LABELS.vi;
   const moreLabel = SPOT_HUB_MORE_LABEL[spotLocale] ?? SPOT_HUB_MORE_LABEL.vi;
   /** Mỗi nhóm hiện sẵn bấy nhiêu bài; phần còn lại nằm trong <details> (link vẫn có trong HTML). */
@@ -893,6 +901,9 @@ export default async function SpotDetailPage({
         spot={spot as SpotData}
         spotSlug={canonicalSpotSlug(slug)}
         articlesSlot={articlesSection}
+        checkinSlot={
+          checkinArticles !== undefined ? <CheckinMapSection lang={spotLocale} articles={checkinArticles} /> : undefined
+        }
       />
 
 

@@ -3555,6 +3555,7 @@ export function SpotDetailClient({
   spot,
   spotSlug,
   articlesSlot,
+  checkinSlot,
 }: {
   spot: SpotData;
   /** Section "Đọc thêm về điểm bay" (render từ server) — đặt trước mục
@@ -3562,6 +3563,8 @@ export function SpotDetailClient({
   /** Slug chuẩn của điểm bay — dùng để chọn sẵn điểm ở trang đặt bay. */
   spotSlug?: string;
   articlesSlot?: React.ReactNode;
+  /** Bản đồ check-in 3D (chỉ /spots/khau-pha) — khối render từ server (components/spots/checkin-map). */
+  checkinSlot?: React.ReactNode;
 }) {
   const { language, t } = useLanguage() as {
     language: unknown;
@@ -4042,6 +4045,11 @@ export function SpotDetailClient({
           này. Đặt ngay trên "Khoảnh khắc tại đây" để khách đối chiếu đánh giá
           bên thứ ba trước khi xem ảnh. Điểm bay chưa khai link thì khối tự ẩn. */}
       <SpotPartnerLinks slug={spotSlug} lang={lang} />
+
+      {/* Bản đồ check-in 3D Tú Lệ – Khau Phạ – Mù Cang Chải (#check-in-map) — chỉ trang
+          Khau Phạ, ngay dưới "Bản đồ đường đi": xem đường tới bãi bay xong thì xem quanh
+          đó còn dừng được những đâu. Khối render từ server (page.tsx truyền vào). */}
+      {checkinSlot}
 
       {/* Video toàn cảnh — cũng đặt trên "Khoảnh khắc tại đây". Điểm bay chưa
           khai video thì khối tự ẩn. */}
