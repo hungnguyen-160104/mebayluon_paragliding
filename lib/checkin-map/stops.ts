@@ -50,8 +50,8 @@ export const CK_STOPS = [
   "photo": {
    "src": "/checkin-map/anh/le-champ.webp",
    "credit": {
-    "vi": "Ảnh: Dương Quỳnh Mai, CC BY-SA 4.0, Wikimedia Commons",
-    "en": "Photo: Dương Quỳnh Mai, CC BY-SA 4.0, Wikimedia Commons"
+    "vi": "Ảnh: Le Champ Tú Lệ Resort",
+    "en": "Photo: Le Champ Tú Lệ Resort"
    }
   },
   "photoPending": null
@@ -98,7 +98,13 @@ export const CK_STOPS = [
    "when": "Late afternoon and cold days, when steam rises off the pools.",
    "tip": "This is where villagers wash: dress modestly, ask before you take photos and never photograph people bathing. Nearby bathing spots are run by local households, so ask the price first."
   },
-  "photo": null,
+  "photo": {
+   "src": "/checkin-map/anh/suoi-khoang.webp",
+   "credit": {
+    "vi": "Ảnh: Le Champ Tú Lệ Resort (bể khoáng của Le Champ)",
+    "en": "Photo: Le Champ Tú Lệ Resort (the resort's hot-spring pool)"
+   }
+  },
   "photoPending": null
  },
  {
