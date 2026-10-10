@@ -34,9 +34,12 @@ const WIDTHS = [480, 640, 960, 1280, 1600];
 export default function SpotRouteMap({
   slug,
   lang,
+  currentPath,
 }: {
   slug?: string | null;
   lang: RouteMapLang;
+  /** Trang đang hiển thị khối (vd "/ppg") — hình nào có link trỏ về chính trang này thì ẩn link. */
+  currentPath?: string;
 }) {
   const maps = getSpotRouteMaps(slug);
   if (maps.length === 0) return null;
@@ -109,6 +112,7 @@ export default function SpotRouteMap({
                   <span className="text-slate-300/90">{L.note}</span>
                 </figcaption>
 
+                {map.href !== currentPath && (
                 <Link
                   href={map.href}
                   className="mt-3 inline-flex items-center gap-1.5 self-start text-left text-sm font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200"
@@ -116,6 +120,7 @@ export default function SpotRouteMap({
                   <span>{T.link}</span>
                   <ArrowRight size={15} className="shrink-0" aria-hidden />
                 </Link>
+                )}
               </figure>
             );
           })}

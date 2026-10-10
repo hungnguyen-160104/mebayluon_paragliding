@@ -27,6 +27,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { LazyVideo } from "@/components/lazy-video";
 import { useLanguage } from "@/contexts/language-context";
+import SpotRouteMap from "@/components/spots/SpotRouteMap";
+import type { RouteMapLang } from "@/lib/spot-route-maps";
 import { getSpotLinks } from "@/lib/spot-partner-links";
 import { bookingHrefForFlightType } from "@/lib/booking/spot-to-location";
 import {
@@ -310,6 +312,11 @@ export default function PpgClient() {
 
           </div>
         </section>
+
+        {/* ===== BẢN ĐỒ ĐƯỜNG ĐI (chủ duyệt 10/10) =====
+             Hai bãi bay dù máy: đường vào Mebayluon Clubhouse (Khau Phạ) và
+             đường đến điểm bay Quản Bạ. Ảnh + chữ ở lib/spot-route-maps.ts (khoá "ppg"). */}
+        <SpotRouteMap slug="ppg" lang={lang as RouteMapLang} currentPath="/ppg" />
 
         {/* ===== GIÁ ===== */}
         <section className="py-16">

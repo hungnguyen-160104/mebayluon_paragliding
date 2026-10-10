@@ -349,52 +349,108 @@ const SA_PA: SpotRouteMap = {
  */
 const CLUBHOUSE: SpotRouteMap = {
   id: "clubhouse",
-  src: `${CLD}/v1791538066/uploads/posts/duong-vao-mebayluon-clubhouse.jpg`,
+  src: `${CLD}/v1791601385/uploads/posts/duong-vao-mebayluon-clubhouse.jpg`,
   width: 1600,
-  height: 1371,
+  height: 1666,
   href: "/homestay/dat-phong",
   text: {
     vi: {
       title: "Đường vào Mebayluon Clubhouse",
-      alt: "Bản đồ 3D đường vào Mebayluon Clubhouse ở bản Lìm Thái, Khau Phạ: từ Tú Lệ theo QL32 3,3 km tới ngã ba bản Lìm, rẽ vào đường bê tông khoảng 1 km tới Clubhouse (740 m); điểm cất cánh dù lượn 1.268 m gần đỉnh đèo Khau Phạ.",
+      alt: "Bản đồ 3D đường vào Mebayluon Clubhouse ở khu vực đèo Khau Phạ: từ Tú Lệ theo QL32 3,3 km tới ngã ba bản Lìm, rẽ vào khoảng 1 km đường bê tông tới Clubhouse (740 m) bên suối — bãi hạ cánh dù lượn và điểm cất cánh dù lượn có động cơ; điểm cất cánh dù lượn 1.268 m gần đỉnh đèo.",
       caption:
-        "Từ Tú Lệ đi QL32 3,3 km tới ngã ba bản Lìm, rẽ vào khoảng 1 km đường bê tông là tới Mebayluon Clubhouse (740 m) — bãi hạ cánh dù lượn và điểm cất cánh dù lượn có động cơ (PPG). Điểm cất cánh dù lượn 1.268 m gần đỉnh đèo Khau Phạ, cách ngã ba thêm 2,6 + 7,9 km theo QL32.",
+        "Từ Tú Lệ đi QL32 3,3 km tới ngã ba bản Lìm, rẽ vào khoảng 1 km đường bê tông là tới Mebayluon Clubhouse (740 m) bên suối — bãi hạ cánh dù lượn và điểm cất cánh dù lượn có động cơ (PPG). Điểm cất cánh dù lượn 1.268 m gần đỉnh đèo Khau Phạ, cách ngã ba thêm 2,6 + 7,9 km theo QL32.",
       link: "Đặt phòng Mebayluon Clubhouse",
     },
     en: {
       title: "The road to the Mebayluon Clubhouse",
-      alt: "3D map of the road to the Mebayluon Clubhouse in Ban Lim Thai, Khau Pha: from Tu Le 3.3 km along QL32 to the Ban Lim junction, then about 1 km of concrete lane to the Clubhouse (740 m); the 1,268 m paragliding take-off near the top of the Khau Pha pass.",
+      alt: "3D map of the road to the Mebayluon Clubhouse in the Khau Pha pass area: from Tu Le 3.3 km along QL32 to the Ban Lim junction, then about 1 km of concrete lane to the Clubhouse (740 m) by the stream — the paragliding landing field and paramotor take-off; the 1,268 m paragliding take-off near the top of the pass.",
       caption:
-        "From Tu Le, follow QL32 for 3.3 km to the Ban Lim junction and turn in for about 1 km on the concrete lane to the Mebayluon Clubhouse (740 m), the paragliding landing field and paramotor (PPG) take-off. The paragliding take-off at 1,268 m near the top of the Khau Pha pass is a further 2.6 + 7.9 km along QL32.",
+        "From Tu Le, follow QL32 for 3.3 km to the Ban Lim junction and turn in for about 1 km on the concrete lane to the Mebayluon Clubhouse (740 m) by the stream, the paragliding landing field and paramotor (PPG) take-off. The paragliding take-off at 1,268 m near the top of the Khau Pha pass is a further 2.6 + 7.9 km along QL32.",
       link: "Book a room at the Mebayluon Clubhouse",
     },
     fr: {
       title: "La route du Mebayluon Clubhouse",
-      alt: "Carte 3D de la route vers le Mebayluon Clubhouse à Ban Lim Thai, Khau Pha : depuis Tu Le, 3,3 km sur la QL32 jusqu'au carrefour de Ban Lim, puis environ 1 km de chemin bétonné jusqu'au Clubhouse (740 m) ; le décollage parapente à 1 268 m près du sommet du col de Khau Pha.",
+      alt: "Carte 3D de la route vers le Mebayluon Clubhouse dans la zone du col de Khau Pha : depuis Tu Le, 3,3 km sur la QL32 jusqu'au carrefour de Ban Lim, puis environ 1 km de chemin bétonné jusqu'au Clubhouse (740 m) au bord du ruisseau — atterrissage parapente et décollage paramoteur ; le décollage parapente à 1 268 m près du sommet du col.",
       caption:
-        "Depuis Tu Le, suivez la QL32 sur 3,3 km jusqu'au carrefour de Ban Lim, puis environ 1 km de chemin bétonné jusqu'au Mebayluon Clubhouse (740 m), terrain d'atterrissage parapente et décollage paramoteur (PPG). Le décollage parapente à 1 268 m, près du sommet du col de Khau Pha, se trouve 2,6 + 7,9 km plus loin sur la QL32.",
+        "Depuis Tu Le, suivez la QL32 sur 3,3 km jusqu'au carrefour de Ban Lim, puis environ 1 km de chemin bétonné jusqu'au Mebayluon Clubhouse (740 m) au bord du ruisseau, terrain d'atterrissage parapente et décollage paramoteur (PPG). Le décollage parapente à 1 268 m, près du sommet du col de Khau Pha, se trouve 2,6 + 7,9 km plus loin sur la QL32.",
       link: "Réserver une chambre au Mebayluon Clubhouse",
     },
     ru: {
       title: "Дорога к Mebayluon Clubhouse",
-      alt: "3D-карта дороги к Mebayluon Clubhouse в деревне Бан Лим Тхай, Кхау Фа: от Ту Ле 3,3 км по трассе QL32 до развилки Бан Лим, затем около 1 км по бетонной дороге до Clubhouse (740 м); старт парапланов на высоте 1268 м у вершины перевала Кхау Фа.",
+      alt: "3D-карта дороги к Mebayluon Clubhouse в районе перевала Кхау Фа: от Ту Ле 3,3 км по трассе QL32 до развилки Бан Лим, затем около 1 км по бетонной дороге до Clubhouse (740 м) у ручья — площадка приземления парапланов и старт парамоторов; старт парапланов на высоте 1268 м у вершины перевала.",
       caption:
-        "От Ту Ле — 3,3 км по трассе QL32 до развилки Бан Лим, затем около 1 км по бетонной дороге до Mebayluon Clubhouse (740 м): площадка приземления парапланов и старт парамоторов (PPG). Старт парапланов на высоте 1268 м у вершины перевала Кхау Фа — ещё 2,6 + 7,9 км по QL32.",
+        "От Ту Ле — 3,3 км по трассе QL32 до развилки Бан Лим, затем около 1 км по бетонной дороге до Mebayluon Clubhouse (740 м) у ручья: площадка приземления парапланов и старт парамоторов (PPG). Старт парапланов на высоте 1268 м у вершины перевала Кхау Фа — ещё 2,6 + 7,9 км по QL32.",
       link: "Забронировать номер в Mebayluon Clubhouse",
     },
     zh: {
       title: "前往 Mebayluon Clubhouse 的路线",
-      alt: "通往考法山口班林泰村 Mebayluon Clubhouse 的三维道路图：从秀丽沿 QL32 国道行驶 3.3 公里到班林岔路口，再沿水泥路约 1 公里到达 Clubhouse（海拔 740 米）；滑翔伞起飞点位于考法山口顶附近，海拔 1268 米。",
+      alt: "考法山口一带通往 Mebayluon Clubhouse 的三维道路图：从秀丽沿 QL32 国道行驶 3.3 公里到班林岔路口，再沿水泥路约 1 公里到达溪边的 Clubhouse（海拔 740 米）——滑翔伞降落场和动力伞起飞点；海拔 1268 米的滑翔伞起飞点位于山口顶附近。",
       caption:
-        "从秀丽沿 QL32 国道行驶 3.3 公里到班林岔路口，转入水泥路约 1 公里即到 Mebayluon Clubhouse（海拔 740 米），这里是滑翔伞降落场和动力伞（PPG）起飞点。海拔 1268 米的滑翔伞起飞点位于考法山口顶附近，从岔路口沿 QL32 再行 2.6 + 7.9 公里。",
+        "从秀丽沿 QL32 国道行驶 3.3 公里到班林岔路口，转入水泥路约 1 公里即到溪边的 Mebayluon Clubhouse（海拔 740 米），这里是滑翔伞降落场和动力伞（PPG）起飞点。海拔 1268 米的滑翔伞起飞点位于考法山口顶附近，从岔路口沿 QL32 再行 2.6 + 7.9 公里。",
       link: "预订 Mebayluon Clubhouse 客房",
     },
     hi: {
       title: "Mebayluon Clubhouse तक का रास्ता",
-      alt: "खाऊ फा के बान लिम थाई गाँव में Mebayluon Clubhouse तक की सड़क का 3D नक्शा: तू ले से QL32 पर 3.3 किमी चलकर बान लिम तिराहा, फिर लगभग 1 किमी कंक्रीट रास्ते से Clubhouse (740 मीटर); खाऊ फा दर्रे की चोटी के पास 1,268 मीटर पर पैराग्लाइडिंग टेक-ऑफ।",
+      alt: "खाऊ फा दर्रा क्षेत्र में Mebayluon Clubhouse तक की सड़क का 3D नक्शा: तू ले से QL32 पर 3.3 किमी चलकर बान लिम तिराहा, फिर लगभग 1 किमी कंक्रीट रास्ते से नाले के किनारे Clubhouse (740 मीटर) — पैराग्लाइडिंग लैंडिंग मैदान और पैरामोटर टेक-ऑफ; दर्रे की चोटी के पास 1,268 मीटर पर पैराग्लाइडिंग टेक-ऑफ।",
       caption:
-        "तू ले से QL32 पर 3.3 किमी चलकर बान लिम तिराहे पर मुड़ें और लगभग 1 किमी कंक्रीट रास्ते से Mebayluon Clubhouse (740 मीटर) पहुँचें — यह पैराग्लाइडिंग लैंडिंग मैदान और पैरामोटर (PPG) टेक-ऑफ है। खाऊ फा दर्रे की चोटी के पास 1,268 मीटर पर पैराग्लाइडिंग टेक-ऑफ, QL32 पर 2.6 + 7.9 किमी आगे है।",
+        "तू ले से QL32 पर 3.3 किमी चलकर बान लिम तिराहे पर मुड़ें और लगभग 1 किमी कंक्रीट रास्ते से नाले के किनारे Mebayluon Clubhouse (740 मीटर) पहुँचें — यह पैराग्लाइडिंग लैंडिंग मैदान और पैरामोटर (PPG) टेक-ऑफ है। खाऊ फा दर्रे की चोटी के पास 1,268 मीटर पर पैराग्लाइडिंग टेक-ऑफ, QL32 पर 2.6 + 7.9 किमी आगे है।",
       link: "Mebayluon Clubhouse में कमरा बुक करें",
+    },
+  },
+};
+
+/**
+ * Đường đến điểm bay Quản Bạ (Hà Giang) — chủ duyệt 10/10/2026. Bãi hạ cánh bên sông Miện
+ * cũng là điểm cất cánh dù lượn có động cơ (PPG). Toạ độ bãi cất/hạ: lib/weather-spots.ts.
+ */
+const QUAN_BA: SpotRouteMap = {
+  id: "quan-ba",
+  src: `${CLD}/v1791601387/uploads/posts/ban-do-duong-den-quan-ba.jpg`,
+  width: 1600,
+  height: 1776,
+  href: "/ppg",
+  text: {
+    vi: {
+      title: "Đường đến điểm bay Quản Bạ",
+      alt: "Bản đồ 3D đường đến điểm bay Quản Bạ (Hà Giang): QL4C qua Cổng Trời Quản Bạ xuống trung tâm Quản Bạ, đường lên điểm cất cánh dù lượn 950 m, đường vào bãi hạ cánh 450 m bên sông Miện cũng là điểm cất cánh dù lượn có động cơ (PPG), Núi Đôi, Nặm Đăm, Lùng Tám",
+      caption:
+        "Từ trung tâm Quản Bạ đi QL4C 1,6 km rồi rẽ lên 1,5 km là tới điểm cất cánh dù lượn (950 m). Bãi hạ cánh (450 m) bên sông Miện — cũng là điểm cất cánh dù lượn có động cơ (PPG) — cách trung tâm khoảng 10,5 km: theo QL4C thêm 8 km rồi rẽ vào 0,9 km đường bê tông.",
+      link: "Bay dù lượn có động cơ (PPG)",
+    },
+    en: {
+      title: "The road to the Quan Ba flying site",
+      alt: "3D map of the road to the Quan Ba flying site (Ha Giang): National Road 4C over Quan Ba Heaven's Gate down to Quan Ba centre, the road up to the 950 m paragliding take-off, and the road to the 450 m landing field by the Mien River, which is also the paramotor (PPG) take-off; Fairy Bosom twin hills, Nam Dam and Lung Tam",
+      caption:
+        "From Quan Ba centre, follow National Road 4C for 1.6 km and turn up for 1.5 km to the paragliding take-off (950 m). The landing field (450 m) by the Mien River, also the paramotor (PPG) take-off, is about 10.5 km from the centre: 8 km further along National Road 4C, then 0.9 km of concrete lane.",
+      link: "Paramotor (PPG) flights",
+    },
+    fr: {
+      title: "La route du site de vol de Quan Ba",
+      alt: "Carte 3D de la route du site de vol de Quan Ba (Ha Giang) : la RN 4C par la Porte du Ciel de Quan Ba jusqu'au centre de Quan Ba, la route du décollage parapente à 950 m et celle du terrain d'atterrissage à 450 m au bord de la rivière Mien, qui sert aussi de décollage paramoteur (PPG) ; les collines jumelles, Nam Dam et Lung Tam",
+      caption:
+        "Depuis le centre de Quan Ba, suivez la RN 4C sur 1,6 km puis montez 1,5 km jusqu'au décollage parapente (950 m). Le terrain d'atterrissage (450 m) au bord de la rivière Mien, également décollage paramoteur (PPG), est à environ 10,5 km du centre : 8 km de plus sur la RN 4C, puis 0,9 km de chemin bétonné.",
+      link: "Vols en paramoteur (PPG)",
+    },
+    ru: {
+      title: "Дорога к месту полётов Куан Ба",
+      alt: "3D-карта дороги к месту полётов Куан Ба (Хазянг): трасса 4C через Небесные ворота Куан Ба к центру Куан Ба, дорога к старту парапланов на высоте 950 м и к площадке приземления на высоте 450 м у реки Мьен, которая также служит стартом парамоторов (PPG); холмы-близнецы, Нам Дам и Лунг Там",
+      caption:
+        "От центра Куан Ба — 1,6 км по трассе 4C, затем 1,5 км вверх до старта парапланов (950 м). Площадка приземления (450 м) у реки Мьен — она же старт парамоторов (PPG) — примерно в 10,5 км от центра: ещё 8 км по трассе 4C и 0,9 км по бетонной дороге.",
+      link: "Полёты на парамоторе (PPG)",
+    },
+    zh: {
+      title: "前往管坝飞行点的路线",
+      alt: "管坝（河江）飞行点道路三维地图：4C国道经管坝天门下到管坝中心，通往海拔950米滑翔伞起飞点的道路，以及通往绵河边海拔450米降落场的道路（降落场也是动力伞PPG起飞点）；双乳山、南担、隆探",
+      caption:
+        "从管坝中心沿4C国道行驶1.6公里，再上山1.5公里即到滑翔伞起飞点（海拔950米）。绵河边的降落场（海拔450米）也是动力伞（PPG）起飞点，距中心约10.5公里：沿4C国道再行8公里，转入0.9公里水泥路。",
+      link: "动力伞（PPG）飞行",
+    },
+    hi: {
+      title: "क्वान बा उड़ान स्थल तक का रास्ता",
+      alt: "क्वान बा (हा जियांग) उड़ान स्थल तक सड़क का 3D नक्शा: राष्ट्रीय राजमार्ग 4C, क्वान बा स्वर्ग द्वार से क्वान बा केंद्र तक, 950 मीटर पर पैराग्लाइडिंग टेक-ऑफ की सड़क, और म्येन नदी किनारे 450 मीटर पर लैंडिंग मैदान की सड़क, जो पैरामोटर (PPG) टेक-ऑफ भी है; जुड़वाँ पहाड़ियाँ, नाम दाम और लुंग ताम",
+      caption:
+        "क्वान बा केंद्र से राष्ट्रीय राजमार्ग 4C पर 1.6 किमी चलकर 1.5 किमी ऊपर पैराग्लाइडिंग टेक-ऑफ (950 मीटर) है। म्येन नदी किनारे लैंडिंग मैदान (450 मीटर), जो पैरामोटर (PPG) टेक-ऑफ भी है, केंद्र से लगभग 10.5 किमी है: 4C पर 8 किमी और, फिर 0.9 किमी कंक्रीट रास्ता।",
+      link: "पैरामोटर (PPG) उड़ानें",
     },
   },
 };
@@ -405,12 +461,15 @@ const CLUBHOUSE: SpotRouteMap = {
  * về đây) nên hiện cả hai hình, mỗi hình một tiêu đề riêng.
  */
 export const SPOT_ROUTE_MAPS: Record<string, SpotRouteMap[]> = {
-  // Chủ 09/10: trang Khau Phạ chỉ hiện bản đồ đường đến điểm bay; bản đồ Hà Nội → Mù Cang Chải nằm ở các bài đường đi.
-  "khau-pha": [KHAU_PHA],
+  // Chủ 09/10: trang Khau Phạ không hiện bản đồ Hà Nội → Mù Cang Chải (nằm ở các bài đường đi). Chủ 10/10: thêm đường vào Clubhouse (bãi PPG).
+  "khau-pha": [KHAU_PHA, CLUBHOUSE],
   "doi-bu": [DOI_BU, VIEN_NAM],
   "muong-hoa-sapa": [SA_PA],
   // Không phải điểm bay: khối "Bản đồ đường đi" trên trang /homestay (app/homestay/HomestayClient.tsx).
   "homestay-clubhouse": [CLUBHOUSE],
+  "ha-giang": [QUAN_BA],
+  // Trang /ppg (app/ppg/PpgClient.tsx): hai bãi bay dù máy — Khau Phạ (Clubhouse) và Quản Bạ.
+  ppg: [CLUBHOUSE, QUAN_BA],
 };
 
 export const getSpotRouteMaps = (slug?: string | null): SpotRouteMap[] =>
