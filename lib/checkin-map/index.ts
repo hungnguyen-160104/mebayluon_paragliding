@@ -52,7 +52,7 @@ export const CK_ARTICLES: Record<CkStopId, string> = {
   "mam-xoi-be": "doi-mam-xoi-be-mu-cang-chai",
   "song-lung-khung-long": "song-lung-khung-long-mu-cang-chai",
   "rung-truc-mcc": "rung-truc-hang-sung-mu-cang-chai",
-  "mu-cang-chai": "cam-nang-du-lich-mu-cang-chai-lao-cai", // bài có sẵn
+  "mu-cang-chai": "xa-mu-cang-chai-ban-thai-khim-noi", // chủ 10/10/2026: bài riêng xã Mù Cang Chải + bản Thái Khim Nọi (cẩm nang chung là cam-nang-du-lich-mu-cang-chai-lao-cai)
   "mong-ngua": "doi-mong-ngua-mu-cang-chai",
   "kim-noi": "kim-noi-mu-cang-chai",
 };

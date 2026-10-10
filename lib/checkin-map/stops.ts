@@ -705,8 +705,8 @@ export const CK_STOPS = [
   },
   "vi": {
    "name": "Mù Cang Chải",
-   "type": "Thị trấn",
-   "why": "Điểm cuối của tuyến và là chỗ nghỉ đêm để hôm sau lên Móng Ngựa, Kim Nọi hay rừng trúc.",
+   "type": "Xã (trung tâm thị trấn cũ) · bản Thái Khim Nọi",
+   "why": "Trung tâm xã Mù Cang Chải (thị trấn cũ) bên suối Nậm Kim, có bản Thái Khim Nọi làm homestay — chỗ nghỉ để đi Móng Ngựa, Kim Nọi, rừng trúc Mồ Dề, mùa hoa tớ dày.",
    "duongDi": [
     "Từ Clubhouse Mebayluon: 1,3 km đường bê tông ra QL32 ở ngã ba bản Lìm, theo QL32 43 km. Tổng 44 km, khoảng 70 phút lái xe.",
     "Từ chợ Tú Lệ: theo QL32 46 km. Tổng 46 km, khoảng 70 phút."
@@ -719,9 +719,9 @@ export const CK_STOPS = [
   },
   "en": {
    "name": "Mù Cang Chải",
-   "type": "Mù Cang Chải town",
-   "what": "A small town on the Nậm Kim stream, the hub of the Mù Cang Chải rice-terrace country, with a market, guesthouses, restaurants and a petrol station.",
-   "why": "The end of the route, and the place to sleep before heading up to Móng Ngựa, Kim Nọi or the bamboo forest the next day.",
+   "type": "commune centre (former town) · Thái village",
+   "what": "The centre of Mù Cang Chải commune (the former district town, merged into a commune in July 2025) on the Nậm Kim stream, with the Thái community-tourism village of Khim Nọi.",
+   "why": "The base for Móng Ngựa, Kim Nọi and the Mồ Dề bamboo forest, a few kilometres away; Thái stilt-house homestays and the tớ dày blossom season in December–January.",
    "when": "On ripe-rice weekends rooms sell out very early.",
    "tip": "Book ahead in high season. Móng Ngựa is about 2 km from the centre and the Háng Sung bamboo forest a few kilometres."
   },
