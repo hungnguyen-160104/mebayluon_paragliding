@@ -202,8 +202,8 @@ export const CK_STOPS = [
   "photo": {
    "src": "/checkin-map/anh/lim-thai.webp",
    "credit": {
-    "vi": "Ảnh flycam: Mebayluon",
-    "en": "Drone photo: Mebayluon"
+    "vi": "Ảnh: luhanhvietnam.com.vn / @na_na_0801",
+    "en": "Photo: luhanhvietnam.com.vn / @na_na_0801"
    }
   },
   "photoPending": null
@@ -294,8 +294,8 @@ export const CK_STOPS = [
   "photo": {
    "src": "/checkin-map/anh/lim-mong.webp",
    "credit": {
-    "vi": "Ảnh flycam: Mebayluon",
-    "en": "Drone photo: Mebayluon"
+    "vi": "Ảnh: travel.com.vn",
+    "en": "Photo: travel.com.vn"
    }
   },
   "photoPending": null
@@ -340,7 +340,13 @@ export const CK_STOPS = [
    "when": "All year; a natural lunch stop on the long climb to the pass.",
    "tip": "It is right on the highway, so pulling in is easy. Larger groups should phone ahead for a table."
   },
-  "photo": null,
+  "photo": {
+   "src": "/checkin-map/anh/huy-thanh.webp",
+   "credit": {
+    "vi": "Ảnh: Fanpage Fan Yên Bái",
+    "en": "Photo: Fanpage Fan Yên Bái"
+   }
+  },
   "photoPending": null
  },
  {
@@ -475,13 +481,14 @@ export const CK_STOPS = [
    "when": "The bamboo is green all year, so any season works.",
    "tip": "The side road from the highway is over 4 km long, steep and narrow, and hard for cars: hire a local motorbike taxi and avoid rainy days. There is an entrance fee."
   },
-  "photo": null,
-  "photoPending": {
-   "site": "Tuổi Trẻ News (news.tuoitre.vn)",
-   "pageUrl": "https://news.tuoitre.vn/lost-in-bamboo-forest-in-vietnams-mu-cang-chai-10357127.htm",
-   "author": "Nam Trần – Hà Thanh / Tuổi Trẻ",
-   "licensed": false
-  }
+  "photo": {
+   "src": "/checkin-map/anh/rung-truc-pung-luong.webp",
+   "credit": {
+    "vi": "Ảnh: MIA.vn",
+    "en": "Photo: MIA.vn"
+   }
+  },
+  "photoPending": null
  },
  {
   "id": "mam-xoi",
@@ -528,8 +535,8 @@ export const CK_STOPS = [
   "photo": {
    "src": "/checkin-map/anh/mam-xoi.webp",
    "credit": {
-    "vi": "Ảnh: minhphuc_99kdd (Flickr), Public Domain Mark 1.0",
-    "en": "Photo: minhphuc_99kdd (Flickr), Public Domain Mark 1.0"
+    "vi": "Ảnh: Báo Thanh Niên / Nguyễn Trình",
+    "en": "Photo: Báo Thanh Niên / Nguyễn Trình"
    }
   },
   "photoPending": null
@@ -574,13 +581,14 @@ export const CK_STOPS = [
    "when": "The flooded-terrace season in May–June and the ripe-rice season from mid-September to early October are the two best times for the fields around it.",
    "tip": "It is a private resort: contact them first if you only want to use the restaurant or café."
   },
-  "photo": null,
-  "photoPending": {
-   "site": "Báo Lào Cai (baolaocai.vn)",
-   "pageUrl": "https://baolaocai.vn/garrya-mu-cang-chai-lot-top-giai-thuong-tatler-best-of-the-best-2026-post899385.html",
-   "author": "Không ghi tên (tên tệp kiểu ảnh Facebook – có lẽ từ fanpage của resort)",
-   "licensed": false
-  }
+  "photo": {
+   "src": "/checkin-map/anh/garrya.webp",
+   "credit": {
+    "vi": "Ảnh: Báo Lào Cai",
+    "en": "Photo: Báo Lào Cai"
+   }
+  },
+  "photoPending": null
  },
  {
   "id": "mam-xoi-be",
@@ -625,13 +633,14 @@ export const CK_STOPS = [
    "when": "Same seasons as the main hill: May–June and mid-September to early October.",
    "tip": "The track up is steep, rough and very slippery in rain — go with a local or hire a motorbike taxi, and do not ride it yourself on a wet day."
   },
-  "photo": null,
-  "photoPending": {
-   "site": "Báo Lào Cai (baolaocai.vn, lấy lại từ Znews)",
-   "pageUrl": "https://baolaocai.vn/canh-bao-du-khach-dung-tren-lan-can-lieu-mang-check-in-o-mu-cang-chai-post910289.html",
-   "author": "BCR",
-   "licensed": false
-  }
+  "photo": {
+   "src": "/checkin-map/anh/mam-xoi-be.webp",
+   "credit": {
+    "vi": "Ảnh: VnExpress / Khang Phủ",
+    "en": "Photo: VnExpress / Khang Phủ"
+   }
+  },
+  "photoPending": null
  },
  {
   "id": "song-lung-khung-long",
@@ -674,13 +683,14 @@ export const CK_STOPS = [
    "when": "Flooded terraces in May–June, golden rice from mid-September to early October.",
    "tip": "Do not go up after rain or close to dark: the last stretch is rough and unlit."
   },
-  "photo": null,
-  "photoPending": {
-   "site": "Báo Lào Cai (baolaocai.vn, lấy lại từ kienthuc.net.vn)",
-   "pageUrl": "https://baolaocai.vn/24-gio-o-mu-cang-chai-chon-diem-nao-de-ngam-tron-mua-vang-post882045.html",
-   "author": null,
-   "licensed": false
-  }
+  "photo": {
+   "src": "/checkin-map/anh/song-lung-khung-long.webp",
+   "credit": {
+    "vi": "Ảnh: VnExpress / Mùa A Giàng",
+    "en": "Photo: VnExpress / Mùa A Giàng"
+   }
+  },
+  "photoPending": null
  },
  {
   "id": "rung-truc-mcc",
@@ -723,13 +733,14 @@ export const CK_STOPS = [
    "when": "Green all year; fewest people early in the morning.",
    "tip": "Only a few kilometres from the centre, but the road is rough — take a local motorbike taxi or taxi and allow at least an hour."
   },
-  "photo": null,
-  "photoPending": {
-   "site": "VnExpress (vnexpress.net)",
-   "pageUrl": "https://vnexpress.net/48-gio-o-mu-cang-chai-4799635.html",
-   "author": "Mùa A Giàng",
-   "licensed": false
-  }
+  "photo": {
+   "src": "/checkin-map/anh/rung-truc-mcc.webp",
+   "credit": {
+    "vi": "Ảnh: Znews / Mùa A Giàng",
+    "en": "Photo: Znews / Mùa A Giàng"
+   }
+  },
+  "photoPending": null
  },
  {
   "id": "mu-cang-chai",
@@ -771,8 +782,8 @@ export const CK_STOPS = [
   "photo": {
    "src": "/checkin-map/anh/mu-cang-chai.webp",
    "credit": {
-    "vi": "Ảnh: Khoitran1957, CC BY-SA 4.0, Wikimedia Commons",
-    "en": "Photo: Khoitran1957, CC BY-SA 4.0, Wikimedia Commons"
+    "vi": "Ảnh: Việt Nam News / Lê Trung Kiên",
+    "en": "Photo: Việt Nam News / Lê Trung Kiên"
    }
   },
   "photoPending": null
@@ -821,8 +832,8 @@ export const CK_STOPS = [
   "photo": {
    "src": "/checkin-map/anh/mong-ngua.webp",
    "credit": {
-    "vi": "Ảnh: Lê Minh Phát (Flickr), CC BY 2.0",
-    "en": "Photo: Lê Minh Phát (Flickr), CC BY 2.0"
+    "vi": "Ảnh: Báo Thanh Niên / Nguyễn Trình",
+    "en": "Photo: Báo Thanh Niên / Nguyễn Trình"
    }
   },
   "photoPending": null
@@ -868,13 +879,14 @@ export const CK_STOPS = [
    "when": "The flooded-terrace season in May–June and the ripe-rice season from mid-September to early October.",
    "tip": "The road up is concreted and fine for motorbikes, and small cars can make it; the last 300 m or so is on foot."
   },
-  "photo": null,
-  "photoPending": {
-   "site": "VnExpress (vnexpress.net)",
-   "pageUrl": "https://vnexpress.net/48-gio-o-mu-cang-chai-4799635.html",
-   "author": "Giàng A Chay",
-   "licensed": false
-  }
+  "photo": {
+   "src": "/checkin-map/anh/kim-noi.webp",
+   "credit": {
+    "vi": "Ảnh: VnExpress / Giàng A Chay",
+    "en": "Photo: VnExpress / Giàng A Chay"
+   }
+  },
+  "photoPending": null
  }
 ] as const;
 
